@@ -121,8 +121,20 @@ class UserProfile(models.Model):
     notify_security_alerts = models.BooleanField(default=True)
     notify_password_changes = models.BooleanField(default=True)
 
+    paystack_subaccount_code = models.CharField(max_length=100, blank=True, null=True, help_text="Paystack subaccount code for receiving direct payments")
+    paystack_bank_code = models.CharField(max_length=20, blank=True, null=True, help_text="Bank code for the settlement account")
+    paystack_account_number = models.CharField(max_length=20, blank=True, null=True, help_text="Account number for receiving payments")
+    paystack_account_name = models.CharField(max_length=200, blank=True, null=True, help_text="Account holder name (verified)")
+    paystack_settlement_bank = models.CharField(max_length=200, blank=True, null=True, help_text="Bank name for display")
+    paystack_percentage_charge = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Platform fee percentage (0-100)")
+    paystack_subaccount_active = models.BooleanField(default=False, help_text="Whether direct payments are enabled")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def has_payment_setup(self) -> bool:
+        """Check if user has configured direct payment receiving."""
+        return bool(self.paystack_subaccount_code and self.paystack_subaccount_active)
 
     def __str__(self) -> str:
         return f"{self.user.username}'s Profile"

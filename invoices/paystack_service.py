@@ -41,6 +41,8 @@ class PaystackService:
         reference: Optional[str] = None,
         callback_url: Optional[str] = None,
         metadata: Optional[dict] = None,
+        subaccount_code: Optional[str] = None,
+        bearer: str = "subaccount",
     ) -> dict[str, Any]:
         """
         Initialize a payment transaction.
@@ -52,6 +54,8 @@ class PaystackService:
             reference: Unique transaction reference
             callback_url: URL to redirect to after payment
             metadata: Additional data to attach to the transaction
+            subaccount_code: Subaccount code for split payments (merchant receives payment directly)
+            bearer: Who bears transaction charges - 'account' (platform) or 'subaccount' (merchant)
         
         Returns:
             dict with authorization_url and reference, or error details
@@ -65,7 +69,7 @@ class PaystackService:
         
         amount_kobo = int(amount * 100)
         
-        payload = {
+        payload: dict[str, Any] = {
             "email": email,
             "amount": amount_kobo,
             "currency": currency,
@@ -77,6 +81,9 @@ class PaystackService:
             payload["callback_url"] = callback_url
         if metadata:
             payload["metadata"] = metadata
+        if subaccount_code:
+            payload["subaccount"] = subaccount_code
+            payload["bearer"] = bearer
         
         try:
             response = requests.post(
@@ -378,6 +385,251 @@ class PaystackService:
                 return {
                     "status": "error",
                     "message": data.get("message", "Failed to fetch transactions"),
+                }
+        
+        except requests.RequestException as e:
+            return {
+                "status": "error",
+                "message": f"Network error: {str(e)}",
+            }
+    
+    def create_subaccount(
+        self,
+        business_name: str,
+        bank_code: str,
+        account_number: str,
+        percentage_charge: Decimal = Decimal("0"),
+        primary_contact_email: Optional[str] = None,
+        primary_contact_name: Optional[str] = None,
+        primary_contact_phone: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> dict[str, Any]:
+        """
+        Create a Paystack subaccount for direct merchant payments.
+        
+        Args:
+            business_name: Name of the business
+            bank_code: Bank code from list_banks
+            account_number: Bank account number
+            percentage_charge: Platform fee percentage (0-100)
+            primary_contact_email: Contact email for the subaccount
+            primary_contact_name: Contact name
+            primary_contact_phone: Contact phone
+            metadata: Additional data
+        
+        Returns:
+            dict with subaccount_code and details, or error
+        """
+        if not self.is_configured:
+            return {
+                "status": "error",
+                "message": "Paystack is not configured.",
+                "configured": False,
+            }
+        
+        payload = {
+            "business_name": business_name,
+            "bank_code": bank_code,
+            "account_number": account_number,
+            "percentage_charge": float(percentage_charge),
+        }
+        
+        if primary_contact_email:
+            payload["primary_contact_email"] = primary_contact_email
+        if primary_contact_name:
+            payload["primary_contact_name"] = primary_contact_name
+        if primary_contact_phone:
+            payload["primary_contact_phone"] = primary_contact_phone
+        if metadata:
+            payload["metadata"] = metadata
+        
+        try:
+            response = requests.post(
+                f"{self.BASE_URL}/subaccount",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code in [200, 201] and data.get("status"):
+                subaccount = data["data"]
+                return {
+                    "status": "success",
+                    "subaccount_code": subaccount["subaccount_code"],
+                    "business_name": subaccount.get("business_name"),
+                    "account_number": subaccount.get("account_number"),
+                    "bank": subaccount.get("settlement_bank"),
+                    "percentage_charge": subaccount.get("percentage_charge"),
+                    "raw_data": subaccount,
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to create subaccount"),
+                }
+        
+        except requests.RequestException as e:
+            return {
+                "status": "error",
+                "message": f"Network error: {str(e)}",
+            }
+    
+    def verify_account_number(
+        self,
+        account_number: str,
+        bank_code: str,
+    ) -> dict[str, Any]:
+        """
+        Verify a bank account number and get the account name.
+        
+        Args:
+            account_number: Bank account number
+            bank_code: Bank code
+        
+        Returns:
+            dict with account_name and account_number, or error
+        """
+        if not self.is_configured:
+            return {
+                "status": "error",
+                "message": "Paystack is not configured.",
+                "configured": False,
+            }
+        
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/bank/resolve",
+                headers=self.headers,
+                params={
+                    "account_number": account_number,
+                    "bank_code": bank_code,
+                },
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code == 200 and data.get("status"):
+                return {
+                    "status": "success",
+                    "account_name": data["data"]["account_name"],
+                    "account_number": data["data"]["account_number"],
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to verify account"),
+                }
+        
+        except requests.RequestException as e:
+            return {
+                "status": "error",
+                "message": f"Network error: {str(e)}",
+            }
+    
+    def update_subaccount(
+        self,
+        subaccount_code: str,
+        business_name: Optional[str] = None,
+        percentage_charge: Optional[Decimal] = None,
+        primary_contact_email: Optional[str] = None,
+        active: Optional[bool] = None,
+    ) -> dict[str, Any]:
+        """
+        Update an existing subaccount.
+        
+        Args:
+            subaccount_code: The subaccount code to update
+            business_name: New business name
+            percentage_charge: New percentage charge
+            primary_contact_email: New contact email
+            active: Enable/disable the subaccount
+        
+        Returns:
+            dict with updated subaccount details
+        """
+        if not self.is_configured:
+            return {
+                "status": "error",
+                "message": "Paystack is not configured.",
+                "configured": False,
+            }
+        
+        payload: dict[str, Any] = {}
+        if business_name:
+            payload["business_name"] = business_name
+        if percentage_charge is not None:
+            payload["percentage_charge"] = float(percentage_charge)
+        if primary_contact_email:
+            payload["primary_contact_email"] = primary_contact_email
+        if active is not None:
+            payload["active"] = active
+        
+        try:
+            response = requests.put(
+                f"{self.BASE_URL}/subaccount/{subaccount_code}",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code == 200 and data.get("status"):
+                return {
+                    "status": "success",
+                    "subaccount_code": data["data"]["subaccount_code"],
+                    "raw_data": data["data"],
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to update subaccount"),
+                }
+        
+        except requests.RequestException as e:
+            return {
+                "status": "error",
+                "message": f"Network error: {str(e)}",
+            }
+    
+    def get_subaccount(self, subaccount_code: str) -> dict[str, Any]:
+        """
+        Get details of a subaccount.
+        
+        Args:
+            subaccount_code: The subaccount code
+        
+        Returns:
+            dict with subaccount details
+        """
+        if not self.is_configured:
+            return {
+                "status": "error",
+                "message": "Paystack is not configured.",
+                "configured": False,
+            }
+        
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/subaccount/{subaccount_code}",
+                headers=self.headers,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code == 200 and data.get("status"):
+                return {
+                    "status": "success",
+                    "raw_data": data["data"],
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to get subaccount"),
                 }
         
         except requests.RequestException as e:

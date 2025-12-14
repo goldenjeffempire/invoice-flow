@@ -46,6 +46,17 @@ def initiate_invoice_payment(request, invoice_id):
     
     reference = f"INV-{invoice.invoice_id}-{uuid.uuid4().hex[:8]}"
     
+    subaccount_code = None
+    split_code = None
+    
+    try:
+        profile = request.user.profile
+        if profile.has_payment_setup():
+            subaccount_code = profile.paystack_subaccount_code
+            logger.info(f"Using subaccount {subaccount_code} for invoice {invoice.id}")
+    except Exception:
+        pass
+    
     result = paystack.initialize_payment(
         email=invoice.client_email or invoice.business_email,
         amount=invoice.total,
@@ -57,7 +68,9 @@ def initiate_invoice_payment(request, invoice_id):
             "invoice_number": invoice.invoice_id,
             "client_name": invoice.client_name,
             "business_name": invoice.business_name,
+            "subaccount": subaccount_code,
         },
+        subaccount_code=subaccount_code,
     )
     
     if result["status"] == "success":
