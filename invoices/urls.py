@@ -23,4 +23,6 @@ urlpatterns = [
     path("invoice/<int:invoice_id>/email/", views.send_invoice_email, name="send_invoice_email"),
     path("invoice/<int:invoice_id>/whatsapp/", views.whatsapp_share, name="whatsapp_share"),
     path("waitlist/", views.waitlist_subscribe, name="waitlist_subscribe"),
+    path("settings/payments/", views.settings_payments, name="settings_payments"),
+    path("api/verify-bank-account/", views.verify_bank_account, name="verify_bank_account"),
 ]

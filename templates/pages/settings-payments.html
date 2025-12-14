@@ -1,0 +1,276 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Payment Settings{% endblock %}
+{% block body_class %}dashboard-light-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+{% endblock %}
+
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'components/sidebar-light.html' with active='settings' %}
+    
+    <main class="dashboard-main">
+        <header class="dashboard-light-header">
+            <div class="dashboard-light-header-content">
+                <h1>Settings</h1>
+                <p>Manage your account preferences and payment settings</p>
+            </div>
+        </header>
+        
+        <div class="settings-light-layout">
+            <nav class="settings-light-nav">
+                <ul class="settings-light-nav-list">
+                    <li>
+                        <a href="{% url 'settings' %}" class="settings-light-nav-link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            Profile
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'settings_business' %}" class="settings-light-nav-link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            Business
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'settings_payments' %}" class="settings-light-nav-link active">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                            Payments
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'settings_security' %}" class="settings-light-nav-link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            Security
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'settings_notifications' %}" class="settings-light-nav-link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                            Notifications
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{% url 'settings_billing' %}" class="settings-light-nav-link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                            Billing
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <div class="settings-light-content">
+                {% if message %}
+                <div class="alert-light alert-light-{{ message_type }}" style="margin-bottom: 24px; padding: 16px; border-radius: 8px; {% if message_type == 'success' %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% elif message_type == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background: #cce5ff; color: #004085; border: 1px solid #b8daff;{% endif %}">
+                    {{ message }}
+                </div>
+                {% endif %}
+                
+                <div class="settings-light-section">
+                    <h2 class="settings-light-section-title">Receive Payments Directly</h2>
+                    <p class="settings-light-section-description">Set up your bank account to receive invoice payments directly into your account</p>
+                    
+                    {% if profile.has_payment_setup %}
+                    <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+                        <strong style="color: #155724;">Direct payments enabled</strong>
+                        <p style="color: #155724; margin: 8px 0 0 0;">Payments will be deposited directly to your {{ profile.paystack_settlement_bank }} account ending in {{ profile.paystack_account_number|slice:"-4:" }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" id="payment-settings-form">
+                        {% csrf_token %}
+                        
+                        <div class="form-light-group">
+                            <label class="form-light-label">Select Your Bank</label>
+                            <select name="bank_code" id="bank_code" class="form-light-select" required>
+                                <option value="">-- Select a bank --</option>
+                                {% for bank in banks %}
+                                <option value="{{ bank.code }}" data-name="{{ bank.name }}" {% if profile.paystack_bank_code == bank.code %}selected{% endif %}>{{ bank.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="form-light-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px;">
+                            <div class="form-light-group">
+                                <label class="form-light-label">Account Number</label>
+                                <input type="text" name="account_number" id="account_number" class="form-light-input" 
+                                       value="{{ profile.paystack_account_number|default:'' }}" 
+                                       pattern="[0-9]{10}" maxlength="10" 
+                                       placeholder="Enter 10-digit account number" required>
+                                <span class="form-light-help">Your 10-digit bank account number</span>
+                            </div>
+                            <div class="form-light-group">
+                                <label class="form-light-label">Account Name</label>
+                                <input type="text" name="account_name" id="account_name" class="form-light-input" 
+                                       value="{{ profile.paystack_account_name|default:'' }}" 
+                                       placeholder="Will be verified automatically" readonly>
+                                <span class="form-light-help">This will be verified with your bank</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-light-group" style="margin-top: 20px;">
+                            <button type="button" id="verify-account-btn" class="btn-light-secondary" style="margin-right: 12px;">
+                                Verify Account
+                            </button>
+                            <span id="verify-status" style="font-size: 14px;"></span>
+                        </div>
+                        
+                        <div class="form-light-group" style="margin-top: 24px;">
+                            <label class="form-light-checkbox" style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                <input type="checkbox" name="enable_direct_payments" id="enable_direct_payments" 
+                                       {% if profile.paystack_subaccount_active %}checked{% endif %}>
+                                <span>Enable direct payments to my account</span>
+                            </label>
+                            <span class="form-light-help" style="margin-top: 8px; display: block;">When enabled, invoice payments will go directly to your bank account</span>
+                        </div>
+                        
+                        <div style="margin-top: 32px; display: flex; justify-content: flex-end; gap: 12px;">
+                            {% if profile.paystack_subaccount_code %}
+                            <button type="submit" name="action" value="disable" class="btn-light-danger" style="background: #dc3545; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                                Remove Payment Account
+                            </button>
+                            {% endif %}
+                            <button type="submit" name="action" value="save" class="btn-light-primary">
+                                {% if profile.paystack_subaccount_code %}Update{% else %}Set Up{% endif %} Payment Account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="settings-light-section" style="margin-top: 32px;">
+                    <h2 class="settings-light-section-title">How It Works</h2>
+                    <div style="display: grid; gap: 16px; margin-top: 16px;">
+                        <div style="display: flex; gap: 16px; align-items: flex-start;">
+                            <div style="background: #e8f4fd; color: #0066cc; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
+                            <div>
+                                <strong>Add your bank account</strong>
+                                <p style="color: #666; margin: 4px 0 0 0;">Enter your bank details above and verify your account</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 16px; align-items: flex-start;">
+                            <div style="background: #e8f4fd; color: #0066cc; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</div>
+                            <div>
+                                <strong>Enable direct payments</strong>
+                                <p style="color: #666; margin: 4px 0 0 0;">Toggle the checkbox to start receiving payments directly</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 16px; align-items: flex-start;">
+                            <div style="background: #e8f4fd; color: #0066cc; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
+                            <div>
+                                <strong>Get paid instantly</strong>
+                                <p style="color: #666; margin: 4px 0 0 0;">When clients pay your invoices, the money goes directly to your account</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% include 'components/dashboard-footer.html' %}
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const sidebar = document.getElementById('dashboard-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('active');
+        });
+    }
+    
+    if (overlay) {
+        overlay.addEventListener('click', function() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        });
+    }
+    
+    const verifyBtn = document.getElementById('verify-account-btn');
+    const bankSelect = document.getElementById('bank_code');
+    const accountNumber = document.getElementById('account_number');
+    const accountName = document.getElementById('account_name');
+    const verifyStatus = document.getElementById('verify-status');
+    
+    if (verifyBtn) {
+        verifyBtn.addEventListener('click', function() {
+            const bankCode = bankSelect.value;
+            const accNum = accountNumber.value;
+            
+            if (!bankCode) {
+                verifyStatus.textContent = 'Please select a bank';
+                verifyStatus.style.color = '#dc3545';
+                return;
+            }
+            
+            if (!accNum || accNum.length !== 10) {
+                verifyStatus.textContent = 'Please enter a valid 10-digit account number';
+                verifyStatus.style.color = '#dc3545';
+                return;
+            }
+            
+            verifyStatus.textContent = 'Verifying...';
+            verifyStatus.style.color = '#666';
+            verifyBtn.disabled = true;
+            
+            fetch('{% url "verify_bank_account" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    bank_code: bankCode,
+                    account_number: accNum
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    accountName.value = data.account_name;
+                    verifyStatus.textContent = 'Account verified!';
+                    verifyStatus.style.color = '#28a745';
+                } else {
+                    verifyStatus.textContent = data.message || 'Verification failed';
+                    verifyStatus.style.color = '#dc3545';
+                }
+            })
+            .catch(error => {
+                verifyStatus.textContent = 'Verification failed. Please try again.';
+                verifyStatus.style.color = '#dc3545';
+            })
+            .finally(() => {
+                verifyBtn.disabled = false;
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1463,6 +1463,130 @@ def settings_notifications(request):
 
 
 @login_required
+def settings_payments(request):
+    """Payment Settings page - configure bank account for direct payments."""
+    import json
+    from decimal import Decimal
+    from .paystack_service import get_paystack_service
+    
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    paystack = get_paystack_service()
+    
+    message = None
+    message_type = None
+    banks = []
+    
+    if paystack.is_configured:
+        banks_result = paystack.list_banks()
+        if banks_result.get("status") == "success":
+            banks = banks_result.get("banks", [])
+    
+    if request.method == "POST":
+        action = request.POST.get("action", "save")
+        
+        if action == "disable":
+            profile.paystack_subaccount_active = False
+            profile.paystack_subaccount_code = None
+            profile.paystack_bank_code = None
+            profile.paystack_account_number = None
+            profile.paystack_account_name = None
+            profile.paystack_settlement_bank = None
+            profile.save()
+            message = "Payment account removed successfully."
+            message_type = "success"
+        else:
+            bank_code = request.POST.get("bank_code", "").strip()
+            account_number = request.POST.get("account_number", "").strip()
+            account_name = request.POST.get("account_name", "").strip()
+            enable_direct = request.POST.get("enable_direct_payments") == "on"
+            
+            if not bank_code or not account_number:
+                message = "Please select a bank and enter your account number."
+                message_type = "error"
+            elif len(account_number) != 10 or not account_number.isdigit():
+                message = "Please enter a valid 10-digit account number."
+                message_type = "error"
+            elif not account_name:
+                message = "Please verify your account before saving."
+                message_type = "error"
+            else:
+                bank_name = ""
+                for bank in banks:
+                    if bank.get("code") == bank_code:
+                        bank_name = bank.get("name", "")
+                        break
+                
+                if profile.paystack_subaccount_code:
+                    result = paystack.update_subaccount(
+                        profile.paystack_subaccount_code,
+                        business_name=profile.company_name or request.user.get_full_name() or request.user.username,
+                        active=enable_direct,
+                    )
+                else:
+                    result = paystack.create_subaccount(
+                        business_name=profile.company_name or request.user.get_full_name() or request.user.username,
+                        bank_code=bank_code,
+                        account_number=account_number,
+                        percentage_charge=Decimal("0"),
+                        primary_contact_email=request.user.email,
+                        primary_contact_name=request.user.get_full_name() or request.user.username,
+                    )
+                
+                if result.get("status") == "success":
+                    profile.paystack_subaccount_code = result.get("subaccount_code", profile.paystack_subaccount_code)
+                    profile.paystack_bank_code = bank_code
+                    profile.paystack_account_number = account_number
+                    profile.paystack_account_name = account_name
+                    profile.paystack_settlement_bank = bank_name
+                    profile.paystack_subaccount_active = enable_direct
+                    profile.save()
+                    message = "Payment settings saved successfully!"
+                    message_type = "success"
+                else:
+                    message = f"Failed to set up payment account: {result.get('message', 'Unknown error')}"
+                    message_type = "error"
+    
+    context = {
+        "profile": profile,
+        "banks": banks,
+        "message": message,
+        "message_type": message_type,
+        "active_tab": "payments",
+        "paystack_configured": paystack.is_configured,
+    }
+    
+    return render(request, "pages/settings-payments.html", context)
+
+
+@login_required
+def verify_bank_account(request):
+    """API endpoint to verify bank account number."""
+    import json
+    from django.http import JsonResponse
+    from .paystack_service import get_paystack_service
+    
+    if request.method != "POST":
+        return JsonResponse({"status": "error", "message": "Method not allowed"}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        bank_code = data.get("bank_code", "").strip()
+        account_number = data.get("account_number", "").strip()
+        
+        if not bank_code or not account_number:
+            return JsonResponse({"status": "error", "message": "Bank code and account number are required"})
+        
+        paystack = get_paystack_service()
+        result = paystack.verify_account_number(account_number, bank_code)
+        
+        return JsonResponse(result)
+    except json.JSONDecodeError:
+        return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+
+@login_required
 def settings_billing(request):
     """Billing & Account settings page with optimized database queries."""
     from django.db.models import DecimalField, F, Sum, Value
