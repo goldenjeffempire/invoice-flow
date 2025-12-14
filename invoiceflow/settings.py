@@ -33,7 +33,7 @@ IS_PRODUCTION = os.environ.get("PRODUCTION") == "true"
 if IS_PRODUCTION:
     DEBUG = False  # Production mode always disables debug
 elif IS_REPLIT:
-    DEBUG = env.bool("DEBUG", default=True)  # Replit dev defaults to True, but can be overridden
+    DEBUG = env.bool("DEBUG", default=True)  # type: ignore  # Replit dev defaults to True
 else:
     DEBUG = env.bool("DEBUG", default=False)  # type: ignore
 
