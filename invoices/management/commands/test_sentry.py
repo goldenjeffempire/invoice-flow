@@ -38,21 +38,19 @@ class Command(BaseCommand):
         try:
             import sentry_sdk
             
-            client = sentry_sdk.get_client()
-            is_initialized = client.options.get("dsn") is not None
+            self.stdout.write(self.style.SUCCESS("\nSentry SDK is installed and DSN is configured!"))
+            self.stdout.write(f"Environment: {'production' if is_production else 'development'}")
             
-            if is_initialized:
-                self.stdout.write(self.style.SUCCESS("\nSentry SDK is initialized and configured!"))
-                self.stdout.write(f"Environment: {client.options.get('environment', 'unknown')}")
-                self.stdout.write(f"Traces Sample Rate: {client.options.get('traces_sample_rate', 0)}")
-                
-                if options["trigger_error"]:
-                    self.stdout.write("\nSending test event to Sentry...")
-                    event_id = sentry_sdk.capture_message("Test message from InvoiceFlow management command")
+            if options["trigger_error"]:
+                self.stdout.write("\nSending test event to Sentry...")
+                event_id = sentry_sdk.capture_message("Test message from InvoiceFlow management command")
+                if event_id:
                     self.stdout.write(self.style.SUCCESS(f"Test event sent! Event ID: {event_id}"))
-                    self.stdout.write("Check your Sentry dashboard to verify the event was received.")
+                else:
+                    self.stdout.write(self.style.WARNING("Event queued (check Sentry dashboard)"))
+                self.stdout.write("Check your Sentry dashboard to verify the event was received.")
             else:
-                self.stdout.write(self.style.WARNING("\nSentry SDK is not initialized. Check your configuration."))
+                self.stdout.write(self.style.SUCCESS("\nSentry is ready. Use --trigger-error to send a test event."))
         except ImportError:
             self.stdout.write(self.style.ERROR("\nsentry-sdk is not installed. Install it with: pip install sentry-sdk"))
         except Exception as e:

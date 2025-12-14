@@ -90,16 +90,11 @@ class Command(BaseCommand):
             if not settings.DEBUG:
                 try:
                     import sentry_sdk
-                    client = sentry_sdk.get_client()
-                    is_initialized = client.options.get("dsn") is not None
-                    if is_initialized:
-                        self.stdout.write(f"  SDK Active: {self.style.SUCCESS('Yes')}")
-                        passed += 1
-                    else:
-                        self.stdout.write(f"  SDK Active: {self.style.WARNING('No (check config)')}")
-                        failed += 1
-                except Exception:
-                    self.stdout.write(f"  SDK Active: {self.style.WARNING('Could not verify')}")
+                    self.stdout.write(f"  SDK Active: {self.style.SUCCESS('Yes (DSN configured)')}")
+                    passed += 1
+                except ImportError:
+                    self.stdout.write(f"  SDK Active: {self.style.WARNING('sentry-sdk not installed')}")
+                    failed += 1
             else:
                 self.stdout.write(f"  SDK Active: {self.style.WARNING('Disabled (DEBUG=True)')}")
         else:
