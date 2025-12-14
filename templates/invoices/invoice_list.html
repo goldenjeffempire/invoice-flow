@@ -5,6 +5,286 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+<style>
+.bulk-actions-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--light-primary-light);
+    border-radius: var(--light-radius-lg);
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.bulk-actions-bar.active {
+    display: flex;
+}
+
+.bulk-actions-bar .selected-count {
+    font-weight: 600;
+    color: var(--light-primary);
+    margin-right: auto;
+}
+
+.bulk-actions-bar .btn-bulk {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: var(--light-radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bulk-actions-bar .btn-bulk svg {
+    width: 16px;
+    height: 16px;
+}
+
+.btn-bulk-primary {
+    background: var(--light-primary);
+    color: white;
+}
+
+.btn-bulk-primary:hover {
+    background: var(--light-primary-dark);
+}
+
+.btn-bulk-success {
+    background: var(--light-success);
+    color: white;
+}
+
+.btn-bulk-success:hover {
+    opacity: 0.9;
+}
+
+.btn-bulk-warning {
+    background: var(--light-warning);
+    color: white;
+}
+
+.btn-bulk-warning:hover {
+    opacity: 0.9;
+}
+
+.btn-bulk-danger {
+    background: var(--light-danger);
+    color: white;
+}
+
+.btn-bulk-danger:hover {
+    opacity: 0.9;
+}
+
+.btn-bulk-secondary {
+    background: var(--light-bg-secondary);
+    color: var(--light-text-primary);
+    border: 1px solid var(--light-border-primary);
+}
+
+.btn-bulk-secondary:hover {
+    background: var(--light-bg-tertiary);
+}
+
+.export-dropdown {
+    position: relative;
+}
+
+.export-dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--light-bg-secondary);
+    border: 1px solid var(--light-border-primary);
+    border-radius: var(--light-radius-md);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 100;
+    min-width: 150px;
+}
+
+.export-dropdown-menu.show {
+    display: block;
+}
+
+.export-dropdown-menu a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    color: var(--light-text-primary);
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.export-dropdown-menu a:hover {
+    background: var(--light-bg-tertiary);
+}
+
+.export-dropdown-menu a svg {
+    width: 16px;
+    height: 16px;
+}
+
+.checkbox-cell {
+    width: 40px;
+    text-align: center;
+}
+
+.invoice-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--light-primary);
+}
+
+@media (max-width: 768px) {
+    .table-light {
+        display: none;
+    }
+    
+    .mobile-invoice-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .mobile-invoice-card {
+        background: var(--light-bg-secondary);
+        border: 1px solid var(--light-border-primary);
+        border-radius: var(--light-radius-lg);
+        padding: 16px;
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-invoice-card:hover {
+        border-color: var(--light-primary);
+    }
+    
+    .mobile-invoice-card.selected {
+        border-color: var(--light-primary);
+        background: var(--light-primary-light);
+    }
+    
+    .mobile-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .mobile-card-header .invoice-checkbox {
+        flex-shrink: 0;
+    }
+    
+    .mobile-card-title {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .mobile-card-title a {
+        font-weight: 600;
+        color: var(--light-primary);
+        text-decoration: none;
+    }
+    
+    .mobile-card-body {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .mobile-card-field {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .mobile-card-label {
+        font-size: 0.75rem;
+        color: var(--light-text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .mobile-card-value {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--light-text-primary);
+    }
+    
+    .mobile-card-actions {
+        display: flex;
+        gap: 8px;
+        padding-top: 12px;
+        border-top: 1px solid var(--light-border-primary);
+    }
+    
+    .mobile-card-actions a {
+        flex: 1;
+        text-align: center;
+        padding: 8px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--light-primary);
+        text-decoration: none;
+        border-radius: var(--light-radius-md);
+        background: var(--light-bg-tertiary);
+    }
+    
+    .mobile-card-actions a:hover {
+        background: var(--light-primary-light);
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-invoice-list {
+        display: none;
+    }
+}
+
+.header-with-export {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-export-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--light-text-secondary);
+    background: var(--light-bg-tertiary);
+    border: 1px solid var(--light-border-primary);
+    border-radius: var(--light-radius-md);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-export-all:hover {
+    background: var(--light-bg-secondary);
+    color: var(--light-text-primary);
+}
+
+.btn-export-all svg {
+    width: 16px;
+    height: 16px;
+}
+</style>
 {% endblock %}
 
 {% block nav %}{% endblock %}
@@ -20,7 +300,26 @@
                 <h1>Invoices</h1>
                 <p>Manage and track all your invoices</p>
             </div>
-            <div class="dashboard-light-actions">
+            <div class="dashboard-light-actions header-with-export">
+                <div class="export-dropdown">
+                    <button type="button" class="btn-export-all" id="exportAllBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Export
+                    </button>
+                    <div class="export-dropdown-menu" id="exportMenu">
+                        <a href="{% url 'export_invoices_csv' %}?status={{ status_filter }}&search={{ search_query }}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            Export as CSV
+                        </a>
+                    </div>
+                </div>
                 <a href="{% url 'create_invoice' %}" class="btn-light-primary">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="12" y1="5" x2="12" y2="19"/>
@@ -76,11 +375,59 @@
         </div>
         
         {% if invoices %}
+        <div class="bulk-actions-bar" id="bulkActionsBar">
+            <span class="selected-count"><span id="selectedCount">0</span> invoice(s) selected</span>
+            <form method="post" action="{% url 'bulk_invoice_action' %}" id="bulkActionForm" style="display: contents;">
+                {% csrf_token %}
+                <input type="hidden" name="invoice_ids" id="selectedInvoiceIds" value="">
+                <input type="hidden" name="action" id="bulkActionType" value="">
+                <button type="button" class="btn-bulk btn-bulk-success" onclick="submitBulkAction('mark_paid')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Mark Paid
+                </button>
+                <button type="button" class="btn-bulk btn-bulk-warning" onclick="submitBulkAction('mark_unpaid')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    Mark Unpaid
+                </button>
+                <button type="button" class="btn-bulk btn-bulk-danger" onclick="submitBulkAction('delete')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    Delete
+                </button>
+                <button type="button" class="btn-bulk btn-bulk-secondary" onclick="exportSelected()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export Selected
+                </button>
+            </form>
+            <button type="button" class="btn-bulk btn-bulk-secondary" onclick="clearSelection()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                Clear
+            </button>
+        </div>
+        
         <div class="card-light">
             <div style="overflow-x: auto;">
                 <table class="table-light">
                     <thead>
                         <tr>
+                            <th class="checkbox-cell">
+                                <input type="checkbox" class="invoice-checkbox" id="selectAllCheckbox" title="Select all">
+                            </th>
                             <th>Invoice</th>
                             <th>Client</th>
                             <th>Amount</th>
@@ -92,7 +439,10 @@
                     </thead>
                     <tbody>
                         {% for invoice in invoices %}
-                        <tr>
+                        <tr data-invoice-id="{{ invoice.id }}">
+                            <td class="checkbox-cell">
+                                <input type="checkbox" class="invoice-checkbox invoice-row-checkbox" value="{{ invoice.id }}">
+                            </td>
                             <td>
                                 <a href="{% url 'invoice_detail' invoice.id %}" style="color: var(--light-primary); text-decoration: none; font-weight: 600;">
                                     {{ invoice.invoice_id }}
@@ -104,7 +454,10 @@
                                     <div style="font-size: 0.75rem; color: var(--light-text-tertiary);">{{ invoice.client_email }}</div>
                                 </div>
                             </td>
-                            <td style="font-weight: 600;">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</td>
+                            <td style="font-weight: 600;">
+                                <span class="currency-display" data-currency="{{ invoice.currency }}">{{ invoice.currency }}</span>
+                                {{ invoice.total|floatformat:2 }}
+                            </td>
                             <td>
                                 {% if invoice.status == 'paid' %}
                                     <span class="badge-light badge-paid">Paid</span>
@@ -136,6 +489,54 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+        
+        <div class="mobile-invoice-list">
+            {% for invoice in invoices %}
+            <div class="mobile-invoice-card" data-invoice-id="{{ invoice.id }}">
+                <div class="mobile-card-header">
+                    <input type="checkbox" class="invoice-checkbox mobile-invoice-checkbox" value="{{ invoice.id }}">
+                    <div class="mobile-card-title">
+                        <a href="{% url 'invoice_detail' invoice.id %}">{{ invoice.invoice_id }}</a>
+                        {% if invoice.status == 'paid' %}
+                            <span class="badge-light badge-paid">Paid</span>
+                        {% elif invoice.due_date and invoice.due_date < today %}
+                            <span class="badge-light badge-overdue">Overdue</span>
+                        {% else %}
+                            <span class="badge-light badge-unpaid">Unpaid</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mobile-card-body">
+                    <div class="mobile-card-field">
+                        <span class="mobile-card-label">Client</span>
+                        <span class="mobile-card-value">{{ invoice.client_name }}</span>
+                    </div>
+                    <div class="mobile-card-field">
+                        <span class="mobile-card-label">Amount</span>
+                        <span class="mobile-card-value">
+                            <span class="currency-display" data-currency="{{ invoice.currency }}">{{ invoice.currency }}</span>
+                            {{ invoice.total|floatformat:2 }}
+                        </span>
+                    </div>
+                    <div class="mobile-card-field">
+                        <span class="mobile-card-label">Invoice Date</span>
+                        <span class="mobile-card-value">{{ invoice.invoice_date|date:"M d, Y" }}</span>
+                    </div>
+                    <div class="mobile-card-field">
+                        <span class="mobile-card-label">Due Date</span>
+                        <span class="mobile-card-value" {% if invoice.due_date < today and invoice.status == 'unpaid' %}style="color: var(--light-danger);"{% endif %}>
+                            {% if invoice.due_date %}{{ invoice.due_date|date:"M d, Y" }}{% else %}-{% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="mobile-card-actions">
+                    <a href="{% url 'invoice_detail' invoice.id %}">View</a>
+                    <a href="{% url 'edit_invoice' invoice.id %}">Edit</a>
+                    <a href="{% url 'generate_pdf' invoice.id %}">PDF</a>
+                </div>
+            </div>
+            {% endfor %}
         </div>
         
         {% if page_obj.paginator.num_pages > 1 %}
@@ -229,6 +630,134 @@ document.addEventListener('DOMContentLoaded', function() {
         overlay.addEventListener('click', function() {
             sidebar.classList.remove('open');
             overlay.classList.remove('active');
+        });
+    }
+    
+    const currencySymbols = {
+        'USD': '$',
+        'EUR': '\u20AC',
+        'GBP': '\u00A3',
+        'NGN': '\u20A6',
+        'CAD': 'CA$',
+        'AUD': 'A$'
+    };
+    
+    document.querySelectorAll('.currency-display').forEach(el => {
+        const currency = el.dataset.currency;
+        if (currencySymbols[currency]) {
+            el.textContent = currencySymbols[currency];
+        }
+    });
+    
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.invoice-row-checkbox');
+    const mobileCheckboxes = document.querySelectorAll('.mobile-invoice-checkbox');
+    const bulkActionsBar = document.getElementById('bulkActionsBar');
+    const selectedCountEl = document.getElementById('selectedCount');
+    const selectedIdsInput = document.getElementById('selectedInvoiceIds');
+    
+    function updateSelection() {
+        const allCheckboxes = [...rowCheckboxes, ...mobileCheckboxes];
+        const checked = allCheckboxes.filter(cb => cb.checked);
+        const selectedIds = [...new Set(checked.map(cb => cb.value))];
+        
+        selectedCountEl.textContent = selectedIds.length;
+        selectedIdsInput.value = selectedIds.join(',');
+        
+        if (selectedIds.length > 0) {
+            bulkActionsBar.classList.add('active');
+        } else {
+            bulkActionsBar.classList.remove('active');
+        }
+        
+        document.querySelectorAll('.mobile-invoice-card').forEach(card => {
+            const checkbox = card.querySelector('.mobile-invoice-checkbox');
+            if (checkbox && checkbox.checked) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        });
+        
+        const allRowsChecked = [...rowCheckboxes].every(cb => cb.checked);
+        selectAllCheckbox.checked = rowCheckboxes.length > 0 && allRowsChecked;
+        selectAllCheckbox.indeterminate = checked.length > 0 && !allRowsChecked;
+    }
+    
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            rowCheckboxes.forEach(cb => cb.checked = isChecked);
+            mobileCheckboxes.forEach(cb => {
+                const matchingRow = [...rowCheckboxes].find(r => r.value === cb.value);
+                if (matchingRow) {
+                    cb.checked = isChecked;
+                }
+            });
+            updateSelection();
+        });
+    }
+    
+    rowCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const matchingMobile = [...mobileCheckboxes].find(m => m.value === this.value);
+            if (matchingMobile) matchingMobile.checked = this.checked;
+            updateSelection();
+        });
+    });
+    
+    mobileCheckboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const matchingRow = [...rowCheckboxes].find(r => r.value === this.value);
+            if (matchingRow) matchingRow.checked = this.checked;
+            updateSelection();
+        });
+    });
+    
+    window.submitBulkAction = function(action) {
+        const selectedIds = selectedIdsInput.value;
+        if (!selectedIds) {
+            alert('Please select at least one invoice.');
+            return;
+        }
+        
+        if (action === 'delete') {
+            if (!confirm('Are you sure you want to delete the selected invoices? This cannot be undone.')) {
+                return;
+            }
+        }
+        
+        document.getElementById('bulkActionType').value = action;
+        document.getElementById('bulkActionForm').submit();
+    };
+    
+    window.exportSelected = function() {
+        const selectedIds = selectedIdsInput.value;
+        if (!selectedIds) {
+            alert('Please select at least one invoice to export.');
+            return;
+        }
+        window.location.href = "{% url 'export_invoices_csv' %}?ids=" + selectedIds;
+    };
+    
+    window.clearSelection = function() {
+        rowCheckboxes.forEach(cb => cb.checked = false);
+        mobileCheckboxes.forEach(cb => cb.checked = false);
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        updateSelection();
+    };
+    
+    const exportBtn = document.getElementById('exportAllBtn');
+    const exportMenu = document.getElementById('exportMenu');
+    
+    if (exportBtn && exportMenu) {
+        exportBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            exportMenu.classList.toggle('show');
+        });
+        
+        document.addEventListener('click', function() {
+            exportMenu.classList.remove('show');
         });
     }
 });

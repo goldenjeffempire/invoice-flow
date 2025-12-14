@@ -479,36 +479,44 @@ def invoice_list(request):
 def bulk_invoice_action(request):
     """Handle bulk actions on invoices (mark paid, mark unpaid, delete, export)."""
     if request.method != "POST":
-        return JsonResponse({"error": "Method not allowed"}, status=405)
+        messages.error(request, "Invalid request method.")
+        return redirect("invoice_list")
 
     try:
-        data = json.loads(request.body)
-        invoice_ids = data.get("invoice_ids", [])
-        action = data.get("action", "")
+        invoice_ids_str = request.POST.get("invoice_ids", "")
+        action = request.POST.get("action", "")
+
+        if not invoice_ids_str:
+            messages.error(request, "No invoices selected.")
+            return redirect("invoice_list")
+
+        invoice_ids = [int(id.strip()) for id in invoice_ids_str.split(",") if id.strip()]
 
         if not invoice_ids:
-            return JsonResponse({"error": "No invoices selected"}, status=400)
+            messages.error(request, "No invoices selected.")
+            return redirect("invoice_list")
 
         invoices = Invoice.objects.filter(id__in=invoice_ids, user=request.user)
 
         if action == "mark_paid":
             count = invoices.update(status="paid")
-            return JsonResponse({"success": True, "message": f"{count} invoice(s) marked as paid"})
+            messages.success(request, f"{count} invoice(s) marked as paid.")
         elif action == "mark_unpaid":
             count = invoices.update(status="unpaid")
-            return JsonResponse({"success": True, "message": f"{count} invoice(s) marked as unpaid"})
+            messages.success(request, f"{count} invoice(s) marked as unpaid.")
         elif action == "delete":
             count = invoices.count()
             invoices.delete()
             from invoices.services import AnalyticsService
             AnalyticsService.invalidate_user_cache(request.user.id)
-            return JsonResponse({"success": True, "message": f"{count} invoice(s) deleted"})
+            messages.success(request, f"{count} invoice(s) deleted.")
         else:
-            return JsonResponse({"error": "Invalid action"}, status=400)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+            messages.error(request, "Invalid action.")
+
+        return redirect("invoice_list")
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        messages.error(request, f"An error occurred: {str(e)}")
+        return redirect("invoice_list")
 
 
 @login_required
@@ -622,6 +630,67 @@ def delete_invoice(request, invoice_id):
         messages.success(request, "Invoice deleted successfully!")
         return redirect("dashboard")
     return render(request, "invoices/delete_invoice.html", {"invoice": invoice})
+
+
+@login_required
+def duplicate_invoice(request, invoice_id):
+    """Duplicate an existing invoice with a new invoice ID."""
+    from invoices.services import InvoiceService
+    
+    original = get_object_or_404(
+        Invoice.objects.prefetch_related("line_items"), id=invoice_id, user=request.user
+    )
+    
+    line_items_data = [
+        {
+            "description": item.description,
+            "quantity": item.quantity,
+            "unit_price": float(item.unit_price),
+        }
+        for item in original.line_items.all()
+    ]
+    
+    from datetime import date, timedelta
+    today = date.today()
+    due_date = today + timedelta(days=30)
+    
+    invoice_data = {
+        "business_name": original.business_name,
+        "business_email": original.business_email or "",
+        "business_phone": original.business_phone or "",
+        "business_address": original.business_address or "",
+        "client_name": original.client_name,
+        "client_email": original.client_email or "",
+        "client_phone": original.client_phone or "",
+        "client_address": original.client_address or "",
+        "invoice_date": today.strftime("%Y-%m-%d"),
+        "due_date": due_date.strftime("%Y-%m-%d"),
+        "currency": original.currency,
+        "tax_rate": str(original.tax_rate),
+        "notes": original.notes or "",
+    }
+    
+    class DictWrapper:
+        def __init__(self, data):
+            self._data = data
+        def get(self, key, default=None):
+            return self._data.get(key, default)
+        def __getitem__(self, key):
+            return self._data[key]
+    
+    new_invoice, _ = InvoiceService.create_invoice(
+        user=request.user,
+        invoice_data=DictWrapper(invoice_data),
+        files_data={},
+        line_items_data=line_items_data,
+    )
+    
+    if new_invoice:
+        messages.success(request, f"Invoice duplicated! New invoice: {new_invoice.invoice_id}")
+        return redirect("edit_invoice", invoice_id=new_invoice.id)
+    else:
+        messages.error(request, "Failed to duplicate invoice. Please try again.")
+        return redirect("invoice_detail", invoice_id=invoice_id)
 
 
 @login_required
@@ -1757,4 +1826,79 @@ def service_worker(request):
     response = HttpResponse(content, content_type="application/javascript; charset=utf-8")
     response["Service-Worker-Allowed"] = "/"
     response["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
+
+
+@login_required
+def export_invoices_csv(request):
+    """Export invoices to CSV format."""
+    import csv
+    from django.utils import timezone
+    
+    ids_param = request.GET.get("ids", "")
+    status_filter = request.GET.get("status", "all")
+    search_query = request.GET.get("search", "")
+    
+    invoices = Invoice.objects.filter(user=request.user).prefetch_related("line_items")
+    
+    if ids_param:
+        invoice_ids = [int(id.strip()) for id in ids_param.split(",") if id.strip()]
+        invoices = invoices.filter(id__in=invoice_ids)
+    else:
+        if status_filter and status_filter != "all":
+            if status_filter == "overdue":
+                invoices = invoices.filter(status="unpaid", due_date__lt=timezone.now().date())
+            else:
+                invoices = invoices.filter(status=status_filter)
+        
+        if search_query:
+            invoices = invoices.filter(
+                Q(invoice_id__icontains=search_query) |
+                Q(client_name__icontains=search_query) |
+                Q(client_email__icontains=search_query)
+            )
+    
+    invoices = invoices.order_by("-created_at")
+    
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="invoices_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        "Invoice ID",
+        "Client Name",
+        "Client Email",
+        "Client Phone",
+        "Invoice Date",
+        "Due Date",
+        "Currency",
+        "Subtotal",
+        "Tax Rate",
+        "Tax Amount",
+        "Total",
+        "Status",
+        "Created At",
+        "Business Name",
+        "Notes"
+    ])
+    
+    for invoice in invoices:
+        writer.writerow([
+            invoice.invoice_id,
+            invoice.client_name,
+            invoice.client_email or "",
+            invoice.client_phone or "",
+            invoice.invoice_date.strftime("%Y-%m-%d") if invoice.invoice_date else "",
+            invoice.due_date.strftime("%Y-%m-%d") if invoice.due_date else "",
+            invoice.currency,
+            str(invoice.subtotal),
+            str(invoice.tax_rate),
+            str(invoice.tax_amount),
+            str(invoice.total),
+            invoice.status,
+            invoice.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            invoice.business_name or "",
+            invoice.notes or ""
+        ])
+    
     return response

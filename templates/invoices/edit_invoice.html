@@ -397,11 +397,13 @@
                     </div>
                     <div class="form-light-group">
                         <label class="form-light-label">Currency</label>
-                        <select name="currency" class="form-light-select">
-                            <option value="USD" {% if invoice.currency == 'USD' %}selected{% endif %}>USD ($)</option>
-                            <option value="EUR" {% if invoice.currency == 'EUR' %}selected{% endif %}>EUR (&euro;)</option>
-                            <option value="GBP" {% if invoice.currency == 'GBP' %}selected{% endif %}>GBP (&pound;)</option>
-                            <option value="NGN" {% if invoice.currency == 'NGN' %}selected{% endif %}>NGN (&#8358;)</option>
+                        <select name="currency" id="currency-select" class="form-light-select">
+                            <option value="USD" data-symbol="$" {% if invoice.currency == 'USD' %}selected{% endif %}>USD ($)</option>
+                            <option value="EUR" data-symbol="€" {% if invoice.currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                            <option value="GBP" data-symbol="£" {% if invoice.currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
+                            <option value="CAD" data-symbol="C$" {% if invoice.currency == 'CAD' %}selected{% endif %}>CAD (C$)</option>
+                            <option value="AUD" data-symbol="A$" {% if invoice.currency == 'AUD' %}selected{% endif %}>AUD (A$)</option>
+                            <option value="NGN" data-symbol="₦" {% if invoice.currency == 'NGN' %}selected{% endif %}>NGN (₦)</option>
                         </select>
                     </div>
                 </div>
@@ -513,20 +515,38 @@ document.addEventListener('DOMContentLoaded', function() {
     const addItemBtn = document.getElementById('add-line-item');
     const lineItemsData = document.getElementById('line_items_data');
     const taxRateInput = document.getElementById('tax_rate');
+    const currencySelect = document.getElementById('currency-select');
+    const invoiceForm = document.getElementById('invoice-form');
+    
+    const currencySymbols = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'CAD': 'C$',
+        'AUD': 'A$',
+        'NGN': '₦'
+    };
+    
+    function getCurrentCurrencySymbol() {
+        const selected = currencySelect.options[currencySelect.selectedIndex];
+        return selected.dataset.symbol || '$';
+    }
     
     function formatCurrency(amount) {
-        return '$' + parseFloat(amount || 0).toFixed(2);
+        const symbol = getCurrentCurrencySymbol();
+        return symbol + parseFloat(amount || 0).toFixed(2);
     }
     
     function createLineItem(id, data = {}) {
         const div = document.createElement('div');
         div.className = 'line-item-light';
         div.dataset.id = id;
+        const symbol = getCurrentCurrencySymbol();
         div.innerHTML = `
             <input type="text" placeholder="Item description" class="item-description" value="${data.description || ''}" required>
             <input type="number" placeholder="1" value="${data.quantity || 1}" min="1" class="item-quantity">
             <input type="number" placeholder="0.00" step="0.01" min="0" value="${data.unit_price || ''}" class="item-price">
-            <span class="item-total">$0.00</span>
+            <span class="item-total">${symbol}0.00</span>
             <button type="button" class="remove-item-btn" onclick="removeItem(${id})">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>
@@ -606,6 +626,60 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     taxRateInput.addEventListener('input', updateTotals);
+    
+    currencySelect.addEventListener('change', function() {
+        const items = lineItemsList.querySelectorAll('.line-item-light');
+        items.forEach(item => updateItemTotal(item));
+        updateTotals();
+    });
+    
+    invoiceForm.addEventListener('submit', function(e) {
+        const businessName = document.querySelector('input[name="business_name"]').value.trim();
+        const clientName = document.querySelector('input[name="client_name"]').value.trim();
+        const invoiceDate = document.querySelector('input[name="invoice_date"]').value;
+        const dueDate = document.querySelector('input[name="due_date"]').value;
+        
+        let errors = [];
+        
+        if (!businessName) {
+            errors.push('Business name is required');
+        }
+        if (!clientName) {
+            errors.push('Client name is required');
+        }
+        if (!invoiceDate) {
+            errors.push('Invoice date is required');
+        }
+        if (!dueDate) {
+            errors.push('Due date is required');
+        }
+        if (invoiceDate && dueDate && new Date(dueDate) < new Date(invoiceDate)) {
+            errors.push('Due date cannot be before invoice date');
+        }
+        
+        const lineItemDivs = lineItemsList.querySelectorAll('.line-item-light');
+        let hasValidItem = false;
+        lineItemDivs.forEach(div => {
+            const desc = div.querySelector('.item-description').value.trim();
+            const qty = parseFloat(div.querySelector('.item-quantity').value) || 0;
+            const price = parseFloat(div.querySelector('.item-price').value) || 0;
+            if (desc && qty > 0 && price > 0) {
+                hasValidItem = true;
+            }
+        });
+        
+        if (!hasValidItem) {
+            errors.push('At least one line item with description, quantity, and price is required');
+        }
+        
+        if (errors.length > 0) {
+            e.preventDefault();
+            alert('Please fix the following errors:\n\n' + errors.join('\n'));
+            return false;
+        }
+        
+        saveLineItems();
+    });
     
     const existingItems = document.getElementById('existing-line-items');
     if (existingItems) {
