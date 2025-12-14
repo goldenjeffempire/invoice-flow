@@ -209,14 +209,39 @@ The authentication system has been completely rebuilt with a modern, enterprise-
 - `static/css/auth.css` - Comprehensive auth styling (1600+ lines)
 - `static/js/modules/auth-validation.js` - Real-time form validation
 
+## Production Configuration (December 2025)
+
+### Management Commands
+- `python manage.py test_email --check-only` - Validate SendGrid configuration
+- `python manage.py test_email --to=email@example.com` - Send test email
+- `python manage.py test_payments` - Validate Paystack API connectivity
+- `python manage.py test_sentry` - Check Sentry error monitoring
+- `python manage.py health_check` - Comprehensive system health check
+
+### Environment Variables (Required)
+- `SECRET_KEY` - Django secret key (production-safe)
+- `DATABASE_URL` - PostgreSQL connection URL
+- `SENDGRID_API_KEY` - SendGrid API key for emails
+- `SENDGRID_FROM_EMAIL` - Verified sender email
+- `PAYSTACK_SECRET_KEY` - Paystack secret key
+- `PAYSTACK_PUBLIC_KEY` - Paystack public key
+- `SENTRY_DSN` - Sentry error tracking DSN
+- `ENCRYPTION_SALT` - Field-level encryption salt
+- `PRODUCTION=true` - Enable production mode
+
+### Deployment
+- **Target**: Autoscale deployment on Replit
+- **Build**: `python manage.py collectstatic --noinput`
+- **Run**: `gunicorn --bind=0.0.0.0:5000 --workers=2 --threads=4 --worker-class=gthread --timeout=120 invoiceflow.wsgi:application`
+
 ## External Dependencies
 - **Database**: PostgreSQL
 - **Web Server**: Gunicorn
 - **Static Files Serving**: WhiteNoise
-- **Email Service**: SendGrid
+- **Email Service**: SendGrid (configured and tested)
 - **PDF Generation**: WeasyPrint
-- **Payment Processing**: Paystack (optional)
-- **Error Tracking**: Sentry (optional)
+- **Payment Processing**: Paystack (configured and tested)
+- **Error Tracking**: Sentry (configured)
 - **Frontend Frameworks/Libraries**: Tailwind CSS, PostCSS, Node.js (for asset compilation)
 
 ## File Structure (Key Additions)

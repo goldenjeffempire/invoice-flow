@@ -40,7 +40,7 @@ externalPort = 80
 [userenv.shared]
 SENDGRID_FROM_EMAIL = "noreply@invoiceflow.com.ng"
 SECRET_KEY = "P-xsqzlcYttOpntIDZTUkRkcE1YDsu6H9z1zcj1-woUtnppOPr2Ht-lJn4UTTqvu3eo"
-DEBUG = "True"
+DEBUG = "False"
 ALLOWED_HOSTS = "*.replit.dev,*.repl.co,localhost,127.0.0.1,invoice.com.ng,www.invoice.com.ng,invoiceflow.com.ng,www.invoiceflow.com.ng"
 ENCRYPTION_SALT = "d23404b518e957b03bc7f23e1ee79de5b964e9feedc2ccdb1a4d4aa010275d15"
 PRODUCTION = "true"
@@ -51,5 +51,5 @@ PRODUCTION = "true"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["python3.12", "-m", "gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "--timeout=120", "invoiceflow.wsgi:application"]
-build = ["python3.12", "manage.py", "collectstatic", "--noinput"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "--threads=4", "--worker-class=gthread", "--timeout=120", "invoiceflow.wsgi:application"]
+build = ["python", "manage.py", "collectstatic", "--noinput"]
