@@ -286,79 +286,206 @@
     margin-top: 16px;
 }
 
-.line-items-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+.line-items-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--light-border-primary);
 }
 
-.line-items-table thead {
+.line-items-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    color: var(--light-text-secondary);
+}
+
+.line-items-count .count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    background: var(--light-primary-light);
+    color: var(--light-primary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    border-radius: 12px;
+}
+
+.line-items-shortcuts {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shortcut-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--light-text-muted);
+}
+
+.shortcut-key {
+    padding: 2px 6px;
     background: var(--light-bg-tertiary);
+    border: 1px solid var(--light-border-primary);
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.6875rem;
 }
 
-.line-items-table th {
-    padding: 12px 16px;
+.line-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.line-item-card {
+    position: relative;
+    background: var(--light-bg-secondary);
+    border: 1px solid var(--light-border-primary);
+    border-radius: var(--light-radius-xl);
+    padding: 20px;
+    transition: all 0.2s ease;
+    animation: slideIn 0.25s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.line-item-card.removing {
+    animation: slideOut 0.2s ease-in forwards;
+}
+
+@keyframes slideOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+        height: 0;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+    }
+}
+
+.line-item-card:hover {
+    border-color: var(--light-primary-light);
+    box-shadow: var(--light-shadow-sm);
+}
+
+.line-item-card:focus-within {
+    border-color: var(--light-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.line-item-card.has-error {
+    border-color: var(--light-danger);
+    background: rgba(239, 68, 68, 0.02);
+}
+
+.line-item-card.has-error:focus-within {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.line-item-number {
+    position: absolute;
+    top: -8px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: var(--light-primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 50%;
+    box-shadow: var(--light-shadow-sm);
+}
+
+.line-item-main {
+    display: grid;
+    grid-template-columns: 1fr 120px 140px 120px;
+    gap: 16px;
+    align-items: end;
+}
+
+.line-item-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.line-item-field.description-field {
+    grid-column: 1;
+}
+
+.line-item-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--light-text-tertiary);
-    text-align: left;
-    border-bottom: 1px solid var(--light-border-primary);
 }
 
-.line-items-table th:first-child {
-    border-radius: var(--light-radius-lg) 0 0 0;
-}
-
-.line-items-table th:last-child {
-    border-radius: 0 var(--light-radius-lg) 0 0;
-    text-align: center;
-}
-
-.line-items-table th.qty-col,
-.line-items-table th.price-col,
-.line-items-table th.total-col {
-    text-align: right;
-}
-
-.line-item-row {
-    position: relative;
-    transition: background-color 0.15s ease;
-}
-
-.line-item-row:hover {
-    background: var(--light-bg-hover);
-}
-
-.line-item-row td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--light-border-primary);
-    vertical-align: middle;
-}
-
-.line-item-row:last-child td:first-child {
-    border-radius: 0 0 0 var(--light-radius-lg);
-}
-
-.line-item-row:last-child td:last-child {
-    border-radius: 0 0 var(--light-radius-lg) 0;
+.line-item-label .required-dot {
+    width: 4px;
+    height: 4px;
+    background: var(--light-danger);
+    border-radius: 50%;
 }
 
 .item-input {
     width: 100%;
-    padding: 10px 12px;
-    font-size: 0.875rem;
-    background: var(--light-bg-secondary);
+    padding: 12px 14px;
+    font-size: 0.9375rem;
+    color: var(--light-text-primary);
+    background: var(--light-bg-tertiary);
     border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-md);
+    border-radius: var(--light-radius-lg);
     transition: all 0.15s ease;
 }
 
 .item-input:focus {
     outline: none;
+    background: var(--light-bg-secondary);
     border-color: var(--light-primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.item-input::placeholder {
+    color: var(--light-text-muted);
+}
+
+.item-input.has-error {
+    border-color: var(--light-danger);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.item-input.has-error:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
 
 .item-input.description-input {
@@ -366,61 +493,121 @@
 }
 
 .item-input.number-input {
-    width: 100px;
     text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
-.price-input-cell {
+.price-input-wrapper {
     position: relative;
 }
 
 .currency-prefix {
     position: absolute;
-    left: 12px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
     font-size: 0.875rem;
+    font-weight: 500;
     color: var(--light-text-tertiary);
     pointer-events: none;
+    z-index: 1;
 }
 
-.price-input-cell .item-input {
-    padding-left: 28px;
-    width: 120px;
+.price-input-wrapper .item-input {
+    padding-left: 32px;
+}
+
+.line-item-total-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 0;
+}
+
+.line-item-total-label {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--light-text-muted);
 }
 
 .line-total {
-    font-weight: 600;
+    font-size: 1.125rem;
+    font-weight: 700;
     color: var(--light-text-primary);
-    text-align: right;
-    min-width: 100px;
-    font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+    transition: all 0.2s ease;
 }
 
-.remove-btn {
+.line-total.updated {
+    color: var(--light-primary);
+    transform: scale(1.05);
+}
+
+.line-item-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--light-border-primary);
+}
+
+.item-action-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    gap: 6px;
+    padding: 8px 12px;
     background: transparent;
-    border: 1px solid transparent;
+    border: 1px solid var(--light-border-primary);
     border-radius: var(--light-radius-md);
-    color: var(--light-text-muted);
+    color: var(--light-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.15s ease;
-    margin: 0 auto;
 }
 
-.remove-btn:hover {
+.item-action-btn:hover {
+    background: var(--light-bg-tertiary);
+    border-color: var(--light-border-secondary);
+    color: var(--light-text-primary);
+}
+
+.item-action-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.item-action-btn.duplicate-btn:hover {
+    background: var(--light-primary-light);
+    border-color: var(--light-primary);
+    color: var(--light-primary);
+}
+
+.item-action-btn.remove-btn:hover {
     background: var(--light-danger-light);
     border-color: var(--light-danger);
     color: var(--light-danger);
 }
 
-.remove-btn svg {
-    width: 18px;
-    height: 18px;
+.item-action-btn.move-btn:hover {
+    background: var(--light-bg-hover);
+}
+
+.field-error-message {
+    font-size: 0.75rem;
+    color: var(--light-danger);
+    margin-top: 4px;
+    display: none;
+}
+
+.field-error-message.show {
+    display: block;
 }
 
 .add-item-row {
@@ -433,10 +620,10 @@
     justify-content: center;
     gap: 10px;
     width: 100%;
-    padding: 16px;
+    padding: 20px;
     background: var(--light-bg-tertiary);
     border: 2px dashed var(--light-border-secondary);
-    border-radius: var(--light-radius-lg);
+    border-radius: var(--light-radius-xl);
     color: var(--light-text-secondary);
     font-size: 0.9375rem;
     font-weight: 500;
@@ -448,6 +635,11 @@
     background: var(--light-primary-light);
     border-color: var(--light-primary);
     color: var(--light-primary);
+    transform: translateY(-1px);
+}
+
+.add-item-btn:active {
+    transform: translateY(0);
 }
 
 .add-item-btn svg {
@@ -459,10 +651,43 @@
     font-size: 0.75rem;
     color: var(--light-text-muted);
     margin-left: 8px;
-    padding: 2px 8px;
+    padding: 3px 10px;
     background: var(--light-bg-secondary);
-    border-radius: 4px;
+    border-radius: 6px;
     border: 1px solid var(--light-border-primary);
+}
+
+.items-running-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--light-primary-light) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border: 1px solid var(--light-primary-light);
+    border-radius: var(--light-radius-lg);
+    margin-top: 20px;
+}
+
+.items-running-total .label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--light-text-secondary);
+}
+
+.items-running-total .label svg {
+    width: 18px;
+    height: 18px;
+    color: var(--light-primary);
+}
+
+.items-running-total .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--light-primary);
+    font-variant-numeric: tabular-nums;
 }
 
 .totals-panel {
@@ -692,64 +917,76 @@
     color: var(--light-danger);
 }
 
+@media (max-width: 992px) {
+    .line-item-main {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .line-item-field.description-field {
+        grid-column: 1 / -1;
+    }
+    
+    .line-item-total-display {
+        align-items: flex-start;
+    }
+}
+
 @media (max-width: 768px) {
-    .line-items-table thead {
-        display: none;
-    }
-    
-    .line-items-table,
-    .line-items-table tbody,
-    .line-items-table tr,
-    .line-items-table td {
-        display: block;
-    }
-    
-    .line-item-row {
-        background: var(--light-bg-secondary);
-        border: 1px solid var(--light-border-primary);
-        border-radius: var(--light-radius-lg);
-        margin-bottom: 12px;
-        padding: 16px;
-    }
-    
-    .line-item-row td {
-        padding: 8px 0;
-        border: none;
-        display: flex;
+    .line-items-header {
         flex-direction: column;
-        gap: 6px;
+        align-items: flex-start;
+        gap: 12px;
     }
     
-    .line-item-row td::before {
-        content: attr(data-label);
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--light-text-tertiary);
-    }
-    
-    .line-item-row td.actions-cell {
-        flex-direction: row;
-        justify-content: flex-end;
-        padding-top: 12px;
-        border-top: 1px solid var(--light-border-primary);
-        margin-top: 8px;
-    }
-    
-    .line-item-row td.actions-cell::before {
+    .line-items-shortcuts {
         display: none;
     }
     
-    .item-input.description-input,
-    .item-input.number-input,
-    .price-input-cell .item-input {
-        width: 100%;
+    .line-item-main {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .line-item-field.description-field {
+        grid-column: 1;
+    }
+    
+    .line-item-card {
+        padding: 24px 16px 16px;
+    }
+    
+    .line-item-total-display {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: var(--light-bg-tertiary);
+        border-radius: var(--light-radius-md);
+        margin-top: 4px;
+    }
+    
+    .line-item-total-label {
+        font-size: 0.75rem;
     }
     
     .line-total {
-        text-align: left;
-        font-size: 1rem;
+        font-size: 1.25rem;
+    }
+    
+    .line-item-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .item-action-btn {
+        flex: 1;
+        min-width: 80px;
+        justify-content: center;
+    }
+    
+    .item-action-btn span {
+        display: none;
     }
     
     .totals-panel {
@@ -764,6 +1001,12 @@
     .invoice-header-actions {
         width: 100%;
         justify-content: flex-end;
+    }
+    
+    .items-running-total {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
 }
 
@@ -1022,18 +1265,24 @@
                     </div>
                     <div class="form-section-body">
                         <div class="line-items-section">
-                            <table class="line-items-table">
-                                <thead>
-                                    <tr>
-                                        <th>Description</th>
-                                        <th class="qty-col">Qty</th>
-                                        <th class="price-col">Unit Price</th>
-                                        <th class="total-col">Total</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="line-items-body"></tbody>
-                            </table>
+                            <div class="line-items-header">
+                                <div class="line-items-count">
+                                    <span>Items</span>
+                                    <span class="count-badge" id="items-count">0</span>
+                                </div>
+                                <div class="line-items-shortcuts">
+                                    <div class="shortcut-hint">
+                                        <span class="shortcut-key">Enter</span>
+                                        <span>Next item</span>
+                                    </div>
+                                    <div class="shortcut-hint">
+                                        <span class="shortcut-key">Ctrl</span>+<span class="shortcut-key">D</span>
+                                        <span>Duplicate</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="line-items-container" id="line-items-container"></div>
                             
                             <div class="add-item-row">
                                 <button type="button" id="add-line-item" class="add-item-btn">
@@ -1043,8 +1292,19 @@
                                         <line x1="8" y1="12" x2="16" y2="12"/>
                                     </svg>
                                     Add Line Item
-                                    <span class="keyboard-hint">Tab + Enter</span>
+                                    <span class="keyboard-hint">Enter to add more</span>
                                 </button>
+                            </div>
+                            
+                            <div class="items-running-total">
+                                <div class="label">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                        <line x1="1" y1="10" x2="23" y2="10"/>
+                                    </svg>
+                                    <span>Items Subtotal</span>
+                                </div>
+                                <div class="value" id="items-subtotal">$0.00</div>
                             </div>
                         </div>
                         
@@ -1123,7 +1383,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let itemId = 0;
     const DRAFT_KEY = 'invoiceflow_draft_invoice';
     
-    const lineItemsBody = document.getElementById('line-items-body');
+    const lineItemsContainer = document.getElementById('line-items-container');
     const addItemBtn = document.getElementById('add-line-item');
     const lineItemsData = document.getElementById('line_items_data');
     const taxRateInput = document.getElementById('tax_rate');
@@ -1134,6 +1394,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearDraftBtn = document.getElementById('clear-draft-btn');
     const validationAlert = document.getElementById('validation-alert');
     const validationList = document.getElementById('validation-list');
+    const itemsCountBadge = document.getElementById('items-count');
+    const itemsSubtotalDisplay = document.getElementById('items-subtotal');
     
     const currencySymbols = {
         'USD': '$',
@@ -1159,108 +1421,283 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
     
+    function getItemNumber() {
+        return lineItemsContainer.querySelectorAll('.line-item-card').length + 1;
+    }
+    
+    function updateItemNumbers() {
+        const cards = lineItemsContainer.querySelectorAll('.line-item-card');
+        cards.forEach((card, index) => {
+            const numberEl = card.querySelector('.line-item-number');
+            if (numberEl) {
+                numberEl.textContent = index + 1;
+            }
+        });
+        itemsCountBadge.textContent = cards.length;
+    }
+    
     function createLineItem(id, data = {}) {
-        const row = document.createElement('tr');
-        row.className = 'line-item-row';
-        row.dataset.id = id;
-        row.innerHTML = `
-            <td data-label="Description">
-                <input type="text" placeholder="Enter description..." class="item-input description-input" value="${escapeHtml(data.description || '')}" required>
-            </td>
-            <td data-label="Quantity">
-                <input type="number" placeholder="1" value="${data.quantity || 1}" min="0.01" step="0.01" class="item-input number-input qty-input">
-            </td>
-            <td data-label="Unit Price" class="price-input-cell">
-                <span class="currency-prefix">${getCurrencySymbol()}</span>
-                <input type="number" placeholder="0.00" step="0.01" min="0" value="${data.unit_price || ''}" class="item-input number-input price-input">
-            </td>
-            <td data-label="Total">
-                <span class="line-total">${formatCurrency(0)}</span>
-            </td>
-            <td class="actions-cell">
-                <button type="button" class="remove-btn" title="Remove item">
+        const card = document.createElement('div');
+        card.className = 'line-item-card';
+        card.dataset.id = id;
+        const itemNum = getItemNumber();
+        
+        card.innerHTML = `
+            <div class="line-item-number">${itemNum}</div>
+            <div class="line-item-main">
+                <div class="line-item-field description-field">
+                    <label class="line-item-label">
+                        <span class="required-dot"></span>
+                        Description
+                    </label>
+                    <input type="text" 
+                           placeholder="What are you billing for?" 
+                           class="item-input description-input" 
+                           value="${escapeHtml(data.description || '')}"
+                           aria-label="Item description">
+                    <div class="field-error-message" data-field="description">Description is required</div>
+                </div>
+                <div class="line-item-field">
+                    <label class="line-item-label">
+                        <span class="required-dot"></span>
+                        Quantity
+                    </label>
+                    <input type="number" 
+                           placeholder="1" 
+                           value="${data.quantity || 1}" 
+                           min="0.01" 
+                           step="0.01" 
+                           class="item-input number-input qty-input"
+                           aria-label="Quantity">
+                    <div class="field-error-message" data-field="quantity">Must be greater than 0</div>
+                </div>
+                <div class="line-item-field">
+                    <label class="line-item-label">Unit Price</label>
+                    <div class="price-input-wrapper">
+                        <span class="currency-prefix">${getCurrencySymbol()}</span>
+                        <input type="number" 
+                               placeholder="0.00" 
+                               step="0.01" 
+                               min="0" 
+                               value="${data.unit_price || ''}" 
+                               class="item-input number-input price-input"
+                               aria-label="Unit price">
+                    </div>
+                </div>
+                <div class="line-item-total-display">
+                    <span class="line-item-total-label">Line Total</span>
+                    <span class="line-total">${formatCurrency(0)}</span>
+                </div>
+            </div>
+            <div class="line-item-actions">
+                <button type="button" class="item-action-btn move-btn move-up-btn" title="Move up">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
+                        <polyline points="18 15 12 9 6 15"/>
                     </svg>
+                    <span>Up</span>
                 </button>
-            </td>
+                <button type="button" class="item-action-btn move-btn move-down-btn" title="Move down">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                    <span>Down</span>
+                </button>
+                <button type="button" class="item-action-btn duplicate-btn" title="Duplicate item (Ctrl+D)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span>Duplicate</span>
+                </button>
+                <button type="button" class="item-action-btn remove-btn" title="Remove item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <line x1="10" y1="11" x2="10" y2="17"/>
+                        <line x1="14" y1="11" x2="14" y2="17"/>
+                    </svg>
+                    <span>Remove</span>
+                </button>
+            </div>
         `;
         
-        const inputs = row.querySelectorAll('input');
+        const inputs = card.querySelectorAll('input');
         inputs.forEach(input => {
             input.addEventListener('input', () => {
-                updateItemTotal(row);
+                updateItemTotal(card);
                 updateTotals();
                 scheduleDraftSave();
+                validateField(input);
+            });
+            
+            input.addEventListener('blur', () => {
+                validateField(input);
             });
             
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    const allRows = lineItemsBody.querySelectorAll('.line-item-row');
-                    const currentIndex = Array.from(allRows).indexOf(row);
+                    const allCards = lineItemsContainer.querySelectorAll('.line-item-card');
+                    const currentIndex = Array.from(allCards).indexOf(card);
                     
-                    if (currentIndex === allRows.length - 1) {
+                    if (currentIndex === allCards.length - 1) {
                         addNewItem();
                     } else {
-                        const nextRow = allRows[currentIndex + 1];
-                        if (nextRow) {
-                            nextRow.querySelector('.description-input').focus();
+                        const nextCard = allCards[currentIndex + 1];
+                        if (nextCard) {
+                            nextCard.querySelector('.description-input').focus();
                         }
                     }
+                }
+                
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    duplicateItem(id);
                 }
             });
         });
         
-        const removeBtn = row.querySelector('.remove-btn');
+        const removeBtn = card.querySelector('.remove-btn');
         removeBtn.addEventListener('click', () => removeItem(id));
         
-        return row;
+        const duplicateBtn = card.querySelector('.duplicate-btn');
+        duplicateBtn.addEventListener('click', () => duplicateItem(id));
+        
+        const moveUpBtn = card.querySelector('.move-up-btn');
+        moveUpBtn.addEventListener('click', () => moveItem(id, 'up'));
+        
+        const moveDownBtn = card.querySelector('.move-down-btn');
+        moveDownBtn.addEventListener('click', () => moveItem(id, 'down'));
+        
+        return card;
+    }
+    
+    function validateField(input) {
+        const card = input.closest('.line-item-card');
+        let hasError = false;
+        
+        if (input.classList.contains('description-input')) {
+            const errorEl = card.querySelector('.field-error-message[data-field="description"]');
+            if (!input.value.trim()) {
+                input.classList.add('has-error');
+                errorEl.classList.add('show');
+                hasError = true;
+            } else {
+                input.classList.remove('has-error');
+                errorEl.classList.remove('show');
+            }
+        }
+        
+        if (input.classList.contains('qty-input')) {
+            const errorEl = card.querySelector('.field-error-message[data-field="quantity"]');
+            const qty = parseFloat(input.value) || 0;
+            if (qty <= 0) {
+                input.classList.add('has-error');
+                errorEl.classList.add('show');
+                hasError = true;
+            } else {
+                input.classList.remove('has-error');
+                errorEl.classList.remove('show');
+            }
+        }
+        
+        const hasAnyError = card.querySelectorAll('.item-input.has-error').length > 0;
+        card.classList.toggle('has-error', hasAnyError);
+        
+        return !hasError;
     }
     
     function addNewItem(data = {}) {
-        const row = createLineItem(itemId++, data);
-        lineItemsBody.appendChild(row);
+        const card = createLineItem(itemId++, data);
+        lineItemsContainer.appendChild(card);
+        updateItemNumbers();
         if (!data.description) {
-            row.querySelector('.description-input').focus();
+            card.querySelector('.description-input').focus();
         }
-        updateItemTotal(row);
+        updateItemTotal(card);
+        updateTotals();
         scheduleDraftSave();
-        return row;
+        return card;
+    }
+    
+    function duplicateItem(id) {
+        const card = lineItemsContainer.querySelector(`[data-id="${id}"]`);
+        if (!card) return;
+        
+        const data = {
+            description: card.querySelector('.description-input').value,
+            quantity: card.querySelector('.qty-input').value,
+            unit_price: card.querySelector('.price-input').value
+        };
+        
+        const newCard = createLineItem(itemId++, data);
+        card.after(newCard);
+        updateItemNumbers();
+        updateItemTotal(newCard);
+        updateTotals();
+        scheduleDraftSave();
+        
+        newCard.querySelector('.description-input').focus();
+        newCard.querySelector('.description-input').select();
+    }
+    
+    function moveItem(id, direction) {
+        const card = lineItemsContainer.querySelector(`[data-id="${id}"]`);
+        if (!card) return;
+        
+        if (direction === 'up' && card.previousElementSibling) {
+            card.parentNode.insertBefore(card, card.previousElementSibling);
+        } else if (direction === 'down' && card.nextElementSibling) {
+            card.parentNode.insertBefore(card.nextElementSibling, card);
+        }
+        
+        updateItemNumbers();
+        saveLineItems();
+        scheduleDraftSave();
     }
     
     function removeItem(id) {
-        const row = lineItemsBody.querySelector(`[data-id="${id}"]`);
-        const allRows = lineItemsBody.querySelectorAll('.line-item-row');
+        const card = lineItemsContainer.querySelector(`[data-id="${id}"]`);
+        const allCards = lineItemsContainer.querySelectorAll('.line-item-card');
         
-        if (allRows.length === 1) {
-            row.querySelector('.description-input').value = '';
-            row.querySelector('.qty-input').value = '1';
-            row.querySelector('.price-input').value = '';
-            updateItemTotal(row);
+        if (allCards.length === 1) {
+            card.querySelector('.description-input').value = '';
+            card.querySelector('.qty-input').value = '1';
+            card.querySelector('.price-input').value = '';
+            card.classList.remove('has-error');
+            card.querySelectorAll('.item-input').forEach(inp => inp.classList.remove('has-error'));
+            card.querySelectorAll('.field-error-message').forEach(el => el.classList.remove('show'));
+            updateItemTotal(card);
             updateTotals();
-        } else if (row) {
-            row.remove();
-            updateTotals();
+        } else if (card) {
+            card.classList.add('removing');
+            setTimeout(() => {
+                card.remove();
+                updateItemNumbers();
+                updateTotals();
+            }, 200);
         }
         scheduleDraftSave();
     }
     
-    function updateItemTotal(row) {
-        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
-        const price = parseFloat(row.querySelector('.price-input').value) || 0;
+    function updateItemTotal(card) {
+        const qty = parseFloat(card.querySelector('.qty-input').value) || 0;
+        const price = parseFloat(card.querySelector('.price-input').value) || 0;
         const total = qty * price;
-        row.querySelector('.line-total').textContent = formatCurrency(total);
+        const totalEl = card.querySelector('.line-total');
+        totalEl.textContent = formatCurrency(total);
+        
+        totalEl.classList.add('updated');
+        setTimeout(() => totalEl.classList.remove('updated'), 300);
     }
     
     function updateTotals() {
         let subtotal = 0;
-        const rows = lineItemsBody.querySelectorAll('.line-item-row');
+        const cards = lineItemsContainer.querySelectorAll('.line-item-card');
         
-        rows.forEach(row => {
-            const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
-            const price = parseFloat(row.querySelector('.price-input').value) || 0;
+        cards.forEach(card => {
+            const qty = parseFloat(card.querySelector('.qty-input').value) || 0;
+            const price = parseFloat(card.querySelector('.price-input').value) || 0;
             subtotal += qty * price;
         });
         
@@ -1268,6 +1705,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const taxAmount = subtotal * (taxRate / 100);
         const total = subtotal + taxAmount;
         
+        itemsSubtotalDisplay.textContent = formatCurrency(subtotal);
         document.getElementById('subtotal').textContent = formatCurrency(subtotal);
         document.getElementById('tax-rate-display').textContent = taxRate;
         document.getElementById('tax-amount').textContent = formatCurrency(taxAmount);
@@ -1278,12 +1716,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function saveLineItems() {
         const items = [];
-        const rows = lineItemsBody.querySelectorAll('.line-item-row');
+        const cards = lineItemsContainer.querySelectorAll('.line-item-card');
         
-        rows.forEach(row => {
-            const description = row.querySelector('.description-input').value;
-            const quantity = parseFloat(row.querySelector('.qty-input').value) || 0;
-            const price = parseFloat(row.querySelector('.price-input').value) || 0;
+        cards.forEach(card => {
+            const description = card.querySelector('.description-input').value;
+            const quantity = parseFloat(card.querySelector('.qty-input').value) || 0;
+            const price = parseFloat(card.querySelector('.price-input').value) || 0;
             
             if (description || quantity > 0 || price > 0) {
                 items.push({ description, quantity, unit_price: price });
@@ -1298,8 +1736,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.currency-prefix').forEach(el => {
             el.textContent = symbol;
         });
-        lineItemsBody.querySelectorAll('.line-item-row').forEach(row => {
-            updateItemTotal(row);
+        lineItemsContainer.querySelectorAll('.line-item-card').forEach(card => {
+            updateItemTotal(card);
         });
         updateTotals();
     }
@@ -1342,11 +1780,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         const items = [];
-        lineItemsBody.querySelectorAll('.line-item-row').forEach(row => {
+        lineItemsContainer.querySelectorAll('.line-item-card').forEach(card => {
             items.push({
-                description: row.querySelector('.description-input').value,
-                quantity: row.querySelector('.qty-input').value,
-                unit_price: row.querySelector('.price-input').value
+                description: card.querySelector('.description-input').value,
+                quantity: card.querySelector('.qty-input').value,
+                unit_price: card.querySelector('.price-input').value
             });
         });
         draft.line_items_array = items;
@@ -1475,11 +1913,11 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
         
-        const rows = lineItemsBody.querySelectorAll('.line-item-row');
+        const cards = lineItemsContainer.querySelectorAll('.line-item-card');
         let hasValidItem = false;
-        rows.forEach(row => {
-            const desc = row.querySelector('.description-input').value.trim();
-            const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+        cards.forEach(card => {
+            const desc = card.querySelector('.description-input').value.trim();
+            const qty = parseFloat(card.querySelector('.qty-input').value) || 0;
             if (desc && qty > 0) {
                 hasValidItem = true;
             }
@@ -1538,7 +1976,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setDefaultDates();
     }
     
-    if (lineItemsBody.querySelectorAll('.line-item-row').length === 0) {
+    if (lineItemsContainer.querySelectorAll('.line-item-card').length === 0) {
         addNewItem();
     }
     
