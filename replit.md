@@ -22,6 +22,26 @@ Core features include comprehensive invoice management (create, edit, track, exp
 ### System Design Choices
 The architecture incorporates micro-interactions, robust error handling with user-friendly notifications, and extensive accessibility features (ARIA attributes, keyboard navigation, focus indicators). Deployment is configured for production-ready Gunicorn on Render with autoscale and SSL. Logging is structured JSON, and the platform aims for GDPR compliance. Enterprise-grade authentication includes real-time password strength validation, MFA/2FA with recovery codes, and social login integrations (Google, GitHub). Payment processing is integrated via Paystack, supporting multiple currencies with secure webhook verification.
 
+## Recent Changes (December 2025)
+
+### Create Invoice Page Redesign
+- Completely redesigned with modern UI/UX and table-based line-items workflow
+- Added keyboard navigation (Tab+Enter to add new items)
+- Enhanced mobile responsiveness with card-based layout on mobile
+- Improved draft auto-save functionality and inline validation
+
+### Dashboard Footer Enhancement
+- Modernized with cleaner, more professional design
+- Improved responsiveness across all device sizes
+
+### Landing Page Optimization
+- Removed redundant CTA section to streamline conversion flow
+- Now has single focused call-to-action at end of page
+
+### Platform Cleanup
+- Cleaned up requirements.txt (removed massive duplicates, 265 to 60 lines)
+- Removed unnecessary flow-venv/ directory
+
 ## External Dependencies
 - **Database**: PostgreSQL
 - **Web Server**: Gunicorn
