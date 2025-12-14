@@ -1,4 +1,4 @@
-# InvoiceFlow - Professional Invoicing SaaS Platform
+# InvoiceFlow - Professional Invoicing Platform
 
 > Create stunning, professional invoices in seconds. Send via email or WhatsApp. Get paid faster.
 
