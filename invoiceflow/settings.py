@@ -69,7 +69,7 @@ if IS_PRODUCTION:
 else:
     # Development: allow configured hosts, Replit domains, and localhost
     # Using explicit wildcard and common dev domains for reliability
-    ALLOWED_HOSTS = ["*", "localhost", "127.0.0.1", ".replit.dev", ".picard.replit.dev", ".repl.co"]  # type: ignore
+    ALLOWED_HOSTS = ["*", "localhost", "127.0.0.1", ".replit.dev", ".picard.replit.dev", ".spock.replit.dev", ".repl.co"]  # type: ignore
 
 # CSRF Trusted Origins - Production domain first
 CSRF_TRUSTED_ORIGINS = [
