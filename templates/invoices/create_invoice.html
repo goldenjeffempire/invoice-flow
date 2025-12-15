@@ -1,11 +1,11 @@
 {% extends "base/layout-light.html" %}
 {% load static %}
 {% block title %}Create Invoice{% endblock %}
-{% block body_class %}invoice-creator-page{% endblock %}
+{% block body_class %}invoice-creator-v3{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
-<link rel="stylesheet" href="{% static 'css/invoice-creator-modern.css' %}">
+<link rel="stylesheet" href="{% static 'css/invoice-creator-v3.css' %}">
 {% endblock %}
 
 {% block nav %}{% endblock %}
@@ -15,157 +15,154 @@
 <div class="dashboard-layout">
     {% include 'components/sidebar-light.html' with active='new_invoice' %}
     
-    <main class="creator-main">
-        <div class="creator-container">
-            <header class="creator-topbar">
-                <div class="topbar-left">
-                    <a href="{% url 'dashboard' %}" class="back-button" aria-label="Back to Dashboard">
+    <main class="inv-creator">
+        <div class="inv-container">
+            <header class="inv-header">
+                <div class="inv-header-left">
+                    <a href="{% url 'dashboard' %}" class="inv-back" aria-label="Back">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
                     </a>
-                    <div class="page-identity">
-                        <h1>New Invoice</h1>
-                        <div class="draft-indicator" id="draftIndicator">
-                            <span class="pulse-dot"></span>
-                            <span class="draft-text">Draft auto-saved</span>
+                    <div class="inv-header-info">
+                        <h1>Create Invoice</h1>
+                        <div class="inv-status-pill" id="saveStatus">
+                            <span class="status-dot"></span>
+                            <span class="status-text">Ready</span>
                         </div>
                     </div>
                 </div>
-                <div class="topbar-actions">
-                    <button type="button" class="action-btn-ghost" id="clearDraftBtn" title="Clear Draft">
+                <div class="inv-header-actions">
+                    <button type="button" class="inv-action-btn" id="clearBtn" title="Clear Form">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
                             <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
                         </svg>
-                        <span class="btn-label">Clear</span>
+                        <span>Clear</span>
                     </button>
-                    <button type="button" class="action-btn-ghost" id="previewBtn" title="Preview Invoice">
+                    <button type="button" class="inv-action-btn" id="previewBtn" title="Preview">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                             <circle cx="12" cy="12" r="3"/>
                         </svg>
-                        <span class="btn-label">Preview</span>
+                        <span>Preview</span>
                     </button>
                 </div>
             </header>
 
-            <div class="creator-body" id="creatorBody">
-                <form method="post" id="invoiceForm" class="invoice-form-modern" novalidate>
+            <div class="inv-main">
+                <form method="post" id="invoiceForm" class="inv-form" novalidate>
                     {% csrf_token %}
                     <input type="hidden" name="line_items" id="lineItemsInput" value="[]">
 
-                    <div class="form-grid">
-                        <div class="form-content">
-                            <section class="form-card" data-section="business">
-                                <div class="card-header">
-                                    <div class="card-icon gradient-blue">
+                    <div class="inv-layout">
+                        <div class="inv-content">
+                            <section class="inv-section" data-section="from">
+                                <div class="section-header">
+                                    <div class="section-icon blue">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11"/>
                                         </svg>
                                     </div>
-                                    <div class="card-title">
-                                        <h2>Your Business</h2>
-                                        <p>Your company details</p>
+                                    <div class="section-title">
+                                        <h2>From</h2>
+                                        <p>Your business details</p>
                                     </div>
-                                    <button type="button" class="card-toggle" aria-expanded="true" aria-label="Toggle section">
+                                    <button type="button" class="section-toggle" aria-expanded="true">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <polyline points="6 9 12 15 18 9"/>
                                         </svg>
                                     </button>
                                 </div>
-                                <div class="card-body">
-                                    <div class="input-group">
-                                        <div class="input-field">
-                                            <label for="business_name">Business Name <span class="required-star">*</span></label>
+                                <div class="section-content">
+                                    <div class="field-group">
+                                        <div class="field">
+                                            <label for="business_name">Business Name <span class="req">*</span></label>
                                             <input type="text" id="business_name" name="business_name" required
-                                                   placeholder="Enter your business name"
-                                                   value="{{ invoice_form.business_name.value|default:'' }}"
-                                                   autocomplete="organization">
-                                            <span class="field-error" id="business_name_error"></span>
+                                                   placeholder="Your company name"
+                                                   value="{{ invoice_form.business_name.value|default:'' }}">
+                                            <span class="field-error"></span>
                                         </div>
                                     </div>
-                                    <div class="input-row">
-                                        <div class="input-field">
+                                    <div class="field-row">
+                                        <div class="field">
                                             <label for="business_email">Email</label>
                                             <input type="email" id="business_email" name="business_email"
                                                    placeholder="email@company.com"
-                                                   value="{{ invoice_form.business_email.value|default:'' }}"
-                                                   autocomplete="email">
+                                                   value="{{ invoice_form.business_email.value|default:'' }}">
                                         </div>
-                                        <div class="input-field">
+                                        <div class="field">
                                             <label for="business_phone">Phone</label>
                                             <input type="tel" id="business_phone" name="business_phone"
                                                    placeholder="+1 (555) 000-0000"
-                                                   value="{{ invoice_form.business_phone.value|default:'' }}"
-                                                   autocomplete="tel">
+                                                   value="{{ invoice_form.business_phone.value|default:'' }}">
                                         </div>
                                     </div>
-                                    <div class="input-group">
-                                        <div class="input-field">
+                                    <div class="field-group">
+                                        <div class="field">
                                             <label for="business_address">Address</label>
                                             <textarea id="business_address" name="business_address" rows="2"
-                                                      placeholder="Street address, City, State, ZIP">{{ invoice_form.business_address.value|default:'' }}</textarea>
+                                                      placeholder="Street, City, State, ZIP">{{ invoice_form.business_address.value|default:'' }}</textarea>
                                         </div>
                                     </div>
                                 </div>
                             </section>
 
-                            <section class="form-card" data-section="client">
-                                <div class="card-header">
-                                    <div class="card-icon gradient-purple">
+                            <section class="inv-section" data-section="to">
+                                <div class="section-header">
+                                    <div class="section-icon purple">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
                                             <circle cx="12" cy="7" r="4"/>
                                         </svg>
                                     </div>
-                                    <div class="card-title">
+                                    <div class="section-title">
                                         <h2>Bill To</h2>
                                         <p>Client information</p>
                                     </div>
-                                    <button type="button" class="card-toggle" aria-expanded="true" aria-label="Toggle section">
+                                    <button type="button" class="section-toggle" aria-expanded="true">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <polyline points="6 9 12 15 18 9"/>
                                         </svg>
                                     </button>
                                 </div>
-                                <div class="card-body">
-                                    <div class="input-group">
-                                        <div class="input-field">
-                                            <label for="client_name">Client Name <span class="required-star">*</span></label>
+                                <div class="section-content">
+                                    <div class="field-group">
+                                        <div class="field">
+                                            <label for="client_name">Client Name <span class="req">*</span></label>
                                             <input type="text" id="client_name" name="client_name" required
                                                    placeholder="Client or company name"
                                                    value="{{ invoice_form.client_name.value|default:'' }}">
-                                            <span class="field-error" id="client_name_error"></span>
+                                            <span class="field-error"></span>
                                         </div>
                                     </div>
-                                    <div class="input-row">
-                                        <div class="input-field">
+                                    <div class="field-row">
+                                        <div class="field">
                                             <label for="client_email">Email</label>
                                             <input type="email" id="client_email" name="client_email"
                                                    placeholder="client@example.com"
                                                    value="{{ invoice_form.client_email.value|default:'' }}">
                                         </div>
-                                        <div class="input-field">
+                                        <div class="field">
                                             <label for="client_phone">Phone</label>
                                             <input type="tel" id="client_phone" name="client_phone"
                                                    placeholder="+1 (555) 000-0000"
                                                    value="{{ invoice_form.client_phone.value|default:'' }}">
                                         </div>
                                     </div>
-                                    <div class="input-group">
-                                        <div class="input-field">
+                                    <div class="field-group">
+                                        <div class="field">
                                             <label for="client_address">Address</label>
                                             <textarea id="client_address" name="client_address" rows="2"
-                                                      placeholder="Client's billing address">{{ invoice_form.client_address.value|default:'' }}</textarea>
+                                                      placeholder="Client billing address">{{ invoice_form.client_address.value|default:'' }}</textarea>
                                         </div>
                                     </div>
                                 </div>
                             </section>
 
-                            <section class="form-card" data-section="details">
-                                <div class="card-header">
-                                    <div class="card-icon gradient-green">
+                            <section class="inv-section" data-section="details">
+                                <div class="section-header">
+                                    <div class="section-icon green">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <rect x="3" y="4" width="18" height="18" rx="2"/>
                                             <line x1="16" y1="2" x2="16" y2="6"/>
@@ -173,65 +170,65 @@
                                             <line x1="3" y1="10" x2="21" y2="10"/>
                                         </svg>
                                     </div>
-                                    <div class="card-title">
+                                    <div class="section-title">
                                         <h2>Invoice Details</h2>
-                                        <p>Dates and terms</p>
+                                        <p>Dates, currency, and terms</p>
                                     </div>
-                                    <button type="button" class="card-toggle" aria-expanded="true" aria-label="Toggle section">
+                                    <button type="button" class="section-toggle" aria-expanded="true">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <polyline points="6 9 12 15 18 9"/>
                                         </svg>
                                     </button>
                                 </div>
-                                <div class="card-body">
-                                    <div class="input-grid-4">
-                                        <div class="input-field">
-                                            <label for="invoice_date">Issue Date <span class="required-star">*</span></label>
+                                <div class="section-content">
+                                    <div class="field-grid-4">
+                                        <div class="field">
+                                            <label for="invoice_date">Issue Date <span class="req">*</span></label>
                                             <input type="date" id="invoice_date" name="invoice_date" required
                                                    value="{{ invoice_form.invoice_date.value|default:'' }}">
-                                            <span class="field-error" id="invoice_date_error"></span>
+                                            <span class="field-error"></span>
                                         </div>
-                                        <div class="input-field">
-                                            <label for="due_date">Due Date <span class="required-star">*</span></label>
+                                        <div class="field">
+                                            <label for="due_date">Due Date <span class="req">*</span></label>
                                             <input type="date" id="due_date" name="due_date" required
                                                    value="{{ invoice_form.due_date.value|default:'' }}">
-                                            <span class="field-error" id="due_date_error"></span>
+                                            <span class="field-error"></span>
                                         </div>
-                                        <div class="input-field">
+                                        <div class="field">
                                             <label for="currency">Currency</label>
-                                            <div class="select-wrapper">
+                                            <div class="select-wrap">
                                                 <select id="currency" name="currency">
                                                     <option value="USD" data-symbol="$" {% if invoice_form.currency.value == 'USD' %}selected{% endif %}>USD ($)</option>
-                                                    <option value="EUR" data-symbol="E" {% if invoice_form.currency.value == 'EUR' %}selected{% endif %}>EUR</option>
-                                                    <option value="GBP" data-symbol="P" {% if invoice_form.currency.value == 'GBP' %}selected{% endif %}>GBP</option>
-                                                    <option value="NGN" data-symbol="N" {% if invoice_form.currency.value == 'NGN' %}selected{% endif %}>NGN</option>
-                                                    <option value="CAD" data-symbol="C$" {% if invoice_form.currency.value == 'CAD' %}selected{% endif %}>CAD</option>
-                                                    <option value="AUD" data-symbol="A$" {% if invoice_form.currency.value == 'AUD' %}selected{% endif %}>AUD</option>
+                                                    <option value="EUR" data-symbol="€" {% if invoice_form.currency.value == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                                                    <option value="GBP" data-symbol="£" {% if invoice_form.currency.value == 'GBP' %}selected{% endif %}>GBP (£)</option>
+                                                    <option value="NGN" data-symbol="₦" {% if invoice_form.currency.value == 'NGN' %}selected{% endif %}>NGN (₦)</option>
+                                                    <option value="CAD" data-symbol="C$" {% if invoice_form.currency.value == 'CAD' %}selected{% endif %}>CAD (C$)</option>
+                                                    <option value="AUD" data-symbol="A$" {% if invoice_form.currency.value == 'AUD' %}selected{% endif %}>AUD (A$)</option>
                                                 </select>
                                                 <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                     <polyline points="6 9 12 15 18 9"/>
                                                 </svg>
                                             </div>
                                         </div>
-                                        <div class="input-field">
-                                            <label for="tax_rate">Tax %</label>
+                                        <div class="field">
+                                            <label for="tax_rate">Tax Rate (%)</label>
                                             <input type="number" id="tax_rate" name="tax_rate" min="0" max="100" step="0.01"
                                                    placeholder="0" value="{{ invoice_form.tax_rate.value|default:'0' }}">
                                         </div>
                                     </div>
-                                    <div class="input-group">
-                                        <div class="input-field">
+                                    <div class="field-group">
+                                        <div class="field">
                                             <label for="notes">Notes & Terms</label>
                                             <textarea id="notes" name="notes" rows="3"
-                                                      placeholder="Payment terms, bank details, or thank you message">{{ invoice_form.notes.value|default:'' }}</textarea>
+                                                      placeholder="Payment terms, thank you message, or special instructions">{{ invoice_form.notes.value|default:'' }}</textarea>
                                         </div>
                                     </div>
                                 </div>
                             </section>
 
-                            <section class="form-card items-card" data-section="items">
-                                <div class="card-header">
-                                    <div class="card-icon gradient-orange">
+                            <section class="inv-section inv-items-section" data-section="items">
+                                <div class="section-header">
+                                    <div class="section-icon orange">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <line x1="8" y1="6" x2="21" y2="6"/>
                                             <line x1="8" y1="12" x2="21" y2="12"/>
@@ -241,29 +238,29 @@
                                             <line x1="3" y1="18" x2="3.01" y2="18"/>
                                         </svg>
                                     </div>
-                                    <div class="card-title">
+                                    <div class="section-title">
                                         <h2>Line Items</h2>
                                         <p>Products or services</p>
                                     </div>
-                                    <div class="items-badge" id="itemsBadge">0 items</div>
+                                    <div class="items-count" id="itemsCount">0 items</div>
                                 </div>
-                                <div class="card-body items-body">
-                                    <div class="items-container" id="itemsContainer">
+                                <div class="section-content">
+                                    <div class="items-wrapper" id="itemsWrapper">
                                         <div class="items-empty" id="itemsEmpty">
-                                            <div class="empty-illustration">
-                                                <svg viewBox="0 0 120 100" fill="none">
-                                                    <rect x="10" y="20" width="100" height="70" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
-                                                    <line x1="25" y1="40" x2="85" y2="40" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
-                                                    <line x1="25" y1="55" x2="70" y2="55" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round"/>
-                                                    <line x1="25" y1="70" x2="60" y2="70" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round"/>
-                                                    <circle cx="95" cy="75" r="18" fill="#6366f1"/>
-                                                    <line x1="95" y1="68" x2="95" y2="82" stroke="white" stroke-width="3" stroke-linecap="round"/>
-                                                    <line x1="88" y1="75" x2="102" y2="75" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                                            <div class="empty-icon">
+                                                <svg viewBox="0 0 80 80" fill="none">
+                                                    <rect x="8" y="16" width="64" height="48" rx="6" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
+                                                    <line x1="18" y1="30" x2="52" y2="30" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                                                    <line x1="18" y1="42" x2="44" y2="42" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round"/>
+                                                    <line x1="18" y1="54" x2="38" y2="54" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round"/>
+                                                    <circle cx="60" cy="52" r="14" fill="#6366f1"/>
+                                                    <line x1="60" y1="46" x2="60" y2="58" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                                                    <line x1="54" y1="52" x2="66" y2="52" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
                                                 </svg>
                                             </div>
                                             <h3>Add your first item</h3>
-                                            <p>Click the button below to add products or services</p>
-                                            <button type="button" class="btn-add-first-item" id="addFirstItemBtn">
+                                            <p>Click below to add products or services</p>
+                                            <button type="button" class="btn-add-first" id="addFirstBtn">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                     <line x1="12" y1="5" x2="12" y2="19"/>
                                                     <line x1="5" y1="12" x2="19" y2="12"/>
@@ -272,19 +269,19 @@
                                             </button>
                                         </div>
 
-                                        <div class="items-list" id="itemsList" style="display: none;">
-                                            <div class="items-header-row">
+                                        <div class="items-table" id="itemsTable" style="display: none;">
+                                            <div class="items-header">
                                                 <span class="col-desc">Description</span>
                                                 <span class="col-qty">Qty</span>
                                                 <span class="col-rate">Rate</span>
                                                 <span class="col-amount">Amount</span>
                                                 <span class="col-actions"></span>
                                             </div>
-                                            <div class="items-rows" id="itemsRows"></div>
+                                            <div class="items-body" id="itemsBody"></div>
                                         </div>
                                     </div>
 
-                                    <div class="items-add-bar" id="itemsAddBar" style="display: none;">
+                                    <div class="items-footer" id="itemsFooter" style="display: none;">
                                         <button type="button" class="btn-add-item" id="addItemBtn">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <line x1="12" y1="5" x2="12" y2="19"/>
@@ -292,52 +289,98 @@
                                             </svg>
                                             Add Another Item
                                         </button>
-                                        <div class="keyboard-tip">
-                                            <kbd>Enter</kbd> to add new item
+                                        <span class="keyboard-hint">Press <kbd>Enter</kbd> to add new item</span>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="inv-section" data-section="payment">
+                                <div class="section-header">
+                                    <div class="section-icon teal">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="1" y="4" width="22" height="16" rx="2"/>
+                                            <line x1="1" y1="10" x2="23" y2="10"/>
+                                        </svg>
+                                    </div>
+                                    <div class="section-title">
+                                        <h2>Payment Details</h2>
+                                        <p>Bank information for payments</p>
+                                    </div>
+                                    <button type="button" class="section-toggle" aria-expanded="true">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="section-content">
+                                    <div class="field-row">
+                                        <div class="field">
+                                            <label for="bank_name">Bank Name</label>
+                                            <input type="text" id="bank_name" name="bank_name"
+                                                   placeholder="Bank name"
+                                                   value="{{ invoice_form.bank_name.value|default:'' }}">
+                                        </div>
+                                        <div class="field">
+                                            <label for="account_name">Account Name</label>
+                                            <input type="text" id="account_name" name="account_name"
+                                                   placeholder="Account holder name"
+                                                   value="{{ invoice_form.account_name.value|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <div class="field-group">
+                                        <div class="field">
+                                            <label for="account_number">Account Number</label>
+                                            <input type="text" id="account_number" name="account_number"
+                                                   placeholder="Account number"
+                                                   value="{{ invoice_form.account_number.value|default:'' }}">
                                         </div>
                                     </div>
                                 </div>
                             </section>
                         </div>
 
-                        <aside class="form-sidebar">
-                            <div class="sidebar-inner">
-                                <div class="summary-panel">
-                                    <div class="summary-header">
-                                        <h3>Summary</h3>
+                        <aside class="inv-sidebar">
+                            <div class="sidebar-sticky">
+                                <div class="summary-card">
+                                    <div class="summary-title">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+                                            <rect x="9" y="3" width="6" height="4" rx="1"/>
+                                            <path d="M9 12h6"/>
+                                            <path d="M9 16h6"/>
+                                        </svg>
+                                        <span>Invoice Summary</span>
                                     </div>
-                                    <div class="summary-content">
-                                        <div class="summary-line">
+                                    <div class="summary-body">
+                                        <div class="summary-row">
                                             <span>Subtotal</span>
-                                            <span id="summarySubtotal" class="amount">$0.00</span>
+                                            <span id="summarySubtotal" class="value">$0.00</span>
                                         </div>
-                                        <div class="summary-line tax-line">
-                                            <span>Tax (<span id="taxRateDisplay">0</span>%)</span>
-                                            <span id="summaryTax" class="amount">$0.00</span>
+                                        <div class="summary-row tax-row">
+                                            <span>Tax (<span id="taxDisplay">0</span>%)</span>
+                                            <span id="summaryTax" class="value">$0.00</span>
                                         </div>
                                         <div class="summary-divider"></div>
-                                        <div class="summary-line total-line">
+                                        <div class="summary-row total-row">
                                             <span>Total</span>
-                                            <span id="summaryTotal" class="amount total">$0.00</span>
+                                            <span id="summaryTotal" class="value">$0.00</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="action-panel">
-                                    <button type="submit" class="btn-create-invoice" id="submitBtn">
+                                <div class="action-card">
+                                    <button type="submit" class="btn-submit" id="submitBtn">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
                                             <polyline points="22 4 12 14.01 9 11.01"/>
                                         </svg>
                                         Create Invoice
                                     </button>
-                                    <a href="{% url 'dashboard' %}" class="btn-cancel">
-                                        Cancel
-                                    </a>
+                                    <a href="{% url 'dashboard' %}" class="btn-cancel">Cancel</a>
                                 </div>
 
-                                <div class="tips-panel">
-                                    <div class="tips-header">
+                                <div class="tips-card">
+                                    <div class="tips-title">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <circle cx="12" cy="12" r="10"/>
                                             <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
@@ -346,9 +389,9 @@
                                         <span>Quick Tips</span>
                                     </div>
                                     <ul class="tips-list">
-                                        <li>Your progress saves automatically</li>
-                                        <li>Press <kbd>Tab</kbd> to move between fields</li>
-                                        <li>Press <kbd>Enter</kbd> to add new items</li>
+                                        <li>Form auto-saves as you type</li>
+                                        <li>Use <kbd>Tab</kbd> between fields</li>
+                                        <li>Press <kbd>Enter</kbd> for new items</li>
                                     </ul>
                                 </div>
                             </div>
@@ -370,22 +413,22 @@
             </svg>
         </div>
         <div class="item-fields">
-            <input type="text" class="item-description" placeholder="Item description" autocomplete="off">
-            <input type="number" class="item-qty" value="1" min="0" step="any" autocomplete="off" placeholder="1">
-            <div class="rate-input">
-                <span class="currency-prefix">$</span>
-                <input type="number" class="item-rate" placeholder="0.00" min="0" step="0.01" autocomplete="off">
+            <input type="text" class="item-desc" placeholder="Item description" autocomplete="off">
+            <input type="number" class="item-qty" value="1" min="0" step="any" placeholder="1">
+            <div class="rate-wrap">
+                <span class="currency-sym">$</span>
+                <input type="number" class="item-rate" placeholder="0.00" min="0" step="0.01">
             </div>
             <span class="item-amount">$0.00</span>
         </div>
         <div class="item-actions">
-            <button type="button" class="item-action-btn duplicate" title="Duplicate">
+            <button type="button" class="action-btn dup" title="Duplicate">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2"/>
                     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
             </button>
-            <button type="button" class="item-action-btn delete" title="Delete">
+            <button type="button" class="action-btn del" title="Delete">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
@@ -396,23 +439,23 @@
 </template>
 
 <template id="mobileItemTemplate">
-    <div class="mobile-item-card" draggable="true">
-        <div class="mobile-item-header">
-            <div class="mobile-drag-handle">
+    <div class="mobile-item" draggable="true">
+        <div class="mobile-item-head">
+            <div class="mobile-drag">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
                     <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
                 </svg>
             </div>
-            <span class="mobile-item-number">Item 1</span>
-            <div class="mobile-item-actions">
-                <button type="button" class="mobile-action-btn duplicate" title="Duplicate">
+            <span class="mobile-item-num">Item 1</span>
+            <div class="mobile-actions">
+                <button type="button" class="mobile-btn dup" title="Duplicate">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="9" y="9" width="13" height="13" rx="2"/>
                         <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                     </svg>
                 </button>
-                <button type="button" class="mobile-action-btn delete" title="Delete">
+                <button type="button" class="mobile-btn del" title="Delete">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"/>
                         <line x1="6" y1="6" x2="18" y2="18"/>
@@ -420,35 +463,34 @@
                 </button>
             </div>
         </div>
-        <div class="mobile-item-fields">
+        <div class="mobile-item-body">
             <div class="mobile-field full">
                 <label>Description</label>
-                <input type="text" class="mobile-item-description" placeholder="What did you provide?" autocomplete="off">
+                <input type="text" class="mobile-desc" placeholder="What did you provide?">
             </div>
             <div class="mobile-field-row">
                 <div class="mobile-field">
                     <label>Quantity</label>
-                    <input type="number" class="mobile-item-qty" value="1" min="0" step="any" autocomplete="off">
+                    <input type="number" class="mobile-qty" value="1" min="0" step="any">
                 </div>
                 <div class="mobile-field">
                     <label>Rate</label>
-                    <div class="mobile-rate-input">
+                    <div class="mobile-rate-wrap">
                         <span>$</span>
-                        <input type="number" class="mobile-item-rate" placeholder="0.00" min="0" step="0.01" autocomplete="off">
+                        <input type="number" class="mobile-rate" placeholder="0.00" min="0" step="0.01">
                     </div>
                 </div>
             </div>
         </div>
-        <div class="mobile-item-total">
+        <div class="mobile-item-foot">
             <span>Amount:</span>
-            <span class="mobile-item-amount">$0.00</span>
+            <span class="mobile-amount">$0.00</span>
         </div>
     </div>
 </template>
 
-<div class="preview-modal" id="previewModal" style="display: none;">
-    <div class="preview-overlay"></div>
-    <div class="preview-content">
+<div class="preview-overlay" id="previewOverlay" style="display: none;">
+    <div class="preview-modal">
         <div class="preview-header">
             <h3>Invoice Preview</h3>
             <button type="button" class="preview-close" id="previewClose">
@@ -464,5 +506,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/invoice-creator-modern.js' %}" nonce="{{ request.csp_nonce }}"></script>
+<script src="{% static 'js/invoice-creator-v3.js' %}" nonce="{{ request.csp_nonce }}"></script>
 {% endblock %}
