@@ -45,7 +45,7 @@ def signup(request):
     """Handle user registration with form validation and email verification."""
     from django.conf import settings as django_settings
     from .auth_services import RegistrationService
-    from .email_service import EmailService
+    from .sendgrid_service import SendGridEmailService
 
     if request.user.is_authenticated:
         return redirect("dashboard")
@@ -74,7 +74,8 @@ def signup(request):
                     ).first()
                     if token:
                         try:
-                            EmailService.send_verification_email(user, token.token)
+                            email_service = SendGridEmailService()
+                            email_service.send_verification_email(user, token.token)
                         except Exception:
                             pass
                     messages.success(
@@ -113,7 +114,7 @@ def verification_sent(request):
 def resend_verification(request):
     """Resend verification email to user."""
     from .auth_services import RegistrationService
-    from .email_service import EmailService
+    from .sendgrid_service import SendGridEmailService
     from .models import EmailVerificationToken
 
     if request.method == "POST":
@@ -133,7 +134,8 @@ def resend_verification(request):
                 ).order_by("-created_at").first()
                 if token:
                     try:
-                        EmailService.send_verification_email(user, token.token)
+                        email_service = SendGridEmailService()
+                        email_service.send_verification_email(user, token.token)
                     except Exception:
                         pass
             except User.DoesNotExist:
@@ -148,7 +150,7 @@ def resend_verification(request):
 def forgot_password(request):
     """Handle forgot password request - send reset email."""
     from .auth_services import PasswordService
-    from .email_service import EmailService
+    from .sendgrid_service import SendGridEmailService
 
     if request.user.is_authenticated:
         return redirect("dashboard")
@@ -163,7 +165,8 @@ def forgot_password(request):
 
         if token_obj:
             try:
-                EmailService.send_password_reset_email(token_obj.user, token_obj.token)
+                email_service = SendGridEmailService()
+                email_service.send_password_reset_email(token_obj.user, token_obj.token)
             except Exception:
                 pass
 
@@ -727,7 +730,7 @@ def generate_pdf(request, invoice_id):
 
 @login_required
 def send_invoice_email(request, invoice_id: int):
-    from .email_service import EmailService
+    from .async_tasks import AsyncTaskService
 
     invoice = get_object_or_404(
         Invoice.objects.prefetch_related("line_items"), id=invoice_id, user=request.user
@@ -736,7 +739,7 @@ def send_invoice_email(request, invoice_id: int):
     if request.method == "POST":
         recipient_email = request.POST.get("email", invoice.client_email)
 
-        EmailService.send_invoice_email_async(invoice.id, recipient_email)
+        AsyncTaskService.send_invoice_email_async(invoice.id, recipient_email)
 
         messages.success(
             request,

@@ -214,27 +214,104 @@ class SendGridEmailService:
             subject="Welcome to InvoiceFlow!",
         )
 
+    def send_verification_email(self, user, verification_token):
+        """Send email verification link to user."""
+        verification_url = self._get_verification_url(verification_token)
+        first_name = user.first_name or user.username
+
+        plain_text = f"""Hello {first_name},
+
+Thank you for signing up for InvoiceFlow!
+
+Please verify your email address by clicking the link below:
+{verification_url}
+
+This link will expire in 24 hours.
+
+If you didn't create an account, please ignore this email.
+
+Best regards,
+The InvoiceFlow Team"""
+
+        html_content = f"""
+<div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #6366f1;">Welcome to InvoiceFlow!</h2>
+    <p>Hello {first_name},</p>
+    <p>Thank you for signing up for InvoiceFlow! Please verify your email address to complete your registration.</p>
+    <p style="margin: 30px 0;">
+        <a href="{verification_url}" style="background: linear-gradient(135deg, #6366f1, #818cf8); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Verify Email Address</a>
+    </p>
+    <p style="color: #6b7280; font-size: 14px;">This link will expire in 24 hours.</p>
+    <p style="color: #6b7280; font-size: 14px;">If you didn't create an account, please ignore this email.</p>
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+    <p style="color: #9ca3af; font-size: 12px;">Best regards,<br>The InvoiceFlow Team</p>
+</div>
+"""
+
+        return self._send_html_email(
+            to_email=user.email,
+            subject="Verify your InvoiceFlow account",
+            plain_text=plain_text,
+            html_content=html_content,
+        )
+
     def send_password_reset_email(self, user, reset_token, template_id=None):
         """Send password reset email."""
         template_id = template_id or self.TEMPLATE_IDS.get("password_reset")
-
         reset_url = self._get_password_reset_url(reset_token)
+        first_name = user.first_name or user.username
 
-        template_data = {
-            "first_name": user.first_name or user.username,
-            "username": user.username,
-            "reset_url": reset_url,
-            "expires_in": "24 hours",
-            "support_email": "support@invoiceflow.com.ng",
-        }
+        if template_id:
+            template_data = {
+                "first_name": first_name,
+                "username": user.username,
+                "reset_url": reset_url,
+                "expires_in": "24 hours",
+                "support_email": "support@invoiceflow.com.ng",
+            }
+            return self._send_email(
+                user_business_email=None,
+                from_name="InvoiceFlow",
+                to_email=user.email,
+                template_id=template_id,
+                template_data=template_data,
+                subject="Password Reset Request",
+            )
 
-        return self._send_email(
-            user_business_email=None,
-            from_name="InvoiceFlow",
+        plain_text = f"""Hello {first_name},
+
+You requested a password reset for your InvoiceFlow account.
+
+Click the link below to reset your password:
+{reset_url}
+
+This link will expire in 24 hours.
+
+If you didn't request a password reset, please ignore this email.
+
+Best regards,
+The InvoiceFlow Team"""
+
+        html_content = f"""
+<div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h2 style="color: #6366f1;">Password Reset Request</h2>
+    <p>Hello {first_name},</p>
+    <p>You requested a password reset for your InvoiceFlow account.</p>
+    <p style="margin: 30px 0;">
+        <a href="{reset_url}" style="background: linear-gradient(135deg, #6366f1, #818cf8); color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Reset Password</a>
+    </p>
+    <p style="color: #6b7280; font-size: 14px;">This link will expire in 24 hours.</p>
+    <p style="color: #6b7280; font-size: 14px;">If you didn't request a password reset, please ignore this email.</p>
+    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+    <p style="color: #9ca3af; font-size: 12px;">Best regards,<br>The InvoiceFlow Team</p>
+</div>
+"""
+
+        return self._send_html_email(
             to_email=user.email,
-            template_id=template_id,
-            template_data=template_data,
             subject="Password Reset Request",
+            plain_text=plain_text,
+            html_content=html_content,
         )
 
     # ============ ADMIN EMAILS ============
@@ -383,6 +460,34 @@ class SendGridEmailService:
             print(f"❌ SendGrid API Error: {error_detail}")
             return {"status": "error", "message": error_detail, "code": status_code}
 
+    def _send_html_email(self, to_email, subject, plain_text, html_content):
+        """Send an HTML email with plain text fallback."""
+        if not self.is_configured:
+            error_msg = "SendGrid API key not configured. Email sending is disabled."
+            print(f"⚠️  {error_msg}")
+            return {"status": "error", "message": error_msg, "configured": False}
+
+        try:
+            message = Mail(
+                from_email=From(self.from_email, "InvoiceFlow"),
+                to_emails=To(to_email),
+                subject=subject,
+                plain_text_content=plain_text,
+                html_content=html_content,
+            )
+
+            if self.client is None:
+                return {"status": "error", "message": "SendGrid client not initialized"}
+            response = self.client.send(message)
+            print(f"✅ Email sent to {to_email}")
+            return {"status": "sent", "response": response.status_code}
+
+        except Exception as e:
+            error_detail = self._parse_sendgrid_error(e)
+            status_code = getattr(e, "status_code", None)
+            print(f"❌ SendGrid API Error: {error_detail}")
+            return {"status": "error", "message": error_detail, "code": status_code}
+
     def _parse_sendgrid_error(self, error):
         """Parse SendGrid API error and provide helpful diagnostics."""
         try:
@@ -481,6 +586,10 @@ class SendGridEmailService:
     def _get_password_reset_url(self, token):
         """Get password reset URL."""
         return f"{self._get_base_url()}/password-reset-confirm/{token}/"
+
+    def _get_verification_url(self, token):
+        """Get email verification URL."""
+        return f"{self._get_base_url()}/verify-email/{token}/"
 
     def send_test_email(self, recipient_email):
         """Send a test email to verify SendGrid configuration.

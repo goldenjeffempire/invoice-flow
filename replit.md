@@ -24,11 +24,20 @@ The architecture incorporates micro-interactions, robust error handling with use
 
 ## Recent Changes (December 2025)
 
+### Email Service Consolidation (December 15, 2025)
+- Unified all email functionality under SendGridEmailService
+- Added send_verification_email method to SendGridEmailService
+- Migrated authentication emails (signup verification, password reset) to SendGrid
+- Removed redundant email_service.py (was using Django's send_mail)
+- All emails now route through single SendGrid service with Replit integration support
+
 ### Create Invoice Page Redesign
 - Completely redesigned with modern UI/UX and table-based line-items workflow
 - Added keyboard navigation (Tab+Enter to add new items)
 - Enhanced mobile responsiveness with card-based layout on mobile
 - Improved draft auto-save functionality and inline validation
+- Drag-and-drop line item reordering
+- Real-time calculations for subtotals, tax, and grand total
 
 ### Dashboard Footer Enhancement
 - Modernized with cleaner, more professional design
@@ -41,6 +50,7 @@ The architecture incorporates micro-interactions, robust error handling with use
 ### Platform Cleanup
 - Cleaned up requirements.txt (removed massive duplicates, 265 to 60 lines)
 - Removed unnecessary flow-venv/ directory
+- Removed duplicate email_service.py after SendGrid consolidation
 
 ## External Dependencies
 - **Database**: PostgreSQL

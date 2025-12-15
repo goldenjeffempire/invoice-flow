@@ -5,1153 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
-<style>
-:root {
-    --inv-primary: #6366f1;
-    --inv-primary-hover: #4f46e5;
-    --inv-primary-light: rgba(99, 102, 241, 0.1);
-    --inv-success: #10b981;
-    --inv-success-light: rgba(16, 185, 129, 0.1);
-    --inv-warning: #f59e0b;
-    --inv-warning-light: rgba(245, 158, 11, 0.1);
-    --inv-danger: #ef4444;
-    --inv-danger-light: rgba(239, 68, 68, 0.1);
-    --inv-text-primary: #1e293b;
-    --inv-text-secondary: #64748b;
-    --inv-text-muted: #94a3b8;
-    --inv-bg-primary: #ffffff;
-    --inv-bg-secondary: #f8fafc;
-    --inv-bg-tertiary: #f1f5f9;
-    --inv-border: #e2e8f0;
-    --inv-border-light: #f1f5f9;
-    --inv-radius-sm: 6px;
-    --inv-radius-md: 8px;
-    --inv-radius-lg: 12px;
-    --inv-radius-xl: 16px;
-    --inv-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-    --inv-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-    --inv-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
-}
-
-.create-invoice-page {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 24px;
-}
-
-/* Page Header */
-.page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
-.page-header-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.back-link {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: var(--inv-bg-secondary);
-    border: 1px solid var(--inv-border);
-    border-radius: var(--inv-radius-md);
-    color: var(--inv-text-secondary);
-    text-decoration: none;
-    transition: all 0.2s;
-}
-
-.back-link:hover {
-    background: var(--inv-primary-light);
-    border-color: var(--inv-primary);
-    color: var(--inv-primary);
-}
-
-.back-link svg {
-    width: 20px;
-    height: 20px;
-}
-
-.page-title h1 {
-    font-size: 1.625rem;
-    font-weight: 700;
-    color: var(--inv-text-primary);
-    margin: 0 0 4px;
-}
-
-.page-title p {
-    font-size: 0.875rem;
-    color: var(--inv-text-secondary);
-    margin: 0;
-}
-
-.auto-save-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: var(--inv-bg-tertiary);
-    border-radius: var(--inv-radius-md);
-    font-size: 0.8125rem;
-    color: var(--inv-text-muted);
-    transition: all 0.3s;
-}
-
-.auto-save-indicator.saving {
-    background: var(--inv-warning-light);
-    color: var(--inv-warning);
-}
-
-.auto-save-indicator.saved {
-    background: var(--inv-success-light);
-    color: var(--inv-success);
-}
-
-.save-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: currentColor;
-}
-
-/* Form Section Card */
-.form-card {
-    background: var(--inv-bg-primary);
-    border: 1px solid var(--inv-border);
-    border-radius: var(--inv-radius-xl);
-    margin-bottom: 24px;
-    overflow: hidden;
-    box-shadow: var(--inv-shadow-sm);
-}
-
-.form-card-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 18px 24px;
-    background: var(--inv-bg-secondary);
-    border-bottom: 1px solid var(--inv-border);
-}
-
-.form-card-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--inv-radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.form-card-icon svg {
-    width: 20px;
-    height: 20px;
-    stroke: white;
-}
-
-.form-card-icon.business { background: linear-gradient(135deg, #6366f1, #818cf8); }
-.form-card-icon.client { background: linear-gradient(135deg, #10b981, #34d399); }
-.form-card-icon.details { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
-.form-card-icon.items { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
-
-.form-card-title h2 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--inv-text-primary);
-    margin: 0 0 2px;
-}
-
-.form-card-title p {
-    font-size: 0.8125rem;
-    color: var(--inv-text-muted);
-    margin: 0;
-}
-
-.form-card-body {
-    padding: 24px;
-}
-
-/* Form Grid */
-.form-row {
-    display: grid;
-    gap: 20px;
-}
-
-.form-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
-.form-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
-.form-row.cols-4 { grid-template-columns: repeat(4, 1fr); }
-
-@media (max-width: 768px) {
-    .form-row.cols-2,
-    .form-row.cols-3,
-    .form-row.cols-4 { 
-        grid-template-columns: 1fr; 
-    }
-}
-
-.form-row + .form-row {
-    margin-top: 20px;
-}
-
-/* Form Field */
-.form-field {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-field.span-2 { grid-column: span 2; }
-.form-field.span-3 { grid-column: span 3; }
-.form-field.span-full { grid-column: 1 / -1; }
-
-@media (max-width: 768px) {
-    .form-field.span-2,
-    .form-field.span-3 { grid-column: span 1; }
-}
-
-.field-label {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--inv-text-primary);
-    margin-bottom: 8px;
-}
-
-.field-label .required {
-    color: var(--inv-danger);
-}
-
-.field-input,
-.field-select,
-.field-textarea {
-    width: 100%;
-    padding: 11px 14px;
-    font-size: 0.9375rem;
-    font-family: inherit;
-    color: var(--inv-text-primary);
-    background: var(--inv-bg-tertiary);
-    border: 1.5px solid transparent;
-    border-radius: var(--inv-radius-md);
-    transition: all 0.2s;
-}
-
-.field-input:hover,
-.field-select:hover,
-.field-textarea:hover {
-    background: var(--inv-bg-secondary);
-    border-color: var(--inv-border);
-}
-
-.field-input:focus,
-.field-select:focus,
-.field-textarea:focus {
-    outline: none;
-    background: var(--inv-bg-primary);
-    border-color: var(--inv-primary);
-    box-shadow: 0 0 0 3px var(--inv-primary-light);
-}
-
-.field-input::placeholder,
-.field-textarea::placeholder {
-    color: var(--inv-text-muted);
-}
-
-.field-input.has-error,
-.field-select.has-error,
-.field-textarea.has-error {
-    border-color: var(--inv-danger);
-    background: var(--inv-danger-light);
-}
-
-.field-textarea {
-    resize: vertical;
-    min-height: 70px;
-}
-
-.field-error-msg {
-    font-size: 0.75rem;
-    color: var(--inv-danger);
-    margin-top: 6px;
-    display: none;
-}
-
-.field-error-msg.visible {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.field-error-msg svg {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-}
-
-/* Two Column Layout */
-.two-col-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-}
-
-@media (max-width: 900px) {
-    .two-col-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* =====================================================
-   LINE ITEMS - COMPLETELY NEW DESIGN
-   ===================================================== */
-.line-items-section {
-    margin-top: 8px;
-}
-
-.items-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-
-.items-count-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--inv-text-secondary);
-}
-
-.items-count-badge .num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 8px;
-    background: var(--inv-primary);
-    color: white;
-    font-weight: 700;
-    font-size: 0.75rem;
-    border-radius: 12px;
-}
-
-.keyboard-tips {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.keyboard-tip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.75rem;
-    color: var(--inv-text-muted);
-}
-
-.kbd-key {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-    background: white;
-    border: 1px solid var(--inv-border);
-    border-radius: 4px;
-    font-family: 'SF Mono', Monaco, monospace;
-    font-size: 0.625rem;
-    font-weight: 600;
-    color: var(--inv-text-secondary);
-    box-shadow: var(--inv-shadow-sm);
-}
-
-@media (max-width: 640px) {
-    .keyboard-tips { display: none; }
-}
-
-/* Empty State */
-.items-empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
-    background: linear-gradient(135deg, var(--inv-bg-tertiary), var(--inv-bg-secondary));
-    border: 2px dashed var(--inv-border);
-    border-radius: var(--inv-radius-xl);
-    transition: all 0.2s;
-}
-
-.items-empty-state:hover {
-    border-color: var(--inv-primary);
-    background: linear-gradient(135deg, var(--inv-primary-light), var(--inv-bg-tertiary));
-}
-
-.empty-state-icon {
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--inv-warning-light);
-    border-radius: 16px;
-    margin-bottom: 16px;
-}
-
-.empty-state-icon svg {
-    width: 32px;
-    height: 32px;
-    color: var(--inv-warning);
-}
-
-.items-empty-state h3 {
-    font-size: 1.0625rem;
-    font-weight: 600;
-    color: var(--inv-text-primary);
-    margin: 0 0 8px;
-}
-
-.items-empty-state p {
-    font-size: 0.9375rem;
-    color: var(--inv-text-secondary);
-    margin: 0 0 20px;
-    max-width: 320px;
-}
-
-.add-first-item-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    background: var(--inv-primary);
-    color: white;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    border: none;
-    border-radius: var(--inv-radius-md);
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-}
-
-.add-first-item-btn:hover {
-    background: var(--inv-primary-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
-}
-
-.add-first-item-btn svg {
-    width: 18px;
-    height: 18px;
-}
-
-/* Items Table Container */
-.items-table-container {
-    display: none;
-    background: var(--inv-bg-primary);
-    border: 1px solid var(--inv-border);
-    border-radius: var(--inv-radius-lg);
-    overflow: hidden;
-}
-
-.items-table-container.visible {
-    display: block;
-}
-
-/* Table Header */
-.items-table-header {
-    display: grid;
-    grid-template-columns: 40px 1fr 100px 130px 120px 70px;
-    gap: 10px;
-    padding: 12px 16px;
-    background: var(--inv-bg-tertiary);
-    border-bottom: 1px solid var(--inv-border);
-}
-
-.header-col {
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--inv-text-muted);
-}
-
-.header-col.text-right { text-align: right; }
-.header-col.text-center { text-align: center; }
-
-@media (max-width: 900px) {
-    .items-table-header { display: none; }
-}
-
-/* Items List */
-.items-list {
-    display: flex;
-    flex-direction: column;
-}
-
-/* Single Item Row */
-.item-row {
-    display: grid;
-    grid-template-columns: 40px 1fr 100px 130px 120px 70px;
-    gap: 10px;
-    padding: 14px 16px;
-    align-items: center;
-    border-bottom: 1px solid var(--inv-border-light);
-    background: var(--inv-bg-primary);
-    transition: all 0.15s;
-}
-
-.item-row:last-child {
-    border-bottom: none;
-}
-
-.item-row:hover {
-    background: var(--inv-bg-secondary);
-}
-
-.item-row:focus-within {
-    background: var(--inv-primary-light);
-    box-shadow: inset 3px 0 0 var(--inv-primary);
-}
-
-.item-row.has-error {
-    background: var(--inv-danger-light);
-    box-shadow: inset 3px 0 0 var(--inv-danger);
-}
-
-.item-row.new-item {
-    animation: slideIn 0.25s ease-out;
-}
-
-@keyframes slideIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.item-row.removing {
-    animation: slideOut 0.2s ease-in forwards;
-}
-
-@keyframes slideOut {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(20px); height: 0; padding: 0; overflow: hidden; }
-}
-
-/* Row Number / Drag Handle */
-.row-handle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: var(--inv-bg-tertiary);
-    border: none;
-    border-radius: var(--inv-radius-sm);
-    color: var(--inv-text-muted);
-    font-size: 0.8125rem;
-    font-weight: 700;
-    cursor: grab;
-    transition: all 0.15s;
-}
-
-.row-handle:hover {
-    background: var(--inv-primary-light);
-    color: var(--inv-primary);
-}
-
-.row-handle:active {
-    cursor: grabbing;
-}
-
-/* Item Input Fields */
-.item-input {
-    width: 100%;
-    padding: 9px 11px;
-    font-size: 0.875rem;
-    font-family: inherit;
-    color: var(--inv-text-primary);
-    background: var(--inv-bg-tertiary);
-    border: 1.5px solid transparent;
-    border-radius: var(--inv-radius-sm);
-    transition: all 0.15s;
-}
-
-.item-input:hover {
-    border-color: var(--inv-border);
-}
-
-.item-input:focus {
-    outline: none;
-    background: var(--inv-bg-primary);
-    border-color: var(--inv-primary);
-    box-shadow: 0 0 0 2px var(--inv-primary-light);
-}
-
-.item-input::placeholder {
-    color: var(--inv-text-muted);
-}
-
-.item-input.has-error {
-    border-color: var(--inv-danger);
-    background: var(--inv-danger-light);
-}
-
-.item-input.number {
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    font-family: 'SF Mono', Monaco, monospace, inherit;
-}
-
-/* Price Input with Currency Symbol */
-.price-input-wrapper {
-    position: relative;
-}
-
-.price-input-wrapper .currency-sym {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--inv-text-muted);
-    pointer-events: none;
-}
-
-.price-input-wrapper .item-input {
-    padding-left: 24px;
-}
-
-/* Discount Input with % */
-.discount-input-wrapper {
-    position: relative;
-}
-
-.discount-input-wrapper .percent-sym {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--inv-text-muted);
-    pointer-events: none;
-}
-
-.discount-input-wrapper .item-input {
-    padding-right: 24px;
-}
-
-/* Line Total Display */
-.line-total {
-    text-align: right;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--inv-text-primary);
-    font-variant-numeric: tabular-nums;
-    padding-right: 4px;
-}
-
-.line-total.calculating {
-    color: var(--inv-primary);
-    animation: pulse 0.3s ease;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-/* Row Actions */
-.row-actions {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-}
-
-.row-action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: transparent;
-    border: none;
-    border-radius: var(--inv-radius-sm);
-    color: var(--inv-text-muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    padding: 0;
-}
-
-.row-action-btn:hover {
-    background: var(--inv-bg-tertiary);
-    color: var(--inv-text-secondary);
-}
-
-.row-action-btn.duplicate:hover {
-    background: var(--inv-primary-light);
-    color: var(--inv-primary);
-}
-
-.row-action-btn.delete:hover {
-    background: var(--inv-danger-light);
-    color: var(--inv-danger);
-}
-
-.row-action-btn svg {
-    width: 15px;
-    height: 15px;
-}
-
-/* Add Item Footer */
-.add-item-footer {
-    padding: 12px 16px;
-    background: var(--inv-bg-tertiary);
-    border-top: 1px solid var(--inv-border);
-}
-
-.add-new-item-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 12px 16px;
-    background: var(--inv-bg-primary);
-    border: 2px dashed var(--inv-border);
-    border-radius: var(--inv-radius-md);
-    color: var(--inv-text-secondary);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.add-new-item-btn:hover {
-    background: var(--inv-primary-light);
-    border-color: var(--inv-primary);
-    border-style: solid;
-    color: var(--inv-primary);
-}
-
-.add-new-item-btn svg {
-    width: 18px;
-    height: 18px;
-}
-
-/* Mobile Item Layout */
-@media (max-width: 900px) {
-    .item-row {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        padding: 18px 16px;
-        position: relative;
-    }
-    
-    .row-handle {
-        position: absolute;
-        top: 16px;
-        left: 16px;
-        width: 28px;
-        height: 28px;
-    }
-    
-    .mobile-field-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        width: 100%;
-    }
-    
-    .mobile-field-group.description {
-        padding-left: 44px;
-    }
-    
-    .mobile-field-label {
-        font-size: 0.6875rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--inv-text-muted);
-    }
-    
-    .mobile-row-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-        width: 100%;
-    }
-    
-    .mobile-row-grid.cols-2 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .mobile-summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px 14px;
-        background: var(--inv-bg-tertiary);
-        border-radius: var(--inv-radius-md);
-        width: 100%;
-    }
-    
-    .mobile-summary .summary-label {
-        font-size: 0.8125rem;
-        font-weight: 600;
-        color: var(--inv-text-secondary);
-    }
-    
-    .mobile-summary .summary-value {
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--inv-primary);
-    }
-    
-    .mobile-actions-row {
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-        width: 100%;
-        padding-top: 10px;
-        border-top: 1px solid var(--inv-border-light);
-    }
-    
-    .mobile-action-btn {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 12px;
-        background: transparent;
-        border: 1px solid var(--inv-border);
-        border-radius: var(--inv-radius-sm);
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--inv-text-secondary);
-        cursor: pointer;
-        transition: all 0.15s;
-    }
-    
-    .mobile-action-btn:hover {
-        background: var(--inv-bg-tertiary);
-    }
-    
-    .mobile-action-btn.duplicate:hover {
-        background: var(--inv-primary-light);
-        border-color: var(--inv-primary);
-        color: var(--inv-primary);
-    }
-    
-    .mobile-action-btn.delete:hover {
-        background: var(--inv-danger-light);
-        border-color: var(--inv-danger);
-        color: var(--inv-danger);
-    }
-    
-    .mobile-action-btn svg {
-        width: 14px;
-        height: 14px;
-    }
-    
-    .row-actions,
-    .line-total {
-        display: none;
-    }
-}
-
-/* Invoice Summary Panel */
-.invoice-summary-section {
-    margin-top: 24px;
-    display: flex;
-    justify-content: flex-end;
-}
-
-.summary-panel {
-    width: 100%;
-    max-width: 400px;
-    background: var(--inv-bg-primary);
-    border: 1px solid var(--inv-border);
-    border-radius: var(--inv-radius-lg);
-    overflow: hidden;
-    box-shadow: var(--inv-shadow-md);
-}
-
-.summary-panel-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 18px;
-    background: var(--inv-bg-secondary);
-    border-bottom: 1px solid var(--inv-border);
-}
-
-.summary-panel-header svg {
-    width: 18px;
-    height: 18px;
-    color: var(--inv-primary);
-}
-
-.summary-panel-header h3 {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--inv-text-primary);
-    margin: 0;
-}
-
-.summary-panel-body {
-    padding: 18px;
-}
-
-.summary-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 0;
-    font-size: 0.9375rem;
-}
-
-.summary-line .label {
-    color: var(--inv-text-secondary);
-}
-
-.summary-line .value {
-    font-weight: 600;
-    color: var(--inv-text-primary);
-    font-variant-numeric: tabular-nums;
-}
-
-.summary-line.subtotal {
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--inv-border-light);
-    margin-bottom: 6px;
-}
-
-.summary-line.discount .value {
-    color: var(--inv-success);
-}
-
-.summary-line.tax .label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.summary-line.tax .tax-rate {
-    font-size: 0.75rem;
-    padding: 2px 6px;
-    background: var(--inv-bg-tertiary);
-    border-radius: 4px;
-    color: var(--inv-text-muted);
-}
-
-.summary-line.grand-total {
-    margin-top: 12px;
-    padding-top: 14px;
-    border-top: 2px solid var(--inv-border);
-}
-
-.summary-line.grand-total .label {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--inv-text-primary);
-}
-
-.summary-line.grand-total .value {
-    font-size: 1.375rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--inv-primary), #818cf8);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-@media (max-width: 640px) {
-    .invoice-summary-section {
-        justify-content: stretch;
-    }
-    .summary-panel {
-        max-width: 100%;
-    }
-}
-
-/* Form Actions */
-.form-actions-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--inv-border);
-    flex-wrap: wrap;
-}
-
-.form-actions-left,
-.form-actions-right {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-@media (max-width: 640px) {
-    .form-actions-bar {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .form-actions-right {
-        flex-direction: column-reverse;
-    }
-}
-
-.btn-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 13px 26px;
-    background: linear-gradient(135deg, var(--inv-primary), var(--inv-primary-hover));
-    color: white;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    border: none;
-    border-radius: var(--inv-radius-md);
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: var(--inv-shadow-md);
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--inv-shadow-lg);
-}
-
-.btn-primary:active {
-    transform: translateY(0);
-}
-
-.btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.btn-primary svg {
-    width: 18px;
-    height: 18px;
-}
-
-.btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 13px 22px;
-    background: var(--inv-bg-secondary);
-    color: var(--inv-text-primary);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    border: 1px solid var(--inv-border);
-    border-radius: var(--inv-radius-md);
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-    background: var(--inv-bg-tertiary);
-    border-color: var(--inv-text-muted);
-}
-
-.btn-danger-outline {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 14px;
-    background: transparent;
-    color: var(--inv-danger);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    border: 1px solid var(--inv-danger-light);
-    border-radius: var(--inv-radius-sm);
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-danger-outline:hover {
-    background: var(--inv-danger-light);
-    border-color: var(--inv-danger);
-}
-
-/* Validation Alert */
-.validation-alert-box {
-    padding: 16px 18px;
-    background: var(--inv-danger-light);
-    border: 1px solid var(--inv-danger);
-    border-radius: var(--inv-radius-md);
-    margin-bottom: 24px;
-    display: none;
-}
-
-.validation-alert-box.visible {
-    display: block;
-}
-
-.validation-alert-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-}
-
-.validation-alert-header svg {
-    width: 18px;
-    height: 18px;
-    color: var(--inv-danger);
-}
-
-.validation-alert-header h4 {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--inv-danger);
-    margin: 0;
-}
-
-.validation-errors-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.validation-errors-list li {
-    font-size: 0.8125rem;
-    color: #b91c1c;
-    padding: 3px 0 3px 18px;
-    position: relative;
-}
-
-.validation-errors-list li::before {
-    content: "•";
-    position: absolute;
-    left: 6px;
-    color: var(--inv-danger);
-}
-</style>
+<link rel="stylesheet" href="{% static 'css/create-invoice.css' %}">
 {% endblock %}
 
 {% block nav %}{% endblock %}
@@ -1162,1147 +16,924 @@
     {% include 'components/sidebar-light.html' with active='new_invoice' %}
     
     <main class="dashboard-main">
-        <div class="create-invoice-page">
-            <!-- Page Header -->
-            <div class="page-header">
-                <div class="page-header-left">
-                    <a href="{% url 'dashboard' %}" class="back-link" title="Back to Dashboard">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="19" y1="12" x2="5" y2="12"/>
-                            <polyline points="12 19 5 12 12 5"/>
+        <div class="invoice-creator">
+            <header class="creator-header">
+                <div class="header-left">
+                    <a href="{% url 'dashboard' %}" class="back-btn" aria-label="Back to Dashboard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
                     </a>
-                    <div class="page-title">
+                    <div class="header-title">
                         <h1>Create Invoice</h1>
-                        <p>Add items and generate a professional invoice</p>
+                        <p>Fill in the details to generate your invoice</p>
                     </div>
                 </div>
-                <div class="auto-save-indicator" id="autoSaveIndicator">
-                    <span class="save-dot"></span>
-                    <span id="saveStatusText">Draft</span>
+                <div class="header-actions">
+                    <div class="autosave-status" id="autosaveStatus" aria-live="polite">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Draft saved</span>
+                    </div>
+                    <button type="button" class="btn-clear-draft" id="clearDraftBtn" style="display: none;">
+                        Clear Draft
+                    </button>
                 </div>
-            </div>
-            
-            <!-- Validation Alert -->
-            <div class="validation-alert-box" id="validationAlert" role="alert">
-                <div class="validation-alert-header">
+            </header>
+
+            <div id="validationErrors" class="validation-errors" role="alert" aria-live="assertive" style="display: none;">
+                <div class="error-header">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="12" y1="8" x2="12" y2="12"/>
                         <line x1="12" y1="16" x2="12.01" y2="16"/>
                     </svg>
-                    <h4>Please correct the following issues</h4>
+                    <strong>Please fix the following issues:</strong>
                 </div>
-                <ul class="validation-errors-list" id="validationErrorsList"></ul>
+                <ul class="error-list" id="errorList"></ul>
             </div>
-            
-            <form method="post" id="invoiceForm" novalidate>
+
+            <form method="post" id="invoiceForm" class="invoice-form" novalidate>
                 {% csrf_token %}
-                <input type="hidden" name="line_items" id="lineItemsData" value="[]">
-                
-                <!-- Business & Client Info -->
-                <div class="two-col-grid">
-                    <!-- Business Info -->
-                    <div class="form-card">
-                        <div class="form-card-header">
-                            <div class="form-card-icon business">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                </svg>
-                            </div>
-                            <div class="form-card-title">
-                                <h2>Your Business</h2>
-                                <p>Your company details</p>
-                            </div>
-                        </div>
-                        <div class="form-card-body">
-                            <div class="form-row">
-                                <div class="form-field span-full">
-                                    <label class="field-label" for="business_name">Business Name <span class="required">*</span></label>
-                                    <input type="text" name="business_name" id="business_name" class="field-input" required 
-                                           value="{{ invoice_form.business_name.value|default:'' }}" placeholder="Your company name">
-                                    <div class="field-error-msg" id="business_name_error">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                        <span>Business name is required</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row cols-2">
-                                <div class="form-field">
-                                    <label class="field-label" for="business_email">Email</label>
-                                    <input type="email" name="business_email" id="business_email" class="field-input"
-                                           value="{{ invoice_form.business_email.value|default:'' }}" placeholder="you@company.com">
-                                    <div class="field-error-msg" id="business_email_error">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                        <span>Please enter a valid email</span>
-                                    </div>
-                                </div>
-                                <div class="form-field">
-                                    <label class="field-label" for="business_phone">Phone</label>
-                                    <input type="text" name="business_phone" id="business_phone" class="field-input"
-                                           value="{{ invoice_form.business_phone.value|default:'' }}" placeholder="+1 (555) 123-4567">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-field span-full">
-                                    <label class="field-label" for="business_address">Address</label>
-                                    <textarea name="business_address" id="business_address" class="field-textarea" rows="2"
-                                              placeholder="Street, City, State, ZIP">{{ invoice_form.business_address.value|default:'' }}</textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Client Info -->
-                    <div class="form-card">
-                        <div class="form-card-header">
-                            <div class="form-card-icon client">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                            </div>
-                            <div class="form-card-title">
-                                <h2>Client Details</h2>
-                                <p>Who you're billing</p>
-                            </div>
-                        </div>
-                        <div class="form-card-body">
-                            <div class="form-row">
-                                <div class="form-field span-full">
-                                    <label class="field-label" for="client_name">Client Name <span class="required">*</span></label>
-                                    <input type="text" name="client_name" id="client_name" class="field-input" required
-                                           value="{{ invoice_form.client_name.value|default:'' }}" placeholder="Client or company name">
-                                    <div class="field-error-msg" id="client_name_error">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                        <span>Client name is required</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-row cols-2">
-                                <div class="form-field">
-                                    <label class="field-label" for="client_email">Email</label>
-                                    <input type="email" name="client_email" id="client_email" class="field-input"
-                                           value="{{ invoice_form.client_email.value|default:'' }}" placeholder="client@example.com">
-                                    <div class="field-error-msg" id="client_email_error">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                        <span>Please enter a valid email</span>
-                                    </div>
-                                </div>
-                                <div class="form-field">
-                                    <label class="field-label" for="client_phone">Phone</label>
-                                    <input type="text" name="client_phone" id="client_phone" class="field-input"
-                                           value="{{ invoice_form.client_phone.value|default:'' }}" placeholder="+1 (555) 987-6543">
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-field span-full">
-                                    <label class="field-label" for="client_address">Address</label>
-                                    <textarea name="client_address" id="client_address" class="field-textarea" rows="2"
-                                              placeholder="Client's billing address">{{ invoice_form.client_address.value|default:'' }}</textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Invoice Details -->
-                <div class="form-card">
-                    <div class="form-card-header">
-                        <div class="form-card-icon details">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <line x1="16" y1="13" x2="8" y2="13"/>
-                                <line x1="16" y1="17" x2="8" y2="17"/>
-                            </svg>
-                        </div>
-                        <div class="form-card-title">
-                            <h2>Invoice Details</h2>
-                            <p>Dates, currency, and tax settings</p>
-                        </div>
-                    </div>
-                    <div class="form-card-body">
-                        <div class="form-row cols-4">
-                            <div class="form-field">
-                                <label class="field-label" for="invoice_date">Invoice Date <span class="required">*</span></label>
-                                <input type="date" name="invoice_date" id="invoice_date" class="field-input" required
-                                       value="{{ invoice_form.invoice_date.value|default:'' }}">
-                                <div class="field-error-msg" id="invoice_date_error">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                    <span>Invoice date is required</span>
-                                </div>
-                            </div>
-                            <div class="form-field">
-                                <label class="field-label" for="due_date">Due Date <span class="required">*</span></label>
-                                <input type="date" name="due_date" id="due_date" class="field-input" required
-                                       value="{{ invoice_form.due_date.value|default:'' }}">
-                                <div class="field-error-msg" id="due_date_error">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                                    <span>Due date is required</span>
-                                </div>
-                            </div>
-                            <div class="form-field">
-                                <label class="field-label" for="currency">Currency</label>
-                                <select name="currency" id="currency" class="field-select">
-                                    <option value="USD" data-symbol="$" {% if invoice_form.currency.value == 'USD' %}selected{% endif %}>USD ($)</option>
-                                    <option value="EUR" data-symbol="€" {% if invoice_form.currency.value == 'EUR' %}selected{% endif %}>EUR (€)</option>
-                                    <option value="GBP" data-symbol="£" {% if invoice_form.currency.value == 'GBP' %}selected{% endif %}>GBP (£)</option>
-                                    <option value="NGN" data-symbol="₦" {% if invoice_form.currency.value == 'NGN' %}selected{% endif %}>NGN (₦)</option>
-                                    <option value="CAD" data-symbol="C$" {% if invoice_form.currency.value == 'CAD' %}selected{% endif %}>CAD (C$)</option>
-                                    <option value="AUD" data-symbol="A$" {% if invoice_form.currency.value == 'AUD' %}selected{% endif %}>AUD (A$)</option>
-                                </select>
-                            </div>
-                            <div class="form-field">
-                                <label class="field-label" for="tax_rate">Tax Rate (%)</label>
-                                <input type="number" name="tax_rate" id="tax_rate" class="field-input" 
-                                       step="0.01" min="0" max="100" value="{{ invoice_form.tax_rate.value|default:'0' }}" placeholder="0.00">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-field span-full">
-                                <label class="field-label" for="notes">Notes / Payment Terms</label>
-                                <textarea name="notes" id="notes" class="field-textarea" rows="2"
-                                          placeholder="Thank you for your business! Payment is due within 30 days.">{{ invoice_form.notes.value|default:'' }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- LINE ITEMS SECTION -->
-                <div class="form-card">
-                    <div class="form-card-header">
-                        <div class="form-card-icon items">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="8" y1="6" x2="21" y2="6"/>
-                                <line x1="8" y1="12" x2="21" y2="12"/>
-                                <line x1="8" y1="18" x2="21" y2="18"/>
-                                <line x1="3" y1="6" x2="3.01" y2="6"/>
-                                <line x1="3" y1="12" x2="3.01" y2="12"/>
-                                <line x1="3" y1="18" x2="3.01" y2="18"/>
-                            </svg>
-                        </div>
-                        <div class="form-card-title">
-                            <h2>Line Items</h2>
-                            <p>Products or services you're charging for</p>
-                        </div>
-                    </div>
-                    <div class="form-card-body">
-                        <div class="line-items-section">
-                            <!-- Toolbar -->
-                            <div class="items-toolbar">
-                                <div class="items-count-badge">
-                                    <span>Items</span>
-                                    <span class="num" id="itemsCountBadge">0</span>
-                                </div>
-                                <div class="keyboard-tips">
-                                    <div class="keyboard-tip">
-                                        <span class="kbd-key">Tab</span>
-                                        <span>Next field</span>
-                                    </div>
-                                    <div class="keyboard-tip">
-                                        <span class="kbd-key">Enter</span>
-                                        <span>Add new item</span>
-                                    </div>
-                                    <div class="keyboard-tip">
-                                        <span class="kbd-key">Ctrl</span>+<span class="kbd-key">D</span>
-                                        <span>Duplicate</span>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Empty State -->
-                            <div class="items-empty-state" id="emptyState">
-                                <div class="empty-state-icon">
+                <input type="hidden" name="line_items" id="lineItemsInput" value="[]">
+
+                <div class="form-layout">
+                    <div class="form-main">
+                        <section class="form-section" aria-labelledby="businessTitle">
+                            <div class="section-header">
+                                <div class="section-icon business">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                        <polyline points="14 2 14 8 20 8"/>
-                                        <line x1="12" y1="18" x2="12" y2="12"/>
-                                        <line x1="9" y1="15" x2="15" y2="15"/>
+                                        <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>
                                     </svg>
                                 </div>
-                                <h3>No items added yet</h3>
-                                <p>Add products or services to your invoice with quantity, price, and optional discounts.</p>
-                                <button type="button" class="add-first-item-btn" id="addFirstItemBtn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <line x1="12" y1="8" x2="12" y2="16"/>
-                                        <line x1="8" y1="12" x2="16" y2="12"/>
-                                    </svg>
-                                    Add First Item
-                                </button>
-                            </div>
-                            
-                            <!-- Items Table -->
-                            <div class="items-table-container" id="itemsTableContainer">
-                                <!-- Desktop Header -->
-                                <div class="items-table-header">
-                                    <div class="header-col text-center">#</div>
-                                    <div class="header-col">Description</div>
-                                    <div class="header-col text-right">Qty</div>
-                                    <div class="header-col text-right">Unit Price</div>
-                                    <div class="header-col text-right">Line Total</div>
-                                    <div class="header-col text-center"></div>
+                                <div class="section-title">
+                                    <h2 id="businessTitle">Your Business</h2>
+                                    <span>Your company information</span>
                                 </div>
-                                
-                                <!-- Items List -->
-                                <div class="items-list" id="itemsList"></div>
-                                
-                                <!-- Add Item Button -->
-                                <div class="add-item-footer">
-                                    <button type="button" class="add-new-item-btn" id="addNewItemBtn">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"/>
-                                            <line x1="12" y1="8" x2="12" y2="16"/>
-                                            <line x1="8" y1="12" x2="16" y2="12"/>
+                            </div>
+                            <div class="section-body">
+                                <div class="field-group">
+                                    <div class="field full-width">
+                                        <label for="business_name">Business Name <span class="required">*</span></label>
+                                        <input type="text" id="business_name" name="business_name" required
+                                               placeholder="Your company or business name"
+                                               value="{{ invoice_form.business_name.value|default:'' }}"
+                                               autocomplete="organization">
+                                        <span class="field-error" id="business_name_error"></span>
+                                    </div>
+                                </div>
+                                <div class="field-group two-col">
+                                    <div class="field">
+                                        <label for="business_email">Email Address</label>
+                                        <input type="email" id="business_email" name="business_email"
+                                               placeholder="email@company.com"
+                                               value="{{ invoice_form.business_email.value|default:'' }}"
+                                               autocomplete="email">
+                                        <span class="field-error" id="business_email_error"></span>
+                                    </div>
+                                    <div class="field">
+                                        <label for="business_phone">Phone Number</label>
+                                        <input type="tel" id="business_phone" name="business_phone"
+                                               placeholder="+1 234 567 8900"
+                                               value="{{ invoice_form.business_phone.value|default:'' }}"
+                                               autocomplete="tel">
+                                    </div>
+                                </div>
+                                <div class="field-group">
+                                    <div class="field full-width">
+                                        <label for="business_address">Address</label>
+                                        <textarea id="business_address" name="business_address" rows="2"
+                                                  placeholder="Street, City, State, ZIP Code"
+                                                  autocomplete="street-address">{{ invoice_form.business_address.value|default:'' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="form-section" aria-labelledby="clientTitle">
+                            <div class="section-header">
+                                <div class="section-icon client">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                </div>
+                                <div class="section-title">
+                                    <h2 id="clientTitle">Client Details</h2>
+                                    <span>Who you're billing</span>
+                                </div>
+                            </div>
+                            <div class="section-body">
+                                <div class="field-group">
+                                    <div class="field full-width">
+                                        <label for="client_name">Client Name <span class="required">*</span></label>
+                                        <input type="text" id="client_name" name="client_name" required
+                                               placeholder="Client or company name"
+                                               value="{{ invoice_form.client_name.value|default:'' }}">
+                                        <span class="field-error" id="client_name_error"></span>
+                                    </div>
+                                </div>
+                                <div class="field-group two-col">
+                                    <div class="field">
+                                        <label for="client_email">Email Address</label>
+                                        <input type="email" id="client_email" name="client_email"
+                                               placeholder="client@example.com"
+                                               value="{{ invoice_form.client_email.value|default:'' }}">
+                                        <span class="field-error" id="client_email_error"></span>
+                                    </div>
+                                    <div class="field">
+                                        <label for="client_phone">Phone Number</label>
+                                        <input type="tel" id="client_phone" name="client_phone"
+                                               placeholder="+1 234 567 8900"
+                                               value="{{ invoice_form.client_phone.value|default:'' }}">
+                                    </div>
+                                </div>
+                                <div class="field-group">
+                                    <div class="field full-width">
+                                        <label for="client_address">Address</label>
+                                        <textarea id="client_address" name="client_address" rows="2"
+                                                  placeholder="Client's billing address">{{ invoice_form.client_address.value|default:'' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="form-section" aria-labelledby="detailsTitle">
+                            <div class="section-header">
+                                <div class="section-icon details">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                        <line x1="16" y1="2" x2="16" y2="6"/>
+                                        <line x1="8" y1="2" x2="8" y2="6"/>
+                                        <line x1="3" y1="10" x2="21" y2="10"/>
+                                    </svg>
+                                </div>
+                                <div class="section-title">
+                                    <h2 id="detailsTitle">Invoice Details</h2>
+                                    <span>Dates, currency, and terms</span>
+                                </div>
+                            </div>
+                            <div class="section-body">
+                                <div class="field-group four-col">
+                                    <div class="field">
+                                        <label for="invoice_date">Invoice Date <span class="required">*</span></label>
+                                        <input type="date" id="invoice_date" name="invoice_date" required
+                                               value="{{ invoice_form.invoice_date.value|default:'' }}">
+                                        <span class="field-error" id="invoice_date_error"></span>
+                                    </div>
+                                    <div class="field">
+                                        <label for="due_date">Due Date <span class="required">*</span></label>
+                                        <input type="date" id="due_date" name="due_date" required
+                                               value="{{ invoice_form.due_date.value|default:'' }}">
+                                        <span class="field-error" id="due_date_error"></span>
+                                    </div>
+                                    <div class="field">
+                                        <label for="currency">Currency</label>
+                                        <select id="currency" name="currency">
+                                            <option value="USD" data-symbol="$" {% if invoice_form.currency.value == 'USD' %}selected{% endif %}>USD ($)</option>
+                                            <option value="EUR" data-symbol="€" {% if invoice_form.currency.value == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                                            <option value="GBP" data-symbol="£" {% if invoice_form.currency.value == 'GBP' %}selected{% endif %}>GBP (£)</option>
+                                            <option value="NGN" data-symbol="₦" {% if invoice_form.currency.value == 'NGN' %}selected{% endif %}>NGN (₦)</option>
+                                            <option value="CAD" data-symbol="C$" {% if invoice_form.currency.value == 'CAD' %}selected{% endif %}>CAD (C$)</option>
+                                            <option value="AUD" data-symbol="A$" {% if invoice_form.currency.value == 'AUD' %}selected{% endif %}>AUD (A$)</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label for="tax_rate">Tax Rate (%)</label>
+                                        <input type="number" id="tax_rate" name="tax_rate" min="0" max="100" step="0.01"
+                                               placeholder="0" value="{{ invoice_form.tax_rate.value|default:'0' }}">
+                                    </div>
+                                </div>
+                                <div class="field-group">
+                                    <div class="field full-width">
+                                        <label for="notes">Notes & Payment Terms</label>
+                                        <textarea id="notes" name="notes" rows="3"
+                                                  placeholder="Payment is due within 30 days. Thank you for your business!">{{ invoice_form.notes.value|default:'' }}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="form-section items-section" aria-labelledby="itemsTitle">
+                            <div class="section-header">
+                                <div class="section-icon items">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="8" y1="6" x2="21" y2="6"/>
+                                        <line x1="8" y1="12" x2="21" y2="12"/>
+                                        <line x1="8" y1="18" x2="21" y2="18"/>
+                                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                                    </svg>
+                                </div>
+                                <div class="section-title">
+                                    <h2 id="itemsTitle">Line Items</h2>
+                                    <span>Products or services being billed</span>
+                                </div>
+                                <div class="items-counter">
+                                    <span id="itemCount">0</span> items
+                                </div>
+                            </div>
+                            <div class="section-body">
+                                <div class="items-table-wrapper">
+                                    <table class="items-table" id="itemsTable">
+                                        <thead>
+                                            <tr>
+                                                <th class="col-drag"></th>
+                                                <th class="col-description">Description</th>
+                                                <th class="col-qty">Qty</th>
+                                                <th class="col-price">Price</th>
+                                                <th class="col-total">Total</th>
+                                                <th class="col-actions"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="itemsBody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="items-empty" id="itemsEmpty">
+                                    <div class="empty-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                                            <rect x="9" y="3" width="6" height="4" rx="1"/>
+                                            <path d="M12 11v6M9 14h6"/>
                                         </svg>
-                                        Add Another Item
+                                    </div>
+                                    <h3>No items added yet</h3>
+                                    <p>Add products or services to your invoice</p>
+                                    <button type="button" class="btn-add-first" id="addFirstItem">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="12" y1="5" x2="12" y2="19"/>
+                                            <line x1="5" y1="12" x2="19" y2="12"/>
+                                        </svg>
+                                        Add First Item
                                     </button>
                                 </div>
-                            </div>
-                            
-                            <!-- Invoice Summary -->
-                            <div class="invoice-summary-section">
-                                <div class="summary-panel">
-                                    <div class="summary-panel-header">
+
+                                <div class="items-footer" id="itemsFooter" style="display: none;">
+                                    <button type="button" class="btn-add-item" id="addItemBtn">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                                            <line x1="1" y1="10" x2="23" y2="10"/>
+                                            <line x1="12" y1="5" x2="12" y2="19"/>
+                                            <line x1="5" y1="12" x2="19" y2="12"/>
                                         </svg>
-                                        <h3>Invoice Summary</h3>
-                                    </div>
-                                    <div class="summary-panel-body">
-                                        <div class="summary-line subtotal">
-                                            <span class="label">Subtotal</span>
-                                            <span class="value" id="summarySubtotal">$0.00</span>
-                                        </div>
-                                        <div class="summary-line tax">
-                                            <span class="label">
-                                                Taxes
-                                                <span class="tax-rate" id="summaryTaxRate">0%</span>
-                                            </span>
-                                            <span class="value" id="summaryTax">$0.00</span>
-                                        </div>
-                                        <div class="summary-line grand-total">
-                                            <span class="label">Total Due</span>
-                                            <span class="value" id="summaryGrandTotal">$0.00</span>
-                                        </div>
+                                        Add Item
+                                    </button>
+                                    <div class="keyboard-hints">
+                                        <span><kbd>Tab</kbd> Next field</span>
+                                        <span><kbd>Enter</kbd> Add item</span>
+                                        <span><kbd>Ctrl+D</kbd> Duplicate</span>
                                     </div>
                                 </div>
                             </div>
+                        </section>
+                    </div>
+
+                    <aside class="form-sidebar">
+                        <div class="sidebar-sticky">
+                            <div class="summary-card">
+                                <h3>Invoice Summary</h3>
+                                <div class="summary-rows">
+                                    <div class="summary-row">
+                                        <span>Subtotal</span>
+                                        <span id="summarySubtotal">$0.00</span>
+                                    </div>
+                                    <div class="summary-row tax">
+                                        <span>Tax (<span id="taxRateDisplay">0</span>%)</span>
+                                        <span id="summaryTax">$0.00</span>
+                                    </div>
+                                    <div class="summary-row total">
+                                        <span>Total</span>
+                                        <span id="summaryTotal">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <button type="submit" class="btn-primary" id="submitBtn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                                        <polyline points="22 4 12 14.01 9 11.01"/>
+                                    </svg>
+                                    <span>Create Invoice</span>
+                                </button>
+                                <a href="{% url 'dashboard' %}" class="btn-secondary">Cancel</a>
+                            </div>
+
+                            <div class="quick-tips">
+                                <h4>Quick Tips</h4>
+                                <ul>
+                                    <li>Press <kbd>Enter</kbd> in the last field to add a new item</li>
+                                    <li>Drag items to reorder them</li>
+                                    <li>Your draft is saved automatically</li>
+                                </ul>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Form Actions -->
-                <div class="form-actions-bar">
-                    <div class="form-actions-left">
-                        <button type="button" id="clearDraftBtn" class="btn-danger-outline" style="display: none;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            </svg>
-                            Clear Draft
-                        </button>
-                    </div>
-                    <div class="form-actions-right">
-                        <a href="{% url 'dashboard' %}" class="btn-secondary">Cancel</a>
-                        <button type="submit" class="btn-primary" id="submitBtn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <line x1="16" y1="13" x2="8" y2="13"/>
-                                <line x1="16" y1="17" x2="8" y2="17"/>
-                            </svg>
-                            Create Invoice
-                        </button>
-                    </div>
+                    </aside>
                 </div>
             </form>
         </div>
     </main>
 </div>
+
+<template id="itemRowTemplate">
+    <tr class="item-row" draggable="true">
+        <td class="col-drag">
+            <button type="button" class="drag-handle" aria-label="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="9" cy="6" r="1.5"/>
+                    <circle cx="15" cy="6" r="1.5"/>
+                    <circle cx="9" cy="12" r="1.5"/>
+                    <circle cx="15" cy="12" r="1.5"/>
+                    <circle cx="9" cy="18" r="1.5"/>
+                    <circle cx="15" cy="18" r="1.5"/>
+                </svg>
+            </button>
+        </td>
+        <td class="col-description">
+            <input type="text" class="item-description" placeholder="Item description" autocomplete="off">
+        </td>
+        <td class="col-qty">
+            <input type="number" class="item-qty" value="1" min="0" step="any" autocomplete="off">
+        </td>
+        <td class="col-price">
+            <div class="price-input">
+                <span class="currency-symbol">$</span>
+                <input type="number" class="item-price" placeholder="0.00" min="0" step="0.01" autocomplete="off">
+            </div>
+        </td>
+        <td class="col-total">
+            <span class="item-total">$0.00</span>
+        </td>
+        <td class="col-actions">
+            <button type="button" class="action-btn duplicate" title="Duplicate" aria-label="Duplicate item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2"/>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+            </button>
+            <button type="button" class="action-btn delete" title="Delete" aria-label="Delete item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                </svg>
+            </button>
+        </td>
+    </tr>
+</template>
+
+<template id="mobileItemTemplate">
+    <div class="mobile-item" draggable="true">
+        <div class="mobile-item-header">
+            <button type="button" class="drag-handle" aria-label="Drag to reorder">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+                    <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                    <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+                </svg>
+            </button>
+            <span class="item-number">#1</span>
+            <div class="mobile-actions">
+                <button type="button" class="action-btn duplicate" title="Duplicate" aria-label="Duplicate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                    </svg>
+                </button>
+                <button type="button" class="action-btn delete" title="Delete" aria-label="Delete">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="mobile-item-body">
+            <div class="mobile-field full">
+                <label>Description</label>
+                <input type="text" class="item-description" placeholder="What are you charging for?" autocomplete="off">
+            </div>
+            <div class="mobile-field-row">
+                <div class="mobile-field">
+                    <label>Quantity</label>
+                    <input type="number" class="item-qty" value="1" min="0" step="any" autocomplete="off">
+                </div>
+                <div class="mobile-field">
+                    <label>Unit Price</label>
+                    <div class="price-input">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" class="item-price" placeholder="0.00" min="0" step="0.01" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mobile-item-footer">
+            <span>Line Total</span>
+            <span class="item-total">$0.00</span>
+        </div>
+    </div>
+</template>
+
+<div class="mobile-items-container" id="mobileItemsContainer" style="display: none;"></div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
 (function() {
     'use strict';
-    
-    // =====================================================
-    // CONFIGURATION & STATE
-    // =====================================================
+
     const DRAFT_KEY = 'invoiceflow_draft_v2';
-    let itemIdCounter = 0;
-    
-    // Currency symbols mapping
-    const CURRENCY_SYMBOLS = {
-        'USD': '$',
-        'EUR': '€',
-        'GBP': '£',
-        'NGN': '₦',
-        'CAD': 'C$',
-        'AUD': 'A$'
-    };
-    
-    // =====================================================
-    // DOM ELEMENTS
-    // =====================================================
+    const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', NGN: '₦', CAD: 'C$', AUD: 'A$' };
+
     const form = document.getElementById('invoiceForm');
-    const lineItemsDataInput = document.getElementById('lineItemsData');
-    const itemsList = document.getElementById('itemsList');
-    const emptyState = document.getElementById('emptyState');
-    const itemsTableContainer = document.getElementById('itemsTableContainer');
-    const itemsCountBadge = document.getElementById('itemsCountBadge');
-    const currencySelect = document.getElementById('currency');
-    const taxRateInput = document.getElementById('tax_rate');
-    
-    // Summary elements
-    const summarySubtotal = document.getElementById('summarySubtotal');
-    const summaryTax = document.getElementById('summaryTax');
-    const summaryTaxRate = document.getElementById('summaryTaxRate');
-    const summaryGrandTotal = document.getElementById('summaryGrandTotal');
-    
-    // Auto-save elements
-    const autoSaveIndicator = document.getElementById('autoSaveIndicator');
-    const saveStatusText = document.getElementById('saveStatusText');
-    
-    // Validation elements
-    const validationAlert = document.getElementById('validationAlert');
-    const validationErrorsList = document.getElementById('validationErrorsList');
-    
-    // Buttons
-    const addFirstItemBtn = document.getElementById('addFirstItemBtn');
-    const addNewItemBtn = document.getElementById('addNewItemBtn');
+    const itemsBody = document.getElementById('itemsBody');
+    const mobileContainer = document.getElementById('mobileItemsContainer');
+    const itemsEmpty = document.getElementById('itemsEmpty');
+    const itemsFooter = document.getElementById('itemsFooter');
+    const itemsTable = document.getElementById('itemsTable');
+    const itemCountEl = document.getElementById('itemCount');
+    const lineItemsInput = document.getElementById('lineItemsInput');
+    const validationErrors = document.getElementById('validationErrors');
+    const errorList = document.getElementById('errorList');
+    const autosaveStatus = document.getElementById('autosaveStatus');
     const clearDraftBtn = document.getElementById('clearDraftBtn');
     const submitBtn = document.getElementById('submitBtn');
-    
-    // =====================================================
-    // UTILITY FUNCTIONS
-    // =====================================================
+
+    const summarySubtotal = document.getElementById('summarySubtotal');
+    const summaryTax = document.getElementById('summaryTax');
+    const summaryTotal = document.getElementById('summaryTotal');
+    const taxRateDisplay = document.getElementById('taxRateDisplay');
+
+    const currencySelect = document.getElementById('currency');
+    const taxRateInput = document.getElementById('tax_rate');
+
+    const rowTemplate = document.getElementById('itemRowTemplate');
+    const mobileTemplate = document.getElementById('mobileItemTemplate');
+
+    let isMobile = window.innerWidth < 768;
+    let draggedItem = null;
+
     function getCurrencySymbol() {
-        return CURRENCY_SYMBOLS[currencySelect.value] || '$';
+        const opt = currencySelect.options[currencySelect.selectedIndex];
+        return opt?.dataset.symbol || '$';
     }
-    
+
     function formatCurrency(amount) {
-        const symbol = getCurrencySymbol();
-        const formatted = Math.abs(amount).toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        });
-        return amount < 0 ? `-${symbol}${formatted}` : `${symbol}${formatted}`;
+        const num = parseFloat(amount) || 0;
+        return getCurrencySymbol() + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
-    
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str || '';
-        return div.innerHTML;
-    }
-    
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
-    
-    // =====================================================
-    // ITEM COUNT & VISIBILITY
-    // =====================================================
-    function updateItemsCount() {
-        const count = itemsList.querySelectorAll('.item-row').length;
-        itemsCountBadge.textContent = count;
+
+    function updateUI() {
+        const count = isMobile ? mobileContainer.querySelectorAll('.mobile-item').length 
+                              : itemsBody.querySelectorAll('.item-row').length;
+        itemCountEl.textContent = count;
         
         if (count === 0) {
-            emptyState.style.display = 'flex';
-            itemsTableContainer.classList.remove('visible');
+            itemsEmpty.style.display = 'flex';
+            itemsFooter.style.display = 'none';
+            if (isMobile) mobileContainer.style.display = 'none';
+            else itemsTable.style.display = 'none';
         } else {
-            emptyState.style.display = 'none';
-            itemsTableContainer.classList.add('visible');
-        }
-    }
-    
-    function updateRowNumbers() {
-        const rows = itemsList.querySelectorAll('.item-row');
-        rows.forEach((row, index) => {
-            const handle = row.querySelector('.row-handle');
-            if (handle) {
-                handle.textContent = index + 1;
+            itemsEmpty.style.display = 'none';
+            itemsFooter.style.display = 'flex';
+            if (isMobile) {
+                mobileContainer.style.display = 'block';
+                itemsTable.style.display = 'none';
+            } else {
+                mobileContainer.style.display = 'none';
+                itemsTable.style.display = 'table';
             }
+        }
+        updateNumbers();
+    }
+
+    function updateNumbers() {
+        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
+                              : itemsBody.querySelectorAll('.item-row');
+        items.forEach((item, i) => {
+            const numEl = item.querySelector('.item-number');
+            if (numEl) numEl.textContent = '#' + (i + 1);
         });
     }
-    
-    // =====================================================
-    // CALCULATIONS
-    // =====================================================
-    function calculateLineTotal(row) {
-        const qty = parseFloat(row.querySelector('.item-qty')?.value) || 0;
-        const price = parseFloat(row.querySelector('.item-price')?.value) || 0;
-        
-        // Simple calculation: qty * price
-        const lineTotal = qty * price;
-        
-        // Update display
-        const totalDisplay = row.querySelector('.line-total');
-        if (totalDisplay) {
-            totalDisplay.textContent = formatCurrency(lineTotal);
-            totalDisplay.classList.add('calculating');
-            setTimeout(() => totalDisplay.classList.remove('calculating'), 300);
-        }
-        
-        // Update mobile display
-        const mobileTotal = row.querySelector('.summary-value');
-        if (mobileTotal) {
-            mobileTotal.textContent = formatCurrency(lineTotal);
-        }
-        
-        return lineTotal;
-    }
-    
-    function calculateAllTotals() {
+
+    function calculateTotals() {
+        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
+                              : itemsBody.querySelectorAll('.item-row');
         let subtotal = 0;
-        
-        const rows = itemsList.querySelectorAll('.item-row');
-        rows.forEach(row => {
-            subtotal += calculateLineTotal(row);
+        const symbol = getCurrencySymbol();
+
+        items.forEach(item => {
+            const qty = parseFloat(item.querySelector('.item-qty')?.value) || 0;
+            const price = parseFloat(item.querySelector('.item-price')?.value) || 0;
+            const lineTotal = qty * price;
+            const totalEl = item.querySelector('.item-total');
+            if (totalEl) totalEl.textContent = symbol + lineTotal.toFixed(2);
+            subtotal += lineTotal;
         });
-        
-        // Global tax rate
-        const globalTaxRate = parseFloat(taxRateInput.value) || 0;
-        const taxAmount = subtotal * (globalTaxRate / 100);
-        
-        // Grand total
-        const grandTotal = subtotal + taxAmount;
-        
-        // Update summary panel
+
+        const taxRate = parseFloat(taxRateInput.value) || 0;
+        const taxAmount = subtotal * (taxRate / 100);
+        const total = subtotal + taxAmount;
+
         summarySubtotal.textContent = formatCurrency(subtotal);
         summaryTax.textContent = formatCurrency(taxAmount);
-        summaryTaxRate.textContent = `${globalTaxRate}%`;
-        summaryGrandTotal.textContent = formatCurrency(grandTotal);
-        
-        // Update hidden input for form submission
+        summaryTotal.textContent = formatCurrency(total);
+        taxRateDisplay.textContent = taxRate;
+
+        document.querySelectorAll('.currency-symbol').forEach(el => {
+            el.textContent = symbol;
+        });
+
         updateLineItemsData();
-        
-        // Trigger auto-save
-        debouncedSaveDraft();
+        debouncedSave();
     }
-    
-    // =====================================================
-    // VALIDATION
-    // =====================================================
-    function validateRow(row) {
-        let isValid = true;
-        
-        const description = row.querySelector('.item-description');
-        const qty = row.querySelector('.item-qty');
-        const price = row.querySelector('.item-price');
-        
-        // Clear previous errors
-        row.classList.remove('has-error');
-        [description, qty, price].forEach(el => el?.classList.remove('has-error'));
-        
-        // Validate description
-        if (!description?.value?.trim()) {
-            description?.classList.add('has-error');
-            isValid = false;
-        }
-        
-        // Validate quantity
-        const qtyVal = parseFloat(qty?.value);
-        if (isNaN(qtyVal) || qtyVal <= 0) {
-            qty?.classList.add('has-error');
-            isValid = false;
-        }
-        
-        // Validate price
-        const priceVal = parseFloat(price?.value);
-        if (isNaN(priceVal) || priceVal < 0) {
-            price?.classList.add('has-error');
-            isValid = false;
-        }
-        
-        if (!isValid) {
-            row.classList.add('has-error');
-        }
-        
-        return isValid;
-    }
-    
-    function validateForm() {
-        const errors = [];
-        let isValid = true;
-        
-        // Clear previous
-        validationAlert.classList.remove('visible');
-        validationErrorsList.innerHTML = '';
-        document.querySelectorAll('.field-input.has-error, .field-textarea.has-error').forEach(el => {
-            el.classList.remove('has-error');
-        });
-        document.querySelectorAll('.field-error-msg.visible').forEach(el => {
-            el.classList.remove('visible');
-        });
-        
-        // Required fields
-        const requiredFields = [
-            { id: 'business_name', label: 'Business name' },
-            { id: 'client_name', label: 'Client name' },
-            { id: 'invoice_date', label: 'Invoice date' },
-            { id: 'due_date', label: 'Due date' }
-        ];
-        
-        requiredFields.forEach(field => {
-            const input = document.getElementById(field.id);
-            if (!input?.value?.trim()) {
-                input?.classList.add('has-error');
-                document.getElementById(`${field.id}_error`)?.classList.add('visible');
-                errors.push(`${field.label} is required`);
-                isValid = false;
-            }
-        });
-        
-        // Email validation
-        const emailFields = ['business_email', 'client_email'];
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
-        emailFields.forEach(fieldId => {
-            const input = document.getElementById(fieldId);
-            const value = input?.value?.trim();
-            if (value && !emailRegex.test(value)) {
-                input?.classList.add('has-error');
-                document.getElementById(`${fieldId}_error`)?.classList.add('visible');
-                errors.push(`Please enter a valid email for ${fieldId.replace('_', ' ')}`);
-                isValid = false;
-            }
-        });
-        
-        // Line items
-        const rows = itemsList.querySelectorAll('.item-row');
-        if (rows.length === 0) {
-            errors.push('Please add at least one line item');
-            isValid = false;
-        } else {
-            rows.forEach((row, index) => {
-                if (!validateRow(row)) {
-                    errors.push(`Line item ${index + 1} has missing or invalid data`);
-                    isValid = false;
-                }
-            });
-        }
-        
-        // Show errors
-        if (!isValid) {
-            errors.forEach(error => {
-                const li = document.createElement('li');
-                li.textContent = error;
-                validationErrorsList.appendChild(li);
-            });
-            validationAlert.classList.add('visible');
-            validationAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        
-        return isValid;
-    }
-    
-    // =====================================================
-    // LINE ITEMS DATA
-    // =====================================================
-    function getLineItems() {
-        const items = [];
-        const rows = itemsList.querySelectorAll('.item-row');
-        
-        rows.forEach(row => {
-            const description = row.querySelector('.item-description')?.value?.trim() || '';
-            const quantity = parseFloat(row.querySelector('.item-qty')?.value) || 0;
-            const unitPrice = parseFloat(row.querySelector('.item-price')?.value) || 0;
-            
-            if (description && quantity > 0) {
-                items.push({
-                    description,
-                    quantity,
-                    unit_price: unitPrice
-                });
-            }
-        });
-        
-        return items;
-    }
-    
+
     function updateLineItemsData() {
-        const items = getLineItems();
-        lineItemsDataInput.value = JSON.stringify(items);
+        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
+                              : itemsBody.querySelectorAll('.item-row');
+        const data = [];
+        items.forEach(item => {
+            const desc = item.querySelector('.item-description')?.value?.trim() || '';
+            const qty = parseFloat(item.querySelector('.item-qty')?.value) || 0;
+            const price = parseFloat(item.querySelector('.item-price')?.value) || 0;
+            if (desc && qty > 0) {
+                data.push({ description: desc, quantity: qty, unit_price: price });
+            }
+        });
+        lineItemsInput.value = JSON.stringify(data);
     }
-    
-    // =====================================================
-    // CREATE LINE ITEM ROW
-    // =====================================================
-    function createItemRow(data = {}) {
-        const id = ++itemIdCounter;
-        const row = document.createElement('div');
-        row.className = 'item-row new-item';
-        row.dataset.id = id;
-        row.setAttribute('draggable', 'true');
+
+    function createDesktopRow(data = {}) {
+        const clone = rowTemplate.content.cloneNode(true);
+        const row = clone.querySelector('.item-row');
         
-        const symbol = getCurrencySymbol();
-        const description = escapeHtml(data.description || '');
-        const quantity = data.quantity ?? 1;
-        const unitPrice = data.unit_price ?? '';
+        if (data.description) row.querySelector('.item-description').value = data.description;
+        if (data.quantity) row.querySelector('.item-qty').value = data.quantity;
+        if (data.unit_price) row.querySelector('.item-price').value = data.unit_price;
         
-        row.innerHTML = `
-            <!-- Row Number / Handle -->
-            <button type="button" class="row-handle" title="Drag to reorder">1</button>
-            
-            <!-- Description Field -->
-            <div class="mobile-field-group description">
-                <label class="mobile-field-label">Description</label>
-                <input type="text" 
-                       class="item-input item-description" 
-                       placeholder="Product or service name"
-                       value="${description}"
-                       autocomplete="off">
-            </div>
-            
-            <!-- Quantity Field -->
-            <div class="mobile-field-group">
-                <label class="mobile-field-label">Qty</label>
-                <input type="number" 
-                       class="item-input number item-qty" 
-                       placeholder="1"
-                       value="${quantity}"
-                       min="0"
-                       step="any"
-                       autocomplete="off">
-            </div>
-            
-            <!-- Unit Price Field -->
-            <div class="mobile-field-group">
-                <label class="mobile-field-label">Unit Price</label>
-                <div class="price-input-wrapper">
-                    <span class="currency-sym">${symbol}</span>
-                    <input type="number" 
-                           class="item-input number item-price" 
-                           placeholder="0.00"
-                           value="${unitPrice}"
-                           min="0"
-                           step="0.01"
-                           autocomplete="off">
-                </div>
-            </div>
-            
-            <!-- Line Total -->
-            <div class="line-total">${formatCurrency(quantity * (parseFloat(unitPrice) || 0))}</div>
-            
-            <!-- Desktop Actions -->
-            <div class="row-actions">
-                <button type="button" class="row-action-btn duplicate" title="Duplicate">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                </button>
-                <button type="button" class="row-action-btn delete" title="Remove">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <!-- Mobile Summary & Actions -->
-            <div class="mobile-summary">
-                <span class="summary-label">Line Total</span>
-                <span class="summary-value">${formatCurrency(quantity * (parseFloat(unitPrice) || 0))}</span>
-            </div>
-            
-            <div class="mobile-actions-row">
-                <button type="button" class="mobile-action-btn duplicate">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                    Duplicate
-                </button>
-                <button type="button" class="mobile-action-btn delete">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                    Remove
-                </button>
-            </div>
-        `;
-        
-        // Setup event listeners
-        setupRowEventListeners(row);
-        
+        setupRowEvents(row);
         return row;
     }
-    
-    function setupRowEventListeners(row) {
-        const inputs = row.querySelectorAll('.item-input');
+
+    function createMobileItem(data = {}) {
+        const clone = mobileTemplate.content.cloneNode(true);
+        const item = clone.querySelector('.mobile-item');
         
+        if (data.description) item.querySelector('.item-description').value = data.description;
+        if (data.quantity) item.querySelector('.item-qty').value = data.quantity;
+        if (data.unit_price) item.querySelector('.item-price').value = data.unit_price;
+        
+        setupRowEvents(item);
+        return item;
+    }
+
+    function setupRowEvents(element) {
+        const inputs = element.querySelectorAll('input');
         inputs.forEach(input => {
-            // Real-time calculation on input
-            input.addEventListener('input', () => {
-                calculateAllTotals();
-            });
-            
-            // Validate on blur
-            input.addEventListener('blur', () => {
-                validateRow(row);
-            });
-            
-            // Keyboard navigation
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    // If on last field (item-tax), add new item
-                    if (input.classList.contains('item-tax') || input.classList.contains('item-price')) {
-                        addItem();
-                    } else {
-                        // Move to next input
-                        const allInputs = Array.from(row.querySelectorAll('.item-input'));
-                        const currentIndex = allInputs.indexOf(input);
-                        if (currentIndex < allInputs.length - 1) {
-                            allInputs[currentIndex + 1].focus();
-                        }
-                    }
-                }
-                
-                // Ctrl+D to duplicate
-                if (e.ctrlKey && e.key === 'd') {
-                    e.preventDefault();
-                    duplicateItem(row);
-                }
-            });
+            input.addEventListener('input', calculateTotals);
+            input.addEventListener('keydown', handleKeyDown);
         });
-        
-        // Duplicate buttons
-        const duplicateBtns = row.querySelectorAll('.duplicate');
-        duplicateBtns.forEach(btn => {
-            btn.addEventListener('click', () => duplicateItem(row));
-        });
-        
-        // Delete buttons
-        const deleteBtns = row.querySelectorAll('.delete');
-        deleteBtns.forEach(btn => {
-            btn.addEventListener('click', () => removeItem(row));
-        });
-        
-        // Drag and drop
-        setupDragAndDrop(row);
+
+        element.querySelector('.duplicate')?.addEventListener('click', () => duplicateItem(element));
+        element.querySelector('.delete')?.addEventListener('click', () => deleteItem(element));
+
+        element.addEventListener('dragstart', handleDragStart);
+        element.addEventListener('dragend', handleDragEnd);
+        element.addEventListener('dragover', handleDragOver);
+        element.addEventListener('drop', handleDrop);
     }
-    
-    // =====================================================
-    // ITEM OPERATIONS
-    // =====================================================
+
+    function handleKeyDown(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            const isLastInput = e.target.classList.contains('item-price');
+            if (isLastInput) {
+                addItem();
+            } else {
+                const inputs = Array.from(e.target.closest('.item-row, .mobile-item').querySelectorAll('input'));
+                const idx = inputs.indexOf(e.target);
+                if (idx < inputs.length - 1) inputs[idx + 1].focus();
+            }
+        }
+        if (e.ctrlKey && e.key === 'd') {
+            e.preventDefault();
+            duplicateItem(e.target.closest('.item-row, .mobile-item'));
+        }
+    }
+
     function addItem(data = {}) {
-        const row = createItemRow(data);
-        itemsList.appendChild(row);
-        
-        updateItemsCount();
-        updateRowNumbers();
-        calculateAllTotals();
-        
-        // Focus the description field
-        setTimeout(() => {
-            const descInput = row.querySelector('.item-description');
-            descInput?.focus();
-            row.classList.remove('new-item');
-        }, 50);
-        
-        return row;
+        if (isMobile) {
+            const item = createMobileItem(data);
+            mobileContainer.appendChild(item);
+            item.querySelector('.item-description')?.focus();
+        } else {
+            const row = createDesktopRow(data);
+            itemsBody.appendChild(row);
+            row.querySelector('.item-description')?.focus();
+        }
+        updateUI();
+        calculateTotals();
     }
-    
-    function duplicateItem(sourceRow) {
+
+    function duplicateItem(element) {
         const data = {
-            description: sourceRow.querySelector('.item-description')?.value || '',
-            quantity: sourceRow.querySelector('.item-qty')?.value || 1,
-            unit_price: sourceRow.querySelector('.item-price')?.value || ''
+            description: element.querySelector('.item-description')?.value || '',
+            quantity: element.querySelector('.item-qty')?.value || 1,
+            unit_price: element.querySelector('.item-price')?.value || ''
         };
         
-        const newRow = createItemRow(data);
-        sourceRow.after(newRow);
-        
-        updateItemsCount();
-        updateRowNumbers();
-        calculateAllTotals();
-        
-        setTimeout(() => {
+        if (isMobile) {
+            const newItem = createMobileItem(data);
+            element.after(newItem);
+            newItem.querySelector('.item-description')?.focus();
+        } else {
+            const newRow = createDesktopRow(data);
+            element.after(newRow);
             newRow.querySelector('.item-description')?.focus();
-            newRow.classList.remove('new-item');
-        }, 50);
+        }
+        updateUI();
+        calculateTotals();
     }
-    
-    function removeItem(row) {
-        row.classList.add('removing');
-        
+
+    function deleteItem(element) {
+        element.style.opacity = '0';
+        element.style.transform = 'translateX(20px)';
         setTimeout(() => {
-            row.remove();
-            updateItemsCount();
-            updateRowNumbers();
-            calculateAllTotals();
+            element.remove();
+            updateUI();
+            calculateTotals();
         }, 200);
     }
-    
-    // =====================================================
-    // DRAG AND DROP
-    // =====================================================
-    let draggedItem = null;
-    
-    function setupDragAndDrop(row) {
-        row.addEventListener('dragstart', (e) => {
-            draggedItem = row;
-            row.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        });
-        
-        row.addEventListener('dragend', () => {
-            row.classList.remove('dragging');
-            draggedItem = null;
-            
-            itemsList.querySelectorAll('.drag-over').forEach(el => {
-                el.classList.remove('drag-over');
-            });
-            
-            updateRowNumbers();
-            calculateAllTotals();
-        });
-        
-        row.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            
-            if (draggedItem && draggedItem !== row) {
-                row.classList.add('drag-over');
-            }
-        });
-        
-        row.addEventListener('dragleave', () => {
-            row.classList.remove('drag-over');
-        });
-        
-        row.addEventListener('drop', (e) => {
-            e.preventDefault();
-            row.classList.remove('drag-over');
-            
-            if (draggedItem && draggedItem !== row) {
-                const allRows = Array.from(itemsList.querySelectorAll('.item-row'));
-                const draggedIndex = allRows.indexOf(draggedItem);
-                const targetIndex = allRows.indexOf(row);
-                
-                if (draggedIndex < targetIndex) {
-                    row.after(draggedItem);
-                } else {
-                    row.before(draggedItem);
-                }
-            }
-        });
+
+    function handleDragStart(e) {
+        draggedItem = e.currentTarget;
+        e.currentTarget.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
     }
-    
-    // =====================================================
-    // AUTO-SAVE (Draft)
-    // =====================================================
-    let saveTimeout = null;
-    
-    function saveDraft() {
+
+    function handleDragEnd(e) {
+        e.currentTarget.classList.remove('dragging');
+        draggedItem = null;
+        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        updateNumbers();
+        calculateTotals();
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        if (draggedItem && draggedItem !== e.currentTarget) {
+            e.currentTarget.classList.add('drag-over');
+        }
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        if (draggedItem && draggedItem !== e.currentTarget) {
+            const container = isMobile ? mobileContainer : itemsBody;
+            const items = Array.from(container.children);
+            const dragIdx = items.indexOf(draggedItem);
+            const dropIdx = items.indexOf(e.currentTarget);
+            
+            if (dragIdx < dropIdx) {
+                e.currentTarget.after(draggedItem);
+            } else {
+                e.currentTarget.before(draggedItem);
+            }
+        }
+    }
+
+    let saveTimeout;
+    function debouncedSave() {
         clearTimeout(saveTimeout);
-        
-        autoSaveIndicator.className = 'auto-save-indicator saving';
-        saveStatusText.textContent = 'Saving...';
+        autosaveStatus.className = 'autosave-status saving';
+        autosaveStatus.querySelector('.status-text').textContent = 'Saving...';
         
         saveTimeout = setTimeout(() => {
-            const draft = {
-                business_name: document.getElementById('business_name')?.value,
-                business_email: document.getElementById('business_email')?.value,
-                business_phone: document.getElementById('business_phone')?.value,
-                business_address: document.getElementById('business_address')?.value,
-                client_name: document.getElementById('client_name')?.value,
-                client_email: document.getElementById('client_email')?.value,
-                client_phone: document.getElementById('client_phone')?.value,
-                client_address: document.getElementById('client_address')?.value,
-                invoice_date: document.getElementById('invoice_date')?.value,
-                due_date: document.getElementById('due_date')?.value,
-                currency: currencySelect?.value,
-                tax_rate: taxRateInput?.value,
-                notes: document.getElementById('notes')?.value,
-                line_items: [],
-                savedAt: new Date().toISOString()
-            };
+            saveDraft();
+            autosaveStatus.className = 'autosave-status saved';
+            autosaveStatus.querySelector('.status-text').textContent = 'Saved';
+            clearDraftBtn.style.display = 'inline-block';
             
-            // Collect line items with all fields
-            const rows = itemsList.querySelectorAll('.item-row');
-            rows.forEach(row => {
-                draft.line_items.push({
-                    description: row.querySelector('.item-description')?.value || '',
-                    quantity: row.querySelector('.item-qty')?.value || 1,
-                    unit_price: row.querySelector('.item-price')?.value || ''
-                });
-            });
-            
-            try {
-                localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-                autoSaveIndicator.className = 'auto-save-indicator saved';
-                saveStatusText.textContent = 'Saved';
-                clearDraftBtn.style.display = 'inline-flex';
-                
-                setTimeout(() => {
-                    autoSaveIndicator.className = 'auto-save-indicator';
-                    saveStatusText.textContent = 'Draft';
-                }, 2000);
-            } catch (e) {
-                console.error('Failed to save draft:', e);
-            }
-        }, 500);
+            setTimeout(() => {
+                autosaveStatus.className = 'autosave-status';
+                autosaveStatus.querySelector('.status-text').textContent = 'Draft saved';
+            }, 2000);
+        }, 800);
     }
-    
-    const debouncedSaveDraft = debounce(saveDraft, 800);
-    
+
+    function saveDraft() {
+        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
+                              : itemsBody.querySelectorAll('.item-row');
+        const lineItems = [];
+        items.forEach(item => {
+            lineItems.push({
+                description: item.querySelector('.item-description')?.value || '',
+                quantity: item.querySelector('.item-qty')?.value || 1,
+                unit_price: item.querySelector('.item-price')?.value || ''
+            });
+        });
+
+        const draft = {
+            business_name: document.getElementById('business_name')?.value,
+            business_email: document.getElementById('business_email')?.value,
+            business_phone: document.getElementById('business_phone')?.value,
+            business_address: document.getElementById('business_address')?.value,
+            client_name: document.getElementById('client_name')?.value,
+            client_email: document.getElementById('client_email')?.value,
+            client_phone: document.getElementById('client_phone')?.value,
+            client_address: document.getElementById('client_address')?.value,
+            invoice_date: document.getElementById('invoice_date')?.value,
+            due_date: document.getElementById('due_date')?.value,
+            currency: currencySelect?.value,
+            tax_rate: taxRateInput?.value,
+            notes: document.getElementById('notes')?.value,
+            line_items: lineItems,
+            savedAt: new Date().toISOString()
+        };
+
+        try {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch (e) {
+            console.error('Failed to save draft:', e);
+        }
+    }
+
     function loadDraft() {
         try {
-            const draftJson = localStorage.getItem(DRAFT_KEY);
-            if (!draftJson) return false;
-            
-            const draft = JSON.parse(draftJson);
-            
-            // Only load if draft is less than 7 days old
+            const json = localStorage.getItem(DRAFT_KEY);
+            if (!json) return false;
+
+            const draft = JSON.parse(json);
             const savedAt = new Date(draft.savedAt);
-            const now = new Date();
-            const daysDiff = (now - savedAt) / (1000 * 60 * 60 * 24);
+            const daysDiff = (new Date() - savedAt) / (1000 * 60 * 60 * 24);
             if (daysDiff > 7) {
                 localStorage.removeItem(DRAFT_KEY);
                 return false;
             }
-            
-            // Restore form fields
-            const fieldsToRestore = [
-                'business_name', 'business_email', 'business_phone', 'business_address',
-                'client_name', 'client_email', 'client_phone', 'client_address',
-                'invoice_date', 'due_date', 'notes'
-            ];
-            
-            fieldsToRestore.forEach(field => {
-                const input = document.getElementById(field);
-                if (input && draft[field]) {
-                    input.value = draft[field];
-                }
+
+            const fields = ['business_name', 'business_email', 'business_phone', 'business_address',
+                           'client_name', 'client_email', 'client_phone', 'client_address',
+                           'invoice_date', 'due_date', 'notes'];
+            fields.forEach(f => {
+                const el = document.getElementById(f);
+                if (el && draft[f]) el.value = draft[f];
             });
-            
+
             if (draft.currency) currencySelect.value = draft.currency;
             if (draft.tax_rate) taxRateInput.value = draft.tax_rate;
-            
-            // Restore line items
-            if (draft.line_items && draft.line_items.length > 0) {
-                draft.line_items.forEach(item => {
-                    addItem(item);
-                });
+
+            if (draft.line_items?.length > 0) {
+                draft.line_items.forEach(item => addItem(item));
             }
-            
-            clearDraftBtn.style.display = 'inline-flex';
+
+            clearDraftBtn.style.display = 'inline-block';
             return true;
         } catch (e) {
             console.error('Failed to load draft:', e);
             return false;
         }
     }
-    
+
     function clearDraft() {
-        if (confirm('Are you sure you want to clear the draft? This cannot be undone.')) {
+        if (confirm('Clear all draft data? This cannot be undone.')) {
             localStorage.removeItem(DRAFT_KEY);
             location.reload();
         }
     }
-    
-    // =====================================================
-    // CURRENCY UPDATE
-    // =====================================================
-    function updateCurrencySymbols() {
-        const symbol = getCurrencySymbol();
-        document.querySelectorAll('.currency-sym').forEach(el => {
-            el.textContent = symbol;
-        });
-        calculateAllTotals();
-    }
-    
-    // =====================================================
-    // DEFAULT DATES
-    // =====================================================
+
     function setDefaultDates() {
-        const invoiceDateInput = document.getElementById('invoice_date');
-        const dueDateInput = document.getElementById('due_date');
+        const invoiceDate = document.getElementById('invoice_date');
+        const dueDate = document.getElementById('due_date');
         
-        if (!invoiceDateInput.value) {
-            const today = new Date();
-            invoiceDateInput.value = today.toISOString().split('T')[0];
+        if (!invoiceDate.value) {
+            invoiceDate.value = new Date().toISOString().split('T')[0];
         }
-        
-        if (!dueDateInput.value) {
-            const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + 30);
-            dueDateInput.value = dueDate.toISOString().split('T')[0];
+        if (!dueDate.value) {
+            const due = new Date();
+            due.setDate(due.getDate() + 30);
+            dueDate.value = due.toISOString().split('T')[0];
         }
     }
-    
-    // =====================================================
-    // FORM SUBMISSION
-    // =====================================================
-    form.addEventListener('submit', (e) => {
-        if (!validateForm()) {
-            e.preventDefault();
+
+    function validateForm() {
+        const errors = [];
+        
+        document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+        document.querySelectorAll('input.error, textarea.error').forEach(el => el.classList.remove('error'));
+
+        const required = [
+            { id: 'business_name', label: 'Business name' },
+            { id: 'client_name', label: 'Client name' },
+            { id: 'invoice_date', label: 'Invoice date' },
+            { id: 'due_date', label: 'Due date' }
+        ];
+
+        required.forEach(({ id, label }) => {
+            const el = document.getElementById(id);
+            if (!el?.value?.trim()) {
+                errors.push(`${label} is required`);
+                el?.classList.add('error');
+                const errEl = document.getElementById(`${id}_error`);
+                if (errEl) errEl.textContent = 'Required';
+            }
+        });
+
+        const emailFields = ['business_email', 'client_email'];
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        emailFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el?.value?.trim() && !emailRegex.test(el.value)) {
+                errors.push(`Invalid email format for ${id.replace('_', ' ')}`);
+                el.classList.add('error');
+            }
+        });
+
+        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
+                              : itemsBody.querySelectorAll('.item-row');
+        if (items.length === 0) {
+            errors.push('Add at least one line item');
+        } else {
+            let hasValidItem = false;
+            items.forEach(item => {
+                const desc = item.querySelector('.item-description')?.value?.trim();
+                const qty = parseFloat(item.querySelector('.item-qty')?.value) || 0;
+                if (desc && qty > 0) hasValidItem = true;
+            });
+            if (!hasValidItem) {
+                errors.push('Add at least one valid line item with description and quantity');
+            }
+        }
+
+        if (errors.length > 0) {
+            errorList.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+            validationErrors.style.display = 'block';
+            validationErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return false;
         }
-        
-        updateLineItemsData();
-        
-        // Disable submit button
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
-            <svg class="animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/>
-                <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
-            </svg>
-            Creating...
-        `;
-        
-        // Clear draft on successful submission
-        localStorage.removeItem(DRAFT_KEY);
-    });
-    
-    // =====================================================
-    // INITIALIZATION
-    // =====================================================
-    function init() {
-        // Set default dates first
-        setDefaultDates();
-        
-        // Load draft (will add items if any)
-        const hasDraft = loadDraft();
-        
-        // Update counts
-        updateItemsCount();
-        calculateAllTotals();
-        
-        // Event listeners
-        addFirstItemBtn.addEventListener('click', () => addItem());
-        addNewItemBtn.addEventListener('click', () => addItem());
-        clearDraftBtn.addEventListener('click', clearDraft);
-        
-        // Currency change
-        currencySelect.addEventListener('change', updateCurrencySymbols);
-        
-        // Tax rate change
-        taxRateInput.addEventListener('input', calculateAllTotals);
-        
-        // Form field changes trigger save
-        const formFields = form.querySelectorAll('.field-input, .field-select, .field-textarea');
-        formFields.forEach(field => {
-            field.addEventListener('input', debouncedSaveDraft);
-        });
-        
-        console.log('Invoice creation page initialized');
+
+        validationErrors.style.display = 'none';
+        return true;
     }
-    
-    // Run on DOM ready
+
+    function handleResize() {
+        const wasMobile = isMobile;
+        isMobile = window.innerWidth < 768;
+        
+        if (wasMobile !== isMobile) {
+            const items = wasMobile 
+                ? Array.from(mobileContainer.querySelectorAll('.mobile-item'))
+                : Array.from(itemsBody.querySelectorAll('.item-row'));
+            
+            const data = items.map(item => ({
+                description: item.querySelector('.item-description')?.value || '',
+                quantity: item.querySelector('.item-qty')?.value || 1,
+                unit_price: item.querySelector('.item-price')?.value || ''
+            }));
+
+            if (wasMobile) {
+                mobileContainer.innerHTML = '';
+            } else {
+                itemsBody.innerHTML = '';
+            }
+
+            data.forEach(d => addItem(d));
+        }
+    }
+
+    function init() {
+        setDefaultDates();
+        loadDraft();
+        updateUI();
+        calculateTotals();
+
+        document.getElementById('addFirstItem').addEventListener('click', () => addItem());
+        document.getElementById('addItemBtn').addEventListener('click', () => addItem());
+        clearDraftBtn.addEventListener('click', clearDraft);
+
+        currencySelect.addEventListener('change', calculateTotals);
+        taxRateInput.addEventListener('input', calculateTotals);
+
+        form.addEventListener('submit', (e) => {
+            if (!validateForm()) {
+                e.preventDefault();
+                return false;
+            }
+            updateLineItemsData();
+            localStorage.removeItem(DRAFT_KEY);
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" opacity="0.25"/>
+                    <path d="M12 2a10 10 0 0110 10"/>
+                </svg>
+                <span>Creating...</span>
+            `;
+        });
+
+        window.addEventListener('resize', handleResize);
+    }
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
