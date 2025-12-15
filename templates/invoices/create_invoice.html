@@ -1,11 +1,11 @@
 {% extends "base/layout-light.html" %}
 {% load static %}
 {% block title %}Create Invoice{% endblock %}
-{% block body_class %}dashboard-light-page{% endblock %}
+{% block body_class %}invoice-creator-page{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
-<link rel="stylesheet" href="{% static 'css/create-invoice.css' %}">
+<link rel="stylesheet" href="{% static 'css/invoice-creator-modern.css' %}">
 {% endblock %}
 
 {% block nav %}{% endblock %}
@@ -15,930 +15,454 @@
 <div class="dashboard-layout">
     {% include 'components/sidebar-light.html' with active='new_invoice' %}
     
-    <main class="dashboard-main">
-        <div class="invoice-creator">
-            <header class="creator-header">
-                <div class="header-left">
-                    <a href="{% url 'dashboard' %}" class="back-btn" aria-label="Back to Dashboard">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <main class="creator-main">
+        <div class="creator-container">
+            <header class="creator-topbar">
+                <div class="topbar-left">
+                    <a href="{% url 'dashboard' %}" class="back-button" aria-label="Back to Dashboard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
                     </a>
-                    <div class="header-title">
-                        <h1>Create Invoice</h1>
-                        <p>Fill in the details to generate your invoice</p>
+                    <div class="page-identity">
+                        <h1>New Invoice</h1>
+                        <div class="draft-indicator" id="draftIndicator">
+                            <span class="pulse-dot"></span>
+                            <span class="draft-text">Draft auto-saved</span>
+                        </div>
                     </div>
                 </div>
-                <div class="header-actions">
-                    <div class="autosave-status" id="autosaveStatus" aria-live="polite">
-                        <span class="status-dot"></span>
-                        <span class="status-text">Draft saved</span>
-                    </div>
-                    <button type="button" class="btn-clear-draft" id="clearDraftBtn" style="display: none;">
-                        Clear Draft
+                <div class="topbar-actions">
+                    <button type="button" class="action-btn-ghost" id="clearDraftBtn" title="Clear Draft">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/>
+                            <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                        </svg>
+                        <span class="btn-label">Clear</span>
+                    </button>
+                    <button type="button" class="action-btn-ghost" id="previewBtn" title="Preview Invoice">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <span class="btn-label">Preview</span>
                     </button>
                 </div>
             </header>
 
-            <div id="validationErrors" class="validation-errors" role="alert" aria-live="assertive" style="display: none;">
-                <div class="error-header">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    <strong>Please fix the following issues:</strong>
-                </div>
-                <ul class="error-list" id="errorList"></ul>
-            </div>
+            <div class="creator-body" id="creatorBody">
+                <form method="post" id="invoiceForm" class="invoice-form-modern" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="line_items" id="lineItemsInput" value="[]">
 
-            <form method="post" id="invoiceForm" class="invoice-form" novalidate>
-                {% csrf_token %}
-                <input type="hidden" name="line_items" id="lineItemsInput" value="[]">
-
-                <div class="form-layout">
-                    <div class="form-main">
-                        <section class="form-section" aria-labelledby="businessTitle">
-                            <div class="section-header">
-                                <div class="section-icon business">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>
-                                    </svg>
-                                </div>
-                                <div class="section-title">
-                                    <h2 id="businessTitle">Your Business</h2>
-                                    <span>Your company information</span>
-                                </div>
-                            </div>
-                            <div class="section-body">
-                                <div class="field-group">
-                                    <div class="field full-width">
-                                        <label for="business_name">Business Name <span class="required">*</span></label>
-                                        <input type="text" id="business_name" name="business_name" required
-                                               placeholder="Your company or business name"
-                                               value="{{ invoice_form.business_name.value|default:'' }}"
-                                               autocomplete="organization">
-                                        <span class="field-error" id="business_name_error"></span>
-                                    </div>
-                                </div>
-                                <div class="field-group two-col">
-                                    <div class="field">
-                                        <label for="business_email">Email Address</label>
-                                        <input type="email" id="business_email" name="business_email"
-                                               placeholder="email@company.com"
-                                               value="{{ invoice_form.business_email.value|default:'' }}"
-                                               autocomplete="email">
-                                        <span class="field-error" id="business_email_error"></span>
-                                    </div>
-                                    <div class="field">
-                                        <label for="business_phone">Phone Number</label>
-                                        <input type="tel" id="business_phone" name="business_phone"
-                                               placeholder="+1 234 567 8900"
-                                               value="{{ invoice_form.business_phone.value|default:'' }}"
-                                               autocomplete="tel">
-                                    </div>
-                                </div>
-                                <div class="field-group">
-                                    <div class="field full-width">
-                                        <label for="business_address">Address</label>
-                                        <textarea id="business_address" name="business_address" rows="2"
-                                                  placeholder="Street, City, State, ZIP Code"
-                                                  autocomplete="street-address">{{ invoice_form.business_address.value|default:'' }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="form-section" aria-labelledby="clientTitle">
-                            <div class="section-header">
-                                <div class="section-icon client">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
-                                    </svg>
-                                </div>
-                                <div class="section-title">
-                                    <h2 id="clientTitle">Client Details</h2>
-                                    <span>Who you're billing</span>
-                                </div>
-                            </div>
-                            <div class="section-body">
-                                <div class="field-group">
-                                    <div class="field full-width">
-                                        <label for="client_name">Client Name <span class="required">*</span></label>
-                                        <input type="text" id="client_name" name="client_name" required
-                                               placeholder="Client or company name"
-                                               value="{{ invoice_form.client_name.value|default:'' }}">
-                                        <span class="field-error" id="client_name_error"></span>
-                                    </div>
-                                </div>
-                                <div class="field-group two-col">
-                                    <div class="field">
-                                        <label for="client_email">Email Address</label>
-                                        <input type="email" id="client_email" name="client_email"
-                                               placeholder="client@example.com"
-                                               value="{{ invoice_form.client_email.value|default:'' }}">
-                                        <span class="field-error" id="client_email_error"></span>
-                                    </div>
-                                    <div class="field">
-                                        <label for="client_phone">Phone Number</label>
-                                        <input type="tel" id="client_phone" name="client_phone"
-                                               placeholder="+1 234 567 8900"
-                                               value="{{ invoice_form.client_phone.value|default:'' }}">
-                                    </div>
-                                </div>
-                                <div class="field-group">
-                                    <div class="field full-width">
-                                        <label for="client_address">Address</label>
-                                        <textarea id="client_address" name="client_address" rows="2"
-                                                  placeholder="Client's billing address">{{ invoice_form.client_address.value|default:'' }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="form-section" aria-labelledby="detailsTitle">
-                            <div class="section-header">
-                                <div class="section-icon details">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                                        <line x1="16" y1="2" x2="16" y2="6"/>
-                                        <line x1="8" y1="2" x2="8" y2="6"/>
-                                        <line x1="3" y1="10" x2="21" y2="10"/>
-                                    </svg>
-                                </div>
-                                <div class="section-title">
-                                    <h2 id="detailsTitle">Invoice Details</h2>
-                                    <span>Dates, currency, and terms</span>
-                                </div>
-                            </div>
-                            <div class="section-body">
-                                <div class="field-group four-col">
-                                    <div class="field">
-                                        <label for="invoice_date">Invoice Date <span class="required">*</span></label>
-                                        <input type="date" id="invoice_date" name="invoice_date" required
-                                               value="{{ invoice_form.invoice_date.value|default:'' }}">
-                                        <span class="field-error" id="invoice_date_error"></span>
-                                    </div>
-                                    <div class="field">
-                                        <label for="due_date">Due Date <span class="required">*</span></label>
-                                        <input type="date" id="due_date" name="due_date" required
-                                               value="{{ invoice_form.due_date.value|default:'' }}">
-                                        <span class="field-error" id="due_date_error"></span>
-                                    </div>
-                                    <div class="field">
-                                        <label for="currency">Currency</label>
-                                        <select id="currency" name="currency">
-                                            <option value="USD" data-symbol="$" {% if invoice_form.currency.value == 'USD' %}selected{% endif %}>USD ($)</option>
-                                            <option value="EUR" data-symbol="€" {% if invoice_form.currency.value == 'EUR' %}selected{% endif %}>EUR (€)</option>
-                                            <option value="GBP" data-symbol="£" {% if invoice_form.currency.value == 'GBP' %}selected{% endif %}>GBP (£)</option>
-                                            <option value="NGN" data-symbol="₦" {% if invoice_form.currency.value == 'NGN' %}selected{% endif %}>NGN (₦)</option>
-                                            <option value="CAD" data-symbol="C$" {% if invoice_form.currency.value == 'CAD' %}selected{% endif %}>CAD (C$)</option>
-                                            <option value="AUD" data-symbol="A$" {% if invoice_form.currency.value == 'AUD' %}selected{% endif %}>AUD (A$)</option>
-                                        </select>
-                                    </div>
-                                    <div class="field">
-                                        <label for="tax_rate">Tax Rate (%)</label>
-                                        <input type="number" id="tax_rate" name="tax_rate" min="0" max="100" step="0.01"
-                                               placeholder="0" value="{{ invoice_form.tax_rate.value|default:'0' }}">
-                                    </div>
-                                </div>
-                                <div class="field-group">
-                                    <div class="field full-width">
-                                        <label for="notes">Notes & Payment Terms</label>
-                                        <textarea id="notes" name="notes" rows="3"
-                                                  placeholder="Payment is due within 30 days. Thank you for your business!">{{ invoice_form.notes.value|default:'' }}</textarea>
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="form-section items-section" aria-labelledby="itemsTitle">
-                            <div class="section-header">
-                                <div class="section-icon items">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="8" y1="6" x2="21" y2="6"/>
-                                        <line x1="8" y1="12" x2="21" y2="12"/>
-                                        <line x1="8" y1="18" x2="21" y2="18"/>
-                                        <line x1="3" y1="6" x2="3.01" y2="6"/>
-                                        <line x1="3" y1="12" x2="3.01" y2="12"/>
-                                        <line x1="3" y1="18" x2="3.01" y2="18"/>
-                                    </svg>
-                                </div>
-                                <div class="section-title">
-                                    <h2 id="itemsTitle">Line Items</h2>
-                                    <span>Products or services being billed</span>
-                                </div>
-                                <div class="items-counter">
-                                    <span id="itemCount">0</span> items
-                                </div>
-                            </div>
-                            <div class="section-body">
-                                <div class="items-table-wrapper">
-                                    <table class="items-table" id="itemsTable">
-                                        <thead>
-                                            <tr>
-                                                <th class="col-drag"></th>
-                                                <th class="col-description">Description</th>
-                                                <th class="col-qty">Qty</th>
-                                                <th class="col-price">Price</th>
-                                                <th class="col-total">Total</th>
-                                                <th class="col-actions"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="itemsBody"></tbody>
-                                    </table>
-                                </div>
-
-                                <div class="items-empty" id="itemsEmpty">
-                                    <div class="empty-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-                                            <rect x="9" y="3" width="6" height="4" rx="1"/>
-                                            <path d="M12 11v6M9 14h6"/>
-                                        </svg>
-                                    </div>
-                                    <h3>No items added yet</h3>
-                                    <p>Add products or services to your invoice</p>
-                                    <button type="button" class="btn-add-first" id="addFirstItem">
+                    <div class="form-grid">
+                        <div class="form-content">
+                            <section class="form-card" data-section="business">
+                                <div class="card-header">
+                                    <div class="card-icon gradient-blue">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19"/>
-                                            <line x1="5" y1="12" x2="19" y2="12"/>
+                                            <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11"/>
                                         </svg>
-                                        Add First Item
+                                    </div>
+                                    <div class="card-title">
+                                        <h2>Your Business</h2>
+                                        <p>Your company details</p>
+                                    </div>
+                                    <button type="button" class="card-toggle" aria-expanded="true" aria-label="Toggle section">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"/>
+                                        </svg>
                                     </button>
                                 </div>
+                                <div class="card-body">
+                                    <div class="input-group">
+                                        <div class="input-field">
+                                            <label for="business_name">Business Name <span class="required-star">*</span></label>
+                                            <input type="text" id="business_name" name="business_name" required
+                                                   placeholder="Enter your business name"
+                                                   value="{{ invoice_form.business_name.value|default:'' }}"
+                                                   autocomplete="organization">
+                                            <span class="field-error" id="business_name_error"></span>
+                                        </div>
+                                    </div>
+                                    <div class="input-row">
+                                        <div class="input-field">
+                                            <label for="business_email">Email</label>
+                                            <input type="email" id="business_email" name="business_email"
+                                                   placeholder="email@company.com"
+                                                   value="{{ invoice_form.business_email.value|default:'' }}"
+                                                   autocomplete="email">
+                                        </div>
+                                        <div class="input-field">
+                                            <label for="business_phone">Phone</label>
+                                            <input type="tel" id="business_phone" name="business_phone"
+                                                   placeholder="+1 (555) 000-0000"
+                                                   value="{{ invoice_form.business_phone.value|default:'' }}"
+                                                   autocomplete="tel">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <div class="input-field">
+                                            <label for="business_address">Address</label>
+                                            <textarea id="business_address" name="business_address" rows="2"
+                                                      placeholder="Street address, City, State, ZIP">{{ invoice_form.business_address.value|default:'' }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
 
-                                <div class="items-footer" id="itemsFooter" style="display: none;">
-                                    <button type="button" class="btn-add-item" id="addItemBtn">
+                            <section class="form-card" data-section="client">
+                                <div class="card-header">
+                                    <div class="card-icon gradient-purple">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <line x1="12" y1="5" x2="12" y2="19"/>
-                                            <line x1="5" y1="12" x2="19" y2="12"/>
+                                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                            <circle cx="12" cy="7" r="4"/>
                                         </svg>
-                                        Add Item
+                                    </div>
+                                    <div class="card-title">
+                                        <h2>Bill To</h2>
+                                        <p>Client information</p>
+                                    </div>
+                                    <button type="button" class="card-toggle" aria-expanded="true" aria-label="Toggle section">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"/>
+                                        </svg>
                                     </button>
-                                    <div class="keyboard-hints">
-                                        <span><kbd>Tab</kbd> Next field</span>
-                                        <span><kbd>Enter</kbd> Add item</span>
-                                        <span><kbd>Ctrl+D</kbd> Duplicate</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="input-group">
+                                        <div class="input-field">
+                                            <label for="client_name">Client Name <span class="required-star">*</span></label>
+                                            <input type="text" id="client_name" name="client_name" required
+                                                   placeholder="Client or company name"
+                                                   value="{{ invoice_form.client_name.value|default:'' }}">
+                                            <span class="field-error" id="client_name_error"></span>
+                                        </div>
+                                    </div>
+                                    <div class="input-row">
+                                        <div class="input-field">
+                                            <label for="client_email">Email</label>
+                                            <input type="email" id="client_email" name="client_email"
+                                                   placeholder="client@example.com"
+                                                   value="{{ invoice_form.client_email.value|default:'' }}">
+                                        </div>
+                                        <div class="input-field">
+                                            <label for="client_phone">Phone</label>
+                                            <input type="tel" id="client_phone" name="client_phone"
+                                                   placeholder="+1 (555) 000-0000"
+                                                   value="{{ invoice_form.client_phone.value|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <div class="input-field">
+                                            <label for="client_address">Address</label>
+                                            <textarea id="client_address" name="client_address" rows="2"
+                                                      placeholder="Client's billing address">{{ invoice_form.client_address.value|default:'' }}</textarea>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </section>
-                    </div>
+                            </section>
 
-                    <aside class="form-sidebar">
-                        <div class="sidebar-sticky">
-                            <div class="summary-card">
-                                <h3>Invoice Summary</h3>
-                                <div class="summary-rows">
-                                    <div class="summary-row">
-                                        <span>Subtotal</span>
-                                        <span id="summarySubtotal">$0.00</span>
+                            <section class="form-card" data-section="details">
+                                <div class="card-header">
+                                    <div class="card-icon gradient-green">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="4" width="18" height="18" rx="2"/>
+                                            <line x1="16" y1="2" x2="16" y2="6"/>
+                                            <line x1="8" y1="2" x2="8" y2="6"/>
+                                            <line x1="3" y1="10" x2="21" y2="10"/>
+                                        </svg>
                                     </div>
-                                    <div class="summary-row tax">
-                                        <span>Tax (<span id="taxRateDisplay">0</span>%)</span>
-                                        <span id="summaryTax">$0.00</span>
+                                    <div class="card-title">
+                                        <h2>Invoice Details</h2>
+                                        <p>Dates and terms</p>
                                     </div>
-                                    <div class="summary-row total">
-                                        <span>Total</span>
-                                        <span id="summaryTotal">$0.00</span>
+                                    <button type="button" class="card-toggle" aria-expanded="true" aria-label="Toggle section">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="input-grid-4">
+                                        <div class="input-field">
+                                            <label for="invoice_date">Issue Date <span class="required-star">*</span></label>
+                                            <input type="date" id="invoice_date" name="invoice_date" required
+                                                   value="{{ invoice_form.invoice_date.value|default:'' }}">
+                                            <span class="field-error" id="invoice_date_error"></span>
+                                        </div>
+                                        <div class="input-field">
+                                            <label for="due_date">Due Date <span class="required-star">*</span></label>
+                                            <input type="date" id="due_date" name="due_date" required
+                                                   value="{{ invoice_form.due_date.value|default:'' }}">
+                                            <span class="field-error" id="due_date_error"></span>
+                                        </div>
+                                        <div class="input-field">
+                                            <label for="currency">Currency</label>
+                                            <div class="select-wrapper">
+                                                <select id="currency" name="currency">
+                                                    <option value="USD" data-symbol="$" {% if invoice_form.currency.value == 'USD' %}selected{% endif %}>USD ($)</option>
+                                                    <option value="EUR" data-symbol="E" {% if invoice_form.currency.value == 'EUR' %}selected{% endif %}>EUR</option>
+                                                    <option value="GBP" data-symbol="P" {% if invoice_form.currency.value == 'GBP' %}selected{% endif %}>GBP</option>
+                                                    <option value="NGN" data-symbol="N" {% if invoice_form.currency.value == 'NGN' %}selected{% endif %}>NGN</option>
+                                                    <option value="CAD" data-symbol="C$" {% if invoice_form.currency.value == 'CAD' %}selected{% endif %}>CAD</option>
+                                                    <option value="AUD" data-symbol="A$" {% if invoice_form.currency.value == 'AUD' %}selected{% endif %}>AUD</option>
+                                                </select>
+                                                <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="6 9 12 15 18 9"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="input-field">
+                                            <label for="tax_rate">Tax %</label>
+                                            <input type="number" id="tax_rate" name="tax_rate" min="0" max="100" step="0.01"
+                                                   placeholder="0" value="{{ invoice_form.tax_rate.value|default:'0' }}">
+                                        </div>
+                                    </div>
+                                    <div class="input-group">
+                                        <div class="input-field">
+                                            <label for="notes">Notes & Terms</label>
+                                            <textarea id="notes" name="notes" rows="3"
+                                                      placeholder="Payment terms, bank details, or thank you message">{{ invoice_form.notes.value|default:'' }}</textarea>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </section>
 
-                            <div class="action-buttons">
-                                <button type="submit" class="btn-primary" id="submitBtn">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                                        <polyline points="22 4 12 14.01 9 11.01"/>
-                                    </svg>
-                                    <span>Create Invoice</span>
-                                </button>
-                                <a href="{% url 'dashboard' %}" class="btn-secondary">Cancel</a>
-                            </div>
+                            <section class="form-card items-card" data-section="items">
+                                <div class="card-header">
+                                    <div class="card-icon gradient-orange">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="8" y1="6" x2="21" y2="6"/>
+                                            <line x1="8" y1="12" x2="21" y2="12"/>
+                                            <line x1="8" y1="18" x2="21" y2="18"/>
+                                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                                        </svg>
+                                    </div>
+                                    <div class="card-title">
+                                        <h2>Line Items</h2>
+                                        <p>Products or services</p>
+                                    </div>
+                                    <div class="items-badge" id="itemsBadge">0 items</div>
+                                </div>
+                                <div class="card-body items-body">
+                                    <div class="items-container" id="itemsContainer">
+                                        <div class="items-empty" id="itemsEmpty">
+                                            <div class="empty-illustration">
+                                                <svg viewBox="0 0 120 100" fill="none">
+                                                    <rect x="10" y="20" width="100" height="70" rx="8" fill="#f1f5f9" stroke="#e2e8f0" stroke-width="2"/>
+                                                    <line x1="25" y1="40" x2="85" y2="40" stroke="#cbd5e1" stroke-width="3" stroke-linecap="round"/>
+                                                    <line x1="25" y1="55" x2="70" y2="55" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round"/>
+                                                    <line x1="25" y1="70" x2="60" y2="70" stroke="#e2e8f0" stroke-width="3" stroke-linecap="round"/>
+                                                    <circle cx="95" cy="75" r="18" fill="#6366f1"/>
+                                                    <line x1="95" y1="68" x2="95" y2="82" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                                                    <line x1="88" y1="75" x2="102" y2="75" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                                                </svg>
+                                            </div>
+                                            <h3>Add your first item</h3>
+                                            <p>Click the button below to add products or services</p>
+                                            <button type="button" class="btn-add-first-item" id="addFirstItemBtn">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                                </svg>
+                                                Add Item
+                                            </button>
+                                        </div>
 
-                            <div class="quick-tips">
-                                <h4>Quick Tips</h4>
-                                <ul>
-                                    <li>Press <kbd>Enter</kbd> in the last field to add a new item</li>
-                                    <li>Drag items to reorder them</li>
-                                    <li>Your draft is saved automatically</li>
-                                </ul>
-                            </div>
+                                        <div class="items-list" id="itemsList" style="display: none;">
+                                            <div class="items-header-row">
+                                                <span class="col-desc">Description</span>
+                                                <span class="col-qty">Qty</span>
+                                                <span class="col-rate">Rate</span>
+                                                <span class="col-amount">Amount</span>
+                                                <span class="col-actions"></span>
+                                            </div>
+                                            <div class="items-rows" id="itemsRows"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="items-add-bar" id="itemsAddBar" style="display: none;">
+                                        <button type="button" class="btn-add-item" id="addItemBtn">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                                <line x1="5" y1="12" x2="19" y2="12"/>
+                                            </svg>
+                                            Add Another Item
+                                        </button>
+                                        <div class="keyboard-tip">
+                                            <kbd>Enter</kbd> to add new item
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
-                    </aside>
-                </div>
-            </form>
+
+                        <aside class="form-sidebar">
+                            <div class="sidebar-inner">
+                                <div class="summary-panel">
+                                    <div class="summary-header">
+                                        <h3>Summary</h3>
+                                    </div>
+                                    <div class="summary-content">
+                                        <div class="summary-line">
+                                            <span>Subtotal</span>
+                                            <span id="summarySubtotal" class="amount">$0.00</span>
+                                        </div>
+                                        <div class="summary-line tax-line">
+                                            <span>Tax (<span id="taxRateDisplay">0</span>%)</span>
+                                            <span id="summaryTax" class="amount">$0.00</span>
+                                        </div>
+                                        <div class="summary-divider"></div>
+                                        <div class="summary-line total-line">
+                                            <span>Total</span>
+                                            <span id="summaryTotal" class="amount total">$0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="action-panel">
+                                    <button type="submit" class="btn-create-invoice" id="submitBtn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                                            <polyline points="22 4 12 14.01 9 11.01"/>
+                                        </svg>
+                                        Create Invoice
+                                    </button>
+                                    <a href="{% url 'dashboard' %}" class="btn-cancel">
+                                        Cancel
+                                    </a>
+                                </div>
+
+                                <div class="tips-panel">
+                                    <div class="tips-header">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+                                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                                        </svg>
+                                        <span>Quick Tips</span>
+                                    </div>
+                                    <ul class="tips-list">
+                                        <li>Your progress saves automatically</li>
+                                        <li>Press <kbd>Tab</kbd> to move between fields</li>
+                                        <li>Press <kbd>Enter</kbd> to add new items</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </form>
+            </div>
         </div>
     </main>
 </div>
 
 <template id="itemRowTemplate">
-    <tr class="item-row" draggable="true">
-        <td class="col-drag">
-            <button type="button" class="drag-handle" aria-label="Drag to reorder">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="9" cy="6" r="1.5"/>
-                    <circle cx="15" cy="6" r="1.5"/>
-                    <circle cx="9" cy="12" r="1.5"/>
-                    <circle cx="15" cy="12" r="1.5"/>
-                    <circle cx="9" cy="18" r="1.5"/>
-                    <circle cx="15" cy="18" r="1.5"/>
-                </svg>
-            </button>
-        </td>
-        <td class="col-description">
+    <div class="item-row" draggable="true">
+        <div class="item-drag">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
+                <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
+                <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
+            </svg>
+        </div>
+        <div class="item-fields">
             <input type="text" class="item-description" placeholder="Item description" autocomplete="off">
-        </td>
-        <td class="col-qty">
-            <input type="number" class="item-qty" value="1" min="0" step="any" autocomplete="off">
-        </td>
-        <td class="col-price">
-            <div class="price-input">
-                <span class="currency-symbol">$</span>
-                <input type="number" class="item-price" placeholder="0.00" min="0" step="0.01" autocomplete="off">
+            <input type="number" class="item-qty" value="1" min="0" step="any" autocomplete="off" placeholder="1">
+            <div class="rate-input">
+                <span class="currency-prefix">$</span>
+                <input type="number" class="item-rate" placeholder="0.00" min="0" step="0.01" autocomplete="off">
             </div>
-        </td>
-        <td class="col-total">
-            <span class="item-total">$0.00</span>
-        </td>
-        <td class="col-actions">
-            <button type="button" class="action-btn duplicate" title="Duplicate" aria-label="Duplicate item">
+            <span class="item-amount">$0.00</span>
+        </div>
+        <div class="item-actions">
+            <button type="button" class="item-action-btn duplicate" title="Duplicate">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2"/>
                     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                 </svg>
             </button>
-            <button type="button" class="action-btn delete" title="Delete" aria-label="Delete item">
+            <button type="button" class="item-action-btn delete" title="Delete">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"/>
-                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             </button>
-        </td>
-    </tr>
+        </div>
+    </div>
 </template>
 
 <template id="mobileItemTemplate">
-    <div class="mobile-item" draggable="true">
+    <div class="mobile-item-card" draggable="true">
         <div class="mobile-item-header">
-            <button type="button" class="drag-handle" aria-label="Drag to reorder">
+            <div class="mobile-drag-handle">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                     <circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/>
                     <circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/>
-                    <circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/>
                 </svg>
-            </button>
-            <span class="item-number">#1</span>
-            <div class="mobile-actions">
-                <button type="button" class="action-btn duplicate" title="Duplicate" aria-label="Duplicate">
+            </div>
+            <span class="mobile-item-number">Item 1</span>
+            <div class="mobile-item-actions">
+                <button type="button" class="mobile-action-btn duplicate" title="Duplicate">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="9" y="9" width="13" height="13" rx="2"/>
                         <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
                     </svg>
                 </button>
-                <button type="button" class="action-btn delete" title="Delete" aria-label="Delete">
+                <button type="button" class="mobile-action-btn delete" title="Delete">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
                 </button>
             </div>
         </div>
-        <div class="mobile-item-body">
+        <div class="mobile-item-fields">
             <div class="mobile-field full">
                 <label>Description</label>
-                <input type="text" class="item-description" placeholder="What are you charging for?" autocomplete="off">
+                <input type="text" class="mobile-item-description" placeholder="What did you provide?" autocomplete="off">
             </div>
             <div class="mobile-field-row">
                 <div class="mobile-field">
                     <label>Quantity</label>
-                    <input type="number" class="item-qty" value="1" min="0" step="any" autocomplete="off">
+                    <input type="number" class="mobile-item-qty" value="1" min="0" step="any" autocomplete="off">
                 </div>
                 <div class="mobile-field">
-                    <label>Unit Price</label>
-                    <div class="price-input">
-                        <span class="currency-symbol">$</span>
-                        <input type="number" class="item-price" placeholder="0.00" min="0" step="0.01" autocomplete="off">
+                    <label>Rate</label>
+                    <div class="mobile-rate-input">
+                        <span>$</span>
+                        <input type="number" class="mobile-item-rate" placeholder="0.00" min="0" step="0.01" autocomplete="off">
                     </div>
                 </div>
             </div>
         </div>
-        <div class="mobile-item-footer">
-            <span>Line Total</span>
-            <span class="item-total">$0.00</span>
+        <div class="mobile-item-total">
+            <span>Amount:</span>
+            <span class="mobile-item-amount">$0.00</span>
         </div>
     </div>
 </template>
 
-<div class="mobile-items-container" id="mobileItemsContainer" style="display: none;"></div>
-
+<div class="preview-modal" id="previewModal" style="display: none;">
+    <div class="preview-overlay"></div>
+    <div class="preview-content">
+        <div class="preview-header">
+            <h3>Invoice Preview</h3>
+            <button type="button" class="preview-close" id="previewClose">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <div class="preview-body" id="previewBody"></div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-<script>
-(function() {
-    'use strict';
-
-    const DRAFT_KEY = 'invoiceflow_draft_v2';
-    const CURRENCY_SYMBOLS = { USD: '$', EUR: '€', GBP: '£', NGN: '₦', CAD: 'C$', AUD: 'A$' };
-
-    const form = document.getElementById('invoiceForm');
-    const itemsBody = document.getElementById('itemsBody');
-    const mobileContainer = document.getElementById('mobileItemsContainer');
-    const itemsEmpty = document.getElementById('itemsEmpty');
-    const itemsFooter = document.getElementById('itemsFooter');
-    const itemsTable = document.getElementById('itemsTable');
-    const itemCountEl = document.getElementById('itemCount');
-    const lineItemsInput = document.getElementById('lineItemsInput');
-    const validationErrors = document.getElementById('validationErrors');
-    const errorList = document.getElementById('errorList');
-    const autosaveStatus = document.getElementById('autosaveStatus');
-    const clearDraftBtn = document.getElementById('clearDraftBtn');
-    const submitBtn = document.getElementById('submitBtn');
-
-    const summarySubtotal = document.getElementById('summarySubtotal');
-    const summaryTax = document.getElementById('summaryTax');
-    const summaryTotal = document.getElementById('summaryTotal');
-    const taxRateDisplay = document.getElementById('taxRateDisplay');
-
-    const currencySelect = document.getElementById('currency');
-    const taxRateInput = document.getElementById('tax_rate');
-
-    const rowTemplate = document.getElementById('itemRowTemplate');
-    const mobileTemplate = document.getElementById('mobileItemTemplate');
-
-    let isMobile = window.innerWidth < 768;
-    let draggedItem = null;
-
-    function getCurrencySymbol() {
-        const opt = currencySelect.options[currencySelect.selectedIndex];
-        return opt?.dataset.symbol || '$';
-    }
-
-    function formatCurrency(amount) {
-        const num = parseFloat(amount) || 0;
-        return getCurrencySymbol() + num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
-
-    function updateUI() {
-        const count = isMobile ? mobileContainer.querySelectorAll('.mobile-item').length 
-                              : itemsBody.querySelectorAll('.item-row').length;
-        itemCountEl.textContent = count;
-        
-        if (count === 0) {
-            itemsEmpty.style.display = 'flex';
-            itemsFooter.style.display = 'none';
-            if (isMobile) mobileContainer.style.display = 'none';
-            else itemsTable.style.display = 'none';
-        } else {
-            itemsEmpty.style.display = 'none';
-            itemsFooter.style.display = 'flex';
-            if (isMobile) {
-                mobileContainer.style.display = 'block';
-                itemsTable.style.display = 'none';
-            } else {
-                mobileContainer.style.display = 'none';
-                itemsTable.style.display = 'table';
-            }
-        }
-        updateNumbers();
-    }
-
-    function updateNumbers() {
-        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
-                              : itemsBody.querySelectorAll('.item-row');
-        items.forEach((item, i) => {
-            const numEl = item.querySelector('.item-number');
-            if (numEl) numEl.textContent = '#' + (i + 1);
-        });
-    }
-
-    function calculateTotals() {
-        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
-                              : itemsBody.querySelectorAll('.item-row');
-        let subtotal = 0;
-        const symbol = getCurrencySymbol();
-
-        items.forEach(item => {
-            const qty = parseFloat(item.querySelector('.item-qty')?.value) || 0;
-            const price = parseFloat(item.querySelector('.item-price')?.value) || 0;
-            const lineTotal = qty * price;
-            const totalEl = item.querySelector('.item-total');
-            if (totalEl) totalEl.textContent = symbol + lineTotal.toFixed(2);
-            subtotal += lineTotal;
-        });
-
-        const taxRate = parseFloat(taxRateInput.value) || 0;
-        const taxAmount = subtotal * (taxRate / 100);
-        const total = subtotal + taxAmount;
-
-        summarySubtotal.textContent = formatCurrency(subtotal);
-        summaryTax.textContent = formatCurrency(taxAmount);
-        summaryTotal.textContent = formatCurrency(total);
-        taxRateDisplay.textContent = taxRate;
-
-        document.querySelectorAll('.currency-symbol').forEach(el => {
-            el.textContent = symbol;
-        });
-
-        updateLineItemsData();
-        debouncedSave();
-    }
-
-    function updateLineItemsData() {
-        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
-                              : itemsBody.querySelectorAll('.item-row');
-        const data = [];
-        items.forEach(item => {
-            const desc = item.querySelector('.item-description')?.value?.trim() || '';
-            const qty = parseFloat(item.querySelector('.item-qty')?.value) || 0;
-            const price = parseFloat(item.querySelector('.item-price')?.value) || 0;
-            if (desc && qty > 0) {
-                data.push({ description: desc, quantity: qty, unit_price: price });
-            }
-        });
-        lineItemsInput.value = JSON.stringify(data);
-    }
-
-    function createDesktopRow(data = {}) {
-        const clone = rowTemplate.content.cloneNode(true);
-        const row = clone.querySelector('.item-row');
-        
-        if (data.description) row.querySelector('.item-description').value = data.description;
-        if (data.quantity) row.querySelector('.item-qty').value = data.quantity;
-        if (data.unit_price) row.querySelector('.item-price').value = data.unit_price;
-        
-        setupRowEvents(row);
-        return row;
-    }
-
-    function createMobileItem(data = {}) {
-        const clone = mobileTemplate.content.cloneNode(true);
-        const item = clone.querySelector('.mobile-item');
-        
-        if (data.description) item.querySelector('.item-description').value = data.description;
-        if (data.quantity) item.querySelector('.item-qty').value = data.quantity;
-        if (data.unit_price) item.querySelector('.item-price').value = data.unit_price;
-        
-        setupRowEvents(item);
-        return item;
-    }
-
-    function setupRowEvents(element) {
-        const inputs = element.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.addEventListener('input', calculateTotals);
-            input.addEventListener('keydown', handleKeyDown);
-        });
-
-        element.querySelector('.duplicate')?.addEventListener('click', () => duplicateItem(element));
-        element.querySelector('.delete')?.addEventListener('click', () => deleteItem(element));
-
-        element.addEventListener('dragstart', handleDragStart);
-        element.addEventListener('dragend', handleDragEnd);
-        element.addEventListener('dragover', handleDragOver);
-        element.addEventListener('drop', handleDrop);
-    }
-
-    function handleKeyDown(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            const isLastInput = e.target.classList.contains('item-price');
-            if (isLastInput) {
-                addItem();
-            } else {
-                const inputs = Array.from(e.target.closest('.item-row, .mobile-item').querySelectorAll('input'));
-                const idx = inputs.indexOf(e.target);
-                if (idx < inputs.length - 1) inputs[idx + 1].focus();
-            }
-        }
-        if (e.ctrlKey && e.key === 'd') {
-            e.preventDefault();
-            duplicateItem(e.target.closest('.item-row, .mobile-item'));
-        }
-    }
-
-    function addItem(data = {}) {
-        if (isMobile) {
-            const item = createMobileItem(data);
-            mobileContainer.appendChild(item);
-            item.querySelector('.item-description')?.focus();
-        } else {
-            const row = createDesktopRow(data);
-            itemsBody.appendChild(row);
-            row.querySelector('.item-description')?.focus();
-        }
-        updateUI();
-        calculateTotals();
-    }
-
-    function duplicateItem(element) {
-        const data = {
-            description: element.querySelector('.item-description')?.value || '',
-            quantity: element.querySelector('.item-qty')?.value || 1,
-            unit_price: element.querySelector('.item-price')?.value || ''
-        };
-        
-        if (isMobile) {
-            const newItem = createMobileItem(data);
-            element.after(newItem);
-            newItem.querySelector('.item-description')?.focus();
-        } else {
-            const newRow = createDesktopRow(data);
-            element.after(newRow);
-            newRow.querySelector('.item-description')?.focus();
-        }
-        updateUI();
-        calculateTotals();
-    }
-
-    function deleteItem(element) {
-        element.style.opacity = '0';
-        element.style.transform = 'translateX(20px)';
-        setTimeout(() => {
-            element.remove();
-            updateUI();
-            calculateTotals();
-        }, 200);
-    }
-
-    function handleDragStart(e) {
-        draggedItem = e.currentTarget;
-        e.currentTarget.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-    }
-
-    function handleDragEnd(e) {
-        e.currentTarget.classList.remove('dragging');
-        draggedItem = null;
-        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-        updateNumbers();
-        calculateTotals();
-    }
-
-    function handleDragOver(e) {
-        e.preventDefault();
-        if (draggedItem && draggedItem !== e.currentTarget) {
-            e.currentTarget.classList.add('drag-over');
-        }
-    }
-
-    function handleDrop(e) {
-        e.preventDefault();
-        e.currentTarget.classList.remove('drag-over');
-        if (draggedItem && draggedItem !== e.currentTarget) {
-            const container = isMobile ? mobileContainer : itemsBody;
-            const items = Array.from(container.children);
-            const dragIdx = items.indexOf(draggedItem);
-            const dropIdx = items.indexOf(e.currentTarget);
-            
-            if (dragIdx < dropIdx) {
-                e.currentTarget.after(draggedItem);
-            } else {
-                e.currentTarget.before(draggedItem);
-            }
-        }
-    }
-
-    let saveTimeout;
-    function debouncedSave() {
-        clearTimeout(saveTimeout);
-        autosaveStatus.className = 'autosave-status saving';
-        autosaveStatus.querySelector('.status-text').textContent = 'Saving...';
-        
-        saveTimeout = setTimeout(() => {
-            saveDraft();
-            autosaveStatus.className = 'autosave-status saved';
-            autosaveStatus.querySelector('.status-text').textContent = 'Saved';
-            clearDraftBtn.style.display = 'inline-block';
-            
-            setTimeout(() => {
-                autosaveStatus.className = 'autosave-status';
-                autosaveStatus.querySelector('.status-text').textContent = 'Draft saved';
-            }, 2000);
-        }, 800);
-    }
-
-    function saveDraft() {
-        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
-                              : itemsBody.querySelectorAll('.item-row');
-        const lineItems = [];
-        items.forEach(item => {
-            lineItems.push({
-                description: item.querySelector('.item-description')?.value || '',
-                quantity: item.querySelector('.item-qty')?.value || 1,
-                unit_price: item.querySelector('.item-price')?.value || ''
-            });
-        });
-
-        const draft = {
-            business_name: document.getElementById('business_name')?.value,
-            business_email: document.getElementById('business_email')?.value,
-            business_phone: document.getElementById('business_phone')?.value,
-            business_address: document.getElementById('business_address')?.value,
-            client_name: document.getElementById('client_name')?.value,
-            client_email: document.getElementById('client_email')?.value,
-            client_phone: document.getElementById('client_phone')?.value,
-            client_address: document.getElementById('client_address')?.value,
-            invoice_date: document.getElementById('invoice_date')?.value,
-            due_date: document.getElementById('due_date')?.value,
-            currency: currencySelect?.value,
-            tax_rate: taxRateInput?.value,
-            notes: document.getElementById('notes')?.value,
-            line_items: lineItems,
-            savedAt: new Date().toISOString()
-        };
-
-        try {
-            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-        } catch (e) {
-            console.error('Failed to save draft:', e);
-        }
-    }
-
-    function loadDraft() {
-        try {
-            const json = localStorage.getItem(DRAFT_KEY);
-            if (!json) return false;
-
-            const draft = JSON.parse(json);
-            const savedAt = new Date(draft.savedAt);
-            const daysDiff = (new Date() - savedAt) / (1000 * 60 * 60 * 24);
-            if (daysDiff > 7) {
-                localStorage.removeItem(DRAFT_KEY);
-                return false;
-            }
-
-            const fields = ['business_name', 'business_email', 'business_phone', 'business_address',
-                           'client_name', 'client_email', 'client_phone', 'client_address',
-                           'invoice_date', 'due_date', 'notes'];
-            fields.forEach(f => {
-                const el = document.getElementById(f);
-                if (el && draft[f]) el.value = draft[f];
-            });
-
-            if (draft.currency) currencySelect.value = draft.currency;
-            if (draft.tax_rate) taxRateInput.value = draft.tax_rate;
-
-            if (draft.line_items?.length > 0) {
-                draft.line_items.forEach(item => addItem(item));
-            }
-
-            clearDraftBtn.style.display = 'inline-block';
-            return true;
-        } catch (e) {
-            console.error('Failed to load draft:', e);
-            return false;
-        }
-    }
-
-    function clearDraft() {
-        if (confirm('Clear all draft data? This cannot be undone.')) {
-            localStorage.removeItem(DRAFT_KEY);
-            location.reload();
-        }
-    }
-
-    function setDefaultDates() {
-        const invoiceDate = document.getElementById('invoice_date');
-        const dueDate = document.getElementById('due_date');
-        
-        if (!invoiceDate.value) {
-            invoiceDate.value = new Date().toISOString().split('T')[0];
-        }
-        if (!dueDate.value) {
-            const due = new Date();
-            due.setDate(due.getDate() + 30);
-            dueDate.value = due.toISOString().split('T')[0];
-        }
-    }
-
-    function validateForm() {
-        const errors = [];
-        
-        document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
-        document.querySelectorAll('input.error, textarea.error').forEach(el => el.classList.remove('error'));
-
-        const required = [
-            { id: 'business_name', label: 'Business name' },
-            { id: 'client_name', label: 'Client name' },
-            { id: 'invoice_date', label: 'Invoice date' },
-            { id: 'due_date', label: 'Due date' }
-        ];
-
-        required.forEach(({ id, label }) => {
-            const el = document.getElementById(id);
-            if (!el?.value?.trim()) {
-                errors.push(`${label} is required`);
-                el?.classList.add('error');
-                const errEl = document.getElementById(`${id}_error`);
-                if (errEl) errEl.textContent = 'Required';
-            }
-        });
-
-        const emailFields = ['business_email', 'client_email'];
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        emailFields.forEach(id => {
-            const el = document.getElementById(id);
-            if (el?.value?.trim() && !emailRegex.test(el.value)) {
-                errors.push(`Invalid email format for ${id.replace('_', ' ')}`);
-                el.classList.add('error');
-            }
-        });
-
-        const items = isMobile ? mobileContainer.querySelectorAll('.mobile-item') 
-                              : itemsBody.querySelectorAll('.item-row');
-        if (items.length === 0) {
-            errors.push('Add at least one line item');
-        } else {
-            let hasValidItem = false;
-            items.forEach(item => {
-                const desc = item.querySelector('.item-description')?.value?.trim();
-                const qty = parseFloat(item.querySelector('.item-qty')?.value) || 0;
-                if (desc && qty > 0) hasValidItem = true;
-            });
-            if (!hasValidItem) {
-                errors.push('Add at least one valid line item with description and quantity');
-            }
-        }
-
-        if (errors.length > 0) {
-            errorList.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
-            validationErrors.style.display = 'block';
-            validationErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return false;
-        }
-
-        validationErrors.style.display = 'none';
-        return true;
-    }
-
-    function handleResize() {
-        const wasMobile = isMobile;
-        isMobile = window.innerWidth < 768;
-        
-        if (wasMobile !== isMobile) {
-            const items = wasMobile 
-                ? Array.from(mobileContainer.querySelectorAll('.mobile-item'))
-                : Array.from(itemsBody.querySelectorAll('.item-row'));
-            
-            const data = items.map(item => ({
-                description: item.querySelector('.item-description')?.value || '',
-                quantity: item.querySelector('.item-qty')?.value || 1,
-                unit_price: item.querySelector('.item-price')?.value || ''
-            }));
-
-            if (wasMobile) {
-                mobileContainer.innerHTML = '';
-            } else {
-                itemsBody.innerHTML = '';
-            }
-
-            data.forEach(d => addItem(d));
-        }
-    }
-
-    function init() {
-        setDefaultDates();
-        loadDraft();
-        updateUI();
-        calculateTotals();
-
-        document.getElementById('addFirstItem').addEventListener('click', () => addItem());
-        document.getElementById('addItemBtn').addEventListener('click', () => addItem());
-        clearDraftBtn.addEventListener('click', clearDraft);
-
-        currencySelect.addEventListener('change', calculateTotals);
-        taxRateInput.addEventListener('input', calculateTotals);
-
-        form.addEventListener('submit', (e) => {
-            if (!validateForm()) {
-                e.preventDefault();
-                return false;
-            }
-            updateLineItemsData();
-            localStorage.removeItem(DRAFT_KEY);
-            
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `
-                <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10" opacity="0.25"/>
-                    <path d="M12 2a10 10 0 0110 10"/>
-                </svg>
-                <span>Creating...</span>
-            `;
-        });
-
-        window.addEventListener('resize', handleResize);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
-</script>
+<script src="{% static 'js/invoice-creator-modern.js' %}" nonce="{{ request.csp_nonce }}"></script>
 {% endblock %}

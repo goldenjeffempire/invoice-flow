@@ -24,26 +24,48 @@ The architecture incorporates micro-interactions, robust error handling with use
 
 ## Recent Changes (December 2025)
 
+### Invoice Creator v2.0 - Complete Modern Rebuild (December 15, 2025)
+- Built entirely from scratch with advanced modern UX
+- New template: templates/invoices/create_invoice.html
+- New CSS: static/css/invoice-creator-modern.css (comprehensive styling)
+- New JS: static/js/invoice-creator-modern.js (full functionality)
+- Features:
+  - Collapsible form sections with gradient icons
+  - Real-time invoice preview modal
+  - Sticky sidebar with live calculations
+  - Desktop: inline editable table rows
+  - Mobile: card-based item layout
+  - Drag-and-drop reordering
+  - Auto-save to localStorage with visual indicators
+  - Keyboard shortcuts (Enter, Tab navigation)
+  - Full ARIA accessibility
+  - Smooth animations and transitions
+
+### Payment Settings Page Modernization (December 15, 2025)
+- Complete UI overhaul with modern card-based design
+- Enhanced bank account verification workflow
+- Payment methods display (Cards, Bank Transfer, USSD, Mobile Money)
+- Toggle switch for enabling/disabling direct payments
+- Status badges showing active/inactive state
+- Step-by-step "How It Works" guide
+- Improved error/success messaging with icons
+
+### Payment System Audit (December 15, 2025)
+- Verified security measures:
+  - Rate limiting on payment initiation (10/min)
+  - HMAC-SHA512 webhook signature verification
+  - Amount and currency validation on callbacks
+  - Invoice ID verification in payment metadata
+- Paystack subaccount support for direct merchant payouts
+- Comprehensive logging for payment events
+- Required secrets: PAYSTACK_SECRET_KEY, PAYSTACK_PUBLIC_KEY (not yet configured)
+
 ### Email Service Consolidation (December 15, 2025)
 - Unified all email functionality under SendGridEmailService
 - Added send_verification_email method to SendGridEmailService
 - Migrated authentication emails (signup verification, password reset) to SendGrid
 - Removed redundant email_service.py (was using Django's send_mail)
 - All emails now route through single SendGrid service with Replit integration support
-
-### Create Invoice Page Complete Rebuild (December 15, 2025)
-- Completely rebuilt from scratch with professional modern design
-- Two-column layout: main form + sticky sidebar with invoice summary
-- External CSS stylesheet (static/css/create-invoice.css) for maintainability
-- Mobile-first responsive design with breakpoints at 480px, 768px, 1024px
-- Desktop: table-based line items; Mobile: card-based layout
-- Real-time calculations with currency symbol updates across all inputs
-- Drag-and-drop line item reordering with visual feedback
-- Keyboard shortcuts: Enter to add new item, Ctrl+D to duplicate, Tab navigation
-- Auto-save with debounced localStorage persistence (7-day expiry)
-- Inline form validation with ARIA live regions for accessibility
-- Clean CSS custom properties for consistent theming
-- Reduced motion support for accessibility compliance
 
 ### Dashboard Footer Enhancement
 - Modernized with cleaner, more professional design
