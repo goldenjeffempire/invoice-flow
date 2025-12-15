@@ -639,6 +639,269 @@ class SocialAccount(models.Model):
         return f"{self.user.username} - {self.get_provider_display()} ({self.email})"
 
 
+class Payment(models.Model):
+    """Track individual payment transactions for invoices with full lifecycle support."""
+
+    objects: "models.Manager[Payment]"
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("processing", "Processing"),
+        ("success", "Success"),
+        ("failed", "Failed"),
+        ("refunded", "Refunded"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    CHANNEL_CHOICES = [
+        ("card", "Card Payment"),
+        ("bank_transfer", "Bank Transfer"),
+        ("ussd", "USSD"),
+        ("qr", "QR Code"),
+        ("mobile_money", "Mobile Money"),
+        ("direct_debit", "Direct Debit"),
+    ]
+
+    invoice = models.ForeignKey(
+        Invoice, on_delete=models.CASCADE, related_name="payments"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="payments"
+    )
+    reference = models.CharField(max_length=100, unique=True, db_index=True)
+    external_reference = models.CharField(max_length=100, blank=True, null=True, db_index=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="NGN")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES, blank=True, null=True)
+    gateway = models.CharField(max_length=50, default="paystack")
+    customer_email = models.EmailField()
+    customer_name = models.CharField(max_length=200, blank=True)
+    authorization_code = models.CharField(max_length=100, blank=True, null=True)
+    card_type = models.CharField(max_length=50, blank=True, null=True)
+    card_last4 = models.CharField(max_length=4, blank=True, null=True)
+    card_exp_month = models.CharField(max_length=2, blank=True, null=True)
+    card_exp_year = models.CharField(max_length=4, blank=True, null=True)
+    card_bank = models.CharField(max_length=100, blank=True, null=True)
+    bank_name = models.CharField(max_length=200, blank=True, null=True)
+    account_name = models.CharField(max_length=200, blank=True, null=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    fees = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    subaccount_code = models.CharField(max_length=100, blank=True, null=True)
+    split_code = models.CharField(max_length=100, blank=True, null=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    gateway_response = models.TextField(blank=True)
+    error_message = models.TextField(blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"], name="idx_payment_user_created"),
+            models.Index(fields=["invoice", "status"], name="idx_payment_invoice_status"),
+            models.Index(fields=["reference"], name="idx_payment_reference"),
+            models.Index(fields=["status", "-created_at"], name="idx_payment_status_date"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.reference} - {self.amount} {self.currency} ({self.status})"
+
+    @property
+    def is_successful(self) -> bool:
+        return self.status == "success"
+
+
+class PaymentRecipient(models.Model):
+    """Store recipient/bank account details for receiving payments and payouts."""
+
+    objects: "models.Manager[PaymentRecipient]"
+
+    ACCOUNT_TYPE_CHOICES = [
+        ("bank", "Bank Account"),
+        ("mobile_money", "Mobile Money"),
+        ("nuban", "NUBAN"),
+        ("ghipss", "GHIPSS"),
+        ("basa", "BASA"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="payment_recipients"
+    )
+    name = models.CharField(max_length=200, help_text="Friendly name for this account")
+    account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPE_CHOICES, default="bank")
+    bank_code = models.CharField(max_length=20)
+    bank_name = models.CharField(max_length=200)
+    account_number = models.CharField(max_length=30)
+    account_name = models.CharField(max_length=200, help_text="Verified account holder name")
+    currency = models.CharField(max_length=3, default="NGN")
+    recipient_code = models.CharField(max_length=100, blank=True, null=True, help_text="Payment gateway recipient code")
+    is_primary = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_primary", "-created_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"], name="idx_recipient_user_active"),
+            models.Index(fields=["user", "is_primary"], name="idx_recipient_user_primary"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.bank_name} ({self.account_number[-4:]})"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.is_primary:
+            PaymentRecipient.objects.filter(user=self.user, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)
+
+
+class PaymentPayout(models.Model):
+    """Track payout/transfer requests to recipients."""
+
+    objects: "models.Manager[PaymentPayout]"
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("processing", "Processing"),
+        ("success", "Success"),
+        ("failed", "Failed"),
+        ("reversed", "Reversed"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="payouts"
+    )
+    recipient = models.ForeignKey(
+        PaymentRecipient, on_delete=models.SET_NULL, null=True, related_name="payouts"
+    )
+    reference = models.CharField(max_length=100, unique=True, db_index=True)
+    transfer_code = models.CharField(max_length=100, blank=True, null=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="NGN")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    reason = models.CharField(max_length=200, blank=True, help_text="Reason for transfer")
+    gateway_response = models.TextField(blank=True)
+    error_message = models.TextField(blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"], name="idx_payout_user_created"),
+            models.Index(fields=["status", "-created_at"], name="idx_payout_status_date"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.reference} - {self.amount} {self.currency} ({self.status})"
+
+
+class PaymentCard(models.Model):
+    """Store tokenized card information for saved payment methods."""
+
+    objects: "models.Manager[PaymentCard]"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="saved_cards"
+    )
+    authorization_code = models.CharField(max_length=100)
+    card_type = models.CharField(max_length=50)
+    last4 = models.CharField(max_length=4)
+    exp_month = models.CharField(max_length=2)
+    exp_year = models.CharField(max_length=4)
+    bank = models.CharField(max_length=100, blank=True)
+    brand = models.CharField(max_length=50, blank=True)
+    country_code = models.CharField(max_length=3, blank=True)
+    reusable = models.BooleanField(default=True)
+    signature = models.CharField(max_length=100, blank=True, null=True)
+    is_primary = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    nickname = models.CharField(max_length=50, blank=True, help_text="Friendly name for this card")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_primary", "-created_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"], name="idx_card_user_active"),
+        ]
+
+    def __str__(self) -> str:
+        name = self.nickname or f"{self.card_type} *{self.last4}"
+        return f"{name} ({self.exp_month}/{self.exp_year})"
+
+    @property
+    def display_name(self) -> str:
+        if self.nickname:
+            return f"{self.nickname} (*{self.last4})"
+        return f"{self.card_type} *{self.last4}"
+
+    @property
+    def is_expired(self) -> bool:
+        from datetime import datetime
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+        try:
+            exp_year = int(self.exp_year)
+            exp_month = int(self.exp_month)
+            if exp_year < current_year:
+                return True
+            if exp_year == current_year and exp_month < current_month:
+                return True
+            return False
+        except (ValueError, TypeError):
+            return True
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.is_primary:
+            PaymentCard.objects.filter(user=self.user, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+        super().save(*args, **kwargs)
+
+
+class PaymentSettings(models.Model):
+    """User payment settings and preferences for receiving payments."""
+
+    objects: "models.Manager[PaymentSettings]"
+
+    PAYOUT_SCHEDULE_CHOICES = [
+        ("auto", "Automatic (Next Business Day)"),
+        ("daily", "Daily"),
+        ("weekly", "Weekly"),
+        ("monthly", "Monthly"),
+        ("manual", "Manual Withdrawal"),
+    ]
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="payment_settings"
+    )
+    enable_card_payments = models.BooleanField(default=True)
+    enable_bank_transfers = models.BooleanField(default=True)
+    enable_mobile_money = models.BooleanField(default=False)
+    enable_ussd = models.BooleanField(default=False)
+    preferred_currency = models.CharField(max_length=3, default="NGN")
+    auto_payout = models.BooleanField(default=False, help_text="Automatically transfer funds to default recipient")
+    payout_schedule = models.CharField(max_length=20, choices=PAYOUT_SCHEDULE_CHOICES, default="auto")
+    payout_threshold = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Minimum amount before auto-payout")
+    send_payment_receipt = models.BooleanField(default=True)
+    send_payout_notification = models.BooleanField(default=True)
+    payment_instructions = models.TextField(blank=True, help_text="Custom payment instructions for clients")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Payment Settings"
+        verbose_name_plural = "Payment Settings"
+
+    def __str__(self) -> str:
+        return f"Payment Settings for {self.user.username}"
+
+
 class GDPRRequest(models.Model):
     """Persistent GDPR compliance request tracking for audit and fulfillment."""
 

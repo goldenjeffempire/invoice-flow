@@ -1,0 +1,280 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Payment Settings{% endblock %}
+{% block body_class %}dashboard-light-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+<style>
+.payment-dashboard { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.payment-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px; }
+.payment-stat-card { background: white; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.payment-stat-card h3 { font-size: 0.875rem; color: #64748b; margin: 0 0 8px; font-weight: 500; }
+.payment-stat-card .value { font-size: 2rem; font-weight: 700; color: #0f172a; }
+.payment-stat-card .value.success { color: #059669; }
+.payment-section { background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 24px; overflow: hidden; }
+.payment-section-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+.payment-section-header h2 { font-size: 1.125rem; font-weight: 600; color: #0f172a; margin: 0; }
+.payment-section-body { padding: 24px; }
+.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.status-badge.active { background: #d1fae5; color: #059669; }
+.status-badge.inactive { background: #f1f5f9; color: #64748b; }
+.status-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.account-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.account-info-item { padding: 16px; background: #f8fafc; border-radius: 12px; }
+.account-info-item label { font-size: 0.75rem; color: #64748b; display: block; margin-bottom: 4px; }
+.account-info-item .value { font-size: 0.9375rem; font-weight: 600; color: #0f172a; }
+.btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 10px; font-size: 0.875rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+.btn-secondary { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.875rem; font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-secondary:hover { background: #e2e8f0; }
+.quick-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.empty-state { text-align: center; padding: 48px 24px; color: #64748b; }
+.empty-state svg { width: 64px; height: 64px; margin-bottom: 16px; color: #cbd5e1; }
+.empty-state h3 { font-size: 1.125rem; color: #374151; margin: 0 0 8px; }
+.recent-list { list-style: none; padding: 0; margin: 0; }
+.recent-item { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #f1f5f9; }
+.recent-item:last-child { border-bottom: none; }
+.recent-item-info { display: flex; align-items: center; gap: 12px; }
+.recent-item-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.recent-item-icon.success { background: #d1fae5; color: #059669; }
+.recent-item-icon.pending { background: #fef3c7; color: #d97706; }
+.recent-item-icon.failed { background: #fee2e2; color: #dc2626; }
+.recent-item-details h4 { font-size: 0.9375rem; font-weight: 600; color: #0f172a; margin: 0; }
+.recent-item-details p { font-size: 0.8125rem; color: #64748b; margin: 2px 0 0; }
+.recent-item-amount { text-align: right; }
+.recent-item-amount .amount { font-size: 0.9375rem; font-weight: 600; color: #0f172a; }
+.recent-item-amount .date { font-size: 0.75rem; color: #94a3b8; }
+</style>
+{% endblock %}
+
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'components/sidebar-light.html' with active='settings' %}
+    
+    <main class="dashboard-main">
+        <header class="dashboard-light-header">
+            <div class="dashboard-light-header-content">
+                <h1>Payment Settings</h1>
+                <p>Manage how you receive payments from your clients</p>
+            </div>
+        </header>
+        
+        <div class="payment-dashboard">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert-box {% if message.tags %}{{ message.tags }}{% endif %}" style="margin-bottom: 24px; padding: 16px; border-radius: 12px; {% if 'success' in message.tags %}background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46;{% elif 'error' in message.tags %}background: #fef2f2; border: 1px solid #fecaca; color: #991b1b;{% else %}background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            <div class="payment-grid">
+                <div class="payment-stat-card">
+                    <h3>Total Payments Received</h3>
+                    <div class="value success">{{ payment_stats.total_received }}</div>
+                </div>
+                <div class="payment-stat-card">
+                    <h3>Total Amount</h3>
+                    <div class="value">{{ payment_settings.preferred_currency }} {{ payment_stats.total_amount|floatformat:2 }}</div>
+                </div>
+                <div class="payment-stat-card">
+                    <h3>Pending Payments</h3>
+                    <div class="value">{{ payment_stats.pending_payments }}</div>
+                </div>
+            </div>
+
+            <div class="payment-section">
+                <div class="payment-section-header">
+                    <h2>Direct Payment Account</h2>
+                    {% if has_subaccount %}
+                    <span class="status-badge active"><span class="dot"></span> Active</span>
+                    {% else %}
+                    <span class="status-badge inactive"><span class="dot"></span> Not Configured</span>
+                    {% endif %}
+                </div>
+                <div class="payment-section-body">
+                    {% if has_subaccount %}
+                    <div class="account-info">
+                        <div class="account-info-item">
+                            <label>Bank</label>
+                            <div class="value">{{ profile.paystack_settlement_bank }}</div>
+                        </div>
+                        <div class="account-info-item">
+                            <label>Account Number</label>
+                            <div class="value">****{{ profile.paystack_account_number|slice:"-4:" }}</div>
+                        </div>
+                        <div class="account-info-item">
+                            <label>Account Name</label>
+                            <div class="value">{{ profile.paystack_account_name }}</div>
+                        </div>
+                    </div>
+                    <div class="quick-actions">
+                        <a href="{% url 'settings_payments' %}" class="btn-secondary">Edit Account</a>
+                        <form method="post" action="{% url 'toggle_subaccount' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-secondary">
+                                {% if profile.paystack_subaccount_active %}Disable{% else %}Enable{% endif %} Direct Payments
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        <h3>No Payment Account Configured</h3>
+                        <p>Set up your bank account to receive payments directly from your clients.</p>
+                        <a href="{% url 'settings_payments' %}" class="btn-primary" style="margin-top: 16px;">Set Up Account</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="payment-section">
+                <div class="payment-section-header">
+                    <h2>Payment Options</h2>
+                    <a href="{% url 'payment_preferences' %}" class="btn-secondary">Configure</a>
+                </div>
+                <div class="payment-section-body">
+                    <div class="account-info">
+                        <div class="account-info-item">
+                            <label>Card Payments</label>
+                            <div class="value">{% if payment_settings.enable_card_payments %}Enabled{% else %}Disabled{% endif %}</div>
+                        </div>
+                        <div class="account-info-item">
+                            <label>Bank Transfers</label>
+                            <div class="value">{% if payment_settings.enable_bank_transfers %}Enabled{% else %}Disabled{% endif %}</div>
+                        </div>
+                        <div class="account-info-item">
+                            <label>Preferred Currency</label>
+                            <div class="value">{{ payment_settings.preferred_currency }}</div>
+                        </div>
+                        <div class="account-info-item">
+                            <label>Auto-Payout</label>
+                            <div class="value">{% if payment_settings.auto_payout %}Enabled{% else %}Disabled{% endif %}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-grid">
+                <div class="payment-section">
+                    <div class="payment-section-header">
+                        <h2>Bank Accounts</h2>
+                        <a href="{% url 'manage_recipients' %}" class="btn-secondary">Manage</a>
+                    </div>
+                    <div class="payment-section-body">
+                        {% if recipients %}
+                        <ul class="recent-list">
+                            {% for recipient in recipients|slice:":3" %}
+                            <li class="recent-item">
+                                <div class="recent-item-info">
+                                    <div class="recent-item-icon success">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M3 21h18M3 7v1a3 3 0 003 3h12a3 3 0 003-3V7M3 7l9-4 9 4"/>
+                                        </svg>
+                                    </div>
+                                    <div class="recent-item-details">
+                                        <h4>{{ recipient.name }}</h4>
+                                        <p>{{ recipient.bank_name }} - ****{{ recipient.account_number|slice:"-4:" }}</p>
+                                    </div>
+                                </div>
+                                {% if recipient.is_primary %}<span class="status-badge active">Primary</span>{% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="empty-state" style="padding: 24px;">
+                            <p>No bank accounts added yet.</p>
+                            <a href="{% url 'manage_recipients' %}" class="btn-secondary" style="margin-top: 8px;">Add Account</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="payment-section">
+                    <div class="payment-section-header">
+                        <h2>Saved Cards</h2>
+                        <a href="{% url 'saved_cards' %}" class="btn-secondary">Manage</a>
+                    </div>
+                    <div class="payment-section-body">
+                        {% if saved_cards %}
+                        <ul class="recent-list">
+                            {% for card in saved_cards|slice:":3" %}
+                            <li class="recent-item">
+                                <div class="recent-item-info">
+                                    <div class="recent-item-icon {% if card.is_expired %}failed{% else %}success{% endif %}">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="1" y="4" width="22" height="16" rx="2"/>
+                                            <line x1="1" y1="10" x2="23" y2="10"/>
+                                        </svg>
+                                    </div>
+                                    <div class="recent-item-details">
+                                        <h4>{{ card.display_name }}</h4>
+                                        <p>Expires {{ card.exp_month }}/{{ card.exp_year }}</p>
+                                    </div>
+                                </div>
+                                {% if card.is_primary %}<span class="status-badge active">Primary</span>{% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="empty-state" style="padding: 24px;">
+                            <p>No saved cards yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-section">
+                <div class="payment-section-header">
+                    <h2>Recent Payments</h2>
+                    <a href="{% url 'payment_history' %}" class="btn-secondary">View All</a>
+                </div>
+                <div class="payment-section-body">
+                    {% if recent_payments %}
+                    <ul class="recent-list">
+                        {% for payment in recent_payments %}
+                        <li class="recent-item">
+                            <div class="recent-item-info">
+                                <div class="recent-item-icon {{ payment.status }}">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        {% if payment.status == 'success' %}
+                                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                                        <polyline points="22 4 12 14.01 9 11.01"/>
+                                        {% else %}
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="12" y1="8" x2="12" y2="12"/>
+                                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                        {% endif %}
+                                    </svg>
+                                </div>
+                                <div class="recent-item-details">
+                                    <h4>{{ payment.reference }}</h4>
+                                    <p>{{ payment.customer_email }}</p>
+                                </div>
+                            </div>
+                            <div class="recent-item-amount">
+                                <div class="amount">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</div>
+                                <div class="date">{{ payment.created_at|date:"M d, Y" }}</div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>No payment history yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

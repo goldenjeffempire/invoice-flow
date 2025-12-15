@@ -8,6 +8,8 @@ from .models import (
     ContactSubmission,
     Invoice,
     InvoiceTemplate,
+    PaymentRecipient,
+    PaymentSettings,
     RecurringInvoice,
     UserProfile,
     Waitlist,
@@ -619,3 +621,226 @@ class ContactForm(forms.ModelForm):
         if len(message) > 5000:
             raise forms.ValidationError("Message must be less than 5000 characters.")
         return message
+
+
+class PaymentRecipientForm(forms.ModelForm):
+    """Form for adding/editing bank account recipients for receiving payments."""
+
+    class Meta:
+        model = PaymentRecipient
+        fields = [
+            "name",
+            "account_type",
+            "bank_code",
+            "bank_name",
+            "account_number",
+            "account_name",
+            "currency",
+            "is_primary",
+        ]
+        widgets = {
+            "name": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "placeholder": "e.g., My Business Account",
+                }
+            ),
+            "account_type": forms.Select(
+                attrs={
+                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                }
+            ),
+            "bank_code": forms.Select(
+                attrs={
+                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "id": "bank-code-select",
+                }
+            ),
+            "bank_name": forms.HiddenInput(),
+            "account_number": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "placeholder": "Enter 10-digit account number",
+                    "maxlength": "10",
+                    "pattern": "[0-9]{10}",
+                }
+            ),
+            "account_name": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "readonly": "readonly",
+                    "placeholder": "Account name will be verified",
+                }
+            ),
+            "currency": forms.Select(
+                attrs={
+                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                },
+                choices=[
+                    ("NGN", "Nigerian Naira (NGN)"),
+                    ("USD", "US Dollar (USD)"),
+                    ("GHS", "Ghanaian Cedi (GHS)"),
+                    ("ZAR", "South African Rand (ZAR)"),
+                    ("KES", "Kenyan Shilling (KES)"),
+                ],
+            ),
+            "is_primary": forms.CheckboxInput(
+                attrs={
+                    "class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500",
+                }
+            ),
+        }
+
+    def clean_account_number(self) -> str:
+        account_number = self.cleaned_data.get("account_number", "")
+        if not account_number.isdigit():
+            raise forms.ValidationError("Account number must contain only digits.")
+        if len(account_number) < 10:
+            raise forms.ValidationError("Account number must be at least 10 digits.")
+        return account_number
+
+
+class PaymentSettingsForm(forms.ModelForm):
+    """Form for configuring payment preferences and payout settings."""
+
+    class Meta:
+        model = PaymentSettings
+        fields = [
+            "enable_card_payments",
+            "enable_bank_transfers",
+            "enable_mobile_money",
+            "enable_ussd",
+            "preferred_currency",
+            "auto_payout",
+            "payout_schedule",
+            "payout_threshold",
+            "send_payment_receipt",
+            "send_payout_notification",
+            "payment_instructions",
+        ]
+        widgets = {
+            "enable_card_payments": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
+            ),
+            "enable_bank_transfers": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
+            ),
+            "enable_mobile_money": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
+            ),
+            "enable_ussd": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
+            ),
+            "preferred_currency": forms.Select(
+                attrs={
+                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                },
+                choices=[
+                    ("NGN", "Nigerian Naira (NGN)"),
+                    ("USD", "US Dollar (USD)"),
+                    ("GHS", "Ghanaian Cedi (GHS)"),
+                    ("ZAR", "South African Rand (ZAR)"),
+                    ("KES", "Kenyan Shilling (KES)"),
+                ],
+            ),
+            "auto_payout": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
+            ),
+            "payout_schedule": forms.Select(
+                attrs={
+                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                }
+            ),
+            "payout_threshold": forms.NumberInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "step": "0.01",
+                    "min": "0",
+                    "placeholder": "0.00",
+                }
+            ),
+            "send_payment_receipt": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
+            ),
+            "send_payout_notification": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
+            ),
+            "payment_instructions": forms.Textarea(
+                attrs={
+                    "class": "form-light-textarea w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "rows": 4,
+                    "placeholder": "Custom payment instructions for your clients (optional)",
+                }
+            ),
+        }
+
+
+class SubaccountSetupForm(forms.Form):
+    """Form for setting up Paystack subaccount to receive payments directly."""
+
+    business_name = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "placeholder": "Your Business Name",
+            }
+        ),
+    )
+    bank_code = forms.CharField(
+        max_length=20,
+        widget=forms.Select(
+            attrs={
+                "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "id": "subaccount-bank-select",
+            }
+        ),
+    )
+    account_number = forms.CharField(
+        max_length=20,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "placeholder": "10-digit account number",
+                "maxlength": "10",
+                "pattern": "[0-9]{10}",
+            }
+        ),
+    )
+    account_name = forms.CharField(
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "readonly": "readonly",
+                "placeholder": "Account name will be verified",
+            }
+        ),
+    )
+    contact_email = forms.EmailField(
+        widget=forms.EmailInput(
+            attrs={
+                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "placeholder": "business@example.com",
+            }
+        ),
+    )
+    contact_phone = forms.CharField(
+        max_length=20,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "placeholder": "+234 xxx xxx xxxx",
+            }
+        ),
+    )
+
+    def clean_account_number(self) -> str:
+        account_number = self.cleaned_data.get("account_number", "")
+        if not account_number.isdigit():
+            raise forms.ValidationError("Account number must contain only digits.")
+        if len(account_number) != 10:
+            raise forms.ValidationError("Account number must be exactly 10 digits.")
+        return account_number

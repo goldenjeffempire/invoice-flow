@@ -1,0 +1,85 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Payout History{% endblock %}
+{% block body_class %}dashboard-light-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+<style>
+.payout-container { max-width: 1000px; margin: 0 auto; padding: 24px; }
+.payout-table { width: 100%; background: white; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; }
+.payout-table th { text-align: left; padding: 16px 20px; background: #f8fafc; font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; }
+.payout-table td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #374151; }
+.payout-table tr:last-child td { border-bottom: none; }
+.status-pill { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.status-pill.success { background: #d1fae5; color: #059669; }
+.status-pill.pending { background: #fef3c7; color: #d97706; }
+.status-pill.failed { background: #fee2e2; color: #dc2626; }
+.status-pill.processing { background: #dbeafe; color: #2563eb; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; color: #6366f1; text-decoration: none; font-size: 0.875rem; margin-bottom: 16px; }
+.empty-state { text-align: center; padding: 64px 24px; background: white; border-radius: 16px; border: 1px solid #e2e8f0; }
+.empty-state svg { width: 64px; height: 64px; color: #cbd5e1; margin-bottom: 16px; }
+</style>
+{% endblock %}
+
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'components/sidebar-light.html' with active='settings' %}
+    
+    <main class="dashboard-main">
+        <header class="dashboard-light-header">
+            <div class="dashboard-light-header-content">
+                <h1>Payout History</h1>
+                <p>View all payouts and withdrawals to your bank accounts</p>
+            </div>
+        </header>
+        
+        <div class="payout-container">
+            <a href="{% url 'payment_settings' %}" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Back to Payment Settings
+            </a>
+            
+            {% if payouts %}
+            <table class="payout-table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Recipient</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payout in payouts %}
+                    <tr>
+                        <td>{{ payout.reference|truncatechars:20 }}</td>
+                        <td>{% if payout.recipient %}{{ payout.recipient.name }}{% else %}N/A{% endif %}</td>
+                        <td><strong>{{ payout.currency }} {{ payout.amount|floatformat:2 }}</strong></td>
+                        <td>{{ payout.reason|default:"N/A"|truncatechars:30 }}</td>
+                        <td><span class="status-pill {{ payout.status }}">{{ payout.get_status_display }}</span></td>
+                        <td>{{ payout.created_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <h3 style="color: #374151; margin: 0 0 8px;">No payouts yet</h3>
+                <p style="color: #64748b; margin: 0;">Payout records will appear here once you have withdrawals processed.</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+{% endblock %}

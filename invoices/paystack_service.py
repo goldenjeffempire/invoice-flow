@@ -642,3 +642,341 @@ class PaystackService:
 def get_paystack_service():
     """Get Paystack service instance."""
     return PaystackService()
+
+
+class PaystackTransferService:
+    """Service for handling Paystack transfer/payout operations."""
+    
+    BASE_URL = "https://api.paystack.co"
+    
+    def __init__(self):
+        self.secret_key = os.environ.get("PAYSTACK_SECRET_KEY", "")
+        self.is_configured = bool(self.secret_key)
+        
+    @property
+    def headers(self):
+        """Get authorization headers for Paystack API."""
+        return {
+            "Authorization": f"Bearer {self.secret_key}",
+            "Content-Type": "application/json",
+        }
+    
+    def create_transfer_recipient(
+        self,
+        account_name: str,
+        account_number: str,
+        bank_code: str,
+        currency: str = "NGN",
+        recipient_type: str = "nuban",
+        metadata: Optional[dict] = None,
+    ) -> dict[str, Any]:
+        """
+        Create a transfer recipient for payouts.
+        
+        Args:
+            account_name: Name of the account holder
+            account_number: Bank account number
+            bank_code: Bank code from list_banks
+            currency: Currency code
+            recipient_type: Type of recipient (nuban, ghipss, basa)
+            metadata: Additional data
+        
+        Returns:
+            dict with recipient_code and details
+        """
+        if not self.is_configured:
+            return {"status": "error", "message": "Paystack is not configured."}
+        
+        payload = {
+            "type": recipient_type,
+            "name": account_name,
+            "account_number": account_number,
+            "bank_code": bank_code,
+            "currency": currency,
+        }
+        
+        if metadata:
+            payload["metadata"] = metadata
+        
+        try:
+            response = requests.post(
+                f"{self.BASE_URL}/transferrecipient",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code in [200, 201] and data.get("status"):
+                recipient = data["data"]
+                return {
+                    "status": "success",
+                    "recipient_code": recipient["recipient_code"],
+                    "name": recipient.get("name"),
+                    "bank_name": recipient.get("details", {}).get("bank_name"),
+                    "account_number": recipient.get("details", {}).get("account_number"),
+                    "raw_data": recipient,
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to create recipient"),
+                }
+        
+        except requests.RequestException as e:
+            return {"status": "error", "message": f"Network error: {str(e)}"}
+    
+    def initiate_transfer(
+        self,
+        amount: Decimal,
+        recipient_code: str,
+        reason: str = "",
+        reference: Optional[str] = None,
+        currency: str = "NGN",
+    ) -> dict[str, Any]:
+        """
+        Initiate a transfer/payout to a recipient.
+        
+        Args:
+            amount: Amount to transfer (in base currency unit)
+            recipient_code: Recipient code from create_transfer_recipient
+            reason: Reason for the transfer
+            reference: Unique transfer reference
+            currency: Currency code
+        
+        Returns:
+            dict with transfer_code and status
+        """
+        if not self.is_configured:
+            return {"status": "error", "message": "Paystack is not configured."}
+        
+        amount_kobo = int(amount * 100)
+        
+        payload = {
+            "source": "balance",
+            "amount": amount_kobo,
+            "recipient": recipient_code,
+            "currency": currency,
+        }
+        
+        if reason:
+            payload["reason"] = reason
+        if reference:
+            payload["reference"] = reference
+        
+        try:
+            response = requests.post(
+                f"{self.BASE_URL}/transfer",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code in [200, 201] and data.get("status"):
+                transfer = data["data"]
+                return {
+                    "status": "success",
+                    "transfer_code": transfer["transfer_code"],
+                    "reference": transfer.get("reference"),
+                    "amount": Decimal(transfer["amount"]) / 100,
+                    "currency": transfer.get("currency"),
+                    "transfer_status": transfer.get("status"),
+                    "raw_data": transfer,
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to initiate transfer"),
+                }
+        
+        except requests.RequestException as e:
+            return {"status": "error", "message": f"Network error: {str(e)}"}
+    
+    def verify_transfer(self, reference: str) -> dict[str, Any]:
+        """
+        Verify the status of a transfer.
+        
+        Args:
+            reference: Transfer reference
+        
+        Returns:
+            dict with transfer status and details
+        """
+        if not self.is_configured:
+            return {"status": "error", "message": "Paystack is not configured."}
+        
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/transfer/verify/{reference}",
+                headers=self.headers,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code == 200 and data.get("status"):
+                transfer = data["data"]
+                return {
+                    "status": "success",
+                    "transfer_status": transfer["status"],
+                    "amount": Decimal(transfer["amount"]) / 100,
+                    "currency": transfer.get("currency"),
+                    "reference": transfer.get("reference"),
+                    "transfer_code": transfer.get("transfer_code"),
+                    "recipient": transfer.get("recipient", {}),
+                    "raw_data": transfer,
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to verify transfer"),
+                }
+        
+        except requests.RequestException as e:
+            return {"status": "error", "message": f"Network error: {str(e)}"}
+    
+    def get_balance(self) -> dict[str, Any]:
+        """
+        Get available Paystack balance for transfers.
+        
+        Returns:
+            dict with balance details
+        """
+        if not self.is_configured:
+            return {"status": "error", "message": "Paystack is not configured."}
+        
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/balance",
+                headers=self.headers,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code == 200 and data.get("status"):
+                balances = data["data"]
+                return {
+                    "status": "success",
+                    "balances": [
+                        {
+                            "currency": b.get("currency"),
+                            "balance": Decimal(b.get("balance", 0)) / 100,
+                        }
+                        for b in balances
+                    ],
+                    "raw_data": balances,
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to get balance"),
+                }
+        
+        except requests.RequestException as e:
+            return {"status": "error", "message": f"Network error: {str(e)}"}
+    
+    def list_transfers(
+        self,
+        page: int = 1,
+        per_page: int = 50,
+        status: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """
+        List transfer history.
+        
+        Args:
+            page: Page number
+            per_page: Items per page
+            status: Filter by status (pending, success, failed)
+        
+        Returns:
+            dict with list of transfers
+        """
+        if not self.is_configured:
+            return {"status": "error", "message": "Paystack is not configured."}
+        
+        params: dict[str, Any] = {"page": page, "perPage": per_page}
+        if status:
+            params["status"] = status
+        
+        try:
+            response = requests.get(
+                f"{self.BASE_URL}/transfer",
+                headers=self.headers,
+                params=params,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code == 200 and data.get("status"):
+                return {
+                    "status": "success",
+                    "transfers": data["data"],
+                    "meta": data.get("meta", {}),
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to list transfers"),
+                }
+        
+        except requests.RequestException as e:
+            return {"status": "error", "message": f"Network error: {str(e)}"}
+    
+    def finalize_transfer(
+        self,
+        transfer_code: str,
+        otp: str,
+    ) -> dict[str, Any]:
+        """
+        Finalize a transfer that requires OTP.
+        
+        Args:
+            transfer_code: Transfer code
+            otp: One-time password
+        
+        Returns:
+            dict with transfer status
+        """
+        if not self.is_configured:
+            return {"status": "error", "message": "Paystack is not configured."}
+        
+        payload = {
+            "transfer_code": transfer_code,
+            "otp": otp,
+        }
+        
+        try:
+            response = requests.post(
+                f"{self.BASE_URL}/transfer/finalize_transfer",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            
+            data = response.json()
+            
+            if response.status_code == 200 and data.get("status"):
+                return {
+                    "status": "success",
+                    "message": data.get("message", "Transfer finalized"),
+                    "raw_data": data.get("data", {}),
+                }
+            else:
+                return {
+                    "status": "error",
+                    "message": data.get("message", "Failed to finalize transfer"),
+                }
+        
+        except requests.RequestException as e:
+            return {"status": "error", "message": f"Network error: {str(e)}"}
+
+
+def get_transfer_service():
+    """Get Paystack transfer service instance."""
+    return PaystackTransferService()

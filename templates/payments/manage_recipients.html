@@ -1,0 +1,174 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Bank Accounts{% endblock %}
+{% block body_class %}dashboard-light-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+<style>
+.recipients-container { max-width: 900px; margin: 0 auto; padding: 24px; }
+.recipient-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 16px; overflow: hidden; }
+.recipient-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; }
+.recipient-info { display: flex; align-items: center; gap: 16px; }
+.recipient-icon { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #10b981, #14b8a6); display: flex; align-items: center; justify-content: center; }
+.recipient-icon svg { width: 24px; height: 24px; color: white; }
+.recipient-details h3 { font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0; }
+.recipient-details p { font-size: 0.875rem; color: #64748b; margin: 4px 0 0; }
+.recipient-actions { display: flex; gap: 8px; }
+.btn-icon { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; }
+.btn-icon:hover { background: #f8fafc; color: #374151; }
+.btn-icon.danger:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.primary-badge { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.add-section { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 32px; margin-top: 32px; }
+.add-section h2 { font-size: 1.25rem; font-weight: 600; color: #0f172a; margin: 0 0 24px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 640px) { .form-row { grid-template-columns: 1fr; } }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 6px; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; color: #6366f1; text-decoration: none; font-size: 0.875rem; margin-bottom: 16px; }
+.btn-primary { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+.empty-state { text-align: center; padding: 48px; }
+.empty-state svg { width: 64px; height: 64px; color: #cbd5e1; margin-bottom: 16px; }
+</style>
+{% endblock %}
+
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'components/sidebar-light.html' with active='settings' %}
+    
+    <main class="dashboard-main">
+        <header class="dashboard-light-header">
+            <div class="dashboard-light-header-content">
+                <h1>Bank Accounts</h1>
+                <p>Manage your bank accounts for receiving payouts</p>
+            </div>
+        </header>
+        
+        <div class="recipients-container">
+            <a href="{% url 'payment_settings' %}" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Back to Payment Settings
+            </a>
+            
+            {% if messages %}
+            {% for message in messages %}
+            <div style="margin-bottom: 16px; padding: 16px; border-radius: 12px; {% if 'success' in message.tags %}background: #ecfdf5; color: #065f46;{% else %}background: #fef2f2; color: #991b1b;{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            
+            {% if recipients %}
+            {% for recipient in recipients %}
+            <div class="recipient-card">
+                <div class="recipient-header">
+                    <div class="recipient-info">
+                        <div class="recipient-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 21h18M3 7v1a3 3 0 003 3h12a3 3 0 003-3V7M3 7l9-4 9 4"/>
+                            </svg>
+                        </div>
+                        <div class="recipient-details">
+                            <h3>{{ recipient.name }}</h3>
+                            <p>{{ recipient.bank_name }} - ****{{ recipient.account_number|slice:"-4:" }}</p>
+                        </div>
+                        {% if recipient.is_primary %}<span class="primary-badge">Primary</span>{% endif %}
+                    </div>
+                    <div class="recipient-actions">
+                        {% if not recipient.is_primary %}
+                        <form method="post" action="{% url 'set_primary_recipient' recipient.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon" title="Set as Primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="post" action="{% url 'delete_recipient' recipient.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon danger" title="Remove" onclick="return confirm('Are you sure you want to remove this account?')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="recipient-card">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 21h18M3 7v1a3 3 0 003 3h12a3 3 0 003-3V7M3 7l9-4 9 4"/>
+                    </svg>
+                    <h3 style="color: #374151; margin: 0 0 8px;">No bank accounts added</h3>
+                    <p style="color: #64748b; margin: 0;">Add a bank account to receive payouts from your payments.</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="add-section">
+                <h2>Add Bank Account</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        {{ form.name.label_tag }}
+                        {{ form.name }}
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bank</label>
+                            <select name="bank_code" class="form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl" required>
+                                <option value="">Select a bank...</option>
+                                {% for bank in banks %}
+                                <option value="{{ bank.code }}" data-name="{{ bank.name }}">{{ bank.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <input type="hidden" name="bank_name" id="bank_name">
+                        </div>
+                        <div class="form-group">
+                            {{ form.account_number.label_tag }}
+                            {{ form.account_number }}
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            {{ form.account_name.label_tag }}
+                            {{ form.account_name }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.currency.label_tag }}
+                            {{ form.currency }}
+                        </div>
+                    </div>
+                    
+                    <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+                        {{ form.is_primary }}
+                        <span style="font-size: 0.875rem; color: #374151;">Set as primary account</span>
+                    </label>
+                    
+                    <button type="submit" class="btn-primary">Add Bank Account</button>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+document.querySelector('select[name="bank_code"]').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    document.getElementById('bank_name').value = selected.dataset.name || '';
+});
+</script>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Payment Details{% endblock %}
+{% block body_class %}dashboard-light-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+<style>
+.detail-container { max-width: 700px; margin: 0 auto; padding: 24px; }
+.detail-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; }
+.detail-header { padding: 24px 32px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+.detail-header h1 { font-size: 1.5rem; font-weight: 600; color: #0f172a; margin: 0; }
+.status-pill { display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 20px; font-size: 0.875rem; font-weight: 600; }
+.status-pill.success { background: #d1fae5; color: #059669; }
+.status-pill.pending { background: #fef3c7; color: #d97706; }
+.status-pill.failed { background: #fee2e2; color: #dc2626; }
+.detail-body { padding: 32px; }
+.amount-display { text-align: center; padding: 32px 0; margin-bottom: 32px; border-bottom: 1px solid #f1f5f9; }
+.amount-display .amount { font-size: 3rem; font-weight: 700; color: #0f172a; }
+.amount-display .currency { font-size: 1.5rem; color: #64748b; margin-right: 8px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 600px) { .detail-grid { grid-template-columns: 1fr; } }
+.detail-item { padding: 16px; background: #f8fafc; border-radius: 12px; }
+.detail-item label { display: block; font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.detail-item .value { font-size: 0.9375rem; font-weight: 600; color: #0f172a; word-break: break-all; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; color: #6366f1; text-decoration: none; font-size: 0.875rem; margin-bottom: 16px; }
+</style>
+{% endblock %}
+
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'components/sidebar-light.html' with active='settings' %}
+    
+    <main class="dashboard-main">
+        <header class="dashboard-light-header">
+            <div class="dashboard-light-header-content">
+                <h1>Payment Details</h1>
+                <p>View details of this payment transaction</p>
+            </div>
+        </header>
+        
+        <div class="detail-container">
+            <a href="{% url 'payment_history' %}" class="back-link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Back to Payment History
+            </a>
+            
+            <div class="detail-card">
+                <div class="detail-header">
+                    <h1>{{ payment.reference }}</h1>
+                    <span class="status-pill {{ payment.status }}">{{ payment.get_status_display }}</span>
+                </div>
+                
+                <div class="detail-body">
+                    <div class="amount-display">
+                        <span class="currency">{{ payment.currency }}</span>
+                        <span class="amount">{{ payment.amount|floatformat:2 }}</span>
+                    </div>
+                    
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <label>Customer Email</label>
+                            <div class="value">{{ payment.customer_email }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Customer Name</label>
+                            <div class="value">{{ payment.customer_name|default:"N/A" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Payment Channel</label>
+                            <div class="value">{{ payment.get_channel_display|default:"N/A" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Gateway</label>
+                            <div class="value">{{ payment.gateway|title }}</div>
+                        </div>
+                        {% if payment.card_type %}
+                        <div class="detail-item">
+                            <label>Card Type</label>
+                            <div class="value">{{ payment.card_type }} {% if payment.card_last4 %}**** {{ payment.card_last4 }}{% endif %}</div>
+                        </div>
+                        {% endif %}
+                        {% if payment.card_bank %}
+                        <div class="detail-item">
+                            <label>Card Bank</label>
+                            <div class="value">{{ payment.card_bank }}</div>
+                        </div>
+                        {% endif %}
+                        <div class="detail-item">
+                            <label>Transaction Fees</label>
+                            <div class="value">{{ payment.currency }} {{ payment.fees|floatformat:2 }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>IP Address</label>
+                            <div class="value">{{ payment.ip_address|default:"N/A" }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <label>Created</label>
+                            <div class="value">{{ payment.created_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% if payment.paid_at %}
+                        <div class="detail-item">
+                            <label>Paid At</label>
+                            <div class="value">{{ payment.paid_at|date:"M d, Y H:i" }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if payment.gateway_response %}
+                    <div class="detail-item" style="margin-top: 24px;">
+                        <label>Gateway Response</label>
+                        <div class="value">{{ payment.gateway_response }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if payment.error_message %}
+                    <div class="detail-item" style="margin-top: 16px; background: #fef2f2;">
+                        <label style="color: #dc2626;">Error Message</label>
+                        <div class="value" style="color: #991b1b;">{{ payment.error_message }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
