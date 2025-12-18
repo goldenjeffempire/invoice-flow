@@ -737,7 +737,7 @@ def send_invoice_email(request, invoice_id: int):
     )
 
     if request.method == "POST":
-        recipient_email = request.POST.get("email", invoice.client_email)
+        recipient_email = request.POST.get("recipient") or request.POST.get("email") or invoice.client_email
 
         AsyncTaskService.send_invoice_email_async(invoice.id, recipient_email)
 
