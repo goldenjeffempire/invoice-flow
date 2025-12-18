@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import Any, Optional, Type
+from typing import Any, Dict, Optional, Type, cast
 
 from django.http import FileResponse
 from drf_spectacular.types import OpenApiTypes
@@ -127,7 +127,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         invoice = self.get_object()
         serializer = InvoiceStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        invoice.status = serializer.validated_data["status"]
+        validated_data = cast(Dict[str, Any], serializer.validated_data)
+        invoice.status = validated_data["status"]
         invoice.save()
         AnalyticsService.invalidate_user_cache(request.user.id)
         return Response(InvoiceDetailSerializer(invoice).data)
