@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import Any
+from typing import Any, Optional, Type
 
 from django.http import FileResponse
 from drf_spectacular.types import OpenApiTypes
@@ -86,7 +86,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     lookup_field = "pk"
     lookup_url_kwarg = "pk"
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[Any]:
         if self.action == "list":
             return InvoiceListSerializer
         elif self.action in ["create", "update", "partial_update"]:
@@ -123,7 +123,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         parameters=[INVOICE_ID_PARAM],
     )
     @action(detail=True, methods=["post"], url_path="status")
-    def update_status(self, request: Request, pk: int = None, version: str = None) -> Response:
+    def update_status(self, request: Request, pk: Optional[int] = None, version: Optional[str] = None) -> Response:
         invoice = self.get_object()
         serializer = InvoiceStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -139,7 +139,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         parameters=[INVOICE_ID_PARAM],
     )
     @action(detail=True, methods=["get"], url_path="pdf")
-    def generate_pdf(self, request: Request, pk: int = None, version: str = None) -> FileResponse:
+    def generate_pdf(self, request: Request, pk: Optional[int] = None, version: Optional[str] = None) -> FileResponse:
         invoice = self.get_object()
         pdf_bytes = PDFService.generate_pdf_bytes(invoice)
         return FileResponse(
@@ -154,7 +154,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         description="Get aggregated statistics for the authenticated user's invoices.",
     )
     @action(detail=False, methods=["get"], url_path="stats")
-    def stats(self, request: Request, version: str = None) -> Response:
+    def stats(self, request: Request, version: Optional[str] = None) -> Response:
         stats = AnalyticsService.get_user_dashboard_stats(request.user)
         return Response(stats)
 

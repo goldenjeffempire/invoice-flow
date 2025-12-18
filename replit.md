@@ -24,11 +24,55 @@ The architecture incorporates micro-interactions, robust error handling with use
 
 ## Recent Changes (December 2025)
 
+### Public Invoice Payment System - Direct Client Payments (December 18, 2025)
+- **Public Payment Page**: New `/pay/<invoice_id>/` endpoint for unauthenticated clients
+- **Templates**: templates/invoices/public_invoice.html with professional dark-mode UI
+- **Features**:
+  - Clean, professional invoice display without login requirement
+  - Real-time payment status badges (Paid/Unpaid/Overdue)
+  - Bank transfer details section
+  - Secure "Pay Now" button with Paystack integration
+  - Responsive design for all devices
+  - Invoice preview with all details (items, dates, totals, notes)
+- **New Views**: public_invoice_view, public_initiate_payment, public_payment_callback
+- **URLs**: /pay/<invoice_id>/, /pay/<invoice_id>/checkout/, /pay/<invoice_id>/callback/
+- **Security Enhancements**:
+  - Webhook signature verification (HMAC-SHA512)
+  - Payment reference validation to prevent replay attacks
+  - Amount and currency verification on callbacks
+  - Invoice ownership validation (invoice.user check)
+  - Explicit reference matching between payment initiation and webhook events
+
+### Paystack Security Hardening (December 18, 2025)
+- Enhanced webhook handler with comprehensive payment validation
+- Added reference mismatch detection (prevents payment hijacking)
+- Requires invoice.payment_reference exists before webhook processing
+- Amount tolerance validation (0.01 currency units)
+- Currency validation with logging of mismatches
+- Structured error responses for invalid webhooks
+- Rate limiting on payment initiation (10/min per user)
+- Payload validation before processing
+- Comprehensive logging for audit trails
+
+### API Security Improvement (December 18, 2025)
+- Changed InvoiceViewSet base queryset from Invoice.objects.all() to Invoice.objects.none()
+- Ensures DRF always calls get_queryset() which filters by authenticated user
+- Eliminates risk of incomplete queryset filtering
+- Added proper type hints to API methods (Optional[int], Optional[str])
+- Fixed return type hint for get_serializer_class()
+
+### Invoice Detail UI Enhancement (December 18, 2025)
+- Added "Client Payment Link" section in invoice detail page
+- Copy-to-clipboard functionality for payment link
+- Shows full public URL for easy client sharing
+- Green visual indicator for payment link section
+- Integrates with existing sharing methods
+
 ### Invoice Creator v2.0 - Complete Modern Rebuild (December 15, 2025)
 - Built entirely from scratch with advanced modern UX
 - New template: templates/invoices/create_invoice.html
-- New CSS: static/css/invoice-creator-modern.css (comprehensive styling)
-- New JS: static/js/invoice-creator-modern.js (full functionality)
+- New CSS: static/css/invoice-creator-v3.css (comprehensive styling)
+- New JS: static/js/invoice-creator-v3.js (full functionality)
 - Features:
   - Collapsible form sections with gradient icons
   - Real-time invoice preview modal
@@ -64,17 +108,6 @@ The architecture incorporates micro-interactions, robust error handling with use
 - Step-by-step "How It Works" guide
 - Improved error/success messaging with icons
 
-### Payment System Security Verification (December 15, 2025)
-- Verified security measures:
-  - Rate limiting on payment initiation (10/min)
-  - HMAC-SHA512 webhook signature verification
-  - Amount and currency validation on callbacks
-  - Invoice ID verification in payment metadata
-  - Server-side account name verification (never trust client data)
-- Paystack subaccount support for direct merchant payouts
-- Comprehensive logging for payment events
-- Required secrets: PAYSTACK_SECRET_KEY (configured), PAYSTACK_PUBLIC_KEY
-
 ### Email Service Consolidation (December 15, 2025)
 - Unified all email functionality under SendGridEmailService
 - Added send_verification_email method to SendGridEmailService
@@ -98,7 +131,7 @@ The architecture incorporates micro-interactions, robust error handling with use
 ### End-to-End Platform Audit (December 15, 2025)
 - Database: All 16 migrations applied successfully, PostgreSQL healthy
 - Static assets: Created missing favicon-32x32.png, favicon-16x16.png, apple-touch-icon.png, og-image.jpg
-- Removed unused CSS: static/css/create-invoice.css (replaced by invoice-creator-modern.css)
+- Removed unused CSS: static/css/create-invoice.css (replaced by invoice-creator-v3.css)
 - Security verified: Production guards enforce secure SECRET_KEY and ENCRYPTION_SALT
 - Services verified: SendGrid email with Replit fallback, Paystack payments with subaccount support
 - Analytics: Database-level SQL aggregations with cache invalidation
@@ -108,7 +141,7 @@ The architecture incorporates micro-interactions, robust error handling with use
 - **Database**: PostgreSQL
 - **Web Server**: Gunicorn
 - **Static Files Serving**: WhiteNoise
-- **Email Service**: SendGrid
+- **Email Service**: SendGrid (Replit Integration)
 - **PDF Generation**: WeasyPrint
 - **Payment Processing**: Paystack
 - **Error Tracking**: Sentry
