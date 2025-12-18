@@ -48,15 +48,23 @@ def initiate_invoice_payment(request, invoice_id):
     reference = f"INV-{invoice.invoice_id}-{uuid.uuid4().hex[:8]}"
     
     subaccount_code = None
-    split_code = None
     
     try:
         profile = request.user.profile
         if profile.has_payment_setup():
             subaccount_code = profile.paystack_subaccount_code
             logger.info(f"Using subaccount {subaccount_code} for invoice {invoice.id}")
-    except Exception:
-        pass
+        else:
+            messages.error(
+                request, 
+                "Payment receiving is not configured. Please set up your bank account in Payment Settings first."
+            )
+            logger.warning(f"Payment blocked for invoice {invoice.id}: User {request.user.id} has no subaccount configured")
+            return redirect("payment_settings")
+    except Exception as e:
+        messages.error(request, "Payment setup is incomplete. Please configure your payment settings.")
+        logger.error(f"Payment blocked for invoice {invoice.id}: Profile error - {e}")
+        return redirect("payment_settings")
     
     result = paystack.initialize_payment(
         email=invoice.client_email or invoice.business_email,
