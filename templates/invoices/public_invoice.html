@@ -1,0 +1,593 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Invoice {{ invoice.invoice_id }} - {{ invoice.business_name }}{% endblock %}
+{% block body_class %}public-invoice-page{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+}
+
+.public-invoice-wrapper {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 40px 20px;
+}
+
+.public-invoice-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.invoice-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.invoice-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    padding: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.invoice-header-left h1 {
+    margin: 0 0 8px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.invoice-id {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.invoice-header-right {
+    text-align: right;
+}
+
+.invoice-amount {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.invoice-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.status-paid {
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+}
+
+.status-unpaid {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.status-overdue {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+
+.invoice-body {
+    padding: 32px;
+}
+
+.parties-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+}
+
+@media (max-width: 600px) {
+    .parties-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+.party-card {
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+.party-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.party-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 8px 0;
+}
+
+.party-detail {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0 0 4px 0;
+}
+
+.invoice-meta {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    padding: 20px;
+    background: #f8fafc;
+    border-radius: 12px;
+    margin-bottom: 32px;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.meta-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+.meta-value {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.meta-value.overdue {
+    color: var(--danger);
+}
+
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+}
+
+.items-table th {
+    text-align: left;
+    padding: 12px 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.items-table th:last-child {
+    text-align: right;
+}
+
+.items-table td {
+    padding: 16px;
+    font-size: 0.9375rem;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.items-table td:first-child {
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.items-table td:last-child {
+    text-align: right;
+    font-weight: 600;
+}
+
+.invoice-summary {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 32px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 0.9375rem;
+    color: #475569;
+}
+
+.summary-row.total {
+    border-top: 2px solid #e2e8f0;
+    margin-top: 8px;
+    padding-top: 16px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.invoice-notes {
+    padding: 20px;
+    background: #fffbeb;
+    border-radius: 12px;
+    border-left: 4px solid #f59e0b;
+    margin-bottom: 32px;
+}
+
+.notes-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #92400e;
+    margin: 0 0 8px 0;
+}
+
+.notes-content {
+    font-size: 0.9375rem;
+    color: #78350f;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.bank-details {
+    padding: 20px;
+    background: #f0fdf4;
+    border-radius: 12px;
+    border-left: 4px solid #22c55e;
+    margin-bottom: 32px;
+}
+
+.bank-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #166534;
+    margin: 0 0 12px 0;
+}
+
+.bank-info {
+    display: grid;
+    gap: 8px;
+}
+
+.bank-row {
+    display: flex;
+    gap: 16px;
+    font-size: 0.875rem;
+}
+
+.bank-label {
+    color: #16a34a;
+    min-width: 120px;
+}
+
+.bank-value {
+    color: #166534;
+    font-weight: 500;
+}
+
+.payment-section {
+    text-align: center;
+    padding: 32px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-top: 1px solid #e2e8f0;
+}
+
+.payment-section h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.25rem;
+    color: #0f172a;
+}
+
+.payment-section p {
+    margin: 0 0 24px 0;
+    color: #64748b;
+    font-size: 0.9375rem;
+}
+
+.pay-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 48px;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: white;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+}
+
+.pay-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+
+.pay-button svg {
+    width: 24px;
+    height: 24px;
+}
+
+.paid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 32px;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #166534;
+    background: #dcfce7;
+    border-radius: 12px;
+}
+
+.paid-badge svg {
+    width: 24px;
+    height: 24px;
+}
+
+.payment-disabled {
+    padding: 20px;
+    background: #fef3c7;
+    border-radius: 12px;
+    text-align: center;
+    color: #92400e;
+}
+
+.footer-note {
+    text-align: center;
+    padding: 24px;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.footer-note a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.messages-container {
+    max-width: 800px;
+    margin: 0 auto 20px;
+}
+
+.message {
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    font-size: 0.9375rem;
+}
+
+.message-success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.message-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.message-info {
+    background: #e0f2fe;
+    color: #075985;
+    border: 1px solid #bae6fd;
+}
+</style>
+{% endblock %}
+
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="public-invoice-wrapper">
+    <div class="public-invoice-container">
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="message message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="invoice-card">
+            <div class="invoice-header">
+                <div class="invoice-header-left">
+                    <h1>{{ invoice.business_name }}</h1>
+                    <div class="invoice-id">Invoice #{{ invoice.invoice_id }}</div>
+                </div>
+                <div class="invoice-header-right">
+                    <div class="invoice-amount">
+                        {% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% else %}{{ invoice.currency }}{% endif %}{{ invoice.total|floatformat:2 }}
+                    </div>
+                    {% if invoice.status == 'paid' %}
+                        <span class="invoice-status status-paid">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                            Paid
+                        </span>
+                    {% elif invoice.is_overdue %}
+                        <span class="invoice-status status-overdue">Overdue</span>
+                    {% else %}
+                        <span class="invoice-status status-unpaid">Awaiting Payment</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="invoice-body">
+                <div class="parties-section">
+                    <div class="party-card">
+                        <div class="party-label">From</div>
+                        <h3 class="party-name">{{ invoice.business_name }}</h3>
+                        {% if invoice.business_email %}<p class="party-detail">{{ invoice.business_email }}</p>{% endif %}
+                        {% if invoice.business_phone %}<p class="party-detail">{{ invoice.business_phone }}</p>{% endif %}
+                        {% if invoice.business_address %}<p class="party-detail">{{ invoice.business_address|linebreaksbr }}</p>{% endif %}
+                    </div>
+                    <div class="party-card">
+                        <div class="party-label">Bill To</div>
+                        <h3 class="party-name">{{ invoice.client_name }}</h3>
+                        {% if invoice.client_email %}<p class="party-detail">{{ invoice.client_email }}</p>{% endif %}
+                        {% if invoice.client_phone %}<p class="party-detail">{{ invoice.client_phone }}</p>{% endif %}
+                        {% if invoice.client_address %}<p class="party-detail">{{ invoice.client_address|linebreaksbr }}</p>{% endif %}
+                    </div>
+                </div>
+                
+                <div class="invoice-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">Invoice Date</span>
+                        <span class="meta-value">{{ invoice.invoice_date|date:"F d, Y" }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Due Date</span>
+                        <span class="meta-value {% if invoice.is_overdue %}overdue{% endif %}">
+                            {{ invoice.due_date|date:"F d, Y" }}
+                        </span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">Currency</span>
+                        <span class="meta-value">{{ invoice.currency }}</span>
+                    </div>
+                </div>
+                
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in invoice.line_items.all %}
+                        <tr>
+                            <td>{{ item.description }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% endif %}{{ item.unit_price|floatformat:2 }}</td>
+                            <td>{% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% endif %}{{ item.total|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #94a3b8;">No line items</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                <div class="invoice-summary">
+                    <div class="summary-row">
+                        <span>Subtotal</span>
+                        <span>{% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% endif %}{{ invoice.subtotal|floatformat:2 }}</span>
+                    </div>
+                    {% if invoice.tax_rate > 0 %}
+                    <div class="summary-row">
+                        <span>Tax ({{ invoice.tax_rate }}%)</span>
+                        <span>{% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% endif %}{{ invoice.tax_amount|floatformat:2 }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="summary-row total">
+                        <span>Total Due</span>
+                        <span>{% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% endif %}{{ invoice.total|floatformat:2 }}</span>
+                    </div>
+                </div>
+                
+                {% if invoice.notes %}
+                <div class="invoice-notes">
+                    <h4 class="notes-title">Notes</h4>
+                    <p class="notes-content">{{ invoice.notes|linebreaksbr }}</p>
+                </div>
+                {% endif %}
+                
+                {% if invoice.bank_name or invoice.account_name or invoice.account_number %}
+                <div class="bank-details">
+                    <h4 class="bank-title">Bank Transfer Details</h4>
+                    <div class="bank-info">
+                        {% if invoice.bank_name %}
+                        <div class="bank-row">
+                            <span class="bank-label">Bank Name:</span>
+                            <span class="bank-value">{{ invoice.bank_name }}</span>
+                        </div>
+                        {% endif %}
+                        {% if invoice.account_name %}
+                        <div class="bank-row">
+                            <span class="bank-label">Account Name:</span>
+                            <span class="bank-value">{{ invoice.account_name }}</span>
+                        </div>
+                        {% endif %}
+                        {% if invoice.account_number %}
+                        <div class="bank-row">
+                            <span class="bank-label">Account Number:</span>
+                            <span class="bank-value">{{ invoice.account_number }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="payment-section">
+                {% if invoice.status == 'paid' %}
+                    <div class="paid-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        This invoice has been paid
+                    </div>
+                {% elif payment_enabled %}
+                    <h3>Ready to pay?</h3>
+                    <p>Click below to securely pay this invoice online.</p>
+                    <form method="post" action="{% url 'public_payment' invoice_id=invoice.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="pay-button">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                            Pay {% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% endif %}{{ invoice.total|floatformat:2 }} Now
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="payment-disabled">
+                        <p style="margin: 0;">Online payment is not available for this invoice. Please use the bank transfer details above or contact the invoice sender.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="footer-note">
+                Powered by <a href="/">InvoiceFlow</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

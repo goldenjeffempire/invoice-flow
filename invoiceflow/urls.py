@@ -110,6 +110,10 @@ urlpatterns = [
     path("payments/callback/<int:invoice_id>/", paystack_views.payment_callback, name="payment_callback"),
     path("payments/webhook/", paystack_views.paystack_webhook, name="paystack_webhook"),
     path("payments/status/<int:invoice_id>/", paystack_views.payment_status, name="payment_status"),
+    # Public invoice payment (client access without login)
+    path("pay/<int:invoice_id>/", paystack_views.public_invoice_view, name="public_invoice"),
+    path("pay/<int:invoice_id>/checkout/", paystack_views.public_initiate_payment, name="public_payment"),
+    path("pay/<int:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
     path("invoices/", include("invoices.urls")),
 ]
 

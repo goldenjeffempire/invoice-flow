@@ -254,3 +254,140 @@ def payment_status(request, invoice_id):
         "invoice_status": invoice.status,
         "paid_at": result.get("paid_at"),
     })
+
+
+def public_invoice_view(request, invoice_id):
+    """Public invoice view for clients to view and pay invoices."""
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    
+    paystack = get_paystack_service()
+    payment_enabled = paystack.is_configured
+    
+    subaccount_enabled = False
+    try:
+        profile = invoice.user.profile
+        subaccount_enabled = profile.has_payment_setup()
+    except Exception:
+        pass
+    
+    context = {
+        "invoice": invoice,
+        "payment_enabled": payment_enabled and subaccount_enabled,
+        "is_public_view": True,
+    }
+    
+    return render(request, "invoices/public_invoice.html", context)
+
+
+@require_POST
+@ratelimit(key='ip', rate='5/m', method='POST', block=True)
+def public_initiate_payment(request, invoice_id):
+    """Initiate payment for a public invoice (no login required)."""
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    
+    if invoice.status == "paid":
+        messages.info(request, "This invoice has already been paid.")
+        return redirect("public_invoice", invoice_id=invoice.id)
+    
+    paystack = get_paystack_service()
+    
+    if not paystack.is_configured:
+        messages.error(request, "Payment processing is not configured. Please contact the invoice sender.")
+        return redirect("public_invoice", invoice_id=invoice.id)
+    
+    subaccount_code = None
+    try:
+        profile = invoice.user.profile
+        if profile.has_payment_setup():
+            subaccount_code = profile.paystack_subaccount_code
+            logger.info(f"Using subaccount {subaccount_code} for public payment on invoice {invoice.id}")
+        else:
+            messages.error(request, "Online payment is not enabled for this invoice. Please contact the invoice sender.")
+            return redirect("public_invoice", invoice_id=invoice.id)
+    except Exception:
+        messages.error(request, "Payment setup is incomplete. Please contact the invoice sender.")
+        return redirect("public_invoice", invoice_id=invoice.id)
+    
+    callback_url = request.build_absolute_uri(f"/pay/{invoice.id}/callback/")
+    if callback_url.startswith("http://") and "localhost" not in callback_url:
+        callback_url = callback_url.replace("http://", "https://", 1)
+    
+    reference = f"PAY-{invoice.invoice_id}-{uuid.uuid4().hex[:8]}"
+    
+    result = paystack.initialize_payment(
+        email=invoice.client_email or "customer@example.com",
+        amount=invoice.total,
+        currency=invoice.currency if invoice.currency in ["NGN", "USD", "GHS", "ZAR", "KES"] else "NGN",
+        reference=reference,
+        callback_url=callback_url,
+        metadata={
+            "invoice_id": str(invoice.id),
+            "invoice_number": invoice.invoice_id,
+            "client_name": invoice.client_name,
+            "business_name": invoice.business_name,
+            "payment_type": "public",
+            "subaccount": subaccount_code,
+        },
+        subaccount_code=subaccount_code,
+    )
+    
+    if result["status"] == "success":
+        invoice.payment_reference = reference
+        invoice.save(update_fields=["payment_reference"])
+        return redirect(result["authorization_url"])
+    else:
+        messages.error(request, f"Could not initialize payment: {result.get('message', 'Unknown error')}")
+        return redirect("public_invoice", invoice_id=invoice.id)
+
+
+@require_GET
+def public_payment_callback(request, invoice_id):
+    """Handle Paystack payment callback for public payments."""
+    invoice = get_object_or_404(Invoice, id=invoice_id)
+    reference = request.GET.get("reference")
+    
+    if not reference:
+        messages.error(request, "Invalid payment callback.")
+        return redirect("public_invoice", invoice_id=invoice.id)
+    
+    if invoice.payment_reference and invoice.payment_reference != reference:
+        messages.error(request, "Invalid payment reference.")
+        return redirect("public_invoice", invoice_id=invoice.id)
+    
+    paystack = get_paystack_service()
+    result = paystack.verify_payment(reference)
+    
+    if result["status"] == "success" and result.get("verified"):
+        metadata = result.get("raw_data", {}).get("metadata", {})
+        if str(metadata.get("invoice_id")) != str(invoice.id):
+            logger.warning(
+                "Public payment verification failed: Invoice mismatch. "
+                f"Expected invoice_id={invoice.id}, got metadata invoice_id={metadata.get('invoice_id')}"
+            )
+            messages.error(request, "Payment verification failed: Invoice mismatch.")
+            return redirect("public_invoice", invoice_id=invoice.id)
+        
+        paid_amount = result.get("amount", Decimal("0"))
+        expected_amount = invoice.total
+        amount_tolerance = Decimal("0.01")
+        amount_difference = abs(paid_amount - expected_amount)
+        
+        if amount_difference > amount_tolerance:
+            logger.warning(
+                f"Public payment amount mismatch for invoice {invoice.id}. "
+                f"Expected {expected_amount}, received {paid_amount}. Reference: {reference}"
+            )
+            messages.error(request, "Payment amount mismatch. Please contact support.")
+            return redirect("public_invoice", invoice_id=invoice.id)
+        
+        invoice.status = "paid"
+        invoice.payment_reference = reference
+        invoice.save(update_fields=["status", "payment_reference"])
+        
+        logger.info(f"Public payment successful for invoice {invoice.id}. Amount: {paid_amount}, Reference: {reference}")
+        messages.success(request, "Payment successful! Thank you for your payment.")
+    else:
+        logger.warning(f"Public payment verification failed for invoice {invoice.id}. Result: {result}")
+        messages.error(request, f"Payment verification failed: {result.get('message', 'Unknown error')}")
+    
+    return redirect("public_invoice", invoice_id=invoice.id)
