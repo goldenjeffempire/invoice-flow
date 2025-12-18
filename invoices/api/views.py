@@ -77,7 +77,7 @@ TEMPLATE_ID_PARAM = OpenApiParameter(
     ),
 )
 class InvoiceViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.all()
+    queryset = Invoice.objects.none()
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["invoice_id", "client_name", "client_email"]

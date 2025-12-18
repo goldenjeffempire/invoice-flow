@@ -179,9 +179,28 @@ def paystack_webhook(request):
             invoice_id = metadata.get("invoice_id")
             paid_amount = Decimal(data.get("amount", 0)) / 100
             
+            if not reference:
+                logger.warning("Webhook: No reference provided in charge.success event")
+                return HttpResponse(status=400)
+            
             if invoice_id:
                 try:
                     invoice = Invoice.objects.get(id=invoice_id)
+                    
+                    if not invoice.payment_reference:
+                        logger.warning(
+                            f"Webhook: No payment initiated for invoice {invoice_id}. "
+                            f"Rejecting webhook with reference {reference}"
+                        )
+                        return HttpResponse(status=400)
+                    
+                    if invoice.payment_reference != reference:
+                        logger.warning(
+                            f"Webhook: Reference mismatch for invoice {invoice_id}. "
+                            f"Expected {invoice.payment_reference}, got {reference}"
+                        )
+                        return HttpResponse(status=400)
+                    
                     if invoice.status != "paid":
                         expected_amount = invoice.total
                         expected_currency = (invoice.currency or "NGN").upper()
