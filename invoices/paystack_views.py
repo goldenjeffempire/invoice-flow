@@ -3,6 +3,7 @@ Paystack Payment Views for InvoiceFlow.
 Handles payment initiation, callbacks, and webhooks.
 """
 
+import hashlib
 import json
 import logging
 import uuid
@@ -17,7 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django_ratelimit.decorators import ratelimit
 
-from .models import Invoice
+from .models import Invoice, ProcessedWebhook
 from .paystack_service import get_paystack_service
 
 logger = logging.getLogger(__name__)
@@ -157,7 +158,7 @@ def payment_callback(request, invoice_id):
 @csrf_exempt
 @require_POST
 def paystack_webhook(request):
-    """Handle Paystack webhook events."""
+    """Handle Paystack webhook events with replay protection."""
     paystack = get_paystack_service()
     
     signature = request.headers.get("X-Paystack-Signature", "")
@@ -171,7 +172,22 @@ def paystack_webhook(request):
         event = payload.get("event")
         data = payload.get("data", {})
         
-        logger.info(f"Paystack webhook received: event={event}, reference={data.get('reference')}")
+        # Generate unique event ID for replay protection
+        reference = data.get("reference", "")
+        event_id = f"{event}:{reference}:{data.get('id', '')}"
+        payload_hash = hashlib.sha256(request.body).hexdigest()
+        
+        # Check for replay attack
+        if ProcessedWebhook.is_duplicate(event_id):
+            logger.warning(f"Paystack webhook: Duplicate event detected - {event_id}")
+            return HttpResponse(status=200)  # Return 200 to prevent retries
+        
+        # Get client IP for audit logging
+        client_ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", ""))
+        if client_ip:
+            client_ip = client_ip.split(",")[0].strip()
+        
+        logger.info(f"Paystack webhook received: event={event}, reference={reference}")
         
         if event == "charge.success":
             reference = data.get("reference")
@@ -242,6 +258,19 @@ def paystack_webhook(request):
                 f"Webhook: Payment failed for invoice {invoice_id}. "
                 f"Reference: {reference}, Reason: {failure_message}"
             )
+        
+        # Record the webhook to prevent replay attacks
+        try:
+            ProcessedWebhook.record_webhook(
+                event_id=event_id,
+                event_type=event,
+                reference=reference,
+                payload_hash=payload_hash,
+                provider="paystack",
+                ip_address=client_ip if client_ip else None,
+            )
+        except Exception as record_error:
+            logger.error(f"Failed to record webhook: {record_error}")
         
         return HttpResponse(status=200)
     

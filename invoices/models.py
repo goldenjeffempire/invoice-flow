@@ -961,3 +961,61 @@ class GDPRRequest(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user_email} - {self.get_request_type_display()} ({self.status})"
+
+
+class ProcessedWebhook(models.Model):
+    """Track processed webhooks to prevent replay attacks."""
+
+    objects: "models.Manager[ProcessedWebhook]"
+
+    event_id = models.CharField(max_length=100, unique=True, db_index=True, help_text="Unique event identifier from payment provider")
+    provider = models.CharField(max_length=50, default="paystack", help_text="Payment provider (paystack, stripe, etc)")
+    event_type = models.CharField(max_length=100, help_text="Event type (charge.success, etc)")
+    reference = models.CharField(max_length=100, blank=True, db_index=True, help_text="Transaction reference")
+    payload_hash = models.CharField(max_length=64, help_text="SHA256 hash of payload for integrity verification")
+    processed_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-processed_at"]
+        verbose_name = "Processed Webhook"
+        verbose_name_plural = "Processed Webhooks"
+        indexes = [
+            models.Index(fields=["provider", "event_id"], name="idx_webhook_provider_event"),
+            models.Index(fields=["-processed_at"], name="idx_webhook_processed"),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.provider}:{self.event_type} - {self.event_id}"
+
+    @classmethod
+    def is_duplicate(cls, event_id: str, provider: str = "paystack") -> bool:
+        """Check if this webhook has already been processed."""
+        return cls.objects.filter(event_id=event_id, provider=provider).exists()
+
+    @classmethod
+    def record_webhook(
+        cls,
+        event_id: str,
+        event_type: str,
+        reference: str,
+        payload_hash: str,
+        provider: str = "paystack",
+        ip_address: str | None = None,
+    ) -> "ProcessedWebhook":
+        """Record a processed webhook to prevent replay."""
+        return cls.objects.create(
+            event_id=event_id,
+            provider=provider,
+            event_type=event_type,
+            reference=reference,
+            payload_hash=payload_hash,
+            ip_address=ip_address,
+        )
+
+    @classmethod
+    def cleanup_old_webhooks(cls, days: int = 30) -> int:
+        """Remove webhook records older than specified days."""
+        cutoff = timezone.now() - timedelta(days=days)
+        deleted, _ = cls.objects.filter(processed_at__lt=cutoff).delete()
+        return deleted

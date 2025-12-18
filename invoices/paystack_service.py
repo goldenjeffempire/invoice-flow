@@ -687,7 +687,7 @@ class PaystackTransferService:
         if not self.is_configured:
             return {"status": "error", "message": "Paystack is not configured."}
         
-        payload = {
+        payload: dict[str, Any] = {
             "type": recipient_type,
             "name": account_name,
             "account_number": account_number,

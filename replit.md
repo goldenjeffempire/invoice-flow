@@ -24,8 +24,19 @@ The architecture incorporates micro-interactions, robust error handling with use
 
 ## Recent Changes (December 2025)
 
+### Security Audit & Hardening (December 18, 2025)
+- **Webhook Replay Protection**: Added ProcessedWebhook model to prevent payment webhook replay attacks
+  - Tracks event_id, payload_hash, provider, and processing timestamp
+  - Duplicate detection before processing webhooks
+  - Automatic cleanup of old records (30+ days)
+  - IP address logging for audit trails
+- **API Security**: DRF throttling configured (100/hour anon, 1000/hour authenticated)
+- **Database Migration**: Migration 0018 added for ProcessedWebhook model
+- **Configuration Validation**: Enhanced startup checks for required environment variables
+- **Code Quality**: Fixed LSP type annotation issues in paystack_service.py
+
 ### Comprehensive Platform Audit & Optimization (December 18, 2025)
-- **Database**: PostgreSQL provisioned, all 17 migrations applied successfully
+- **Database**: PostgreSQL provisioned, all 18 migrations applied successfully
 - **Cache**: Django database cache tables created and verified working
 - **Health Checks**: All 4 endpoints verified working (/health/, /health/ready/, /health/live/, /health/detailed/)
 - **Type Safety**: Fixed LSP diagnostics in invoices/api/views.py (proper type casting for validated_data)
