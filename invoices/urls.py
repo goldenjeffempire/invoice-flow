@@ -4,12 +4,11 @@ from . import views
 from . import payment_settings_views
 
 urlpatterns = [
-    path("dashboard/", views.dashboard, name="dashboard"),
-    path("list/", views.invoice_list, name="invoice_list"),
+    path("", views.invoice_list, name="invoice_list"),
+    path("list/", views.invoice_list, name="invoice_list_alt"),
     path("bulk-action/", views.bulk_invoice_action, name="bulk_invoice_action"),
     path("export-csv/", views.export_invoices_csv, name="export_invoices_csv"),
     path("analytics/", views.analytics, name="analytics"),
-    path("settings/", views.settings_view, name="settings"),
     path("create/", views.create_invoice, name="create_invoice"),
     path("invoice/<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
     path("invoice/<int:invoice_id>/edit/", views.edit_invoice, name="edit_invoice"),

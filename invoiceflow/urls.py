@@ -60,10 +60,8 @@ urlpatterns = [
     path("forgot-password/", views.forgot_password, name="forgot_password"),
     path("forgot-password/sent/", views.forgot_password_sent, name="forgot_password_sent"),
     path("reset-password/<str:token>/", views.reset_password, name="reset_password"),
-    # Dashboard and Invoices
+    # Dashboard
     path("dashboard/", views.dashboard, name="dashboard"),
-    path("invoices/", views.invoice_list, name="invoice_list"),
-    path("invoices/bulk-action/", views.bulk_invoice_action, name="bulk_invoice_action"),
     # Settings pages
     path("settings/", views.settings_view, name="settings"),
     path("settings/profile/", views.settings_profile, name="settings_profile"),
@@ -98,8 +96,6 @@ urlpatterns = [
     path("my-templates/", views.invoice_templates, name="invoice_templates"),
     path("my-templates/<int:template_id>/delete/", views.delete_template, name="delete_template"),
     path("recurring/", views.recurring_invoices, name="recurring_invoices"),
-    path("bulk/export/", views.bulk_export, name="bulk_export"),
-    path("bulk/delete/", views.bulk_delete, name="bulk_delete"),
     # Admin endpoints
     path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
     path("admin-users/", views.admin_users, name="admin_users"),
@@ -114,6 +110,7 @@ urlpatterns = [
     path("pay/<int:invoice_id>/", paystack_views.public_invoice_view, name="public_invoice"),
     path("pay/<int:invoice_id>/checkout/", paystack_views.public_initiate_payment, name="public_payment"),
     path("pay/<int:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
+    # Invoices (all invoice routes)
     path("invoices/", include("invoices.urls")),
 ]
 
