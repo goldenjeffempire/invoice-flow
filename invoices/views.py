@@ -411,7 +411,7 @@ def invoice_list(request):
     # Apply search filter
     if search_query:
         query_filter = (
-            Q(invoice_id__icontains=search_query) |
+            Q(invoice_id__icontains=search_query) |  # type: ignore
             Q(client_name__icontains=search_query) |
             Q(client_email__icontains=search_query)
         )
@@ -1953,7 +1953,7 @@ def export_invoices_csv(request):
         
         if search_query:
             query_filter = (
-                Q(invoice_id__icontains=search_query) |
+                Q(invoice_id__icontains=search_query) |  # type: ignore
                 Q(client_name__icontains=search_query) |
                 Q(client_email__icontains=search_query)
             )

@@ -26,36 +26,36 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='userprofile',
             name='notify_invoice_created',
-            field=models.BooleanField(default=True, blank=True),
+            field=models.BooleanField(default=True, blank=True),  # type: ignore
         ),
         migrations.AddField(
             model_name='userprofile',
             name='notify_payment_received',
-            field=models.BooleanField(default=True, blank=True),
+            field=models.BooleanField(default=True, blank=True),  # type: ignore
         ),
         migrations.AddField(
             model_name='userprofile',
             name='notify_invoice_viewed',
-            field=models.BooleanField(default=True, blank=True),
+            field=models.BooleanField(default=True, blank=True),  # type: ignore
         ),
         migrations.AddField(
             model_name='userprofile',
             name='notify_invoice_overdue',
-            field=models.BooleanField(default=True, blank=True),
+            field=models.BooleanField(default=True, blank=True),  # type: ignore
         ),
         migrations.AddField(
             model_name='userprofile',
             name='notify_weekly_summary',
-            field=models.BooleanField(default=False, blank=True),
+            field=models.BooleanField(default=False, blank=True),  # type: ignore
         ),
         migrations.AddField(
             model_name='userprofile',
             name='notify_security_alerts',
-            field=models.BooleanField(default=True, blank=True),
+            field=models.BooleanField(default=True, blank=True),  # type: ignore
         ),
         migrations.AddField(
             model_name='userprofile',
             name='notify_password_changes',
-            field=models.BooleanField(default=True, blank=True),
+            field=models.BooleanField(default=True, blank=True),  # type: ignore
         ),
     ]

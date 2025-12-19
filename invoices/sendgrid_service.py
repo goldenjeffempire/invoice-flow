@@ -2,9 +2,12 @@
 
 import base64
 import json
+import logging
 import os
 
 from django.template.loader import render_to_string
+
+logger = logging.getLogger(__name__)
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import (
     Attachment,
@@ -362,7 +365,7 @@ The InvoiceFlow Team"""
         # Check if SendGrid is configured
         if not self.is_configured:
             error_msg = "SendGrid API key not configured. Email sending is disabled. Please set SENDGRID_API_KEY in environment variables."
-            print(f"⚠️  {error_msg}")
+            logger.warning(f"⚠️  {error_msg}")
             return {"status": "error", "message": error_msg, "configured": False}
 
         try:
@@ -409,10 +412,10 @@ The InvoiceFlow Team"""
             if self.client is None:
                 return {"status": "error", "message": "SendGrid client not initialized"}
             response = self.client.send(message)
-            print("✅ Email sent successfully!")
-            print(f"   From: {self.from_email} (verified platform email)")
-            print(f"   Reply-To: {user_business_email} (user's direct email)")
-            print(f"   Display Name: {from_name}")
+            logger.info("✅ Email sent successfully!")
+            logger.debug(f"   From: {self.from_email} (verified platform email)")
+            logger.debug(f"   Reply-To: {user_business_email} (user's direct email)")
+            logger.debug(f"   Display Name: {from_name}")
             return {
                 "status": "sent",
                 "response": response.status_code,
@@ -423,7 +426,7 @@ The InvoiceFlow Team"""
         except Exception as e:
             error_detail = self._parse_sendgrid_error(e)
             status_code = getattr(e, "status_code", None)
-            print(f"❌ SendGrid API Error: {error_detail}")
+            logger.error(f"❌ SendGrid API Error: {error_detail}")
             return {"status": "error", "message": error_detail, "code": status_code}
 
     def _send_simple_email(self, from_email, from_name, to_email, subject, data, reply_to_email=None):
@@ -431,7 +434,7 @@ The InvoiceFlow Team"""
         # Check if SendGrid is configured
         if not self.is_configured:
             error_msg = "SendGrid API key not configured. Email sending is disabled."
-            print(f"⚠️  {error_msg}")
+            logger.warning(f"⚠️  {error_msg}")
             return {"status": "error", "message": error_msg, "configured": False}
 
         try:
@@ -457,14 +460,14 @@ The InvoiceFlow Team"""
         except Exception as e:
             error_detail = self._parse_sendgrid_error(e)
             status_code = getattr(e, "status_code", None)
-            print(f"❌ SendGrid API Error: {error_detail}")
+            logger.error(f"❌ SendGrid API Error: {error_detail}")
             return {"status": "error", "message": error_detail, "code": status_code}
 
     def _send_html_email(self, to_email, subject, plain_text, html_content):
         """Send an HTML email with plain text fallback."""
         if not self.is_configured:
             error_msg = "SendGrid API key not configured. Email sending is disabled."
-            print(f"⚠️  {error_msg}")
+            logger.warning(f"⚠️  {error_msg}")
             return {"status": "error", "message": error_msg, "configured": False}
 
         try:
@@ -479,13 +482,13 @@ The InvoiceFlow Team"""
             if self.client is None:
                 return {"status": "error", "message": "SendGrid client not initialized"}
             response = self.client.send(message)
-            print(f"✅ Email sent to {to_email}")
+            logger.info(f"✅ Email sent to {to_email}")
             return {"status": "sent", "response": response.status_code}
 
         except Exception as e:
             error_detail = self._parse_sendgrid_error(e)
             status_code = getattr(e, "status_code", None)
-            print(f"❌ SendGrid API Error: {error_detail}")
+            logger.error(f"❌ SendGrid API Error: {error_detail}")
             return {"status": "error", "message": error_detail, "code": status_code}
 
     def _parse_sendgrid_error(self, error):
@@ -536,7 +539,7 @@ The InvoiceFlow Team"""
             html = HTML(string=pdf_html_string)
             return html.write_pdf(font_config=font_config)
         except Exception as e:
-            print(f"Error generating PDF: {str(e)}")
+            logger.error(f"Error generating PDF: {str(e)}")
             return None
 
     def _format_plain_text(self, data):
