@@ -1562,34 +1562,6 @@ def settings_payments(request):
 
 
 @login_required
-def verify_bank_account(request):
-    """API endpoint to verify bank account number."""
-    import json
-    from django.http import JsonResponse
-    from .paystack_service import get_paystack_service
-    
-    if request.method != "POST":
-        return JsonResponse({"status": "error", "message": "Method not allowed"}, status=405)
-    
-    try:
-        data = json.loads(request.body)
-        bank_code = data.get("bank_code", "").strip()
-        account_number = data.get("account_number", "").strip()
-        
-        if not bank_code or not account_number:
-            return JsonResponse({"status": "error", "message": "Bank code and account number are required"})
-        
-        paystack = get_paystack_service()
-        result = paystack.verify_account_number(account_number, bank_code)
-        
-        return JsonResponse(result)
-    except json.JSONDecodeError:
-        return JsonResponse({"status": "error", "message": "Invalid request"}, status=400)
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
-
-
-@login_required
 def settings_billing(request):
     """Billing & Account settings page with optimized database queries."""
     from django.db.models import DecimalField, F, Sum, Value
