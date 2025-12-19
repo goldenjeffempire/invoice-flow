@@ -138,7 +138,7 @@ def resend_verification(request):
                         email_service.send_verification_email(user, token.token)
                     except Exception:
                         pass
-            except User.DoesNotExist:
+            except Exception:  # User.DoesNotExist
                 pass
 
         messages.success(request, "If an account with this email exists and is pending verification, a new verification email has been sent.")
@@ -278,7 +278,7 @@ def login_view(request):
                     if mfa_profile.is_enabled:
                         request.session["mfa_verified"] = False
                         return redirect("mfa_verify")
-                except MFAProfile.DoesNotExist:
+                except Exception:  # MFAProfile.DoesNotExist
                     pass
 
             request.session["mfa_verified"] = True
@@ -410,11 +410,12 @@ def invoice_list(request):
 
     # Apply search filter
     if search_query:
-        base_queryset = base_queryset.filter(
+        query_filter = (
             Q(invoice_id__icontains=search_query) |
             Q(client_name__icontains=search_query) |
             Q(client_email__icontains=search_query)
         )
+        base_queryset = base_queryset.filter(query_filter)
 
     # Apply date range filter
     today = timezone.now().date()
@@ -690,7 +691,7 @@ def duplicate_invoice(request, invoice_id):
     
     if new_invoice:
         messages.success(request, f"Invoice duplicated! New invoice: {new_invoice.invoice_id}")
-        return redirect("edit_invoice", invoice_id=new_invoice.id)
+        return redirect("edit_invoice", invoice_id=new_invoice.pk)
     else:
         messages.error(request, "Failed to duplicate invoice. Please try again.")
         return redirect("invoice_detail", invoice_id=invoice_id)
@@ -1922,7 +1923,7 @@ def service_worker(request):
     except FileNotFoundError:
         content = "// Service worker not found"
     
-    response = HttpResponse(content, content_type="application/javascript; charset=utf-8")
+    response = HttpResponse(content.encode("utf-8"), content_type="application/javascript; charset=utf-8")
     response["Service-Worker-Allowed"] = "/"
     response["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
@@ -1951,11 +1952,12 @@ def export_invoices_csv(request):
                 invoices = invoices.filter(status=status_filter)
         
         if search_query:
-            invoices = invoices.filter(
+            query_filter = (
                 Q(invoice_id__icontains=search_query) |
                 Q(client_name__icontains=search_query) |
                 Q(client_email__icontains=search_query)
             )
+            invoices = invoices.filter(query_filter)
     
     invoices = invoices.order_by("-created_at")
     
