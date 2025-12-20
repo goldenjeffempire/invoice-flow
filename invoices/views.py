@@ -1,5 +1,7 @@
 import calendar
+import hashlib
 import json
+import os
 import urllib.parse
 from datetime import datetime
 from decimal import Decimal
@@ -2003,3 +2005,177 @@ def export_invoices_csv(request):
         ])
     
     return response
+
+
+def public_invoice(request, invoice_id: int):
+    """Display invoice publicly without authentication for payment."""
+    from invoices.paystack_service import get_paystack_service
+    
+    invoice = get_object_or_404(Invoice.objects.prefetch_related("line_items"), id=invoice_id)
+    paystack = get_paystack_service()
+    payment_enabled = paystack.is_configured and invoice.user.userprofile.paystack_subaccount_active
+    
+    return render(request, "invoices/public_invoice.html", {
+        "invoice": invoice,
+        "payment_enabled": payment_enabled,
+    })
+
+
+def public_payment(request, invoice_id: int):
+    """Initiate Paystack payment for an invoice."""
+    from invoices.paystack_service import get_paystack_service
+    from invoices.models import Payment
+    import uuid
+    
+    invoice = get_object_or_404(Invoice.objects.prefetch_related("line_items"), id=invoice_id)
+    paystack = get_paystack_service()
+    
+    if not paystack.is_configured:
+        messages.error(request, "Payment gateway is not configured.")
+        return redirect("public_invoice", invoice_id=invoice.id)
+    
+    profile = invoice.user.userprofile
+    if not profile.paystack_subaccount_active:
+        messages.error(request, "This invoice cannot be paid online.")
+        return redirect("public_invoice", invoice_id=invoice.id)
+    
+    # Generate unique payment reference
+    reference = f"INV{invoice.id}_{uuid.uuid4().hex[:8].upper()}"
+    
+    # Initialize payment with Paystack
+    callback_url = request.build_absolute_uri(f"/payment-callback/?reference={reference}")
+    metadata = {
+        "invoice_id": invoice.id,
+        "client_email": invoice.client_email,
+        "business_name": invoice.business_name,
+    }
+    
+    result = paystack.initialize_payment(
+        email=invoice.client_email,
+        amount=invoice.total,
+        currency=invoice.currency,
+        reference=reference,
+        callback_url=callback_url,
+        metadata=metadata,
+        subaccount_code=profile.paystack_subaccount_code,
+        bearer="subaccount",
+    )
+    
+    if result.get("status") != "success":
+        messages.error(request, "Could not initialize payment. Please try again.")
+        return redirect("public_invoice", invoice_id=invoice.id)
+    
+    # Create Payment record
+    Payment.objects.create(
+        invoice=invoice,
+        user=invoice.user,
+        reference=reference,
+        amount=invoice.total,
+        currency=invoice.currency,
+        customer_email=invoice.client_email,
+        customer_name=invoice.client_name,
+        status="pending",
+        gateway="paystack",
+        subaccount_code=profile.paystack_subaccount_code,
+        metadata=metadata,
+    )
+    
+    # Redirect to Paystack checkout
+    return redirect(result["authorization_url"])
+
+
+def payment_callback(request):
+    """Handle Paystack payment callback."""
+    from invoices.paystack_service import get_paystack_service
+    from invoices.models import Payment
+    
+    reference = request.GET.get("reference")
+    
+    if not reference:
+        messages.error(request, "Invalid payment reference.")
+        return redirect("invoice_list")
+    
+    try:
+        payment = Payment.objects.get(reference=reference)
+    except Payment.DoesNotExist:
+        messages.error(request, "Payment record not found.")
+        return redirect("invoice_list")
+    
+    paystack = get_paystack_service()
+    verify_result = paystack.verify_payment(reference)
+    
+    if verify_result.get("status") != "success":
+        payment.status = "failed"
+        payment.error_message = verify_result.get("message", "Verification failed")
+        payment.save()
+        messages.error(request, "Payment verification failed.")
+        return redirect("public_invoice", invoice_id=payment.invoice.id)
+    
+    if not verify_result.get("verified"):
+        payment.status = "failed"
+        payment.error_message = "Payment not confirmed by gateway"
+        payment.save()
+        messages.error(request, "Payment was not completed.")
+        return redirect("public_invoice", invoice_id=payment.invoice.id)
+    
+    # Payment successful - update records
+    payment.status = "success"
+    payment.paid_at = timezone.now()
+    payment.external_reference = verify_result.get("reference")
+    payment.channel = verify_result.get("channel")
+    payment.save()
+    
+    # Update invoice status
+    invoice = payment.invoice
+    invoice.status = "paid"
+    invoice.payment_reference = reference
+    invoice.save()
+    
+    messages.success(request, f"Payment successful! Invoice {invoice.invoice_id} has been marked as paid.")
+    return redirect("public_invoice", invoice_id=invoice.id)
+
+
+def payment_webhook(request):
+    """Handle Paystack webhook notifications."""
+    from invoices.models import Payment
+    import hmac
+    
+    if request.method != "POST":
+        return HttpResponse("Method not allowed", status=405)
+    
+    # Verify webhook signature
+    paystack_signature = request.META.get("HTTP_X_PAYSTACK_SIGNATURE", "")
+    secret_key = os.environ.get("PAYSTACK_SECRET_KEY", "")
+    
+    if not paystack_signature or not secret_key:
+        return HttpResponse("Unauthorized", status=401)
+    
+    body = request.body
+    hash_obj = hmac.new(secret_key.encode(), body, hashlib.sha512)
+    computed_signature = hash_obj.hexdigest()
+    
+    if computed_signature != paystack_signature:
+        return HttpResponse("Unauthorized", status=401)
+    
+    try:
+        data = json.loads(body)
+        event = data.get("event")
+        
+        if event == "charge.success":
+            reference = data["data"].get("reference")
+            try:
+                payment = Payment.objects.get(reference=reference)
+                payment.status = "success"
+                payment.paid_at = timezone.now()
+                payment.save()
+                
+                invoice = payment.invoice
+                invoice.status = "paid"
+                invoice.payment_reference = reference
+                invoice.save()
+            except Payment.DoesNotExist:
+                pass
+        
+        return HttpResponse("OK", status=200)
+    except json.JSONDecodeError:
+        return HttpResponse("Invalid JSON", status=400)
