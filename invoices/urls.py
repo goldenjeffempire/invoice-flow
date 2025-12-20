@@ -39,4 +39,8 @@ urlpatterns = [
     path("payments/history/", payment_settings_views.payment_history, name="payment_history"),
     path("payments/payouts/", payment_settings_views.payout_history, name="payout_history"),
     path("payments/<int:payment_id>/", payment_settings_views.payment_detail, name="payment_detail"),
+    path("invoice/<int:invoice_id>/public/", views.public_invoice, name="public_invoice"),
+    path("invoice/<int:invoice_id>/pay/", views.public_payment, name="public_payment"),
+    path("payment-callback/", views.payment_callback, name="payment_callback"),
+    path("webhook/paystack/", views.payment_webhook, name="payment_webhook"),
 ]
