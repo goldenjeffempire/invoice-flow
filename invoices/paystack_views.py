@@ -382,8 +382,12 @@ def payment_status(request, invoice_id):
     })
 
 
+@ratelimit(key='ip', rate='20/m', method='GET', block=True)
 def public_invoice_view(request, invoice_id):
-    """Public invoice view for clients to view and pay invoices."""
+    """Public invoice view for clients to view and pay invoices.
+    
+    Rate limiting: 20 requests per minute per IP to prevent abuse.
+    """
     invoice = get_object_or_404(Invoice, id=invoice_id)
     
     paystack = get_paystack_service()
