@@ -32,6 +32,7 @@ class InvoiceListSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "invoice_id", "subtotal", "total", "created_at"]
+        # Security: account_number removed from list view - sensitive data not exposed in list
 
     def get_line_items_count(self, obj) -> int:
         return obj.line_items.count()

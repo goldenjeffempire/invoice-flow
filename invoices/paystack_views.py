@@ -166,16 +166,28 @@ def payment_callback(request, invoice_id):
 @csrf_exempt
 @require_POST
 def paystack_webhook(request):
-    """Handle Paystack webhook events with replay protection."""
+    """Handle Paystack webhook events with replay protection.
+    
+    Security:
+    - Validates HMAC-SHA512 signature with Paystack secret key
+    - Prevents replay attacks using ProcessedWebhook model
+    - Logs all webhook attempts for audit trail
+    - Returns consistent responses to prevent timing attacks
+    """
     paystack = get_paystack_service()
     
     signature = request.headers.get("X-Paystack-Signature", "")
+    client_ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "unknown"))
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
     
     if not paystack.verify_webhook_signature(request.body, signature):
-        logger.warning("Paystack webhook: Invalid signature received")
+        logger.warning(f"Paystack webhook: Invalid signature received from IP {client_ip}")
         return HttpResponse(status=400)
     
     try:
+        from django.db import transaction as db_transaction
+        
         payload = json.loads(request.body)
         event = payload.get("event")
         data = payload.get("data", {})
@@ -198,64 +210,71 @@ def paystack_webhook(request):
         logger.info(f"Paystack webhook received: event={event}, reference={reference}")
         
         if event == "charge.success":
-            reference = data.get("reference")
-            metadata = data.get("metadata", {})
-            invoice_id = metadata.get("invoice_id")
-            paid_amount = Decimal(data.get("amount", 0)) / 100
-            
-            if not reference:
-                logger.warning("Webhook: No reference provided in charge.success event")
-                return HttpResponse(status=400)
-            
-            if invoice_id:
-                try:
-                    invoice = Invoice.objects.get(id=invoice_id)
-                    
-                    if not invoice.payment_reference:
-                        logger.warning(
-                            f"Webhook: No payment initiated for invoice {invoice_id}. "
-                            f"Rejecting webhook with reference {reference}"
-                        )
-                        return HttpResponse(status=400)
-                    
-                    if invoice.payment_reference != reference:
-                        logger.warning(
-                            f"Webhook: Reference mismatch for invoice {invoice_id}. "
-                            f"Expected {invoice.payment_reference}, got {reference}"
-                        )
-                        return HttpResponse(status=400)
-                    
-                    if invoice.status != "paid":
-                        expected_amount = invoice.total
-                        expected_currency = (invoice.currency or "NGN").upper()
-                        paid_currency = data.get("currency", "").upper()
-                        amount_tolerance = Decimal("0.01")
-                        amount_difference = abs(paid_amount - expected_amount)
+            with db_transaction.atomic():  # Ensure payment status update is atomic
+                reference = data.get("reference")
+                metadata = data.get("metadata", {})
+                invoice_id = metadata.get("invoice_id")
+                paid_amount = Decimal(data.get("amount", 0)) / 100
+                
+                if not reference:
+                    logger.warning("Webhook: No reference provided in charge.success event")
+                    return HttpResponse(status=400)
+                
+                if invoice_id:
+                    try:
+                        invoice = Invoice.objects.select_for_update().get(id=invoice_id)
                         
-                        if amount_difference > amount_tolerance:
+                        if not invoice.payment_reference:
                             logger.warning(
-                                f"Webhook: Payment amount mismatch for invoice {invoice_id}. "
-                                f"Expected {expected_amount}, received {paid_amount}. Reference: {reference}"
+                                f"Webhook: No payment initiated for invoice {invoice_id}. "
+                                f"Rejecting webhook with reference {reference}"
                             )
-                        elif paid_currency and paid_currency != expected_currency:
+                            return HttpResponse(status=400)
+                        
+                        if invoice.payment_reference != reference:
                             logger.warning(
-                                f"Webhook: Payment currency mismatch for invoice {invoice_id}. "
-                                f"Expected {expected_currency}, received {paid_currency}. Reference: {reference}"
+                                f"Webhook: Reference mismatch for invoice {invoice_id}. "
+                                f"Expected {invoice.payment_reference}, got {reference}"
                             )
-                        else:
-                            invoice.status = "paid"
-                            invoice.payment_reference = reference
-                            invoice.save(update_fields=["status", "payment_reference"])
+                            return HttpResponse(status=400)
+                        
+                        if invoice.status != "paid":
+                            expected_amount = invoice.total
+                            expected_currency = (invoice.currency or "NGN").upper()
+                            paid_currency = data.get("currency", "").upper()
+                            amount_tolerance = Decimal("0.01")
+                            amount_difference = abs(paid_amount - expected_amount)
+                            
                             logger.info(
-                                f"Webhook: Invoice {invoice_id} marked as paid. "
-                                f"Amount: {paid_amount}, Currency: {paid_currency}, Reference: {reference}"
+                                f"Webhook payment verification: invoice={invoice_id}, "
+                                f"expected={expected_amount}, paid={paid_amount}, "
+                                f"difference={amount_difference}, tolerance={amount_tolerance}"
                             )
-                    else:
-                        logger.info(f"Webhook: Invoice {invoice_id} already marked as paid")
-                except Invoice.DoesNotExist:  # type: ignore[attr-defined]
-                    logger.error(f"Webhook: Invoice not found for id={invoice_id}, reference={reference}")
-            else:
-                logger.warning(f"Webhook: No invoice_id in metadata for reference={reference}")
+                            
+                            if amount_difference > amount_tolerance:
+                                logger.warning(
+                                    f"Webhook: Payment amount mismatch for invoice {invoice_id}. "
+                                    f"Expected {expected_amount}, received {paid_amount}. Reference: {reference}"
+                                )
+                            elif paid_currency and paid_currency != expected_currency:
+                                logger.warning(
+                                    f"Webhook: Payment currency mismatch for invoice {invoice_id}. "
+                                    f"Expected {expected_currency}, received {paid_currency}. Reference: {reference}"
+                                )
+                            else:
+                                invoice.status = "paid"
+                                invoice.payment_reference = reference
+                                invoice.save(update_fields=["status", "payment_reference"])
+                                logger.info(
+                                    f"Webhook: Invoice {invoice_id} marked as paid. "
+                                    f"Amount: {paid_amount}, Currency: {paid_currency}, Reference: {reference}"
+                                )
+                        else:
+                            logger.info(f"Webhook: Invoice {invoice_id} already marked as paid")
+                    except Invoice.DoesNotExist:  # type: ignore[attr-defined]
+                        logger.error(f"Webhook: Invoice not found for id={invoice_id}, reference={reference}")
+                else:
+                    logger.warning(f"Webhook: No invoice_id in metadata for reference={reference}")
         
         elif event == "charge.failed":
             reference = data.get("reference")
@@ -336,10 +355,19 @@ def public_invoice_view(request, invoice_id):
 
 
 @require_POST
-@ratelimit(key='ip', rate='5/m', method='POST', block=True)
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def public_initiate_payment(request, invoice_id):
-    """Initiate payment for a public invoice (no login required)."""
+    """Initiate payment for a public invoice (no login required).
+    
+    Rate limiting: 3 requests per minute per IP to prevent abuse.
+    All payment attempts are logged for audit purposes.
+    """
+    client_ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "unknown"))
+    if client_ip and "," in client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    
     invoice = get_object_or_404(Invoice, id=invoice_id)
+    logger.info(f"Public payment initiation attempt for invoice {invoice_id} from IP {client_ip}")
     
     if invoice.status == "paid":
         messages.info(request, "This invoice has already been paid.")
@@ -370,10 +398,17 @@ def public_initiate_payment(request, invoice_id):
     
     reference = f"PAY-{invoice.invoice_id}-{uuid.uuid4().hex[:8]}"
     
+    # Strict currency validation - only allow explicitly supported currencies
+    SUPPORTED_CURRENCIES = {"NGN", "USD", "GHS", "ZAR", "KES"}
+    payment_currency = invoice.currency.upper() if invoice.currency else "NGN"
+    if payment_currency not in SUPPORTED_CURRENCIES:
+        logger.warning(f"Unsupported currency attempted: {payment_currency}, defaulting to NGN for invoice {invoice.id}")
+        payment_currency = "NGN"
+    
     result = paystack.initialize_payment(
         email=invoice.client_email or "customer@example.com",
         amount=invoice.total,
-        currency=invoice.currency if invoice.currency in ["NGN", "USD", "GHS", "ZAR", "KES"] else "NGN",
+        currency=payment_currency,
         reference=reference,
         callback_url=callback_url,
         metadata={
