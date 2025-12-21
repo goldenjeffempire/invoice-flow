@@ -20,7 +20,7 @@ def reverse_encryption(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('invoices', '0019_alter_userprofile_notify_invoice_created_and_more'),
+        ('invoices', '0018_add_processed_webhook_model'),
     ]
 
     operations = [
