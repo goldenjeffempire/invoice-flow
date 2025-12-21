@@ -18,6 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django_ratelimit.decorators import ratelimit
 
+from .email_services import PaymentEmailService
 from .models import Invoice, ProcessedWebhook
 from .paystack_service import get_paystack_service
 
@@ -265,9 +266,31 @@ def paystack_webhook(request):
                                 invoice.status = "paid"
                                 invoice.payment_reference = reference
                                 invoice.save(update_fields=["status", "payment_reference"])
+                                
                                 logger.info(
                                     f"Webhook: Invoice {invoice_id} marked as paid. "
                                     f"Amount: {paid_amount}, Currency: {paid_currency}, Reference: {reference}"
+                                )
+                                
+                                PaymentEmailService.send_payment_success_notification(
+                                    invoice_id=invoice.invoice_id,
+                                    client_email=invoice.client_email,
+                                    client_name=invoice.client_name,
+                                    business_name=invoice.business_name,
+                                    amount=str(paid_amount),
+                                    currency=paid_currency,
+                                    reference=reference,
+                                    business_email=invoice.business_email,
+                                )
+                                
+                                PaymentEmailService.send_seller_payment_received(
+                                    invoice_id=invoice.invoice_id,
+                                    seller_email=invoice.user.email,
+                                    seller_name=invoice.business_name,
+                                    client_name=invoice.client_name,
+                                    amount=str(paid_amount),
+                                    currency=paid_currency,
+                                    reference=reference,
                                 )
                         else:
                             logger.info(f"Webhook: Invoice {invoice_id} already marked as paid")
@@ -281,10 +304,38 @@ def paystack_webhook(request):
             metadata = data.get("metadata", {})
             invoice_id = metadata.get("invoice_id")
             failure_message = data.get("gateway_response", "Unknown failure")
+            
             logger.warning(
                 f"Webhook: Payment failed for invoice {invoice_id}. "
                 f"Reference: {reference}, Reason: {failure_message}"
             )
+            
+            if invoice_id:
+                try:
+                    invoice = Invoice.objects.get(id=invoice_id)
+                    amount = data.get("amount", 0)
+                    if isinstance(amount, (int, float)):
+                        amount = Decimal(amount) / 100
+                    
+                    PaymentEmailService.send_payment_failure_notification(
+                        invoice_id=invoice.invoice_id,
+                        client_email=invoice.client_email,
+                        client_name=invoice.client_name,
+                        business_name=invoice.business_name,
+                        amount=str(amount),
+                        currency=invoice.currency or "NGN",
+                        failure_reason=failure_message,
+                        reference=reference,
+                        business_email=invoice.business_email,
+                    )
+                    
+                    logger.info(
+                        f"Webhook: Failure notification sent for invoice {invoice_id}"
+                    )
+                except Invoice.DoesNotExist:  # type: ignore[attr-defined]
+                    logger.error(
+                        f"Webhook: Invoice not found for charge.failed event: {invoice_id}"
+                    )
         
         # Record the webhook to prevent replay attacks
         try:
