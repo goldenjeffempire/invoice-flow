@@ -735,3 +735,38 @@ class PaymentPayout(models.Model):
 
     def __str__(self) -> str:
         return f"Payout {self.reference} ({self.status})"
+
+
+# ============================================================================
+# IDEMPOTENCY KEY (PAYMENT SAFETY)
+# ============================================================================
+
+class IdempotencyKey(models.Model):
+    """
+    Prevents duplicate payment processing via idempotency keys.
+    Critical for payment safety when requests are retried.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="idempotency_keys",
+    )
+    key = models.CharField(max_length=255, unique=True, db_index=True)
+    request_hash = models.CharField(max_length=64)
+    response_data = models.JSONField(default=dict)
+    http_status = models.PositiveIntegerField(default=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["key", "-created_at"]),
+        ]
+
+    def is_valid(self) -> bool:
+        return self.expires_at > timezone.now()
+
+    def __str__(self) -> str:
+        return f"IdempotencyKey {self.key[:8]}... ({self.user})"

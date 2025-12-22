@@ -5,6 +5,7 @@ Production-safe, stateless, webhook-ready.
 
 import hashlib
 import hmac
+import json
 import os
 from decimal import Decimal
 from typing import Any, Optional
@@ -12,7 +13,7 @@ from typing import Any, Optional
 import requests
 from django.utils import timezone
 
-from .models import Payment, ProcessedWebhook
+from .models import IdempotencyKey, Payment, ProcessedWebhook
 
 
 PAYSTACK_BASE_URL = "https://api.paystack.co"
@@ -139,6 +140,50 @@ class PaystackService:
 
     def mark_webhook_processed(self, event_id: str) -> None:
         ProcessedWebhook.objects.create(event_id=event_id)
+
+    # -------------------------------------------------------------------------
+    # IDEMPOTENCY KEY HANDLING
+    # -------------------------------------------------------------------------
+
+    def get_or_create_idempotency_response(
+        self,
+        user_id: int,
+        idempotency_key: str,
+        request_data: dict[str, Any],
+        response_callback: Any,
+    ) -> tuple[dict[str, Any], int, bool]:
+        """
+        Check if idempotency key exists and return cached response.
+        If not, execute callback and cache the response.
+        Returns: (response_data, http_status, is_cached)
+        """
+        try:
+            cached = IdempotencyKey.objects.get(
+                key=idempotency_key,
+                user_id=user_id,
+            )
+            if cached.is_valid():
+                return cached.response_data, cached.http_status, True
+            cached.delete()
+        except IdempotencyKey.DoesNotExist:
+            pass
+
+        response_data, http_status = response_callback()
+
+        request_hash = hashlib.sha256(
+            json.dumps(request_data, sort_keys=True).encode()
+        ).hexdigest()
+
+        IdempotencyKey.objects.create(
+            user_id=user_id,
+            key=idempotency_key,
+            request_hash=request_hash,
+            response_data=response_data,
+            http_status=http_status,
+            expires_at=timezone.now() + timezone.timedelta(hours=24),
+        )
+
+        return response_data, http_status, False
 
 
 # -------------------------------------------------------------------------
