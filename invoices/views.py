@@ -588,11 +588,8 @@ def edit_invoice(request, invoice_id):
                 },
             )
 
-        updated_invoice, invoice_form = InvoiceService.update_invoice(
-            invoice=invoice,
-            invoice_data=request.POST,
-            files_data=request.FILES,
-            line_items_data=line_items_data,
+        invoice = get_object_or_404(
+            Invoice.objects.prefetch_related("line_items"), id=invoice_id, user=request.user
         )
 
         if updated_invoice:
@@ -600,9 +597,16 @@ def edit_invoice(request, invoice_id):
             return redirect("invoice_detail", invoice_id=updated_invoice.id)  # type: ignore[union-attr]
         else:
             messages.error(request, "Please correct the errors below.")
-            line_items = list(invoice.line_items.values("description", "quantity", "unit_price"))
+            line_items_data = list(invoice.line_items.values("description", "quantity", "unit_price"))
             return render(
                 request,
+                "invoices/edit_invoice.html",
+                {
+                    "invoice_form": invoice_form,
+                    "invoice": invoice,
+                    "line_items_json": json.dumps(line_items_data, default=str),
+                },
+            )
                 "invoices/edit_invoice.html",
                 {
                     "invoice_form": invoice_form,
