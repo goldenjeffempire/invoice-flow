@@ -360,3 +360,11 @@ def get_paystack_service() -> PaystackService:
     Factory function to get a PaystackService instance.
     """
     return PaystackService()
+
+
+def get_transfer_service() -> PaystackService:
+    """
+    Factory function to get PaystackService for transfers/payouts.
+    Alias for get_paystack_service - same instance manages both.
+    """
+    return PaystackService()
