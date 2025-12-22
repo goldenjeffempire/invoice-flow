@@ -401,7 +401,7 @@ class LoginAttempt(models.Model):
     user_agent = models.TextField(blank=True)
     success = models.BooleanField(default=False)
     failure_reason = models.CharField(max_length=200, blank=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(default=timezone.now)
 
     class Meta:
         ordering = ["-timestamp"]
@@ -429,7 +429,8 @@ class MFAProfile(models.Model):
     backup_codes = models.JSONField(default=list, blank=True)
     is_enabled = models.BooleanField(default=False)
     is_enforced = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    last_used = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
