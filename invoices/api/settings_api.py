@@ -71,6 +71,13 @@ class SettingsViewSet(viewsets.ViewSet):
     """
 
     permission_classes = [IsAuthenticated]
+    serializer_class = UserProfileSerializer
+
+    def get_serializer_class(self):
+        """Return the appropriate serializer class based on the action."""
+        if self.action in ["payment_settings", "toggle_auto_payout", "verify_bank_account_api"]:
+            return PaymentSettingsSerializer
+        return UserProfileSerializer
 
     @action(detail=False, methods=["get", "put"], url_path="profile")
     def profile_settings(self, request):
