@@ -188,7 +188,10 @@ class PaystackService:
             timeout=30,
         )
 
-        data = response.json()
+        try:
+            data = response.json()
+        except Exception:
+            return {"status": "error", "verified": False, "message": "Invalid response from Paystack"}
 
         if response.status_code == 200 and data.get("status"):
             account_data = data.get("data", {})
@@ -204,6 +207,19 @@ class PaystackService:
             "verified": False,
             "message": data.get("message", "Account verification failed"),
         }
+
+    def update_subaccount(self, subaccount_code: str, **kwargs: Any) -> dict[str, Any]:
+        """Update an existing Paystack subaccount."""
+        if not self.is_configured:
+            return {"status": "error", "configured": False}
+
+        response = requests.put(
+            f"{PAYSTACK_BASE_URL}/subaccount/{subaccount_code}",
+            headers=self.headers,
+            json=kwargs,
+            timeout=30,
+        )
+        return response.json()
 
     def create_subaccount(
         self,
