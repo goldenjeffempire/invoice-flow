@@ -562,6 +562,21 @@ class RecurringInvoice(models.Model):
     def __str__(self) -> str:
         return f"Recurring: {self.client_name} ({self.get_frequency_display()})"
 
+class RecurringInvoiceLineItem(models.Model):
+    recurring_invoice = models.ForeignKey(
+        RecurringInvoice, on_delete=models.CASCADE, related_name="line_items"
+    )
+    description = models.CharField(max_length=500)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    @property
+    def total(self) -> Decimal:
+        return self.quantity * self.unit_price
+
+    def __str__(self) -> str:
+        return self.description
+
 
 # ============================================================================
 # PAYMENT SETTINGS
