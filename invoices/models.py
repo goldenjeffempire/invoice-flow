@@ -1067,3 +1067,128 @@ class UserSettingsAuditLog(models.Model):
     
     def __str__(self) -> str:
         return f"{self.user.username} - {self.action} on {self.created_at}"
+
+
+# ============================================================================
+# RECURRING INVOICE SAFETY
+# ============================================================================
+
+class ExecutionLock(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    locked_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    process_id = models.CharField(max_length=100, blank=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["name", "expires_at"]),
+        ]
+    
+    def __str__(self) -> str:
+        return f"Lock: {self.name}"
+
+
+class RecurringInvoiceExecution(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        RUNNING = "running", "Running"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+        RETRYING = "retrying", "Retrying"
+    
+    recurring_invoice = models.ForeignKey(
+        RecurringInvoice,
+        on_delete=models.CASCADE,
+        related_name="executions",
+    )
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    invoice_generated = models.ForeignKey(
+        Invoice,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="recurring_execution",
+    )
+    error_message = models.TextField(blank=True)
+    retry_count = models.PositiveIntegerField(default=0)
+    max_retries = models.PositiveIntegerField(default=3)
+    
+    idempotency_key = models.CharField(max_length=255, unique=True, db_index=True)
+    
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ["-started_at"]
+        indexes = [
+            models.Index(fields=["recurring_invoice", "status"]),
+            models.Index(fields=["idempotency_key"]),
+        ]
+    
+    def __str__(self) -> str:
+        return f"Execution {self.id} - {self.recurring_invoice.client_name} ({self.status})"
+
+
+# ============================================================================
+# PUBLIC INVOICE SECURITY
+# ============================================================================
+
+class PublicInvoiceToken(models.Model):
+    invoice = models.OneToOneField(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name="public_token",
+    )
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_revoked = models.BooleanField(default=False)
+    access_count = models.PositiveIntegerField(default=0)
+    max_accesses = models.PositiveIntegerField(null=True, blank=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["token", "is_revoked"]),
+            models.Index(fields=["invoice", "expires_at"]),
+        ]
+    
+    def is_valid(self) -> bool:
+        if self.is_revoked:
+            return False
+        if timezone.now() > self.expires_at:
+            return False
+        if self.max_accesses and self.access_count >= self.max_accesses:
+            return False
+        return True
+    
+    def __str__(self) -> str:
+        return f"Token for {self.invoice.invoice_id}"
+
+
+class InvoiceAccessLog(models.Model):
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name="access_logs",
+    )
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    referer = models.TextField(blank=True)
+    accessed_at = models.DateTimeField(auto_now_add=True)
+    accessed_by_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invoice_access_logs",
+    )
+    
+    class Meta:
+        ordering = ["-accessed_at"]
+        indexes = [
+            models.Index(fields=["invoice", "-accessed_at"]),
+            models.Index(fields=["ip_address", "-accessed_at"]),
+        ]
+    
+    def __str__(self) -> str:
+        return f"Access {self.invoice.invoice_id} at {self.accessed_at}"
