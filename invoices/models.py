@@ -1192,3 +1192,105 @@ class InvoiceAccessLog(models.Model):
     
     def __str__(self) -> str:
         return f"Access {self.invoice.invoice_id} at {self.accessed_at}"
+
+
+# ============================================================================
+# EMAIL DELIVERY TRACKING & RETRY QUEUE
+# ============================================================================
+
+class EmailDeliveryLog(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SENT = "sent", "Sent"
+        BOUNCED = "bounced", "Bounced"
+        FAILED = "failed", "Failed"
+        QUEUED = "queued", "Queued"
+    
+    class EmailType(models.TextChoices):
+        VERIFICATION = "verification", "Email Verification"
+        INVOICE_READY = "invoice_ready", "Invoice Ready"
+        PAYMENT_REMINDER = "payment_reminder", "Payment Reminder"
+        PAYMENT_RECEIPT = "payment_receipt", "Payment Receipt"
+        RECURRING_NOTIFICATION = "recurring_notification", "Recurring Notification"
+        SECURITY_ALERT = "security_alert", "Security Alert"
+        PASSWORD_RESET = "password_reset", "Password Reset"
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="email_logs",
+    )
+    to_email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    email_type = models.CharField(max_length=50, choices=EmailType.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.QUEUED)
+    
+    message_id = models.CharField(max_length=255, blank=True, db_index=True)
+    bounce_type = models.CharField(max_length=50, blank=True)
+    bounce_reason = models.TextField(blank=True)
+    
+    sent_at = models.DateTimeField(null=True, blank=True)
+    bounced_at = models.DateTimeField(null=True, blank=True)
+    failed_at = models.DateTimeField(null=True, blank=True)
+    
+    related_invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="email_logs",
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["to_email", "-created_at"]),
+            models.Index(fields=["email_type", "status"]),
+            models.Index(fields=["message_id"]),
+        ]
+    
+    def __str__(self) -> str:
+        return f"Email to {self.to_email} ({self.status})"
+
+
+class EmailRetryQueue(models.Model):
+    class RetryStrategy(models.TextChoices):
+        EXPONENTIAL = "exponential", "Exponential Backoff"
+        LINEAR = "linear", "Linear Backoff"
+        IMMEDIATE = "immediate", "Immediate Retry"
+    
+    email_log = models.ForeignKey(
+        EmailDeliveryLog,
+        on_delete=models.CASCADE,
+        related_name="retry_queue",
+    )
+    retry_count = models.PositiveIntegerField(default=0)
+    max_retries = models.PositiveIntegerField(default=5)
+    retry_strategy = models.CharField(
+        max_length=20,
+        choices=RetryStrategy.choices,
+        default=RetryStrategy.EXPONENTIAL,
+    )
+    
+    next_retry_at = models.DateTimeField()
+    last_attempted_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+    
+    is_active = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ["next_retry_at"]
+        indexes = [
+            models.Index(fields=["is_active", "next_retry_at"]),
+            models.Index(fields=["email_log", "is_active"]),
+        ]
+    
+    def __str__(self) -> str:
+        return f"Retry {self.retry_count}/{self.max_retries} - {self.email_log.to_email}"
