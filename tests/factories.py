@@ -4,7 +4,7 @@ from decimal import Decimal
 import factory
 from django.contrib.auth import get_user_model
 
-from invoices.models import Invoice, InvoiceTemplate, LineItem
+from invoices.models import Invoice, InvoiceTemplate, LineItem, UserProfile
 
 User = get_user_model()
 
@@ -16,6 +16,11 @@ class UserFactory(factory.django.DjangoModelFactory):
     username = factory.Sequence(lambda n: f"user{n}")
     email = factory.LazyAttribute(lambda obj: f"{obj.username}@example.com")
     password = factory.PostGenerationMethodCall("set_password", "password123")
+    
+    @factory.post_generation
+    def profile(obj, create, extracted, **kwargs):
+        if create:
+            UserProfile.objects.get_or_create(user=obj, defaults={"company_name": f"{obj.username}'s Company"})
 
 
 class InvoiceFactory(factory.django.DjangoModelFactory):
