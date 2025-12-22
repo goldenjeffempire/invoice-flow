@@ -1,42 +1,89 @@
 import atexit
 import os
 import threading
+import time
+import logging
 
 from django.apps import AppConfig
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class InvoicesConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"  # type: ignore[misc]
+    default_auto_field = "django.db.models.BigAutoField"
     name = "invoices"
 
     def ready(self):
-        import invoices.signals  # noqa: F401
-        from invoices.async_tasks import shutdown_executor
-        from invoices.services import CacheWarmingService
+        """
+        Application initialization:
+        - Register signals
+        - Register safe shutdown handlers
+        - Warm critical caches (once, non-blocking)
+        - Start keep-alive ONLY in production runtime
+        """
 
-        atexit.register(shutdown_executor)
-        atexit.register(CacheWarmingService.shutdown_executor)
+        # ---------------------------------------------------------------------
+        # 1. SIGNAL REGISTRATION (idempotent by Django design)
+        # ---------------------------------------------------------------------
+        try:
+            import invoices.signals  # noqa: F401
+        except Exception as exc:
+            logger.exception("Failed to import invoices.signals: %s", exc)
 
-        run_once_key = "_invoiceflow_cache_init_done"
-        if not hasattr(self.__class__, run_once_key):
-            setattr(self.__class__, run_once_key, True)
+        # ---------------------------------------------------------------------
+        # 2. SAFE SHUTDOWN HANDLERS
+        # ---------------------------------------------------------------------
+        try:
+            from invoices.async_tasks import shutdown_executor
+            from invoices.services import CacheWarmingService
 
-            def delayed_cache_init():
-                import time
+            atexit.register(shutdown_executor)
+            atexit.register(CacheWarmingService.shutdown_executor)
+        except Exception as exc:
+            logger.warning("Failed to register shutdown handlers: %s", exc)
 
-                time.sleep(3)
-                try:
-                    CacheWarmingService.bump_cache_version()
-                    CacheWarmingService.warm_active_users_cache()
-                except Exception:
-                    pass
+        # ---------------------------------------------------------------------
+        # 3. ONE-TIME CACHE WARMUP (PER PROCESS)
+        # ---------------------------------------------------------------------
+        # Prevent multiple executions in autoreload / gunicorn workers
+        run_once_flag = "_invoiceflow_startup_ran"
 
-            warmup_thread = threading.Thread(
-                target=delayed_cache_init, daemon=True, name="cache_warmup_startup"
-            )
-            warmup_thread.start()
+        if getattr(self.__class__, run_once_flag, False):
+            return
 
-        if os.environ.get("RENDER"):
-            from invoices.keep_alive import start_keep_alive
+        setattr(self.__class__, run_once_flag, True)
 
-            start_keep_alive()
+        def delayed_cache_warmup():
+            """
+            Delay execution to allow DB, cache, and migrations to settle.
+            Must never crash the process.
+            """
+            time.sleep(3)
+
+            try:
+                from invoices.services import CacheWarmingService
+
+                CacheWarmingService.bump_cache_version()
+                CacheWarmingService.warm_active_users_cache()
+                logger.info("Startup cache warmup completed")
+            except Exception as exc:
+                logger.warning("Startup cache warmup failed: %s", exc)
+
+        threading.Thread(
+            target=delayed_cache_warmup,
+            daemon=True,
+            name="invoiceflow-cache-warmup",
+        ).start()
+
+        # ---------------------------------------------------------------------
+        # 4. KEEP-ALIVE (ONLY FOR PRODUCTION PLATFORM RUNTIME)
+        # ---------------------------------------------------------------------
+        if os.environ.get("RENDER") and not settings.DEBUG:
+            try:
+                from invoices.keep_alive import start_keep_alive
+
+                start_keep_alive()
+                logger.info("Keep-alive service started")
+            except Exception as exc:
+                logger.warning("Failed to start keep-alive service: %s", exc)

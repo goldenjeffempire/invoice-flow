@@ -1,31 +1,32 @@
 """
 MFA Enforcement Middleware for InvoiceFlow.
-Ensures users with MFA enabled complete verification before accessing protected views.
+Ensures users with MFA enabled complete verification before accessing protected resources.
 """
 
 import logging
+from typing import Callable
 
 from django.conf import settings
+from django.http import JsonResponse, HttpRequest, HttpResponse
 from django.shortcuts import redirect
-from django.urls import Resolver404, resolve
-from django.utils.deprecation import MiddlewareMixin
+from django.urls import resolve, Resolver404
 
 logger = logging.getLogger(__name__)
 
 
-class MFAEnforcementMiddleware(MiddlewareMixin):
+class MFAEnforcementMiddleware:
     """
-    Middleware to enforce MFA verification for authenticated users.
-    Blocks access to protected views until MFA is verified.
+    Enforces MFA verification for authenticated users.
+    - Browser → redirect
+    - API → JSON 403
     """
 
-    EXEMPT_URL_NAMES = [
+    EXEMPT_URL_NAMES = {
         "mfa_setup",
         "mfa_verify",
-        "logout",
         "login",
+        "logout",
         "signup",
-        "home",
         "password_reset",
         "password_reset_done",
         "password_reset_confirm",
@@ -33,73 +34,77 @@ class MFAEnforcementMiddleware(MiddlewareMixin):
         "health_check",
         "readiness_check",
         "liveness_check",
-        "set_cookie_consent",
-        "get_cookie_consent",
-        "withdraw_cookie_consent",
-        "robots_txt",
-        "django.contrib.sitemaps.views.sitemap",
-        "privacy",
-        "terms",
-        "about",
-        "features",
-        "pricing",
-        "contact",
-        "faq",
-        "support",
-        "careers",
-        "changelog",
-        "status",
-    ]
+    }
 
-    EXEMPT_PATH_PREFIXES = [
+    EXEMPT_PATH_PREFIXES = (
         "/static/",
         "/media/",
+        "/health/",
         "/api/consent/",
-    ]
+    )
 
-    def process_request(self, request):
+    def __init__(self, get_response: Callable):
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         if not getattr(settings, "MFA_ENABLED", False):
-            return None
+            return self.get_response(request)
 
-        if not request.user.is_authenticated:
-            return None
+        user = request.user
+
+        if not user.is_authenticated:
+            return self.get_response(request)
+
+        # Staff / superusers may bypass MFA if desired
+        if user.is_staff or user.is_superuser:
+            return self.get_response(request)
 
         if self._is_exempt_path(request.path):
-            return None
+            return self.get_response(request)
 
         if self._is_exempt_url(request):
-            return None
+            return self.get_response(request)
 
         if request.session.get("mfa_verified", False):
-            return None
+            return self.get_response(request)
 
         try:
             from invoices.models import MFAProfile
 
-            mfa_profile = MFAProfile.objects.get(user=request.user)
+            mfa_profile = MFAProfile.objects.get(user=user)
 
             if mfa_profile.is_enabled:
                 logger.warning(
-                    f"MFA verification required for user {request.user.username} "
-                    f"attempting to access {request.path}"
+                    "MFA required: user=%s path=%s",
+                    user.username,
+                    request.path,
                 )
+
+                if self._is_api_request(request):
+                    return JsonResponse(
+                        {"detail": "MFA verification required."},
+                        status=403,
+                    )
+
                 return redirect("mfa_verify")
+
         except MFAProfile.DoesNotExist:
             pass
 
-        return None
+        return self.get_response(request)
 
-    def _is_exempt_path(self, path):
-        """Check if path is in exempt prefixes."""
-        for prefix in self.EXEMPT_PATH_PREFIXES:
-            if path.startswith(prefix):
-                return True
-        return False
+    @staticmethod
+    def _is_api_request(request: HttpRequest) -> bool:
+        return request.path.startswith("/api/") or request.headers.get(
+            "Accept"
+        ) == "application/json"
 
-    def _is_exempt_url(self, request):
-        """Check if URL name is in exempt list."""
+    def _is_exempt_path(self, path: str) -> bool:
+        return any(path.startswith(p) for p in self.EXEMPT_PATH_PREFIXES)
+
+    def _is_exempt_url(self, request: HttpRequest) -> bool:
         try:
-            resolved = resolve(request.path)
-            return resolved.url_name in self.EXEMPT_URL_NAMES
+            match = resolve(request.path)
+            return match.url_name in self.EXEMPT_URL_NAMES
         except Resolver404:
             return False
