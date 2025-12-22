@@ -304,7 +304,7 @@ class Payment(models.Model):
         FAILED = "failed", "Failed"
         REFUNDED = "refunded", "Refunded"
 
-    id = models.UUIDField(primary_key=True, default=secrets.token_hex, editable=False)
+    id = models.CharField(primary_key=True, max_length=255)
 
     invoice = models.ForeignKey(
         Invoice, on_delete=models.CASCADE, related_name="payments"
@@ -323,10 +323,9 @@ class Payment(models.Model):
         max_length=20, choices=Status.choices, default=Status.PENDING
     )
 
-    verified = models.BooleanField(default=False)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    verified_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -425,10 +424,10 @@ class MFAProfile(models.Model):
         on_delete=models.CASCADE,
         related_name="mfa_profile",
     )
-    secret = models.CharField(max_length=32, blank=True)
-    backup_codes = models.JSONField(default=list, blank=True)
+    secret_key = models.CharField(max_length=32, blank=True)
+    recovery_codes = models.JSONField(default=list, blank=True)
     is_enabled = models.BooleanField(default=False)
-    is_enforced = models.BooleanField(default=False)
+    backup_phone = models.CharField(max_length=20, blank=True, null=True)
     last_used = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
@@ -687,7 +686,6 @@ class PaymentCard(models.Model):
         related_name="payment_cards",
     )
 
-    external_token = models.CharField(max_length=255)
     brand = models.CharField(max_length=50)
     last4 = models.CharField(max_length=4)
     exp_month = models.PositiveIntegerField()
@@ -695,11 +693,21 @@ class PaymentCard(models.Model):
 
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-
-    added_at = models.DateTimeField(auto_now_add=True)
+    is_primary = models.BooleanField(default=False)
+    
+    authorization_code = models.CharField(max_length=255, blank=True)
+    signature = models.CharField(max_length=255, blank=True)
+    card_type = models.CharField(max_length=50, blank=True)
+    bank = models.CharField(max_length=100, blank=True)
+    country_code = models.CharField(max_length=2, blank=True)
+    reusable = models.BooleanField(default=False)
+    nickname = models.CharField(max_length=100, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-added_at"]
+        ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["user", "is_active"]),
         ]
