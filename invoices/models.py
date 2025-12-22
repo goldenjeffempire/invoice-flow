@@ -480,18 +480,22 @@ class SocialAccount(models.Model):
         related_name="social_accounts",
     )
     provider = models.CharField(max_length=20, choices=Provider.choices)
-    provider_user_id = models.CharField(max_length=255, blank=True)
+    provider_id = models.CharField(max_length=255, db_index=True)
+    email = models.EmailField()
+    name = models.CharField(max_length=255, blank=True)
     access_token = models.TextField(blank=True)
     refresh_token = models.TextField(blank=True)
-    token_scopes = models.TextField(blank=True)
-    avatar_url = models.URLField(blank=True)
-    last_synced = models.DateTimeField(null=True, blank=True)
+    token_expires = models.DateTimeField(null=True, blank=True)
+    extra_data = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = [["provider", "provider_user_id"]]
+        unique_together = [["provider", "provider_id"]]
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["user", "provider"]),
+            models.Index(fields=["provider", "provider_id"], name="idx_social_provider"),
+            models.Index(fields=["user", "provider"], name="idx_social_user_provider"),
         ]
 
     def __str__(self) -> str:

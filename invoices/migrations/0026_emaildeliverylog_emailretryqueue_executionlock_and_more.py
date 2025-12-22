@@ -546,7 +546,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='socialaccount',
-            unique_together={('provider', 'provider_user_id')},
+            unique_together={('provider', 'provider_id')},
         ),
         migrations.RemoveField(
             model_name='usersession',
@@ -671,11 +671,6 @@ class Migration(migrations.Migration):
             model_name='socialaccount',
             name='last_synced',
             field=models.DateTimeField(blank=True, null=True),
-        ),
-        migrations.AddField(
-            model_name='socialaccount',
-            name='provider_user_id',
-            field=models.CharField(default='', max_length=255),
         ),
         migrations.AddField(
             model_name='socialaccount',
