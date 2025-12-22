@@ -264,6 +264,31 @@ REST_FRAMEWORK = {
 }
 
 # =============================================================================
+# DJANGO REST FRAMEWORK SPECTACULAR (API SCHEMA)
+# =============================================================================
+SPECTACULAR_SETTINGS = {
+    "TITLE": "InvoiceFlow API",
+    "DESCRIPTION": "Professional invoicing platform API",
+    "VERSION": "1.0.0",
+    "ENUM_NAME_OVERRIDES": {
+        "InvoiceStatusEnum": "invoices.models.Invoice.status",
+        "PaymentStatusEnum": "invoices.models.Payment.status",
+        "TemplateStatusEnum": "invoices.models.InvoiceTemplate.status",
+    },
+    "SCHEMA_PATH_PREFIX": "/api/v[0-9]",
+    "AUTHENTICATION_FLOWS": {
+        "basicAuth": {
+            "type": "http",
+            "scheme": "basic",
+        },
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+        },
+    },
+}
+
+# =============================================================================
 # LOGGING
 # =============================================================================
 os.makedirs(BASE_DIR / "logs", exist_ok=True)
