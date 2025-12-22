@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 @require_GET
 def settings_dashboard(request):
     """Main settings dashboard - redirect to profile settings."""
-    return redirect("settings_profile")
+    return redirect("invoices:settings_profile")
 
 
 @login_required
@@ -46,7 +46,7 @@ def settings_profile(request):
             user_form.save()
             profile_form.save()
             messages.success(request, "Profile updated successfully.")
-            return redirect("settings_profile")
+            return redirect("invoices:settings_profile")
     else:
         user_form = UserDetailsForm(instance=request.user)
         profile_form = UserProfileForm(instance=user_profile)
@@ -192,4 +192,4 @@ def revoke_all_sessions(request):
 @login_required
 def profile(request):
     """User profile management - redirects to settings profile."""
-    return redirect("settings_profile")
+    return redirect("invoices:settings_profile")

@@ -103,7 +103,7 @@ def payment_preferences(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Payment preferences updated successfully.")
-            return redirect("payment_settings")
+            return redirect("invoices:payment_settings")
     else:
         form = PaymentSettingsForm(instance=payment_settings)
     
@@ -123,7 +123,7 @@ def setup_subaccount(request):
     
     if not paystack.is_configured:
         messages.error(request, "Payment gateway is not configured. Please contact support.")
-        return redirect("payment_settings")
+        return redirect("invoices:payment_settings")
     
     banks_result = paystack.list_banks("nigeria")
     banks = banks_result.get("banks", []) if banks_result.get("status") == "success" else []
@@ -174,7 +174,7 @@ def setup_subaccount(request):
                 
                 logger.info(f"Subaccount created for user {request.user.username}: {result['subaccount_code']}")
                 messages.success(request, "Payment account set up successfully! You can now receive payments directly.")
-                return redirect("payment_settings")
+                return redirect("invoices:payment_settings")
             else:
                 logger.error(f"Subaccount creation failed for user {request.user.username}: {result.get('message')}")
                 messages.error(request, f"Failed to set up payment account: {result.get('message', 'Unknown error')}")
@@ -392,7 +392,7 @@ def toggle_subaccount(request):
     
     if not profile.paystack_subaccount_code:
         messages.error(request, "No payment account configured. Please set up your payment account first.")
-        return redirect("payment_settings")
+        return redirect("invoices:payment_settings")
     
     profile.paystack_subaccount_active = not profile.paystack_subaccount_active
     profile.save()
@@ -401,7 +401,7 @@ def toggle_subaccount(request):
     messages.success(request, f"Direct payments have been {status}.")
     
     logger.info(f"Subaccount {status} for user {request.user.username}")
-    return redirect("payment_settings")
+    return redirect("invoices:payment_settings")
 
 
 @login_required
