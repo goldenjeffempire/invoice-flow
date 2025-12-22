@@ -1,0 +1,35 @@
+{% extends "admin/dashboard.html" %}
+{% block title %}Invoices - Admin{% endblock %}
+{% block content %}
+<div class="admin-section">
+    <h2>Invoices</h2>
+    <div class="admin-table">
+        {% if invoices %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice ID</th>
+                        <th>Client</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td>{{ invoice.invoice_id }}</td>
+                        <td>{{ invoice.client_name }}</td>
+                        <td>{{ invoice.total }}</td>
+                        <td><span class="badge badge-{{ invoice.status }}">{{ invoice.get_status_display }}</span></td>
+                        <td>{{ invoice.due_date|date:"Y-m-d" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No invoices found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

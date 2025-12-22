@@ -250,7 +250,10 @@ class Invoice(models.Model):
         super().save(*args, **kwargs)
 
     def _generate_invoice_id(self) -> str:
-        prefix = getattr(self.user.profile, "invoice_prefix", "INV")
+        try:
+            prefix = self.user.profile.invoice_prefix
+        except (AttributeError, UserProfile.DoesNotExist):
+            prefix = "INV"
         while True:
             code = f"{prefix}-{secrets.token_hex(4).upper()}"
             if not Invoice.objects.filter(invoice_id=code).exists():
