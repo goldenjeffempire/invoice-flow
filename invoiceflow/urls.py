@@ -6,7 +6,7 @@ from django.contrib.sitemaps.views import sitemap as sitemap_view
 from django.urls import include, path
 
 from invoiceflow import cookie_consent, gdpr, mfa
-from invoices import paystack_views, views
+from invoices import paystack_views, views, admin_views
 from invoices.health import detailed_health, health_check, liveness_check, readiness_check
 from invoices.sitemap import sitemaps
 
@@ -97,10 +97,13 @@ urlpatterns = [
     path("my-templates/<int:template_id>/delete/", views.delete_template, name="delete_template"),
     path("recurring/", views.recurring_invoices, name="recurring_invoices"),
     # Admin endpoints
-    path("admin-dashboard/", views.admin_dashboard, name="admin_dashboard"),
-    path("admin-users/", views.admin_users, name="admin_users"),
-    path("admin-content/", views.admin_content, name="admin_content"),
-    path("admin-settings/", views.admin_settings, name="admin_settings"),
+    path("admin-dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
+    path("admin-users/", admin_views.admin_users, name="admin_users"),
+    path("admin-payments/", admin_views.admin_payments, name="admin_payments"),
+    path("admin-invoices/", admin_views.admin_invoices, name="admin_invoices"),
+    path("admin-contacts/", admin_views.admin_contacts, name="admin_contacts"),
+    path("admin-contacts/<int:submission_id>/update/", admin_views.update_contact_status, name="update_contact_status"),
+    path("admin-settings/", admin_views.admin_settings, name="admin_settings"),
     # Payment routes (Paystack)
     path("payments/invoice/<int:invoice_id>/pay/", paystack_views.initiate_invoice_payment, name="initiate_payment"),
     path("payments/callback/<int:invoice_id>/", paystack_views.payment_callback, name="payment_callback"),

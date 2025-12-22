@@ -3,6 +3,7 @@ from django.urls import path
 from . import views
 from . import payment_settings_views
 from . import settings_views
+from . import admin_views
 
 urlpatterns = [
     path("", views.invoice_list, name="invoice_list"),
