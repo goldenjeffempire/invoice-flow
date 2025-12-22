@@ -770,3 +770,206 @@ class IdempotencyKey(models.Model):
 
     def __str__(self) -> str:
         return f"IdempotencyKey {self.key[:8]}... ({self.user})"
+
+
+# ============================================================================
+# PAYMENT RECONCILIATION (STATE MACHINE FOR PAYMENT TRACKING)
+# ============================================================================
+
+class PaymentReconciliation(models.Model):
+    """
+    Tracks payment state transitions for reconciliation with Paystack.
+    Critical for detecting lost/interrupted payments and ensuring no double-charging.
+    """
+    class ReconciliationStatus(models.TextChoices):
+        PENDING = "pending", "Pending Reconciliation"
+        IN_PROGRESS = "in_progress", "Reconciliation In Progress"
+        VERIFIED = "verified", "Verified with Paystack"
+        MISMATCH = "mismatch", "Amount/Status Mismatch"
+        RECOVERED = "recovered", "Recovered via Retry"
+        FAILED = "failed", "Reconciliation Failed"
+
+    payment = models.OneToOneField(
+        Payment,
+        on_delete=models.CASCADE,
+        related_name="reconciliation",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="payment_reconciliations",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=ReconciliationStatus.choices,
+        default=ReconciliationStatus.PENDING,
+    )
+
+    paystack_status = models.CharField(max_length=50, blank=True)
+    local_status = models.CharField(max_length=50)
+
+    amount_match = models.BooleanField(default=True)
+    currency_match = models.BooleanField(default=True)
+    status_match = models.BooleanField(default=True)
+
+    retry_count = models.PositiveIntegerField(default=0)
+    last_attempt = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True)
+
+    verified_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["status", "-created_at"]),
+        ]
+
+    def is_complete(self) -> bool:
+        return self.status in [self.ReconciliationStatus.VERIFIED, self.ReconciliationStatus.RECOVERED]
+
+    def __str__(self) -> str:
+        return f"Reconciliation {self.payment.reference} ({self.status})"
+
+
+# ============================================================================
+# PAYMENT RECOVERY (AUTOMATIC RETRY LOGIC)
+# ============================================================================
+
+class PaymentRecovery(models.Model):
+    """
+    Tracks failed payment recovery attempts.
+    Enables automatic retry logic for interrupted or failed payments.
+    """
+    class RecoveryStrategy(models.TextChoices):
+        IMMEDIATE_RETRY = "immediate_retry", "Immediate Retry"
+        SCHEDULED_RETRY = "scheduled_retry", "Scheduled Retry (30s)"
+        WEBHOOK_RETRY = "webhook_retry", "Webhook Verification"
+        MANUAL_VERIFICATION = "manual_verification", "Manual Verification"
+
+    payment = models.ForeignKey(
+        Payment,
+        on_delete=models.CASCADE,
+        related_name="recovery_attempts",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="payment_recoveries",
+    )
+
+    strategy = models.CharField(
+        max_length=30,
+        choices=RecoveryStrategy.choices,
+        default=RecoveryStrategy.WEBHOOK_RETRY,
+    )
+    attempt_number = models.PositiveIntegerField(default=1)
+    max_attempts = models.PositiveIntegerField(default=3)
+
+    error_reason = models.TextField(blank=True)
+    error_code = models.CharField(max_length=50, blank=True)
+
+    is_successful = models.BooleanField(default=False)
+    attempted_at = models.DateTimeField(auto_now_add=True)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-attempted_at"]
+        indexes = [
+            models.Index(fields=["user", "is_successful"]),
+            models.Index(fields=["next_retry_at"]),
+        ]
+
+    def should_retry(self) -> bool:
+        return not self.is_successful and self.attempt_number < self.max_attempts
+
+    def __str__(self) -> str:
+        return f"Recovery {self.payment.reference} (Attempt {self.attempt_number})"
+
+
+# ============================================================================
+# IDENTITY VERIFICATION FOR PAYOUTS (KYC)
+# ============================================================================
+
+class UserIdentityVerification(models.Model):
+    """
+    Strong identity verification (KYC) for payout enablement.
+    Prevents fraud and ensures compliance before enabling transfers.
+    """
+    class VerificationStatus(models.TextChoices):
+        UNVERIFIED = "unverified", "Not Verified"
+        PENDING = "pending", "Pending Review"
+        VERIFIED = "verified", "Verified"
+        REJECTED = "rejected", "Rejected"
+        EXPIRED = "expired", "Verification Expired"
+
+    class DocumentType(models.TextChoices):
+        PASSPORT = "passport", "Passport"
+        NATIONAL_ID = "national_id", "National ID"
+        DRIVERS_LICENSE = "drivers_license", "Driver's License"
+        BVN = "bvn", "Bank Verification Number (BVN)"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="identity_verification",
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=VerificationStatus.choices,
+        default=VerificationStatus.UNVERIFIED,
+    )
+
+    # Personal Information
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    phone_number = models.CharField(max_length=50, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+
+    # Document Information
+    document_type = models.CharField(
+        max_length=20,
+        choices=DocumentType.choices,
+        blank=True,
+    )
+    document_number = models.CharField(max_length=100, blank=True, unique=True, null=True)
+    document_expiry = models.DateField(null=True, blank=True)
+
+    # Verification Details
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_by = models.CharField(max_length=100, blank=True)  # Service used (e.g., Paystack KYC)
+    rejection_reason = models.TextField(blank=True)
+
+    # Expiration
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["user", "status"]),
+        ]
+
+    def is_verified(self) -> bool:
+        now = timezone.now()
+        if self.status != self.VerificationStatus.VERIFIED:
+            return False
+        if self.expires_at and self.expires_at < now:
+            return False
+        return True
+
+    def can_enable_payouts(self) -> bool:
+        """Check if user can enable payouts based on identity verification."""
+        return self.is_verified()
+
+    def __str__(self) -> str:
+        return f"Identity Verification {self.user.email} ({self.status})"

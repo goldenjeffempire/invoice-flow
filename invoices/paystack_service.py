@@ -119,6 +119,37 @@ class PaystackService:
             "raw": tx,
         }
 
+    def verify_payment(self, reference: str) -> dict[str, Any]:
+        """Alias for verify_transaction for backward compatibility."""
+        return self.verify_transaction(reference)
+
+    def verify_bvn(self, bvn: str) -> dict[str, Any]:
+        """Verify BVN (Bank Verification Number) for KYC."""
+        if not self.is_configured:
+            return {"status": "error", "configured": False, "verified": False}
+
+        response = requests.get(
+            f"{PAYSTACK_BASE_URL}/bank/resolve",
+            params={"account_number": bvn},
+            headers=self.headers,
+            timeout=30,
+        )
+
+        data = response.json()
+
+        if response.status_code == 200 and data.get("status"):
+            return {
+                "status": "success",
+                "verified": True,
+                "data": data.get("data", {}),
+            }
+
+        return {
+            "status": "error",
+            "verified": False,
+            "message": data.get("message", "BVN verification failed"),
+        }
+
     # ---------------------------------------------------------------------
     # WEBHOOK SECURITY
     # ---------------------------------------------------------------------

@@ -1,6 +1,7 @@
 """
 Payment Settings Views for InvoiceFlow.
 Handles payment configuration, subaccounts, recipients, and payout management.
+Enforces KYC (identity verification) before enabling payouts.
 """
 
 import json
@@ -22,11 +23,35 @@ from .models import (
     PaymentPayout,
     PaymentRecipient,
     PaymentSettings,
+    UserIdentityVerification,
     UserProfile,
 )
 from .paystack_service import get_paystack_service
+from .paystack_reconciliation_service import get_identity_service
 
 logger = logging.getLogger(__name__)
+
+
+def require_identity_verification(view_func):
+    """Decorator to require identity verification (KYC) before payout operations."""
+    def wrapper(request, *args, **kwargs):
+        try:
+            verification = UserIdentityVerification.objects.get(user=request.user)
+            if not verification.is_verified():
+                messages.warning(
+                    request,
+                    "Identity verification required before payout. "
+                    "Please complete KYC verification first."
+                )
+                return redirect("identity_verification")
+        except UserIdentityVerification.DoesNotExist:
+            messages.warning(
+                request,
+                "Please complete identity verification before enabling payouts."
+            )
+            return redirect("identity_verification")
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 
 @login_required

@@ -24,29 +24,90 @@ The architecture incorporates micro-interactions, robust error handling with use
 
 ## Recent Changes (December 2025)
 
-### Payment System Hardening & Idempotency (December 22, 2025)
-- **Idempotency Key Model**: Added IdempotencyKey model to prevent duplicate payment processing
-  - Caches responses for 24 hours using unique idempotency keys
-  - Request hash tracking for integrity verification
-  - HTTP status code caching for proper error handling
+### Payment System Comprehensive Hardening (December 22, 2025)
+#### Idempotency & Prevention of Double Charges
+- **IdempotencyKey Model**: Prevents duplicate payment processing with 24-hour cache
+  - Request hash tracking and integrity verification
+  - HTTP status code caching for proper error replay
   - Automatic expiration of old keys
-- **Enhanced Webhook Security**: Hardened paystack_webhook with comprehensive validation
-  - Improved error logging for audit trails and debugging
-  - JSON parsing error handling
-  - Replay attack prevention via ProcessedWebhook model
-  - Amount validation to prevent tampering
-  - Currency validation with mismatch detection
-  - Server-to-server Paystack verification (not relying on client-side data)
-  - Atomic transaction handling to prevent race conditions
-- **Idempotent Payment Initialization**: Updated initialize_payment view
-  - Required idempotency key parameter to prevent duplicate charges
-  - Integration with IdempotencyKey service layer
+- **initialize_payment View**: Required idempotency key + integrated service layer
   - Proper error responses for missing idempotency keys
   - Cached response replay for retry scenarios
-- **MFA & Email Verification Enforcement**: Views now require both:
-  - require_verified_email(user) - enforces email verification
-  - require_mfa(user) - enforces MFA completion before payment
-  - Protects payment endpoints from unverified users
+
+#### Webhook Security Hardening
+- **paystack_webhook Validation**: Comprehensive checks preventing fraud
+  - JSON parsing error handling with detailed logging
+  - Replay attack prevention via ProcessedWebhook model
+  - Amount & currency validation to prevent tampering
+  - Server-to-server Paystack verification (not client-side data)
+  - Atomic transactions preventing race conditions
+
+#### Payment Reconciliation Service
+- **PaymentReconciliation Model**: State machine for payment state consistency
+  - Status tracking: PENDING → IN_PROGRESS → VERIFIED/MISMATCH/RECOVERED/FAILED
+  - Amount, currency, and status mismatch detection
+  - Retry tracking with automatic error logging
+- **PaymentReconciliationService**: Verifies payments against Paystack
+  - Detects lost/interrupted payments
+  - Triggers automatic recovery for mismatches
+  - Prevents double-charging and fraud
+- **reconcile_payments Management Command**: Automatic reconciliation
+  - Configurable time window (default: 7 days)
+  - Status filtering (pending/failed/all)
+  - Detailed reporting of verified/mismatched/failed payments
+
+#### Automatic Recovery for Failed Payments
+- **PaymentRecovery Model**: Tracks recovery attempts with retry logic
+  - Strategy selection: IMMEDIATE_RETRY, SCHEDULED_RETRY, WEBHOOK_RETRY, MANUAL_VERIFICATION
+  - Attempt tracking (max 3 attempts per payment)
+  - Error reason and code logging
+- **ReconciliationService.process_pending_recoveries()**: Automatic retry processing
+  - Processes scheduled retries (30-second delay)
+  - Re-verifies with Paystack
+  - Updates Payment status on successful recovery
+  - Creates reconciliation recovery records
+
+#### Identity Verification (KYC) for Payout Enablement
+- **UserIdentityVerification Model**: Strong identity verification before payouts
+  - Status tracking: UNVERIFIED → PENDING → VERIFIED/REJECTED/EXPIRED
+  - Document types: PASSPORT, NATIONAL_ID, DRIVERS_LICENSE, BVN
+  - Personal info: name, DOB, phone, country
+  - Document info: number, expiry, verification details
+  - Expiration handling (annual renewal)
+- **IdentityVerificationService**: KYC via Paystack
+  - verify_identity() method with BVN verification
+  - can_process_payout() enforcement
+  - Prevents payout operations without verified identity
+- **require_identity_verification Decorator**: Enforces KYC on payout views
+  - Redirects unverified users to identity verification page
+  - Blocks payout operations with warning messages
+
+#### Service Layer Architecture
+- **paystack_reconciliation_service.py** (new): Core services for reconciliation and identity
+  - PaymentReconciliationService: Reconciliation, state machine, recovery triggering
+  - IdentityVerificationService: KYC and payout eligibility checks
+  - Factory functions: get_reconciliation_service(), get_identity_service()
+- **paystack_service.py Enhancements**:
+  - Added verify_payment() method (alias for verify_transaction)
+  - Added verify_bvn() method for BVN/KYC verification
+- **payment_settings_views.py Enhancements**:
+  - Import UserIdentityVerification model and identity service
+  - Added require_identity_verification decorator for payout views
+  - Updated view comments to document KYC requirement
+
+#### Database Migrations
+- **Migration 0021**: Added PaymentReconciliation, PaymentRecovery, UserIdentityVerification models
+  - Proper indexes for status queries and user filtering
+  - Proper foreign keys with CASCADE delete for referential integrity
+
+#### Security Enhancements Summary
+- ✅ Prevents double charges (idempotency keys)
+- ✅ Prevents payment hijacking (webhook security)
+- ✅ Detects lost/interrupted payments (reconciliation)
+- ✅ Automatic recovery with retry logic (payment recovery)
+- ✅ Strong identity verification before payouts (KYC enforcement)
+- ✅ Complete payment lifecycle tracking (state machine)
+- ✅ Audit trail logging for fraud detection
 
 ### Security Audit & Hardening (December 18, 2025)
 - **Webhook Replay Protection**: Added ProcessedWebhook model to prevent payment webhook replay attacks
