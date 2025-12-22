@@ -219,7 +219,7 @@ def google_callback(request):
         try:
             client_ip = request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
             if not client_ip:
-                client_ip = request.META.get("REMOTE_ADDR", "0.0.0.0")
+                client_ip = request.META.get("REMOTE_ADDR", "unknown")
             user_agent = request.META.get("HTTP_USER_AGENT", "")
             
             UserSession.create_session(

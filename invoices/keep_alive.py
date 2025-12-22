@@ -1,8 +1,8 @@
 import os
 import threading
 import time
-import urllib.error
-import urllib.request
+import requests
+from urllib.parse import urlparse
 
 
 def start_keep_alive():
@@ -14,13 +14,21 @@ def start_keep_alive():
 
     if not render_external_url:
         return
+    
+    # Validate URL scheme
+    try:
+        parsed = urlparse(render_external_url)
+        if parsed.scheme not in ('http', 'https'):
+            return
+    except Exception:
+        return
 
     def ping():
         while True:
             try:
                 health_url = f"{render_external_url}/health/"
-                urllib.request.urlopen(health_url, timeout=10)
-            except (urllib.error.URLError, urllib.error.HTTPError):
+                requests.get(health_url, timeout=10)
+            except requests.RequestException:
                 pass
             except Exception:
                 pass

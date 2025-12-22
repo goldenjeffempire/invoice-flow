@@ -552,9 +552,8 @@ class CacheWarmingService:
     @staticmethod
     def _generate_version() -> str:
         """Generate a new cache version string."""
-        import time
-
-        return hashlib.md5(str(time.time()).encode()).hexdigest()[:8]
+        import uuid
+        return str(uuid.uuid4()).replace('-', '')[:8]
 
     @classmethod
     def get_cache_stats(cls) -> Dict[str, Any]:

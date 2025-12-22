@@ -84,24 +84,42 @@ class SendGridEmailService:
             import urllib.request
 
             url = f"https://{hostname}/api/v2/connection?include_secrets=true&connector_names=sendgrid"
-            req = urllib.request.Request(url)
-            req.add_header("Accept", "application/json")
-            req.add_header("X_REPLIT_TOKEN", token_header)
+            headers = {
+                "Accept": "application/json",
+                "X_REPLIT_TOKEN": token_header
+            }
+            
+            import requests
+            response = requests.get(url, headers=headers, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            connection = data.get("items", [{}])[0]
+            settings = connection.get("settings", {})
 
-            with urllib.request.urlopen(req, timeout=5) as response:
-                data = json.loads(response.read().decode())
-                connection = data.get("items", [{}])[0]
-                settings = connection.get("settings", {})
-
-                if settings.get("api_key") and settings.get("from_email"):
-                    self.api_key = settings["api_key"]
-                    self.from_email = settings["from_email"]
-                    return True
+            if settings.get("api_key") and settings.get("from_email"):
+                self.api_key = settings["api_key"]
+                self.from_email = settings["from_email"]
+                return True
         except Exception:
             # Silently fall back to environment variables
             pass
 
         return False
+    
+    def _get_api_with_validation(self, url: str, headers: dict, timeout: int = 5) -> dict | None:
+        """Safely get API response with proper URL validation."""
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            if parsed.scheme not in ('http', 'https'):
+                return None
+            
+            import requests
+            response = requests.get(url, headers=headers, timeout=timeout)
+            response.raise_for_status()
+            return response.json()
+        except Exception:
+            return None
 
     # ============ INVOICE EMAILS ============
 
