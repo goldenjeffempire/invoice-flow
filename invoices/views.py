@@ -229,11 +229,11 @@ def login_view(request):
     from django.conf import settings
     from django.core.cache import cache
 
-    from .middleware import RequestResponseLoggingMiddleware
+    from .auth_services import AuthenticationService
     from .models import LoginAttempt, MFAProfile
 
     if request.method == "POST":
-        client_ip = RequestResponseLoggingMiddleware.get_client_ip(request)
+        client_ip = AuthenticationService.get_client_ip(request)
         user_agent = request.META.get("HTTP_USER_AGENT", "")
         username = request.POST.get("username", "")
         password = request.POST.get("password")
