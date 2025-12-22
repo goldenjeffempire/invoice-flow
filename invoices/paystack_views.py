@@ -36,13 +36,47 @@ logger = logging.getLogger(__name__)
 @login_required
 @require_POST
 def initialize_payment(request):
-    """Initialize payment with idempotency protection."""
+    """
+    Initialize payment with idempotency protection.
+    Requires: verified email + completed MFA + identity verification.
+    """
     user = request.user
-    require_verified_email(user)
-    require_mfa(user)
+    
+    # ENFORCE: Email verification
+    try:
+        require_verified_email(user)
+    except Exception as e:
+        return JsonResponse({
+            "error": str(e),
+            "code": "EMAIL_NOT_VERIFIED"
+        }, status=403)
+    
+    # ENFORCE: MFA completion
+    if not request.session.get("mfa_verified", False):
+        return JsonResponse({
+            "error": "MFA verification required",
+            "code": "MFA_NOT_VERIFIED"
+        }, status=403)
+    
+    # ENFORCE: Identity verification for high-value payments
+    from .models import UserIdentityVerification
+    amount = Decimal(request.POST.get("amount", "0"))
+    
+    if amount > 100000:  # Threshold for KYC
+        try:
+            verification = UserIdentityVerification.objects.get(user=user)
+            if not verification.is_verified():
+                return JsonResponse({
+                    "error": "Identity verification required for large payments",
+                    "code": "IDENTITY_NOT_VERIFIED"
+                }, status=403)
+        except UserIdentityVerification.DoesNotExist:
+            return JsonResponse({
+                "error": "Identity verification required for large payments",
+                "code": "IDENTITY_NOT_VERIFIED"
+            }, status=403)
 
     invoice_id = request.POST.get("invoice_id")
-    amount = Decimal(request.POST.get("amount", "0"))
     idempotency_key = request.POST.get("idempotency_key")
 
     if not invoice_id or amount <= 0:

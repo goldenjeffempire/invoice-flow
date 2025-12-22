@@ -30,10 +30,16 @@ class EmailNotVerifiedError(Exception):
     pass
 
 
+class MFANotVerifiedError(Exception):
+    """Raised when MFA verification is required but not completed."""
+    pass
+
+
 def require_verified_email(user: User) -> None:
     """
     Check if the user has a verified email address.
     Raises EmailNotVerifiedError if not verified.
+    Required for all payment and sensitive operations.
     """
     if not user.is_authenticated:
         raise EmailNotVerifiedError("Authentication required.")
@@ -47,6 +53,16 @@ def require_verified_email(user: User) -> None:
             raise EmailNotVerifiedError("Please verify your email address to continue.")
     except UserProfile.DoesNotExist:
         raise EmailNotVerifiedError("User profile not found. Please contact support.")
+
+
+def require_mfa_verified(request) -> None:
+    """
+    Check if MFA has been completed in current session.
+    Raises MFANotVerifiedError if not verified.
+    Required for payments and sensitive operations.
+    """
+    if not request.session.get("mfa_verified", False):
+        raise MFANotVerifiedError("MFA verification required for this operation.")
 
 
 class AuthenticationService:
@@ -148,12 +164,20 @@ class AuthenticationService:
 
     @classmethod
     def login_user(cls, request: HttpRequest, user: User) -> dict[str, Any]:
-        """Complete login process and create session tracking."""
+        """Complete login process with session rotation and tracking."""
+        # Invalidate old sessions for this user (session fixation prevention)
+        try:
+            UserSession.objects.filter(user=user).delete()
+        except Exception as e:
+            logger.warning(f"Failed to delete old sessions: {e}")
+
+        # Create fresh session
         login(request, user)
 
         client_ip = cls.get_client_ip(request)
         user_agent = request.META.get("HTTP_USER_AGENT", "")
 
+        # Track new session
         try:
             UserSession.create_session(
                 user=user,
@@ -164,6 +188,15 @@ class AuthenticationService:
         except Exception as e:
             logger.warning(f"Failed to create user session: {e}")
 
+        # Check email verification status
+        email_verified = False
+        try:
+            profile = UserProfile.objects.get(user=user)
+            email_verified = profile.email_verified
+        except UserProfile.DoesNotExist:
+            email_verified = False
+
+        # Check MFA status
         mfa_required = False
         if getattr(settings, "MFA_ENABLED", False):
             try:
@@ -180,6 +213,7 @@ class AuthenticationService:
         return {
             "success": True,
             "mfa_required": mfa_required,
+            "email_verified": email_verified,
             "user": user,
         }
 

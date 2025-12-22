@@ -24,6 +24,57 @@ The architecture incorporates micro-interactions, robust error handling with use
 
 ## Recent Changes (December 2025)
 
+### Authentication & Security Enforcement (December 22, 2025)
+#### Session Rotation on Login
+- **Session Fixation Prevention**: Invalidates all old sessions when user logs in
+  - Prevents session hijacking and account takeover
+  - Implemented in AuthenticationService.login_user()
+  - Deletes previous UserSession records before creating new session
+  
+#### Email Verification Enforcement
+- **Enforced on Payment Operations**: All payment initialization requires verified email
+  - initialize_payment() now calls require_verified_email(user)
+  - Returns 403 error with "EMAIL_NOT_VERIFIED" code if not verified
+  - Prevents unverified accounts from initiating payments
+  
+#### MFA Enforcement for Sensitive Operations
+- **Mandatory MFA for Payments**: Payment operations now require MFA completion
+  - initialize_payment() checks request.session["mfa_verified"]
+  - Returns 403 error with "MFA_NOT_VERIFIED" code if not completed
+  - MFA enforcement middleware handles routing to MFA verification page
+  - Added require_mfa_verified() function for sensitive operations
+  
+#### Identity Assurance on High-Value Payments
+- **KYC Threshold**: Payments >100,000 require identity verification
+  - initialize_payment() checks UserIdentityVerification.is_verified()
+  - Returns 403 error with "IDENTITY_NOT_VERIFIED" if not verified
+  - Implements defense-in-depth against fraud
+  
+#### Enhanced Error Responses
+- **Structured Error Codes**: Payment operations return specific error codes
+  - EMAIL_NOT_VERIFIED: User's email not verified
+  - MFA_NOT_VERIFIED: MFA verification not completed
+  - IDENTITY_NOT_VERIFIED: Identity verification not completed for high-value payments
+  - Enables client-side UI to guide users to required verification steps
+  
+#### Service Layer Enhancements
+- **auth_services.py**: 
+  - Added MFANotVerifiedError exception class
+  - Added require_mfa_verified() function
+  - Enhanced login_user() to track email verification status in response
+  - Session rotation via UserSession.objects.filter(user=user).delete()
+  
+- **mfa_middleware.py**: 
+  - Added auth endpoints to exempt URLs (verify_email, verification_sent, resend_verification)
+  - Ensures users can complete email verification before accessing dashboard
+  
+#### Security Flow Summary
+1. **Login**: Sessions rotated, email & MFA status checked
+2. **Email Verification**: Enforced before payment operations
+3. **MFA**: Mandatory completion before sensitive operations
+4. **Identity Verification**: Required for high-value payments (>100,000)
+5. **Payment**: All three checks passed before processing
+
 ### Payment System Comprehensive Hardening (December 22, 2025)
 #### Idempotency & Prevention of Double Charges
 - **IdempotencyKey Model**: Prevents duplicate payment processing with 24-hour cache
@@ -119,132 +170,6 @@ The architecture incorporates micro-interactions, robust error handling with use
 - **Database Migration**: Migration 0018 added for ProcessedWebhook model
 - **Configuration Validation**: Enhanced startup checks for required environment variables
 - **Code Quality**: Fixed LSP type annotation issues in paystack_service.py
-
-### Comprehensive Platform Audit & Optimization (December 18, 2025)
-- **Database**: PostgreSQL provisioned, all 18 migrations applied successfully
-- **Cache**: Django database cache tables created and verified working
-- **Health Checks**: All 4 endpoints verified working (/health/, /health/ready/, /health/live/, /health/detailed/)
-- **Type Safety**: Fixed LSP diagnostics in invoices/api/views.py (proper type casting for validated_data)
-- **Dependencies**: All Python packages installed and verified
-- **Configuration**: Core environment variables set (SECRET_KEY, ENCRYPTION_SALT, DATABASE_URL)
-- **Server Status**: Gunicorn running with gthread workers, 120s timeout
-- **Security**: Production security guards in place (HSTS, CSRF, secure cookies when PRODUCTION=true)
-- **Email**: SendGrid integration code complete - requires SENDGRID_API_KEY or Replit connector
-- **Payments**: Paystack integration code complete - requires PAYSTACK_SECRET_KEY to enable
-- **Remaining**: To fully enable payments and email, add the respective API keys in Secrets
-
-### Public Invoice Payment System - Direct Client Payments (December 18, 2025)
-- **Public Payment Page**: New `/pay/<invoice_id>/` endpoint for unauthenticated clients
-- **Templates**: templates/invoices/public_invoice.html with professional dark-mode UI
-- **Features**:
-  - Clean, professional invoice display without login requirement
-  - Real-time payment status badges (Paid/Unpaid/Overdue)
-  - Bank transfer details section
-  - Secure "Pay Now" button with Paystack integration
-  - Responsive design for all devices
-  - Invoice preview with all details (items, dates, totals, notes)
-- **New Views**: public_invoice_view, public_initiate_payment, public_payment_callback
-- **URLs**: /pay/<invoice_id>/, /pay/<invoice_id>/checkout/, /pay/<invoice_id>/callback/
-- **Security Enhancements**:
-  - Webhook signature verification (HMAC-SHA512)
-  - Payment reference validation to prevent replay attacks
-  - Amount and currency verification on callbacks
-  - Invoice ownership validation (invoice.user check)
-  - Explicit reference matching between payment initiation and webhook events
-
-### Paystack Security Hardening (December 18, 2025)
-- Enhanced webhook handler with comprehensive payment validation
-- Added reference mismatch detection (prevents payment hijacking)
-- Requires invoice.payment_reference exists before webhook processing
-- Amount tolerance validation (0.01 currency units)
-- Currency validation with logging of mismatches
-- Structured error responses for invalid webhooks
-- Rate limiting on payment initiation (10/min per user)
-- Payload validation before processing
-- Comprehensive logging for audit trails
-
-### API Security Improvement (December 18, 2025)
-- Changed InvoiceViewSet base queryset from Invoice.objects.all() to Invoice.objects.none()
-- Ensures DRF always calls get_queryset() which filters by authenticated user
-- Eliminates risk of incomplete queryset filtering
-- Added proper type hints to API methods (Optional[int], Optional[str])
-- Fixed return type hint for get_serializer_class()
-
-### Invoice Detail UI Enhancement (December 18, 2025)
-- Added "Client Payment Link" section in invoice detail page
-- Copy-to-clipboard functionality for payment link
-- Shows full public URL for easy client sharing
-- Green visual indicator for payment link section
-- Integrates with existing sharing methods
-
-### Invoice Creator v2.0 - Complete Modern Rebuild (December 15, 2025)
-- Built entirely from scratch with advanced modern UX
-- New template: templates/invoices/create_invoice.html
-- New CSS: static/css/invoice-creator-v3.css (comprehensive styling)
-- New JS: static/js/invoice-creator-v3.js (full functionality)
-- Features:
-  - Collapsible form sections with gradient icons
-  - Real-time invoice preview modal
-  - Sticky sidebar with live calculations
-  - Desktop: inline editable table rows
-  - Mobile: card-based item layout
-  - Drag-and-drop reordering
-  - Auto-save to localStorage with visual indicators
-  - Keyboard shortcuts (Enter, Tab navigation)
-  - Full ARIA accessibility
-  - Smooth animations and transitions
-
-### Comprehensive Payment System Enhancement (December 15, 2025)
-- **Payment Models**: Created Payment, PaymentRecipient, PaymentPayout, PaymentCard, PaymentSettings models with proper user ownership fields and database indexes
-- **Payment Settings Views**: Implemented payment_settings_dashboard, payment_preferences, setup_subaccount, manage_recipients, saved_cards, payment_history, payout_history views
-- **Security Features**:
-  - Rate limiting on all POST endpoints (5-10 requests/minute using django-ratelimit)
-  - Server-side bank account verification via Paystack API
-  - CSRF protection on all forms
-  - User ownership scoping on all payment queries
-- **PaystackTransferService**: Enhanced with transfer/payout capabilities including create_transfer_recipient, initiate_transfer, verify_transfer, list_transfers, verify_account_number, get_balance
-- **Direct Payments**: Paystack subaccount support with percentage_charge=0 for direct user payouts
-- **Management Command**: test_payments command for verifying payment system functionality
-- **Templates**: 7+ payment management templates with modern UI
-- **URLs**: Complete routing for payment settings endpoints
-
-### Payment Settings Page Modernization (December 15, 2025)
-- Complete UI overhaul with modern card-based design
-- Enhanced bank account verification workflow
-- Payment methods display (Cards, Bank Transfer, USSD, Mobile Money)
-- Toggle switch for enabling/disabling direct payments
-- Status badges showing active/inactive state
-- Step-by-step "How It Works" guide
-- Improved error/success messaging with icons
-
-### Email Service Consolidation (December 15, 2025)
-- Unified all email functionality under SendGridEmailService
-- Added send_verification_email method to SendGridEmailService
-- Migrated authentication emails (signup verification, password reset) to SendGrid
-- Removed redundant email_service.py (was using Django's send_mail)
-- All emails now route through single SendGrid service with Replit integration support
-
-### Dashboard Footer Enhancement
-- Modernized with cleaner, more professional design
-- Improved responsiveness across all device sizes
-
-### Landing Page Optimization
-- Removed redundant CTA section to streamline conversion flow
-- Now has single focused call-to-action at end of page
-
-### Platform Cleanup
-- Cleaned up requirements.txt (removed massive duplicates, 265 to 60 lines)
-- Removed unnecessary flow-venv/ directory
-- Removed duplicate email_service.py after SendGrid consolidation
-
-### End-to-End Platform Audit (December 15, 2025)
-- Database: All 16 migrations applied successfully, PostgreSQL healthy
-- Static assets: Created missing favicon-32x32.png, favicon-16x16.png, apple-touch-icon.png, og-image.jpg
-- Removed unused CSS: static/css/create-invoice.css (replaced by invoice-creator-v3.css)
-- Security verified: Production guards enforce secure SECRET_KEY and ENCRYPTION_SALT
-- Services verified: SendGrid email with Replit fallback, Paystack payments with subaccount support
-- Analytics: Database-level SQL aggregations with cache invalidation
-- All core pages verified: Landing, Signup, Login pages rendering correctly
 
 ## External Dependencies
 - **Database**: PostgreSQL

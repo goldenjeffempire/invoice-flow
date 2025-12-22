@@ -34,6 +34,10 @@ class MFAEnforcementMiddleware:
         "health_check",
         "readiness_check",
         "liveness_check",
+        "home",
+        "verify_email",
+        "verification_sent",
+        "resend_verification",
     }
 
     EXEMPT_PATH_PREFIXES = (
