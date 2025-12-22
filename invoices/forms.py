@@ -97,27 +97,53 @@ class SignUpForm(UserCreationForm):
 
 
 class LoginForm(forms.Form):
-    """Custom login form with styling."""
+    """Modern login form with remember me option and enhanced validation."""
 
     username = forms.CharField(
         max_length=150,
+        required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "input-field",
-                "placeholder": "Username",
+                "class": "auth-form-input",
+                "placeholder": "Email or Username",
                 "autocomplete": "username",
+                "autofocus": True,
+                "aria-label": "Email or Username",
             }
         ),
     )
     password = forms.CharField(
+        required=True,
         widget=forms.PasswordInput(
             attrs={
-                "class": "input-field",
-                "placeholder": "Password",
+                "class": "auth-form-input",
+                "placeholder": "Enter your password",
                 "autocomplete": "current-password",
+                "aria-label": "Password",
             }
         )
     )
+    remember_me = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={
+                "class": "auth-checkbox-input",
+            }
+        ),
+        label="Remember me for 30 days",
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        username = cleaned_data.get('username', '').strip()
+        password = cleaned_data.get('password', '')
+        
+        if not username:
+            self.add_error('username', 'Email or username is required.')
+        if not password:
+            self.add_error('password', 'Password is required.')
+        
+        return cleaned_data
 
 
 class InvoiceForm(forms.ModelForm):
