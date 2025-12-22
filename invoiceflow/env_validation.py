@@ -1,21 +1,19 @@
 import os
 from django.core.exceptions import ImproperlyConfigured
 
-REQUIRED_ENV_VARS = [
-    "DJANGO_SECRET_KEY",
+REQUIRED_PRODUCTION_ENV_VARS = [
+    "SECRET_KEY",
     "DATABASE_URL",
-    "PAYSTACK_SECRET_KEY",
-    "PAYSTACK_PUBLIC_KEY",
-    "EMAIL_HOST",
-    "EMAIL_HOST_USER",
-    "EMAIL_HOST_PASSWORD",
-    "DEFAULT_FROM_EMAIL",
-    "ALLOWED_HOSTS",
 ]
 
 def validate_env():
+    is_production = os.getenv("PRODUCTION") == "true"
+    
+    if not is_production:
+        return
+    
     missing = []
-    for var in REQUIRED_ENV_VARS:
+    for var in REQUIRED_PRODUCTION_ENV_VARS:
         if not os.getenv(var):
             missing.append(var)
 

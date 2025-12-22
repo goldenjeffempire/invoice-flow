@@ -356,3 +356,322 @@ class EmailVerificationToken(models.Model):
     @classmethod
     def generate_token(cls) -> str:
         return secrets.token_urlsafe(48)
+
+
+# ============================================================================
+# LOGIN ATTEMPT (SECURITY TRACKING)
+# ============================================================================
+
+class LoginAttempt(models.Model):
+    username = models.CharField(max_length=150)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    success = models.BooleanField(default=False)
+    failure_reason = models.CharField(max_length=200, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["username", "-timestamp"]),
+            models.Index(fields=["ip_address", "-timestamp"]),
+        ]
+
+    def __str__(self) -> str:
+        status = "success" if self.success else "failed"
+        return f"{self.username} - {status} at {self.timestamp}"
+
+
+# ============================================================================
+# MFA PROFILE
+# ============================================================================
+
+class MFAProfile(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="mfa_profile",
+    )
+    secret = models.CharField(max_length=32, blank=True)
+    backup_codes = models.JSONField(default=list, blank=True)
+    is_enabled = models.BooleanField(default=False)
+    is_enforced = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        status = "enabled" if self.is_enabled else "disabled"
+        return f"MFA for {self.user.username} ({status})"
+
+
+# ============================================================================
+# USER SESSION
+# ============================================================================
+
+class UserSession(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_sessions",
+    )
+    session_key = models.CharField(max_length=40)
+    user_agent = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    last_seen = models.DateTimeField(auto_now=True)
+    is_revoked = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-last_seen"]
+        indexes = [
+            models.Index(fields=["user", "-last_seen"]),
+            models.Index(fields=["session_key"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Session for {self.user.username}"
+
+
+# ============================================================================
+# SOCIAL ACCOUNT (OAUTH)
+# ============================================================================
+
+class SocialAccount(models.Model):
+    class Provider(models.TextChoices):
+        GOOGLE = "google", "Google"
+        GITHUB = "github", "GitHub"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="social_accounts",
+    )
+    provider = models.CharField(max_length=20, choices=Provider.choices)
+    provider_user_id = models.CharField(max_length=255)
+    access_token = models.TextField(blank=True)
+    refresh_token = models.TextField(blank=True)
+    token_scopes = models.TextField(blank=True)
+    avatar_url = models.URLField(blank=True)
+    last_synced = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [["provider", "provider_user_id"]]
+        indexes = [
+            models.Index(fields=["user", "provider"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user.username} - {self.get_provider_display()}"
+
+
+# ============================================================================
+# RECURRING INVOICE
+# ============================================================================
+
+class RecurringInvoice(models.Model):
+    class Frequency(models.TextChoices):
+        WEEKLY = "weekly", "Weekly"
+        BIWEEKLY = "biweekly", "Bi-weekly"
+        MONTHLY = "monthly", "Monthly"
+        QUARTERLY = "quarterly", "Quarterly"
+        YEARLY = "yearly", "Yearly"
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        PAUSED = "paused", "Paused"
+        CANCELLED = "cancelled", "Cancelled"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="recurring_invoices",
+    )
+    template = models.ForeignKey(
+        InvoiceTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    business_name = models.CharField(max_length=200)
+    business_email = models.EmailField()
+
+    client_name = models.CharField(max_length=200)
+    client_email = models.EmailField()
+    client_phone = models.CharField(max_length=50, blank=True)
+    client_address = models.TextField(blank=True)
+
+    currency = models.CharField(max_length=3, default="USD")
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    frequency = models.CharField(max_length=20, choices=Frequency.choices)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    next_generation = models.DateField(null=True, blank=True)
+    last_generated = models.DateTimeField(null=True, blank=True)
+
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.ACTIVE
+    )
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["next_generation"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Recurring: {self.client_name} ({self.get_frequency_display()})"
+
+
+# ============================================================================
+# PAYMENT SETTINGS
+# ============================================================================
+
+class PaymentSettings(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="payment_settings",
+    )
+
+    accept_cards = models.BooleanField(default=True)
+    accept_bank_transfers = models.BooleanField(default=True)
+    minimum_payment_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0
+    )
+    auto_reconcile = models.BooleanField(default=True)
+    payout_delay_days = models.PositiveIntegerField(default=7)
+    default_currency = models.CharField(max_length=3, default="NGN")
+
+    webhook_secret = models.CharField(max_length=255, blank=True)
+    paystack_public_key = models.CharField(max_length=255, blank=True)
+    paystack_secret_key = models.CharField(max_length=255, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Payment Settings for {self.user.username}"
+
+
+# ============================================================================
+# PAYMENT RECIPIENT
+# ============================================================================
+
+class PaymentRecipient(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="payment_recipients",
+    )
+
+    name = models.CharField(max_length=200)
+    bank_code = models.CharField(max_length=20)
+    account_number = models.CharField(max_length=30)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    recipient_code = models.CharField(max_length=100, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.account_number}"
+
+
+# ============================================================================
+# PAYMENT CARD
+# ============================================================================
+
+class PaymentCard(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="payment_cards",
+    )
+
+    external_token = models.CharField(max_length=255)
+    brand = models.CharField(max_length=50)
+    last4 = models.CharField(max_length=4)
+    exp_month = models.PositiveIntegerField()
+    exp_year = models.PositiveIntegerField()
+
+    is_default = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-added_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.brand} **** {self.last4}"
+
+
+# ============================================================================
+# PAYMENT PAYOUT
+# ============================================================================
+
+class PaymentPayout(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="payment_payouts",
+    )
+    recipient = models.ForeignKey(
+        PaymentRecipient,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="NGN")
+
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING
+    )
+    reference = models.CharField(max_length=255, unique=True)
+    paystack_transfer_code = models.CharField(max_length=255, blank=True)
+    failure_message = models.TextField(blank=True)
+
+    attempted_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["reference"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Payout {self.reference} ({self.status})"
