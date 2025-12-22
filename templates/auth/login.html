@@ -110,7 +110,7 @@
         <!-- Messages -->
         {% if messages %}
           {% for message in messages %}
-            <div class="auth-message auth-message-{{ message.tags|default:'info' }}" role="alert">
+            <div class="auth-message auth-message-{{ message.tags|default:'info' }}" role="alert" aria-live="polite">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 {% if 'error' in message.tags %}
                   <circle cx="12" cy="12" r="10"/>
@@ -124,6 +124,18 @@
               <span>{{ message }}</span>
             </div>
           {% endfor %}
+        {% endif %}
+        
+        <!-- Rate Limiting Notice -->
+        {% if rate_limited %}
+          <div class="auth-message auth-message-error" role="alert" aria-live="assertive">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>Too many login attempts. Please try again in 15 minutes.</span>
+          </div>
         {% endif %}
 
         <!-- Form -->

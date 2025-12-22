@@ -115,8 +115,55 @@ def settings_payments(request):
 @ratelimit(key="user", rate="20/m", method="POST", block=True)
 def settings_security(request):
     """Security settings: password, MFA, sessions, login activity."""
+    from django.contrib.auth import update_session_auth_hash
+    
     user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    
+    if request.method == "POST":
+        # Handle password change
+        if "current_password" in request.POST:
+            current_password = request.POST.get("current_password", "").strip()
+            new_password = request.POST.get("new_password", "").strip()
+            confirm_password = request.POST.get("confirm_password", "").strip()
+            
+            if not request.user.check_password(current_password):
+                messages.error(request, "Current password is incorrect.")
+            elif new_password != confirm_password:
+                messages.error(request, "New passwords do not match.")
+            elif len(new_password) < 12:
+                messages.error(request, "Password must be at least 12 characters long.")
+            else:
+                request.user.set_password(new_password)
+                request.user.save()
+                update_session_auth_hash(request, request.user)
+                messages.success(request, "Password changed successfully.")
+                logger.info(f"Password changed for user: {request.user.username}")
+        
+        # Handle logout all sessions
+        if request.POST.get("logout_all") == "true":
+            current_session = request.session.session_key
+            sessions_to_revoke = UserSession.objects.filter(user=request.user).exclude(
+                session_key=current_session
+            )
+            sessions_to_revoke.delete()
+            messages.success(request, "Logged out from all other devices.")
+        
+        # Handle logout single session
+        if "logout_session_id" in request.POST:
+            session_id = request.POST.get("logout_session_id")
+            try:
+                session = UserSession.objects.get(id=session_id, user=request.user)
+                session.delete()
+                messages.success(request, "Session terminated.")
+            except UserSession.DoesNotExist:
+                messages.error(request, "Session not found.")
+    
     sessions = UserSession.objects.filter(user=request.user).order_by("-created_at")[:10]
+    current_session_key = request.session.session_key
+    
+    # Mark current session
+    for session in sessions:
+        session.is_current = session.session_key == current_session_key
     
     context = {
         "section": "security",

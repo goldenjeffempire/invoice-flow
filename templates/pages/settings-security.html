@@ -143,22 +143,50 @@
                 
                 <div class="settings-light-section">
                     <h2 class="settings-light-section-title">Active Sessions</h2>
-                    <p class="settings-light-section-description">Manage your active login sessions</p>
+                    <p class="settings-light-section-description">Manage your active login sessions for security</p>
                     
-                    <div style="padding: 16px; background: var(--light-bg-tertiary); border-radius: var(--light-radius-lg); display: flex; align-items: center; gap: 16px;">
-                        <div style="width: 40px; height: 40px; background: var(--light-primary-light); border-radius: var(--light-radius-md); display: flex; align-items: center; justify-content: center;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; color: var(--light-primary);">
-                                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                                <line x1="8" y1="21" x2="16" y2="21"/>
-                                <line x1="12" y1="17" x2="12" y2="21"/>
-                            </svg>
+                    {% if sessions %}
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        {% for session in sessions %}
+                        <div style="padding: 16px; background: var(--light-bg-tertiary); border-radius: var(--light-radius-lg); display: flex; align-items: center; gap: 16px;">
+                            <div style="width: 40px; height: 40px; background: var(--light-primary-light); border-radius: var(--light-radius-md); display: flex; align-items: center; justify-content: center;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; color: var(--light-primary);">
+                                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                                    <line x1="8" y1="21" x2="16" y2="21"/>
+                                    <line x1="12" y1="17" x2="12" y2="21"/>
+                                </svg>
+                            </div>
+                            <div style="flex: 1;">
+                                <p style="font-weight: 600; color: var(--light-text-primary); margin: 0 0 4px 0;">
+                                    {% if session.is_current %}Current Session{% else %}Session{% endif %}
+                                </p>
+                                <p style="font-size: 0.875rem; color: var(--light-text-tertiary); margin: 0;">
+                                    IP: {{ session.ip_address }} • {{ session.created_at|date:"M d, Y H:i" }}
+                                </p>
+                            </div>
+                            {% if session.is_current %}
+                            <span style="padding: 4px 12px; background: var(--light-success-light); color: var(--light-success); font-size: 0.75rem; font-weight: 600; border-radius: 999px;">Current</span>
+                            {% else %}
+                            <form method="post" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="logout_session_id" value="{{ session.id }}">
+                                <button type="submit" class="btn-light-secondary" style="font-size: 0.75rem; padding: 4px 12px;">Logout</button>
+                            </form>
+                            {% endif %}
                         </div>
-                        <div style="flex: 1;">
-                            <p style="font-weight: 600; color: var(--light-text-primary); margin: 0 0 4px 0;">Current Session</p>
-                            <p style="font-size: 0.875rem; color: var(--light-text-tertiary); margin: 0;">This device - Active now</p>
-                        </div>
-                        <span style="padding: 4px 12px; background: var(--light-success-light); color: var(--light-success); font-size: 0.75rem; font-weight: 600; border-radius: 999px;">Current</span>
+                        {% endfor %}
                     </div>
+                    {% else %}
+                    <div style="padding: 16px; background: var(--light-bg-tertiary); border-radius: var(--light-radius-lg); text-align: center;">
+                        <p style="color: var(--light-text-tertiary); margin: 0;">No active sessions found</p>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" style="margin-top: 20px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="logout_all" value="true">
+                        <button type="submit" class="btn-light-secondary" style="color: #ef4444; border-color: #fca5a5;" onclick="return confirm('Are you sure? This will log you out from all devices.');">Sign Out From All Devices</button>
+                    </form>
                 </div>
             </div>
         </div>
