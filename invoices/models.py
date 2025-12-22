@@ -106,8 +106,13 @@ class UserProfile(models.Model):
 
     notify_invoice_created = models.BooleanField(default=True)
     notify_payment_received = models.BooleanField(default=True)
+    notify_invoice_viewed = models.BooleanField(default=True)
     notify_invoice_overdue = models.BooleanField(default=True)
+    notify_weekly_summary = models.BooleanField(default=False)
     notify_security_alerts = models.BooleanField(default=True)
+    notify_password_changes = models.BooleanField(default=True)
+
+    email_verified = models.BooleanField(default=False)
 
     # Paystack
     paystack_subaccount_code = models.CharField(max_length=100, blank=True, null=True)
@@ -142,7 +147,11 @@ class InvoiceTemplate(models.Model):
 
     business_name = models.CharField(max_length=200)
     business_email = models.EmailField()
+    business_phone = models.CharField(max_length=50, blank=True)
     business_address = models.TextField()
+
+    bank_name = models.CharField(max_length=200, blank=True)
+    account_name = models.CharField(max_length=200, blank=True)
 
     currency = models.CharField(max_length=3, default="USD")
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
@@ -177,6 +186,20 @@ class Invoice(models.Model):
         PAID = "paid", "Paid"
         OVERDUE = "overdue", "Overdue"
 
+    CURRENCY_CHOICES = [
+        ("USD", "USD - US Dollar"),
+        ("EUR", "EUR - Euro"),
+        ("GBP", "GBP - British Pound"),
+        ("NGN", "NGN - Nigerian Naira"),
+        ("CAD", "CAD - Canadian Dollar"),
+        ("AUD", "AUD - Australian Dollar"),
+        ("INR", "INR - Indian Rupee"),
+        ("JPY", "JPY - Japanese Yen"),
+        ("ZAR", "ZAR - South African Rand"),
+        ("KES", "KES - Kenyan Shilling"),
+        ("GHS", "GHS - Ghanaian Cedi"),
+    ]
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -194,9 +217,15 @@ class Invoice(models.Model):
 
     business_name = models.CharField(max_length=200)
     business_email = models.EmailField()
+    business_phone = models.CharField(max_length=50, blank=True)
+    business_address = models.TextField(blank=True)
 
     client_name = models.CharField(max_length=200)
     client_email = models.EmailField()
+    client_phone = models.CharField(max_length=50, blank=True)
+    client_address = models.TextField(blank=True)
+
+    notes = models.TextField(blank=True)
 
     invoice_date = models.DateField(default=timezone.now)
     due_date = models.DateField(null=True, blank=True)
@@ -535,6 +564,12 @@ class RecurringInvoice(models.Model):
 # ============================================================================
 
 class PaymentSettings(models.Model):
+    class PayoutSchedule(models.TextChoices):
+        DAILY = "daily", "Daily"
+        WEEKLY = "weekly", "Weekly"
+        MONTHLY = "monthly", "Monthly"
+        MANUAL = "manual", "Manual"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -543,12 +578,28 @@ class PaymentSettings(models.Model):
 
     accept_cards = models.BooleanField(default=True)
     accept_bank_transfers = models.BooleanField(default=True)
+    enable_card_payments = models.BooleanField(default=True)
+    enable_bank_transfers = models.BooleanField(default=True)
+    enable_mobile_money = models.BooleanField(default=False)
+    enable_ussd = models.BooleanField(default=False)
+
     minimum_payment_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=0
     )
     auto_reconcile = models.BooleanField(default=True)
+    auto_payout = models.BooleanField(default=False)
     payout_delay_days = models.PositiveIntegerField(default=7)
+    payout_schedule = models.CharField(
+        max_length=20, choices=PayoutSchedule.choices, default=PayoutSchedule.WEEKLY
+    )
+    payout_threshold = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     default_currency = models.CharField(max_length=3, default="NGN")
+    preferred_currency = models.CharField(max_length=3, default="NGN")
+
+    send_payment_receipt = models.BooleanField(default=True)
+    send_payout_notification = models.BooleanField(default=True)
+    payment_instructions = models.TextField(blank=True)
 
     webhook_secret = models.CharField(max_length=255, blank=True)
     paystack_public_key = models.CharField(max_length=255, blank=True)
@@ -566,6 +617,10 @@ class PaymentSettings(models.Model):
 # ============================================================================
 
 class PaymentRecipient(models.Model):
+    class AccountType(models.TextChoices):
+        PERSONAL = "personal", "Personal"
+        BUSINESS = "business", "Business"
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -573,11 +628,16 @@ class PaymentRecipient(models.Model):
     )
 
     name = models.CharField(max_length=200)
+    account_type = models.CharField(max_length=20, choices=AccountType.choices, default=AccountType.PERSONAL)
     bank_code = models.CharField(max_length=20)
+    bank_name = models.CharField(max_length=200, blank=True)
     account_number = models.CharField(max_length=30)
+    account_name = models.CharField(max_length=200, blank=True)
+    currency = models.CharField(max_length=3, default="NGN")
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
 
+    is_primary = models.BooleanField(default=False)
     is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 

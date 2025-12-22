@@ -25,6 +25,30 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class EmailNotVerifiedError(Exception):
+    """Raised when a user's email is not verified."""
+    pass
+
+
+def require_verified_email(user: User) -> None:
+    """
+    Check if the user has a verified email address.
+    Raises EmailNotVerifiedError if not verified.
+    """
+    if not user.is_authenticated:
+        raise EmailNotVerifiedError("Authentication required.")
+    
+    if not user.is_active:
+        raise EmailNotVerifiedError("Please verify your email address to continue.")
+    
+    try:
+        profile = UserProfile.objects.get(user=user)
+        if not profile.email_verified:
+            raise EmailNotVerifiedError("Please verify your email address to continue.")
+    except UserProfile.DoesNotExist:
+        raise EmailNotVerifiedError("User profile not found. Please contact support.")
+
+
 class AuthenticationService:
     """Core authentication service handling login, logout, and session management."""
 
