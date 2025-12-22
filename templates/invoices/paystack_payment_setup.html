@@ -1,0 +1,344 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Client Payment Setup - InvoiceFlow{% endblock %}
+{% block body_class %}dashboard-light-page{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+{% endblock %}
+
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'components/sidebar-light.html' with active='invoices' %}
+    
+    <main class="dashboard-main">
+        <header class="dashboard-light-header">
+            <div class="dashboard-light-header-content">
+                <h1>Payment Settings</h1>
+                <p>Configure how clients can pay you</p>
+            </div>
+        </header>
+        
+        <div class="settings-container">
+            <div class="settings-card glass-card">
+                <div class="settings-header">
+                    <h2>Direct Payment Options</h2>
+                    <p>Enable clients to pay directly through your invoices</p>
+                </div>
+                
+                {% if not paystack_configured %}
+                <div class="setup-notice">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    <div>
+                        <h3>Set Up Paystack</h3>
+                        <p>Accept payments directly on your invoices with Paystack</p>
+                    </div>
+                </div>
+                
+                <form method="post" class="settings-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-section">
+                        <h3>Paystack Account</h3>
+                        <div class="form-group">
+                            <label for="paystack_public_key">Public Key</label>
+                            <input type="text" 
+                                   id="paystack_public_key" 
+                                   name="paystack_public_key" 
+                                   class="form-input"
+                                   placeholder="pk_live_..."
+                                   required>
+                            <p class="form-help">Your Paystack public API key</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="paystack_secret_key">Secret Key</label>
+                            <input type="password" 
+                                   id="paystack_secret_key" 
+                                   name="paystack_secret_key" 
+                                   class="form-input"
+                                   placeholder="sk_live_..."
+                                   required>
+                            <p class="form-help">Your Paystack secret API key (stored securely)</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>Payment Preferences</h3>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="enable_paystack" checked>
+                                <span class="checkbox-text">Enable Paystack payments on invoices</span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="charge_amount">Charge Customer Fee</label>
+                            <select id="charge_amount" name="charge_amount" class="form-input">
+                                <option value="no">No additional charge</option>
+                                <option value="percentage">Percentage (add 2% to invoice)</option>
+                                <option value="fixed">Fixed amount</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn-light-primary">Save Payment Settings</button>
+                    </div>
+                </form>
+                
+                <div class="help-section">
+                    <h3>How to get your Paystack keys</h3>
+                    <ol class="help-steps">
+                        <li>Sign up for a <a href="https://paystack.com" target="_blank" rel="noopener">Paystack account</a></li>
+                        <li>Go to Settings → API Keys & Webhooks</li>
+                        <li>Copy your Public Key and Secret Key</li>
+                        <li>Paste them above and save</li>
+                    </ol>
+                </div>
+                {% else %}
+                <div class="success-notice">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <div>
+                        <h3>Paystack Connected</h3>
+                        <p>Your clients can now pay directly through invoices</p>
+                    </div>
+                </div>
+                
+                <div class="payment-status">
+                    <div class="status-row">
+                        <span>Account:</span>
+                        <span class="status-value">{{ paystack_email }}</span>
+                    </div>
+                    <div class="status-row">
+                        <span>Status:</span>
+                        <span class="status-value success">Active</span>
+                    </div>
+                </div>
+                
+                <form method="post" action="{% url 'disconnect_paystack' %}" class="disconnect-form">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-light-secondary" onclick="return confirm('Disconnect Paystack? Clients won\\'t be able to pay directly.')">
+                        Disconnect Paystack
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.settings-card {
+    padding: 2rem;
+}
+
+.settings-header {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--light-border);
+}
+
+.settings-header h2 {
+    margin: 0 0 0.5rem;
+    color: var(--light-text-primary);
+}
+
+.settings-header p {
+    margin: 0;
+    color: var(--light-text-tertiary);
+    font-size: 0.9rem;
+}
+
+.setup-notice,
+.success-notice {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: var(--light-radius-md);
+    margin-bottom: 2rem;
+}
+
+.setup-notice {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid #3b82f6;
+}
+
+.success-notice {
+    background: rgba(16, 185, 129, 0.1);
+    border-left: 3px solid #10b981;
+}
+
+.setup-notice svg,
+.success-notice svg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.setup-notice h3,
+.success-notice h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+}
+
+.setup-notice p,
+.success-notice p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--light-text-secondary);
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section h3 {
+    margin: 0 0 1rem;
+    color: var(--light-text-primary);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--light-text-primary);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--light-border);
+    border-radius: var(--light-radius-md);
+    background: var(--light-bg-secondary);
+    color: var(--light-text-primary);
+    font-size: 0.9rem;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--light-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-help {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: var(--light-text-tertiary);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.checkbox-text {
+    color: var(--light-text-primary);
+    font-size: 0.9rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--light-border);
+}
+
+.payment-status {
+    background: var(--light-bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--light-radius-md);
+    margin-bottom: 1rem;
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--light-border);
+}
+
+.status-row:last-child {
+    border-bottom: none;
+}
+
+.status-value {
+    color: var(--light-text-secondary);
+    font-weight: 500;
+}
+
+.status-value.success {
+    color: #10b981;
+}
+
+.help-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--light-border);
+}
+
+.help-section h3 {
+    margin: 0 0 1rem;
+    color: var(--light-text-primary);
+    font-size: 0.95rem;
+}
+
+.help-steps {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: var(--light-text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.help-steps li {
+    margin-bottom: 0.5rem;
+}
+
+.help-steps a {
+    color: var(--light-primary);
+    text-decoration: none;
+}
+
+.help-steps a:hover {
+    text-decoration: underline;
+}
+
+.disconnect-form {
+    margin-top: 2rem;
+}
+
+@media (max-width: 640px) {
+    .settings-card {
+        padding: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
