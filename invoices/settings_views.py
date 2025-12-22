@@ -116,7 +116,7 @@ def settings_payments(request):
 def settings_security(request):
     """Security settings: password, MFA, sessions, login activity."""
     user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    sessions = UserSession.objects.filter(user=request.user).order_by("-last_activity")[:10]
+    sessions = UserSession.objects.filter(user=request.user).order_by("-created_at")[:10]
     
     context = {
         "section": "security",
