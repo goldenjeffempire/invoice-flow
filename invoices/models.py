@@ -400,18 +400,18 @@ class LoginAttempt(models.Model):
     user_agent = models.TextField(blank=True)
     success = models.BooleanField(default=False)
     failure_reason = models.CharField(max_length=200, blank=True)
-    timestamp = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-timestamp"]
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["username", "-timestamp"]),
-            models.Index(fields=["ip_address", "-timestamp"]),
+            models.Index(fields=["username", "-created_at"]),
+            models.Index(fields=["ip_address", "-created_at"]),
         ]
 
     def __str__(self) -> str:
         status = "success" if self.success else "failed"
-        return f"{self.username} - {status} at {self.timestamp}"
+        return f"{self.username} - {status} at {self.created_at}"
 
 
 # ============================================================================
@@ -480,7 +480,7 @@ class SocialAccount(models.Model):
         related_name="social_accounts",
     )
     provider = models.CharField(max_length=20, choices=Provider.choices)
-    provider_user_id = models.CharField(max_length=255)
+    provider_user_id = models.CharField(max_length=255, blank=True)
     access_token = models.TextField(blank=True)
     refresh_token = models.TextField(blank=True)
     token_scopes = models.TextField(blank=True)
