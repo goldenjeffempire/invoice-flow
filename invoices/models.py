@@ -120,6 +120,10 @@ class UserProfile(models.Model):
         max_digits=5, decimal_places=2, default=0
     )
     paystack_subaccount_active = models.BooleanField(default=False)
+    paystack_bank_code = models.CharField(max_length=20, blank=True, null=True)
+    paystack_account_number = models.CharField(max_length=30, blank=True, null=True)
+    paystack_account_name = models.CharField(max_length=200, blank=True, null=True)
+    paystack_settlement_bank = models.CharField(max_length=200, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

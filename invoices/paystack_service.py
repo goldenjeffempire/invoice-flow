@@ -150,6 +150,109 @@ class PaystackService:
             "message": data.get("message", "BVN verification failed"),
         }
 
+    def list_banks(self, country: str = "nigeria") -> dict[str, Any]:
+        """List available banks for the specified country."""
+        if not self.is_configured:
+            return {"status": "error", "banks": []}
+
+        response = requests.get(
+            f"{PAYSTACK_BASE_URL}/bank",
+            params={"country": country},
+            headers=self.headers,
+            timeout=30,
+        )
+
+        data = response.json()
+
+        if response.status_code == 200 and data.get("status"):
+            return {
+                "status": "success",
+                "banks": data.get("data", []),
+            }
+
+        return {
+            "status": "error",
+            "banks": [],
+            "message": data.get("message", "Failed to fetch banks"),
+        }
+
+    def verify_account_number(self, account_number: str, bank_code: str) -> dict[str, Any]:
+        """Verify bank account number and get account name."""
+        if not self.is_configured:
+            return {"status": "error", "verified": False}
+
+        response = requests.get(
+            f"{PAYSTACK_BASE_URL}/bank/resolve",
+            params={"account_number": account_number, "bank_code": bank_code},
+            headers=self.headers,
+            timeout=30,
+        )
+
+        data = response.json()
+
+        if response.status_code == 200 and data.get("status"):
+            account_data = data.get("data", {})
+            return {
+                "status": "success",
+                "verified": True,
+                "account_name": account_data.get("account_name", ""),
+                "account_number": account_data.get("account_number", ""),
+            }
+
+        return {
+            "status": "error",
+            "verified": False,
+            "message": data.get("message", "Account verification failed"),
+        }
+
+    def create_subaccount(
+        self,
+        *,
+        business_name: str,
+        bank_code: str,
+        account_number: str,
+        percentage_charge: Decimal = Decimal("0"),
+        primary_contact_email: str = "",
+        primary_contact_phone: str = "",
+    ) -> dict[str, Any]:
+        """Create a Paystack subaccount for receiving payments directly."""
+        if not self.is_configured:
+            return {"status": "error", "configured": False}
+
+        payload: dict[str, Any] = {
+            "business_name": business_name,
+            "bank_code": bank_code,
+            "account_number": account_number,
+            "percentage_charge": float(percentage_charge),
+        }
+
+        if primary_contact_email:
+            payload["primary_contact_email"] = primary_contact_email
+        if primary_contact_phone:
+            payload["primary_contact_phone"] = primary_contact_phone
+
+        response = requests.post(
+            f"{PAYSTACK_BASE_URL}/subaccount",
+            headers=self.headers,
+            json=payload,
+            timeout=30,
+        )
+
+        data = response.json()
+
+        if response.status_code == 201 and data.get("status"):
+            subaccount_data = data.get("data", {})
+            return {
+                "status": "success",
+                "subaccount_code": subaccount_data.get("subaccount_code", ""),
+                "business_name": subaccount_data.get("business_name", ""),
+            }
+
+        return {
+            "status": "error",
+            "message": data.get("message", "Failed to create subaccount"),
+        }
+
     # ---------------------------------------------------------------------
     # WEBHOOK SECURITY
     # ---------------------------------------------------------------------
