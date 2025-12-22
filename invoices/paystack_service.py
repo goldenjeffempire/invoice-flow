@@ -170,3 +170,14 @@ def finalize_payment_from_verification(
     ])
 
     return payment
+
+
+# -------------------------------------------------------------------------
+# FACTORY FUNCTION
+# -------------------------------------------------------------------------
+
+def get_paystack_service() -> PaystackService:
+    """
+    Factory function to get a PaystackService instance.
+    """
+    return PaystackService()
