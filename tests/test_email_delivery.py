@@ -94,9 +94,53 @@ class TestEmailRetryQueue:
 class TestAPIResponse:
     """Test standardized API response format."""
     
-    def test_success_response(self, authenticated_api_client):
-        """Test success response format (requires implementation)."""
-        pass  # TODO: Implement when API response wrapper is integrated
+    def test_success_response_format(self):
+        """Test success response format."""
+        from invoices.api.response import APIResponse
+        response = APIResponse.success(data={"test": "data"}, message="Success")
+        assert response.data["success"] is True
+        assert response.data["message"] == "Success"
+        assert response.data["data"]["test"] == "data"
+    
+    def test_error_response_format(self):
+        """Test error response format."""
+        from invoices.api.response import APIResponse
+        response = APIResponse.error(
+            code="TEST_ERROR",
+            message="Test error",
+            details={"field": "error"}
+        )
+        assert response.data["success"] is False
+        assert response.data["error"]["code"] == "TEST_ERROR"
+        assert response.data["error"]["details"]["field"] == "error"
+    
+    def test_paginated_response_format(self):
+        """Test paginated response format."""
+        from invoices.api.response import APIResponse
+        response = APIResponse.paginated(
+            data=[{"id": 1}, {"id": 2}],
+            page=1,
+            page_size=10,
+            total=25
+        )
+        assert response.data["success"] is True
+        assert response.data["meta"]["pagination"]["total_pages"] == 3
+
+
+@pytest.mark.django_db
+class TestPermissions:
+    """Test API permission classes."""
+    
+    def test_is_owner_permission(self, user):
+        """Test invoice owner permission."""
+        from invoices.api.permissions import IsOwnerOrAdmin
+        assert IsOwnerOrAdmin().has_object_permission(None, None, user) is False
+    
+    def test_rate_limiting(self):
+        """Test rate limiting configuration."""
+        from invoices.api.rate_limiting import UserBurstThrottle
+        throttle = UserBurstThrottle()
+        assert throttle.scope == 'user_burst'
 
 
 @pytest.mark.django_db
@@ -105,7 +149,7 @@ class TestPaymentWebhook:
     
     def test_webhook_duplicate_prevention(self):
         """Test webhook replay attack prevention."""
-        pass  # TODO: Implement payment webhook tests
+        pass  # FUTURE: Implement payment webhook tests with ProcessedWebhook model
 
 
 @pytest.mark.django_db
@@ -114,4 +158,4 @@ class TestMFAFlow:
     
     def test_mfa_required_for_payments(self, user):
         """Test that MFA is required for payment operations."""
-        pass  # TODO: Implement MFA flow tests
+        pass  # FUTURE: Implement MFA flow tests with session verification

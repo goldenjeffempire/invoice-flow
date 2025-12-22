@@ -250,13 +250,17 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "invoices.api.rate_limiting.AnonBurstThrottle",
+        "invoices.api.rate_limiting.UserBurstThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
+        "user_burst": "100/hour",
+        "user_sustained": "1000/day",
+        "anon_burst": "20/hour",
+        "payment": "5/hour",
+        "public_invoice": "30/hour",
     },
+    "EXCEPTION_HANDLER": "invoices.api.exception_handlers.custom_exception_handler",
 }
 
 # =============================================================================

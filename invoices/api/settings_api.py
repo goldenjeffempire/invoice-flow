@@ -11,6 +11,8 @@ from rest_framework.serializers import ModelSerializer, Serializer, CharField, B
 
 from ..models import UserProfile, PaymentSettings
 from ..payment_settings_views import verify_bank_account
+from .response import APIResponse
+from .permissions import IsAuthenticated as PermissionIsAuthenticated
 
 
 class UserProfileSerializer(ModelSerializer):
