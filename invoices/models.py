@@ -269,7 +269,7 @@ class Invoice(models.Model):
         return self.subtotal + self.tax_amount
 
     def __str__(self) -> str:
-        return self.invoice_id
+        return f"{self.invoice_id} - {self.client_name}"
 
 
 # ============================================================================
