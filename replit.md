@@ -24,6 +24,30 @@ The architecture incorporates micro-interactions, robust error handling with use
 
 ## Recent Changes (December 2025)
 
+### Payment System Hardening & Idempotency (December 22, 2025)
+- **Idempotency Key Model**: Added IdempotencyKey model to prevent duplicate payment processing
+  - Caches responses for 24 hours using unique idempotency keys
+  - Request hash tracking for integrity verification
+  - HTTP status code caching for proper error handling
+  - Automatic expiration of old keys
+- **Enhanced Webhook Security**: Hardened paystack_webhook with comprehensive validation
+  - Improved error logging for audit trails and debugging
+  - JSON parsing error handling
+  - Replay attack prevention via ProcessedWebhook model
+  - Amount validation to prevent tampering
+  - Currency validation with mismatch detection
+  - Server-to-server Paystack verification (not relying on client-side data)
+  - Atomic transaction handling to prevent race conditions
+- **Idempotent Payment Initialization**: Updated initialize_payment view
+  - Required idempotency key parameter to prevent duplicate charges
+  - Integration with IdempotencyKey service layer
+  - Proper error responses for missing idempotency keys
+  - Cached response replay for retry scenarios
+- **MFA & Email Verification Enforcement**: Views now require both:
+  - require_verified_email(user) - enforces email verification
+  - require_mfa(user) - enforces MFA completion before payment
+  - Protects payment endpoints from unverified users
+
 ### Security Audit & Hardening (December 18, 2025)
 - **Webhook Replay Protection**: Added ProcessedWebhook model to prevent payment webhook replay attacks
   - Tracks event_id, payload_hash, provider, and processing timestamp

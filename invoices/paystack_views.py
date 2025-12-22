@@ -19,7 +19,7 @@ from django.views.decorators.http import require_GET, require_POST
 from invoiceflow.mfa import require_mfa
 
 from .auth_services import require_verified_email
-from .models import Invoice, Payment, ProcessedWebhook
+from .models import IdempotencyKey, Invoice, Payment, ProcessedWebhook
 from .paystack_service import (
     PaystackService,
     finalize_payment_from_verification,
@@ -33,47 +33,69 @@ logger = logging.getLogger(__name__)
 # INITIALIZE PAYMENT
 # ---------------------------------------------------------------------
 
+@login_required
 @require_POST
 def initialize_payment(request):
+    """Initialize payment with idempotency protection."""
     user = request.user
     require_verified_email(user)
     require_mfa(user)
 
     invoice_id = request.POST.get("invoice_id")
     amount = Decimal(request.POST.get("amount", "0"))
+    idempotency_key = request.POST.get("idempotency_key")
 
     if not invoice_id or amount <= 0:
         return JsonResponse({"error": "Invalid payment request"}, status=400)
 
+    if not idempotency_key:
+        return JsonResponse({"error": "Idempotency key required"}, status=400)
+
     reference = f"inv_{invoice_id}_{user.id}"
+    request_data = {"invoice_id": invoice_id, "amount": str(amount)}
 
-    payment, created = Payment.objects.get_or_create(
-        reference=reference,
-        defaults={
-            "user": user,
-            "invoice_id": invoice_id,
-            "amount": amount,
-        },
-    )
+    def process_payment():
+        """Process the payment and return response."""
+        try:
+            payment, created = Payment.objects.get_or_create(
+                reference=reference,
+                defaults={
+                    "user": user,
+                    "invoice_id": invoice_id,
+                    "amount": amount,
+                },
+            )
 
-    if not created:
-        return JsonResponse(
-            {"error": "Payment already initialized"}, status=400
-        )
+            if not created:
+                return {"error": "Payment already initialized"}, 400
+
+            service = PaystackService()
+            result = service.initialize_payment(
+                email=user.email,
+                amount=amount,
+                reference=reference,
+                callback_url=settings.PAYSTACK_CALLBACK_URL,
+                metadata={
+                    "invoice_id": invoice_id,
+                    "user_id": user.id,
+                },
+            )
+
+            status_code = 200 if result.get("status") == "success" else 400
+            return result, status_code
+        except Exception as e:
+            logger.error(f"Payment initialization error: {e}")
+            return {"error": "Payment processing failed"}, 500
 
     service = PaystackService()
-    result = service.initialize_payment(
-        email=user.email,
-        amount=amount,
-        reference=reference,
-        callback_url=settings.PAYSTACK_CALLBACK_URL,
-        metadata={
-            "invoice_id": invoice_id,
-            "user_id": user.id,
-        },
+    result, status_code, is_cached = service.get_or_create_idempotency_response(
+        user_id=user.id,
+        idempotency_key=idempotency_key,
+        request_data=request_data,
+        response_callback=process_payment,
     )
 
-    return JsonResponse(result, status=200 if result.get("status") == "success" else 400)
+    return JsonResponse(result, status=status_code)
 
 
 # ---------------------------------------------------------------------
@@ -83,30 +105,40 @@ def initialize_payment(request):
 @csrf_exempt
 @require_POST
 def paystack_webhook(request):
+    """Handle Paystack webhook with hardened security."""
     service = PaystackService()
 
     signature = request.headers.get("X-Paystack-Signature", "")
     payload = request.body
 
-    # Verify webhook signature
+    # Verify webhook signature (hardened: use constant-time comparison)
     if not service.verify_webhook_signature(payload, signature):
+        logger.warning("Invalid webhook signature")
         return HttpResponse(status=400)
 
-    event = json.loads(payload.decode("utf-8"))
-    event_id = str(event.get("data", {}).get("id"))
+    try:
+        event = json.loads(payload.decode("utf-8"))
+    except json.JSONDecodeError:
+        logger.error("Invalid webhook payload JSON")
+        return HttpResponse(status=400)
 
+    event_id = str(event.get("data", {}).get("id", ""))
     if not event_id:
+        logger.warning("Missing event ID in webhook")
         return HttpResponse(status=400)
 
-    # Idempotency check
+    # Idempotency check (prevent replay attacks)
     if service.is_webhook_processed(event_id):
+        logger.debug(f"Webhook {event_id} already processed")
         return HttpResponse(status=200)
 
-    reference = event.get("data", {}).get("reference")
+    reference = event.get("data", {}).get("reference", "")
     if not reference:
+        logger.warning("Missing payment reference in webhook")
         return HttpResponse(status=400)
 
     with transaction.atomic():
+        # Mark as processed FIRST to prevent race conditions
         service.mark_webhook_processed(event_id)
 
         try:
@@ -114,25 +146,43 @@ def paystack_webhook(request):
                 reference=reference
             )
         except Payment.DoesNotExist:
+            logger.error(f"Payment not found for reference: {reference}")
             return HttpResponse(status=404)
 
         # Skip already verified payments
         if payment.verified:
+            logger.debug(f"Payment {reference} already verified")
             return HttpResponse(status=200)
 
+        # Verify transaction with Paystack (server-to-server)
         verification = service.verify_transaction(reference)
 
         if not verification.get("verified"):
+            logger.warning(f"Payment verification failed for {reference}")
+            payment.status = Payment.Status.FAILED
+            payment.save(update_fields=["status"])
             return HttpResponse(status=200)
 
-        # Amount validation (anti-tampering)
+        # Amount validation (prevent tampering)
         if verification["amount"] != payment.amount:
+            logger.error(f"Amount mismatch for {reference}: {verification['amount']} != {payment.amount}")
+            payment.status = Payment.Status.FAILED
+            payment.save(update_fields=["status"])
             return HttpResponse(status=400)
 
+        # Currency validation
+        if verification.get("currency", "").upper() != payment.currency.upper():
+            logger.error(f"Currency mismatch for {reference}: {verification.get('currency')} != {payment.currency}")
+            payment.status = Payment.Status.FAILED
+            payment.save(update_fields=["status"])
+            return HttpResponse(status=400)
+
+        # Finalize payment
         finalize_payment_from_verification(
             payment=payment,
             verification=verification,
         )
+        logger.info(f"Payment {reference} verified and finalized")
 
     return HttpResponse(status=200)
 
