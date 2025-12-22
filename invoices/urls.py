@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import views
 from . import payment_settings_views
+from . import settings_views
 
 urlpatterns = [
     path("", views.invoice_list, name="invoice_list"),
@@ -23,7 +24,19 @@ urlpatterns = [
     path("invoice/<int:invoice_id>/email/", views.send_invoice_email, name="send_invoice_email"),
     path("invoice/<int:invoice_id>/whatsapp/", views.whatsapp_share, name="whatsapp_share"),
     path("waitlist/", views.waitlist_subscribe, name="waitlist_subscribe"),
-    path("settings/payments/", views.settings_payments, name="settings_payments"),
+    
+    # Unified Settings Routes
+    path("settings/", settings_views.settings_dashboard, name="settings"),
+    path("settings/profile/", settings_views.settings_profile, name="settings_profile"),
+    path("settings/business/", settings_views.settings_business, name="settings_business"),
+    path("settings/payments/", settings_views.settings_payments, name="settings_payments"),
+    path("settings/security/", settings_views.settings_security, name="settings_security"),
+    path("settings/notifications/", settings_views.settings_notifications, name="settings_notifications"),
+    path("settings/billing/", settings_views.settings_billing, name="settings_billing"),
+    path("settings/sessions/<int:session_id>/revoke/", settings_views.revoke_session, name="revoke_session"),
+    path("settings/sessions/revoke-all/", settings_views.revoke_all_sessions, name="revoke_all_sessions"),
+    
+    # Payment Management Routes
     path("api/verify-bank-account/", payment_settings_views.verify_bank_account, name="verify_bank_account"),
     path("api/list-banks/", payment_settings_views.list_banks, name="api_list_banks"),
     path("payments/settings/", payment_settings_views.payment_settings_dashboard, name="payment_settings"),
@@ -39,6 +52,8 @@ urlpatterns = [
     path("payments/history/", payment_settings_views.payment_history, name="payment_history"),
     path("payments/payouts/", payment_settings_views.payout_history, name="payout_history"),
     path("payments/<int:payment_id>/", payment_settings_views.payment_detail, name="payment_detail"),
+    
+    # Invoice & Payment Routes
     path("invoice/<int:invoice_id>/public/", views.public_invoice, name="public_invoice"),
     path("invoice/<int:invoice_id>/pay/", views.public_payment, name="public_payment"),
     path("payment-callback/", views.payment_callback, name="payment_callback"),
