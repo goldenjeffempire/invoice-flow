@@ -837,54 +837,37 @@ def api_access(request):
 
 
 def about(request):
-    """About Us page - company story and values."""
+    """About Us page."""
     return render(request, "pages/about-light.html")
 
 
 def careers(request):
-    """Careers page with open positions."""
+    """Careers page."""
     return render(request, "pages/careers-light.html")
 
 
 def contact(request):
-    """Contact page with contact form - handles form submission with rate limiting and CAPTCHA."""
-    import logging
-
-    import requests
-    from django.conf import settings
-    from django.core.cache import cache
-    from django.core.mail import send_mail
-
+    """Contact Us page with form handling."""
+    from .models import ContactSubmission
     from .forms import ContactForm
+    from django.conf import settings
+    from django.core.mail import send_mail
+    import logging
+    import requests
+    from django.core.cache import cache
 
     logger = logging.getLogger(__name__)
 
-    # Rate limiting for contact form (5 submissions per hour per IP)
-    client_ip = get_client_ip(request)
-    rate_limit_key = f"contact_form:{client_ip}"
-    
-    # Gracefully handle cache errors (e.g., if cache table doesn't exist)
-    try:
-        submission_count = cache.get(rate_limit_key, 0)
-    except Exception as cache_error:
-        logger.warning(f"Cache error in contact form: {cache_error}")
-        submission_count = 0  # Fail open - allow submission if cache unavailable
-
     if request.method == "POST":
-        # Check rate limit
+        client_ip = get_client_ip(request)
+        rate_limit_key = f"contact_form_limit:{client_ip}"
+        submission_count = cache.get(rate_limit_key, 0)
+
         if submission_count >= 5:
-            messages.error(
-                request,
-                "Too many submissions. Please try again later.",
-            )
-            logger.warning(f"Contact form rate limit exceeded for IP: {client_ip}")
-            return render(
-                request, "pages/contact-light.html", {"form": ContactForm(), "rate_limited": True}
-            )
+            messages.error(request, "Too many submissions. Please try again later.")
+            return render(request, "pages/contact-light.html", {"form": ContactForm(), "rate_limited": True})
 
         form = ContactForm(request.POST)
-
-        # Verify hCaptcha if enabled
         hcaptcha_valid = True
         if getattr(settings, "HCAPTCHA_ENABLED", False):
             hcaptcha_response = request.POST.get("h-captcha-response", "")
@@ -902,14 +885,9 @@ def contact(request):
                         },
                         timeout=10,
                     )
-                    result = verify_response.json()
-                    hcaptcha_valid = result.get("success", False)
-                    if not hcaptcha_valid:
-                        messages.error(request, "CAPTCHA verification failed. Please try again.")
-                        logger.warning(f"hCaptcha verification failed for IP: {client_ip}")
-                except Exception as e:
-                    logger.error(f"hCaptcha verification error: {e}")
-                    hcaptcha_valid = True  # Fail open to not block legitimate users
+                    hcaptcha_valid = verify_response.json().get("success", False)
+                except Exception:
+                    hcaptcha_valid = True
 
         if form.is_valid() and hcaptcha_valid:
             try:
@@ -917,67 +895,21 @@ def contact(request):
                 submission.ip_address = client_ip
                 submission.user_agent = request.META.get("HTTP_USER_AGENT", "")[:500]
                 submission.save()
-
-                full_message = f"""
-New Contact Form Submission
-
-From: {submission.name}
-Email: {submission.email}
-Subject: {submission.get_subject_display()}
-
-Message:
-{submission.message}
-
----
-IP: {submission.ip_address}
-Submitted: {submission.submitted_at}
-"""
-                send_mail(
-                    subject=f"[InvoiceFlow Contact] {submission.get_subject_display()}",
-                    message=full_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=["support@invoiceflow.com.ng"],
-                    fail_silently=True,
-                )
-                messages.success(
-                    request,
-                    "Thank you for your message! We'll get back to you within 24 hours.",
-                )
-                logger.info(f"Contact form submitted by {submission.email}")
-
-                # Increment rate limit counter (gracefully handle cache errors)
-                try:
-                    cache.set(rate_limit_key, submission_count + 1, 3600)  # 1 hour
-                except Exception:
-                    pass  # Cache unavailable - continue without rate limiting
-
+                
+                messages.success(request, "Thank you for your message! We'll get back to you within 24 hours.")
+                cache.set(rate_limit_key, submission_count + 1, 3600)
                 return redirect("contact")
             except Exception as e:
-                logger.error(f"Contact form submission failed: {e}")
-                messages.error(
-                    request,
-                    "Sorry, there was an issue submitting your message. Please try again.",
-                )
-        else:
-            if form.errors:
-                for field, errors in form.errors.items():
-                    for error in errors:
-                        if field != "__all__":
-                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
-                        else:
-                            messages.error(request, error)
+                logger.error(f"Contact form submission error: {e}")
+                messages.error(request, "There was an error sending your message.")
     else:
         form = ContactForm()
 
-    return render(
-        request,
-        "pages/contact-light.html",
-        {
-            "form": form,
-            "hcaptcha_enabled": getattr(settings, "HCAPTCHA_ENABLED", False),
-            "hcaptcha_sitekey": getattr(settings, "HCAPTCHA_SITEKEY", ""),
-        },
-    )
+    return render(request, "pages/contact-light.html", {
+        "form": form,
+        "hcaptcha_enabled": getattr(settings, "HCAPTCHA_ENABLED", False),
+        "hcaptcha_sitekey": getattr(settings, "HCAPTCHA_SITEKEY", ""),
+    })
 
 
 def changelog(request):
