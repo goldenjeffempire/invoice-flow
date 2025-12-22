@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import secrets
-from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
 from django.conf import settings
-from django.db import models, transaction
+from django.db import models
 from django.utils import timezone
 
 
@@ -79,7 +78,7 @@ class ContactSubmission(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.name} - {self.get_subject_display()}"
+        return f"{self.name} – {self.get_subject_display()}"
 
 
 # ============================================================================
@@ -124,7 +123,7 @@ class UserProfile(models.Model):
         return bool(self.paystack_subaccount_code and self.paystack_subaccount_active)
 
     def __str__(self) -> str:
-        return f"{self.user.username} Profile"
+        return f"{self.user} Profile"
 
 
 # ============================================================================
@@ -165,7 +164,7 @@ class InvoiceTemplate(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
-        return f"{self.name}"
+        return self.name
 
 
 # ============================================================================
@@ -176,6 +175,7 @@ class Invoice(models.Model):
     class Status(models.TextChoices):
         UNPAID = "unpaid", "Unpaid"
         PAID = "paid", "Paid"
+        OVERDUE = "overdue", "Overdue"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -183,9 +183,7 @@ class Invoice(models.Model):
         related_name="invoices",
     )
 
-    invoice_id = models.CharField(
-        max_length=20, unique=True, editable=False
-    )
+    invoice_id = models.CharField(max_length=32, unique=True, editable=False)
 
     template = models.ForeignKey(
         InvoiceTemplate,
@@ -219,15 +217,15 @@ class Invoice(models.Model):
         super().save(*args, **kwargs)
 
     def _generate_invoice_id(self) -> str:
-        prefix = "INV"
+        prefix = getattr(self.user.profile, "invoice_prefix", "INV")
         while True:
-            code = f"{prefix}{secrets.token_hex(3).upper()}"
+            code = f"{prefix}-{secrets.token_hex(4).upper()}"
             if not Invoice.objects.filter(invoice_id=code).exists():
                 return code
 
     @property
     def subtotal(self) -> Decimal:
-        return sum((i.total for i in self.line_items.all()), Decimal("0"))
+        return sum((item.total for item in self.line_items.all()), Decimal("0"))
 
     @property
     def tax_amount(self) -> Decimal:
@@ -263,7 +261,7 @@ class LineItem(models.Model):
 
 
 # ============================================================================
-# PAYMENTS
+# PAYMENTS (SINGLE SOURCE OF TRUTH)
 # ============================================================================
 
 class Payment(models.Model):
@@ -272,6 +270,8 @@ class Payment(models.Model):
         SUCCESS = "success", "Success"
         FAILED = "failed", "Failed"
         REFUNDED = "refunded", "Refunded"
+
+    id = models.UUIDField(primary_key=True, default=secrets.token_hex, editable=False)
 
     invoice = models.ForeignKey(
         Invoice, on_delete=models.CASCADE, related_name="payments"
@@ -282,7 +282,7 @@ class Payment(models.Model):
         related_name="payments",
     )
 
-    reference = models.CharField(max_length=100, unique=True)
+    reference = models.CharField(max_length=255, unique=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3, default="NGN")
 
@@ -290,8 +290,10 @@ class Payment(models.Model):
         max_length=20, choices=Status.choices, default=Status.PENDING
     )
 
+    verified = models.BooleanField(default=False)
     paid_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -309,7 +311,16 @@ class Payment(models.Model):
 
 
 # ============================================================================
-# EMAIL VERIFICATION TOKEN (FINAL, SINGLE SOURCE)
+# PROCESSED PAYSTACK WEBHOOKS
+# ============================================================================
+
+class ProcessedWebhook(models.Model):
+    event_id = models.CharField(max_length=255, unique=True)
+    processed_at = models.DateTimeField(auto_now_add=True)
+
+
+# ============================================================================
+# EMAIL VERIFICATION TOKEN
 # ============================================================================
 
 class EmailVerificationToken(models.Model):
@@ -325,10 +336,9 @@ class EmailVerificationToken(models.Model):
     )
 
     token = models.CharField(max_length=64, unique=True, db_index=True)
-    token_type = models.CharField(
-        max_length=20, choices=TokenType.choices
-    )
+    token_type = models.CharField(max_length=20, choices=TokenType.choices)
     email = models.EmailField()
+
     is_used = models.BooleanField(default=False)
     expires_at = models.DateTimeField()
 
