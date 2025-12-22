@@ -15,7 +15,7 @@ handler500 = "invoices.views.custom_500"
 
 urlpatterns = [
     # REST API v1 (versioned endpoints)
-    path("api/", include("invoices.api.urls")),
+    path("api/v1/", include("invoices.api.urls")),
     # Cookie Consent & GDPR Compliance
     path("api/consent/set/", cookie_consent.set_cookie_consent, name="set_cookie_consent"),
     path("api/consent/get/", cookie_consent.get_cookie_consent, name="get_cookie_consent"),
