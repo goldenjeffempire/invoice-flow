@@ -550,14 +550,12 @@ The InvoiceFlow Team"""
             return f"Error encountered: {str(error)}\n(Unable to parse details: {str(parse_error)})"
 
     def _generate_invoice_pdf(self, invoice):
-        """Generate PDF for attachment."""
+        """Generate PDF bytes for invoice using PDFService."""
         try:
-            pdf_html_string = render_to_string("invoices/invoice_pdf.html", {"invoice": invoice})
-            font_config = FontConfiguration()
-            html = HTML(string=pdf_html_string)
-            return html.write_pdf(font_config=font_config)
+            from .services import PDFService
+            return PDFService.generate_pdf_bytes(invoice)
         except Exception as e:
-            logger.error(f"Error generating PDF: {str(e)}")
+            logger.error(f"Failed to generate PDF for email attachment: {e}")
             return None
 
     def _format_plain_text(self, data):
