@@ -6,7 +6,7 @@ from django.contrib.sitemaps.views import sitemap as sitemap_view
 from django.urls import include, path
 
 from invoiceflow import cookie_consent, gdpr, mfa
-from invoices import paystack_views, views, admin_views
+from invoices import paystack_views, views, admin_views, settings_views
 from invoices.health import detailed_health, health_check, liveness_check, readiness_check
 from invoices.sitemap import sitemaps
 
@@ -62,13 +62,6 @@ urlpatterns = [
     path("reset-password/<str:token>/", views.reset_password, name="reset_password"),
     # Dashboard
     path("dashboard/", views.dashboard, name="dashboard"),
-    # Settings pages
-    path("settings/", views.settings_view, name="settings"),
-    path("settings/profile/", views.settings_profile, name="settings_profile"),
-    path("settings/business/", views.settings_business, name="settings_business"),
-    path("settings/security/", views.settings_security, name="settings_security"),
-    path("settings/notifications/", views.settings_notifications, name="settings_notifications"),
-    path("settings/billing/", views.settings_billing, name="settings_billing"),
     # Design System (Phase 1)
     path("components-showcase/", views.components_showcase, name="components_showcase"),
     # Footer pages
@@ -92,7 +85,6 @@ urlpatterns = [
     path("newsletter/signup/", views.newsletter_signup, name="newsletter_signup"),
     path("newsletter/subscribe/", views.newsletter_signup, name="newsletter_subscribe"),
     # User features
-    path("profile/", views.profile, name="profile"),
     path("my-templates/", views.invoice_templates, name="invoice_templates"),
     path("my-templates/<int:template_id>/delete/", views.delete_template, name="delete_template"),
     path("recurring/", views.recurring_invoices, name="recurring_invoices"),
@@ -113,7 +105,9 @@ urlpatterns = [
     path("pay/<int:invoice_id>/", paystack_views.public_invoice_view, name="public_invoice"),
     path("pay/<int:invoice_id>/checkout/", paystack_views.public_initiate_payment, name="public_payment"),
     path("pay/<int:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
-    # Invoices (all invoice routes)
+    # User Profile - redirect to settings
+    path("profile/", settings_views.profile, name="profile"),
+    # Invoices (all invoice routes including settings, payments)
     path("invoices/", include("invoices.urls")),
 ]
 

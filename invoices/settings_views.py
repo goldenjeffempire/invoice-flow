@@ -187,3 +187,9 @@ def revoke_all_sessions(request):
     
     messages.success(request, "All other sessions have been revoked.")
     return redirect("settings_security")
+
+
+@login_required
+def profile(request):
+    """User profile management - redirects to settings profile."""
+    return redirect("settings_profile")
