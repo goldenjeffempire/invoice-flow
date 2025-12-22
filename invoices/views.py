@@ -1312,6 +1312,7 @@ def settings_business(request):
 def settings_security(request):
     """Security & Password settings page with rate limiting on password changes."""
     from django.contrib.auth import update_session_auth_hash
+    from django.contrib.auth.forms import PasswordChangeForm
     from django.contrib.auth.hashers import check_password
     from django.core.cache import cache
 
@@ -2071,21 +2072,21 @@ def payment_webhook(request):
     import hmac
     
     if request.method != "POST":
-        return HttpResponse("Method not allowed", status=405)
+        return HttpResponse(b"Method not allowed", status=405)
     
     # Verify webhook signature
     paystack_signature = request.META.get("HTTP_X_PAYSTACK_SIGNATURE", "")
     secret_key = os.environ.get("PAYSTACK_SECRET_KEY", "")
     
     if not paystack_signature or not secret_key:
-        return HttpResponse("Unauthorized", status=401)
+        return HttpResponse(b"Unauthorized", status=401)
     
     body = request.body
     hash_obj = hmac.new(secret_key.encode(), body, hashlib.sha512)
     computed_signature = hash_obj.hexdigest()
     
     if computed_signature != paystack_signature:
-        return HttpResponse("Unauthorized", status=401)
+        return HttpResponse(b"Unauthorized", status=401)
     
     try:
         data = json.loads(body)
@@ -2106,6 +2107,6 @@ def payment_webhook(request):
             except Payment.DoesNotExist:
                 pass
         
-        return HttpResponse("OK", status=200)
+        return HttpResponse(b"OK", status=200)
     except json.JSONDecodeError:
-        return HttpResponse("Invalid JSON", status=400)
+        return HttpResponse(b"Invalid JSON", status=400)
