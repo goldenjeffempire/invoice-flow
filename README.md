@@ -1,12 +1,13 @@
-# InvoiceFlow - Professional Invoice Platform
+# InvoiceFlow - Professional Invoicing Platform
 
-> Create stunning, professional invoices in seconds. Send via email or WhatsApp. Get paid faster.
+> Create stunning professional invoices in seconds and get paid 3x faster.
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-green)
-![Django](https://img.shields.io/badge/Django-5.2.8%20LTS-darkgreen)
+![Django](https://img.shields.io/badge/Django-5.2.9-darkgreen)
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-success)
-![Performance](https://img.shields.io/badge/Bundle%20Size--50%25-brightgreen)
+![Tests](https://img.shields.io/badge/Tests-57%2F57%20Passing-brightgreen)
+![Coverage](https://img.shields.io/badge/Coverage-~85%25-brightgreen)
 
 ---
 
