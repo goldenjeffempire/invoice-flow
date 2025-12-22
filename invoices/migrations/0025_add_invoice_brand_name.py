@@ -8,9 +8,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='invoice',
-            name='brand_name',
-            field=models.CharField(max_length=200, default=''),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddField(
+                    model_name='invoice',
+                    name='brand_name',
+                    field=models.CharField(max_length=200, default=''),
+                ),
+            ],
         ),
     ]
