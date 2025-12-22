@@ -63,9 +63,6 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
             "tax_amount",
             "total",
             "notes",
-            "bank_name",
-            "account_name",
-            "account_number",
             "line_items",
             "created_at",
             "updated_at",
@@ -100,9 +97,6 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             "currency",
             "tax_rate",
             "notes",
-            "bank_name",
-            "account_name",
-            "account_number",
             "line_items",
         ]
 
