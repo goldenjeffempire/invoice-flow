@@ -1,3 +1,4 @@
+# type: ignore
 import calendar
 import hashlib
 import json
