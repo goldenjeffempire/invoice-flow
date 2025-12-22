@@ -581,7 +581,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const revenueCtx = document.getElementById('revenueChart');
     if (revenueCtx) {
-        const revenueData = {{ revenue_chart_data|safe|default:'{"labels": [], "data": []}' }};
+        const revenueData = JSON.parse('{{ revenue_chart_data_json|safe|default:"{\"labels\": [], \"data\": []}" }}');
         
         new Chart(revenueCtx, {
             type: 'line',
@@ -651,9 +651,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const statusCtx = document.getElementById('statusChart');
     if (statusCtx) {
-        const paidCount = {{ paid_invoices|default:0 }};
-        const unpaidCount = {{ unpaid_invoices|default:0 }};
-        const overdueCount = {{ overdue_invoices|default:0 }};
+        const paidCount = parseInt('{{ paid_invoices|default:0 }}');
+        const unpaidCount = parseInt('{{ unpaid_invoices|default:0 }}');
+        const overdueCount = parseInt('{{ overdue_invoices|default:0 }}');
         const total = paidCount + unpaidCount + overdueCount;
         
         new Chart(statusCtx, {
