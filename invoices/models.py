@@ -973,3 +973,97 @@ class UserIdentityVerification(models.Model):
 
     def __str__(self) -> str:
         return f"Identity Verification {self.user.email} ({self.status})"
+
+
+# ============================================================================
+# USER SETTINGS (PERSISTENT, AUDITED)
+# ============================================================================
+
+class UserSettings(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="settings_audit",
+    )
+
+    allow_marketing_emails = models.BooleanField(default=False)
+    allow_security_alerts = models.BooleanField(default=True)
+    invoice_reminders_enabled = models.BooleanField(default=True)
+    payment_notifications_enabled = models.BooleanField(default=True)
+    
+    two_factor_enabled = models.BooleanField(default=False)
+    two_factor_method = models.CharField(
+        max_length=20,
+        choices=[("totp", "TOTP"), ("email", "Email")],
+        default="totp",
+        blank=True,
+    )
+    
+    preferred_language = models.CharField(max_length=10, default="en")
+    preferred_timezone = models.CharField(max_length=63, default="UTC")
+    
+    theme_preference = models.CharField(
+        max_length=20,
+        choices=[("light", "Light"), ("dark", "Dark"), ("auto", "Auto")],
+        default="auto",
+    )
+    
+    data_retention_days = models.PositiveIntegerField(default=365)
+    auto_export_enabled = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "User Settings"
+        verbose_name_plural = "User Settings"
+        indexes = [
+            models.Index(fields=["user", "updated_at"]),
+        ]
+    
+    def __str__(self) -> str:
+        return f"Settings for {self.user.username}"
+    
+    def validate_settings(self) -> dict:
+        errors = {}
+        if self.data_retention_days < 30:
+            errors["data_retention_days"] = "Minimum 30 days required"
+        if self.preferred_timezone not in ["UTC", "Africa/Lagos", "Europe/London", "America/New_York"]:
+            try:
+                import pytz
+                pytz.timezone(self.preferred_timezone)
+            except pytz.exceptions.UnknownTimeZoneError:
+                errors["preferred_timezone"] = "Invalid timezone"
+        return errors
+
+
+class UserSettingsAuditLog(models.Model):
+    class Action(models.TextChoices):
+        CREATED = "created", "Created"
+        UPDATED = "updated", "Updated"
+        DELETED = "deleted", "Deleted"
+        ACCESSED = "accessed", "Accessed"
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="settings_audit_logs",
+    )
+    action = models.CharField(max_length=20, choices=Action.choices)
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(blank=True, null=True)
+    new_value = models.TextField(blank=True, null=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["action", "-created_at"]),
+        ]
+    
+    def __str__(self) -> str:
+        return f"{self.user.username} - {self.action} on {self.created_at}"

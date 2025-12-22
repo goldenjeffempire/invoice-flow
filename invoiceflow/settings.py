@@ -78,11 +78,13 @@ if os.getenv("CSRF_TRUSTED_ORIGINS"):
     ]
 
 # =============================================================================
-# SECURITY HEADERS
+# SECURITY HEADERS (HARDENED)
 # =============================================================================
 SECURE_SSL_REDIRECT = IS_PRODUCTION
-SESSION_COOKIE_SECURE = IS_PRODUCTION
-CSRF_COOKIE_SECURE = IS_PRODUCTION
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
 
 SECURE_HSTS_SECONDS = 31536000 if IS_PRODUCTION else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = IS_PRODUCTION
@@ -92,7 +94,19 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-X_FRAME_OPTIONS = "DENY" if IS_PRODUCTION else "SAMEORIGIN"
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+PERMISSIONS_POLICY = {
+    "accelerometer": "():",
+    "camera": "():",
+    "geolocation": "():",
+    "gyroscope": "():",
+    "magnetometer": "():",
+    "microphone": "():",
+    "payment": "():",
+    "usb": "():",
+}
 
 # =============================================================================
 # INSTALLED APPS
