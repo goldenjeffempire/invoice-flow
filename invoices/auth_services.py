@@ -179,7 +179,7 @@ class AuthenticationService:
 
         # Track new session
         try:
-            UserSession.create_session(
+            UserSession.objects.create(
                 user=user,
                 session_key=request.session.session_key or "",
                 ip_address=client_ip,
@@ -458,8 +458,8 @@ class MFAService:
         hashed_codes = [hashlib.sha256(code.encode()).hexdigest() for code in recovery_codes]
 
         mfa_profile, _ = MFAProfile.objects.get_or_create(user=user)
-        mfa_profile.secret_key = secret
-        mfa_profile.recovery_codes = hashed_codes
+        mfa_profile.secret = secret
+        mfa_profile.backup_codes = hashed_codes
         mfa_profile.save()
 
         return secret, qr_uri, recovery_codes
@@ -474,13 +474,13 @@ class MFAService:
         except MFAProfile.DoesNotExist:
             return False, "MFA is not set up for this account."
 
-        if not mfa_profile.secret_key:
+        if not mfa_profile.secret:
             return False, "MFA is not properly configured."
 
-        totp = pyotp.TOTP(mfa_profile.secret_key)
+        totp = pyotp.TOTP(mfa_profile.secret)
         if totp.verify(code, valid_window=1):
             mfa_profile.last_used = timezone.now()
-            mfa_profile.save(update_fields=["last_used"])
+            mfa_profile.save()
             return True, ""
 
         return False, "Invalid verification code."
@@ -495,10 +495,10 @@ class MFAService:
 
         code_hash = hashlib.sha256(code.upper().encode()).hexdigest()
 
-        if code_hash in mfa_profile.recovery_codes:
-            mfa_profile.recovery_codes.remove(code_hash)
+        if code_hash in mfa_profile.backup_codes:
+            mfa_profile.backup_codes.remove(code_hash)
             mfa_profile.last_used = timezone.now()
-            mfa_profile.save(update_fields=["recovery_codes", "last_used"])
+            mfa_profile.save()
             return True, ""
 
         return False, "Invalid recovery code."

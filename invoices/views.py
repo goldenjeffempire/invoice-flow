@@ -1384,14 +1384,13 @@ def settings_security(request):
     from django.contrib.auth.hashers import check_password
     from django.core.cache import cache
 
-    from .forms import PasswordChangeForm
-    from .middleware import RequestResponseLoggingMiddleware
+    from .auth_services import AuthenticationService
 
     message = None
     message_type = None
 
     if request.method == "POST":
-        client_ip = RequestResponseLoggingMiddleware.get_client_ip(request)
+        client_ip = AuthenticationService.get_client_ip(request)
         cache_key = f"password_change_attempt:{client_ip}:{request.user.id}"
         attempt_count = cache.get(cache_key, 0)
 
