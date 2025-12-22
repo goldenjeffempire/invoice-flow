@@ -1734,3 +1734,239 @@ def payment_webhook(request):
         return HttpResponse(b"OK", status=200)
     except json.JSONDecodeError:
         return HttpResponse(b"Invalid JSON", status=400)
+
+
+# ============================================================================
+# PROFILE & DASHBOARD
+# ============================================================================
+
+@login_required
+def profile_page(request):
+    """Display user profile page."""
+    user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    return render(request, "pages/profile-light.html", {"profile": user_profile})
+
+
+@login_required
+def profile_update(request):
+    """Update user profile."""
+    if request.method == "POST":
+        first_name = request.POST.get("first_name", "")
+        last_name = request.POST.get("last_name", "")
+        email = request.POST.get("email", "")
+        
+        request.user.first_name = first_name
+        request.user.last_name = last_name
+        request.user.email = email
+        request.user.save()
+        
+        messages.success(request, "Profile updated successfully!")
+        return redirect("profile")
+    
+    return redirect("profile")
+
+
+# ============================================================================
+# PAYSTACK SETUP
+# ============================================================================
+
+@login_required
+def paystack_setup(request):
+    """Configure Paystack payment settings."""
+    user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    paystack_configured = bool(user_profile.paystack_subaccount_code)
+    
+    if request.method == "POST":
+        user_profile.paystack_public_key = request.POST.get("paystack_public_key", "")
+        user_profile.paystack_subaccount_active = request.POST.get("enable_paystack") == "on"
+        user_profile.save()
+        
+        messages.success(request, "Paystack settings updated!")
+        return redirect("paystack_setup")
+    
+    return render(request, "invoices/paystack_payment_setup.html", {
+        "paystack_configured": paystack_configured,
+        "paystack_email": user_profile.business_email or user_profile.user.email,
+    })
+
+
+# ============================================================================
+# MFA (Two-Factor Authentication)
+# ============================================================================
+
+@login_required
+def mfa_setup(request):
+    """Setup two-factor authentication with TOTP."""
+    try:
+        mfa_profile = MFAProfile.objects.get(user=request.user)
+    except MFAProfile.DoesNotExist:
+        mfa_profile = MFAProfile.objects.create(user=request.user)
+    
+    if request.method == "POST":
+        totp_code = request.POST.get("totp_code", "").strip()
+        if totp_code:
+            import pyotp
+            if mfa_profile.secret:
+                totp = pyotp.TOTP(mfa_profile.secret)
+                if totp.verify(totp_code):
+                    mfa_profile.is_enabled = True
+                    mfa_profile.save()
+                    messages.success(request, "Two-factor authentication enabled!")
+                    return redirect("settings_security")
+                else:
+                    messages.error(request, "Invalid authentication code. Please try again.")
+    
+    # Generate QR code if not already done
+    if not mfa_profile.secret:
+        import pyotp
+        mfa_profile.secret = pyotp.random_base32()
+        mfa_profile.save()
+    
+    import pyotp
+    totp = pyotp.TOTP(mfa_profile.secret)
+    qr_code_url = totp.provisioning_uri(name=request.user.email, issuer_name="InvoiceFlow")
+    
+    return render(request, "auth/mfa_setup.html", {
+        "qr_code_url": qr_code_url,
+        "secret": mfa_profile.secret,
+        "is_enabled": mfa_profile.is_enabled,
+    })
+
+
+@login_required
+def mfa_verify(request):
+    """Verify MFA code during login."""
+    try:
+        mfa_profile = MFAProfile.objects.get(user=request.user)
+    except MFAProfile.DoesNotExist:
+        return redirect("login")
+    
+    if request.method == "POST":
+        totp_code = request.POST.get("totp_code", "").strip()
+        import pyotp
+        totp = pyotp.TOTP(mfa_profile.secret)
+        
+        if totp.verify(totp_code):
+            request.session["mfa_verified"] = True
+            messages.success(request, "MFA verification successful!")
+            return redirect("dashboard")
+        else:
+            messages.error(request, "Invalid authentication code.")
+    
+    return render(request, "auth/mfa_verify.html")
+
+
+@login_required
+def mfa_disable(request):
+    """Disable two-factor authentication."""
+    if request.method == "POST":
+        password = request.POST.get("password", "")
+        if request.user.check_password(password):
+            try:
+                mfa_profile = MFAProfile.objects.get(user=request.user)
+                mfa_profile.is_enabled = False
+                mfa_profile.secret = ""
+                mfa_profile.save()
+                messages.success(request, "Two-factor authentication disabled.")
+            except MFAProfile.DoesNotExist:
+                pass
+            return redirect("settings_security")
+        else:
+            messages.error(request, "Invalid password.")
+    
+    return render(request, "auth/mfa_setup.html", {"is_enabled": True})
+
+
+@login_required
+def mfa_backup_codes(request):
+    """Generate backup codes for MFA."""
+    try:
+        mfa_profile = MFAProfile.objects.get(user=request.user)
+    except MFAProfile.DoesNotExist:
+        mfa_profile = MFAProfile.objects.create(user=request.user)
+    
+    if request.method == "POST":
+        import secrets
+        backup_codes = [secrets.token_hex(4) for _ in range(10)]
+        mfa_profile.backup_codes = backup_codes
+        mfa_profile.save()
+        
+        return render(request, "auth/backup_codes.html", {
+            "backup_codes": backup_codes,
+        })
+    
+    return render(request, "auth/mfa_setup.html", {"is_enabled": mfa_profile.is_enabled})
+
+
+# ============================================================================
+# RECURRING INVOICES
+# ============================================================================
+
+@login_required
+def recurring_invoices_list(request):
+    """Display list of recurring invoices."""
+    recurring = RecurringInvoice.objects.filter(user=request.user).order_by("-created_at")
+    
+    return render(request, "invoices/recurring.html", {
+        "recurring_invoices": recurring,
+    })
+
+
+@login_required
+def create_recurring_invoice(request):
+    """Create a new recurring invoice."""
+    if request.method == "POST":
+        form = RecurringInvoiceForm(request.POST, user=request.user)
+        if form.is_valid():
+            recurring = form.save(commit=False)
+            recurring.user = request.user
+            recurring.save()
+            messages.success(request, "Recurring invoice created!")
+            return redirect("recurring_invoices")
+    else:
+        form = RecurringInvoiceForm(user=request.user)
+    
+    return render(request, "invoices/recurring.html", {"form": form})
+
+
+@login_required
+def edit_recurring_invoice(request, recurring_id):
+    """Edit a recurring invoice."""
+    recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
+    
+    if request.method == "POST":
+        form = RecurringInvoiceForm(request.POST, instance=recurring, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Recurring invoice updated!")
+            return redirect("recurring_invoices")
+    else:
+        form = RecurringInvoiceForm(instance=recurring, user=request.user)
+    
+    return render(request, "invoices/recurring.html", {"form": form, "recurring": recurring})
+
+
+@login_required
+def delete_recurring_invoice(request, recurring_id):
+    """Delete a recurring invoice."""
+    recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
+    
+    if request.method == "POST":
+        recurring.delete()
+        messages.success(request, "Recurring invoice deleted!")
+    
+    return redirect("recurring_invoices")
+
+
+@login_required
+def pause_recurring_invoice(request, recurring_id):
+    """Pause a recurring invoice."""
+    recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
+    
+    recurring.is_active = not recurring.is_active
+    recurring.save()
+    
+    status = "paused" if not recurring.is_active else "resumed"
+    messages.success(request, f"Recurring invoice {status}!")
+    
+    return redirect("recurring_invoices")

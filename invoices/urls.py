@@ -83,4 +83,29 @@ urlpatterns = [
     path("payments/history/", payment_settings_views.payment_history, name="payment_history"),
     path("payments/payouts/", payment_settings_views.payout_history, name="payout_history"),
     path("payments/<int:payment_id>/", payment_settings_views.payment_detail, name="payment_detail"),
+    
+    # ------------------------------------------------------------------
+    # DASHBOARD & PROFILE
+    # ------------------------------------------------------------------
+    path("dashboard/", views.dashboard, name="dashboard"),
+    path("profile/", views.profile_page, name="profile"),
+    path("profile/update/", views.profile_update, name="profile_update"),
+    path("paystack-setup/", views.paystack_setup, name="paystack_setup"),
+    
+    # ------------------------------------------------------------------
+    # MFA
+    # ------------------------------------------------------------------
+    path("mfa/setup/", views.mfa_setup, name="mfa_setup"),
+    path("mfa/verify/", views.mfa_verify, name="mfa_verify"),
+    path("mfa/disable/", views.mfa_disable, name="mfa_disable"),
+    path("mfa/backup-codes/", views.mfa_backup_codes, name="mfa_backup_codes"),
+    
+    # ------------------------------------------------------------------
+    # RECURRING INVOICES
+    # ------------------------------------------------------------------
+    path("recurring/", views.recurring_invoices_list, name="recurring_invoices"),
+    path("recurring/create/", views.create_recurring_invoice, name="create_recurring"),
+    path("recurring/<int:recurring_id>/edit/", views.edit_recurring_invoice, name="edit_recurring"),
+    path("recurring/<int:recurring_id>/delete/", views.delete_recurring_invoice, name="delete_recurring"),
+    path("recurring/<int:recurring_id>/pause/", views.pause_recurring_invoice, name="pause_recurring"),
 ]
