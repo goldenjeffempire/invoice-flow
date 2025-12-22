@@ -1,0 +1,384 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Settings - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+  <div class="page-header">
+    <h1>Account Settings</h1>
+    <p class="subtitle">Manage your account, security, and preferences</p>
+  </div>
+
+  <div class="settings-layout">
+    <!-- Sidebar Navigation -->
+    <div class="settings-sidebar">
+      <nav class="settings-nav">
+        <a href="#profile" class="nav-item active" data-section="profile">
+          <span class="icon">👤</span> Profile
+        </a>
+        <a href="#security" class="nav-item" data-section="security">
+          <span class="icon">🔒</span> Security
+        </a>
+        <a href="#business" class="nav-item" data-section="business">
+          <span class="icon">🏢</span> Business
+        </a>
+        <a href="#billing" class="nav-item" data-section="billing">
+          <span class="icon">💳</span> Billing
+        </a>
+        <a href="#notifications" class="nav-item" data-section="notifications">
+          <span class="icon">🔔</span> Notifications
+        </a>
+        <a href="#payments" class="nav-item" data-section="payments">
+          <span class="icon">💰</span> Payments
+        </a>
+      </nav>
+    </div>
+
+    <!-- Settings Content -->
+    <div class="settings-content">
+      <!-- Profile Section -->
+      <section id="profile" class="settings-section active">
+        <h2>Profile Settings</h2>
+        <form method="post" action="{% url 'profile_update' %}" class="settings-form">
+          {% csrf_token %}
+          
+          <div class="form-group">
+            <label for="first_name">First Name</label>
+            <input type="text" id="first_name" name="first_name" value="{{ user.first_name }}" class="input-field">
+          </div>
+
+          <div class="form-group">
+            <label for="last_name">Last Name</label>
+            <input type="text" id="last_name" name="last_name" value="{{ user.last_name }}" class="input-field">
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" value="{{ user.email }}" class="input-field">
+            {% if profile.email_verified %}
+              <span class="badge badge-success">✓ Verified</span>
+            {% else %}
+              <span class="badge badge-warning">Unverified</span>
+            {% endif %}
+          </div>
+
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+      </section>
+
+      <!-- Security Section -->
+      <section id="security" class="settings-section">
+        <h2>Security Settings</h2>
+        
+        <div class="security-card">
+          <h3>Two-Factor Authentication (2FA)</h3>
+          {% if user.mfa_profile.is_enabled %}
+            <p class="text-success">✓ 2FA is enabled</p>
+            <p>Last used: {{ user.mfa_profile.last_used|date:"M d, Y H:i" }}</p>
+            <a href="{% url 'mfa_backup_codes' %}" class="btn btn-secondary btn-sm">Generate Backup Codes</a>
+            <a href="{% url 'mfa_disable' %}" class="btn btn-danger btn-sm">Disable 2FA</a>
+          {% else %}
+            <p class="text-warning">2FA is not enabled</p>
+            <a href="{% url 'mfa_setup' %}" class="btn btn-primary">Enable 2FA</a>
+          {% endif %}
+        </div>
+
+        <div class="security-card">
+          <h3>Change Password</h3>
+          <a href="{% url 'password_change' %}" class="btn btn-secondary">Change Password</a>
+        </div>
+
+        <div class="security-card">
+          <h3>Active Sessions</h3>
+          <p>{{ user.user_sessions.count }} active session(s)</p>
+          <a href="{% url 'revoke_all_sessions' %}" class="btn btn-warning">Revoke All Sessions</a>
+        </div>
+      </section>
+
+      <!-- Business Section -->
+      <section id="business" class="settings-section">
+        <h2>Business Information</h2>
+        <form method="post" action="{% url 'settings_business' %}" class="settings-form">
+          {% csrf_token %}
+          
+          <div class="form-group">
+            <label for="company_name">Company Name</label>
+            <input type="text" id="company_name" name="company_name" value="{{ profile.company_name }}" class="input-field">
+          </div>
+
+          <div class="form-group">
+            <label for="business_email">Business Email</label>
+            <input type="email" id="business_email" name="business_email" value="{{ profile.business_email }}" class="input-field">
+          </div>
+
+          <div class="form-group">
+            <label for="business_phone">Business Phone</label>
+            <input type="tel" id="business_phone" name="business_phone" value="{{ profile.business_phone }}" class="input-field">
+          </div>
+
+          <div class="form-group">
+            <label for="business_address">Business Address</label>
+            <textarea id="business_address" name="business_address" class="input-field">{{ profile.business_address }}</textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+      </section>
+
+      <!-- Billing Section -->
+      <section id="billing" class="settings-section">
+        <h2>Billing & Invoicing</h2>
+        <form method="post" action="{% url 'settings_payments' %}" class="settings-form">
+          {% csrf_token %}
+          
+          <div class="form-group">
+            <label for="default_currency">Default Currency</label>
+            <select id="default_currency" name="default_currency" class="input-field">
+              <option value="USD" {% if profile.default_currency == 'USD' %}selected{% endif %}>USD</option>
+              <option value="EUR" {% if profile.default_currency == 'EUR' %}selected{% endif %}>EUR</option>
+              <option value="GBP" {% if profile.default_currency == 'GBP' %}selected{% endif %}>GBP</option>
+              <option value="NGN" {% if profile.default_currency == 'NGN' %}selected{% endif %}>NGN</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="default_tax_rate">Default Tax Rate (%)</label>
+            <input type="number" id="default_tax_rate" name="default_tax_rate" value="{{ profile.default_tax_rate }}" step="0.01" class="input-field">
+          </div>
+
+          <div class="form-group">
+            <label for="invoice_prefix">Invoice ID Prefix</label>
+            <input type="text" id="invoice_prefix" name="invoice_prefix" value="{{ profile.invoice_prefix }}" class="input-field">
+          </div>
+
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+      </section>
+
+      <!-- Notifications Section -->
+      <section id="notifications" class="settings-section">
+        <h2>Notification Preferences</h2>
+        <form method="post" action="{% url 'settings_notifications' %}" class="settings-form">
+          {% csrf_token %}
+          
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="notify_invoice_created" {% if profile.notify_invoice_created %}checked{% endif %}>
+              <span>Invoice Created</span>
+            </label>
+            <p class="help-text">Get notified when you create a new invoice</p>
+          </div>
+
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="notify_payment_received" {% if profile.notify_payment_received %}checked{% endif %}>
+              <span>Payment Received</span>
+            </label>
+            <p class="help-text">Get notified when a payment is received</p>
+          </div>
+
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="notify_security_alerts" {% if profile.notify_security_alerts %}checked{% endif %}>
+              <span>Security Alerts</span>
+            </label>
+            <p class="help-text">Get notified about account security events</p>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+      </section>
+
+      <!-- Payments Section -->
+      <section id="payments" class="settings-section">
+        <h2>Payment Configuration</h2>
+        <div class="payment-info">
+          <p>Configure how you receive payments from clients.</p>
+          <a href="{% url 'payment_settings' %}" class="btn btn-primary">Configure Payments</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<style>
+  .settings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .settings-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 2rem;
+    margin-top: 2rem;
+  }
+
+  .settings-sidebar {
+    position: sticky;
+    top: 80px;
+    height: fit-content;
+  }
+
+  .settings-nav {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    color: #666;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .nav-item:hover,
+  .nav-item.active {
+    background: #f5f5f5;
+    color: #4f46e5;
+    border-left-color: #4f46e5;
+  }
+
+  .nav-item .icon {
+    font-size: 1.25rem;
+  }
+
+  .settings-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .settings-section {
+    padding: 2rem;
+    display: none;
+  }
+
+  .settings-section.active {
+    display: block;
+  }
+
+  .settings-section h2 {
+    margin-bottom: 1.5rem;
+    color: #111;
+  }
+
+  .security-card {
+    background: #f5f5f5;
+    padding: 1.5rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .security-card h3 {
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
+  .checkbox-group {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f5f5f5;
+    border-radius: 6px;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+  }
+
+  .checkbox-label input {
+    cursor: pointer;
+  }
+
+  .help-text {
+    font-size: 0.875rem;
+    color: #666;
+    margin: 0;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-left: 1rem;
+  }
+
+  .badge-success {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .badge-warning {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  @media (max-width: 768px) {
+    .settings-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .settings-sidebar {
+      position: static;
+    }
+
+    .settings-nav {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      flex-direction: column;
+      padding: 0.75rem;
+      border-left: none;
+      border-bottom: 3px solid transparent;
+      justify-content: center;
+    }
+
+    .nav-item.active {
+      border-left: none;
+      border-bottom-color: #4f46e5;
+    }
+  }
+</style>
+
+<script>
+  // Settings section navigation
+  document.querySelectorAll('.nav-item').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const section = link.dataset.section;
+      
+      // Update active nav
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      link.classList.add('active');
+      
+      // Update active section
+      document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+      document.getElementById(section).classList.add('active');
+    });
+  });
+</script>
+{% endblock %}

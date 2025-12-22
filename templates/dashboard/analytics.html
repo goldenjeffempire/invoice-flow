@@ -1,0 +1,206 @@
+{% extends "base/base.html" %}
+{% load static %}
+
+{% block title %}Analytics & Reports - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="page-header">
+    <h1>Analytics & Reports</h1>
+    <p class="subtitle">Monitor your invoicing performance and revenue trends</p>
+  </div>
+
+  <div class="analytics-grid">
+    <!-- Key Metrics -->
+    <div class="metrics-section">
+      <div class="metric-card">
+        <div class="metric-icon">💰</div>
+        <div class="metric-content">
+          <div class="metric-label">Total Revenue</div>
+          <div class="metric-value">{{ total_revenue|floatformat:2 }}</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">📊</div>
+        <div class="metric-content">
+          <div class="metric-label">Total Invoices</div>
+          <div class="metric-value">{{ total_invoices }}</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">✅</div>
+        <div class="metric-content">
+          <div class="metric-label">Paid Invoices</div>
+          <div class="metric-value">{{ paid_count }}</div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon">⏳</div>
+        <div class="metric-content">
+          <div class="metric-label">Pending Invoices</div>
+          <div class="metric-value">{{ unpaid_count }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue Chart -->
+    <div class="chart-section">
+      <div class="chart-container">
+        <h2>Revenue Trend (Last 6 Months)</h2>
+        <canvas id="revenueChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="activity-section">
+      <h2>Recent Invoice Activity</h2>
+      <div class="activity-list">
+        {% for activity in recent_activity %}
+          <div class="activity-item">
+            <div class="activity-info">
+              <div class="activity-title">{{ activity.invoice_id }}</div>
+              <div class="activity-client">{{ activity.client_name }}</div>
+            </div>
+            <div class="activity-status status-{{ activity.status }}">
+              {{ activity.get_status_display }}
+            </div>
+            <div class="activity-amount">{{ activity.total|floatformat:2 }}</div>
+          </div>
+        {% empty %}
+          <p class="no-data">No recent activity</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const chartLabels = {{ chart_labels|safe }};
+  const chartData = {{ chart_data|safe }};
+
+  const ctx = document.getElementById('revenueChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        label: 'Revenue',
+        data: chartData,
+        borderColor: '#4f46e5',
+        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+</script>
+
+<style>
+  .analytics-grid {
+    display: grid;
+    gap: 2rem;
+  }
+
+  .metrics-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .metric-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .metric-icon {
+    font-size: 2rem;
+  }
+
+  .metric-label {
+    font-size: 0.875rem;
+    color: #666;
+  }
+
+  .metric-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #111;
+  }
+
+  .chart-section {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .activity-section {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .activity-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    padding: 1rem;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    gap: 1rem;
+  }
+
+  .activity-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .status-paid {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .status-unpaid {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  @media (max-width: 768px) {
+    .metrics-section {
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .activity-item {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+  }
+</style>
+{% endblock %}
