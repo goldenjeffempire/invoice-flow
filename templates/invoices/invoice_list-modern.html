@@ -1,0 +1,223 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Invoices - InvoiceFlow{% endblock %}
+{% block body_class %}dashboard-light-page enhanced{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/modern-design-system.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+<style>
+.invoices-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    font-size: 1.875rem;
+    margin: 0;
+    color: #1f2937;
+}
+
+.filters-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    background: white;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.filter-input {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.875rem;
+}
+
+.filter-select {
+    padding: 0.5rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.875rem;
+}
+
+.invoices-table-wrapper {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+}
+
+.invoice-row {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1fr 1fr 1fr 80px;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    align-items: center;
+    transition: background 0.2s ease;
+}
+
+.invoice-row:hover {
+    background: #f9fafb;
+}
+
+.invoice-row.header {
+    background: #f9fafb;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.invoice-id {
+    color: #6366f1;
+    font-weight: 500;
+}
+
+.invoice-status {
+    display: inline-block;
+}
+
+.amount-col {
+    text-align: right;
+    font-weight: 600;
+}
+
+.action-btn {
+    padding: 0.5rem;
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: #e5e7eb;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6b7280;
+}
+
+.empty-state svg {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .invoice-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    .page-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="invoices-container">
+    {% include 'components/sidebar-light.html' with active='invoices' %}
+    
+    <div class="page-header">
+        <h1>Invoices</h1>
+        <a href="{% url 'invoices:create_invoice' %}" class="btn btn-primary">
+            <span>+</span> New Invoice
+        </a>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters-bar">
+        <input type="text" class="filter-input" placeholder="Search by invoice, client..." id="search-input">
+        <select class="filter-select" id="status-filter">
+            <option value="">All Status</option>
+            <option value="paid">Paid</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="draft">Draft</option>
+        </select>
+        <select class="filter-select" id="currency-filter">
+            <option value="">All Currencies</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="resetFilters()">Reset</button>
+    </div>
+    
+    <!-- Invoices Table -->
+    <div class="invoices-table-wrapper">
+        <div class="invoice-row header">
+            <div>Invoice</div>
+            <div>Client</div>
+            <div>Amount</div>
+            <div>Status</div>
+            <div>Due Date</div>
+            <div></div>
+        </div>
+        
+        {% for invoice in invoices %}
+        <div class="invoice-row">
+            <div>
+                <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="invoice-id">
+                    {{ invoice.invoice_id }}
+                </a>
+            </div>
+            <div>{{ invoice.client_name }}</div>
+            <div class="amount-col">
+                {{ invoice.currency }} {{ invoice.total|floatformat:2 }}
+            </div>
+            <div>
+                {% if invoice.status == 'paid' %}
+                    <span class="badge badge-success">Paid</span>
+                {% elif invoice.status == 'unpaid' %}
+                    <span class="badge badge-warning">Unpaid</span>
+                {% else %}
+                    <span class="badge badge-info">Draft</span>
+                {% endif %}
+            </div>
+            <div>{{ invoice.due_date|date:"M d, Y" }}</div>
+            <div>
+                <button class="action-btn" title="More options">⋮</button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            </svg>
+            <p>No invoices yet</p>
+            <p style="font-size: 0.875rem;">Create your first invoice to get started</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function resetFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('status-filter').value = '';
+    document.getElementById('currency-filter').value = '';
+}
+</script>
+{% endblock %}
