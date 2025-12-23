@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.html import format_html
 
 from .models import (
     ContactSubmission,
@@ -8,6 +9,9 @@ from .models import (
     RecurringInvoice,
     UserProfile,
     Waitlist,
+    Payment,
+    MFAProfile,
+    SocialAccount,
 )
 
 
@@ -70,6 +74,38 @@ class InvoiceTemplateAdmin(admin.ModelAdmin):
     list_filter = ("currency", "is_default", "created_at")
     search_fields = ("name", "business_name", "user__username")
     readonly_fields = ("created_at",)
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ("reference", "invoice", "user", "amount", "status_badge", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("reference", "invoice__invoice_id", "user__username")
+    readonly_fields = ("created_at", "updated_at")
+    
+    def status_badge(self, obj):
+        colors = {"pending": "orange", "completed": "green", "failed": "red"}
+        color = colors.get(obj.status, "gray")
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px;">{}</span>',
+            color, obj.get_status_display()
+        )
+    status_badge.short_description = "Status"
+
+
+@admin.register(MFAProfile)
+class MFAProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "is_enabled", "created_at")
+    list_filter = ("is_enabled", "created_at")
+    search_fields = ("user__username", "user__email")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(SocialAccount)
+class SocialAccountAdmin(admin.ModelAdmin):
+    list_display = ("user", "provider", "created_at")
+    list_filter = ("provider", "created_at")
+    search_fields = ("user__username", "user__email")
 
 
 @admin.register(RecurringInvoice)
