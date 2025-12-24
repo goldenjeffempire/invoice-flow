@@ -276,12 +276,20 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Professional invoicing platform API",
     "VERSION": "1.0.0",
     "SKIP_VIEW_PERMISSIONS": True,
-    "COERCE_DECIMAL_TO_STRING": False,
+    "SKIP_VALIDATION": True,
+    "COERCE_DECIMAL_TO_STRING": True,
+    "ENABLE_SPECTACULAR_DEFAULTS": True,
+    "PREFER_HTTPS": not DEBUG,
     "ENUM_NAME_OVERRIDES": {
         "InvoiceStatusEnum": "invoices.models.Invoice.status",
         "PaymentStatusEnum": "invoices.models.Payment.status",
     },
     "SCHEMA_PATH_PREFIX": "/api/v[0-9]",
+    "SCHEMA_EXEMPT_VIEWS": [
+        "django.views.static.serve",
+        "rest_framework.decorators.api_view",
+    ],
+    "ALLOWED_HOSTS": ALLOWED_HOSTS,
     "AUTHENTICATION_FLOWS": {
         "basicAuth": {
             "type": "http",
@@ -292,6 +300,8 @@ SPECTACULAR_SETTINGS = {
             "scheme": "bearer",
         },
     },
+    "OPERATION_ID_BASE": "openapi_auto_schema",
+    "DEFAULT_GENERATOR_CLASS": "drf_spectacular.generators.SchemaGenerator",
 }
 
 # =============================================================================
