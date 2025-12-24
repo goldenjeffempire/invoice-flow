@@ -316,78 +316,92 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    """Display user dashboard with invoice statistics and filtered invoice list."""
+    """Display comprehensive user dashboard with real-time analytics and actionable insights."""
     from invoices.services import AnalyticsService
     from datetime import timedelta
     from django.db.models.functions import TruncMonth
-    from django.db.models import Sum, F
+    from django.db.models import Sum, F, Count, Q, Avg
     from decimal import Decimal
 
-    base_queryset = Invoice.objects.filter(user=request.user)  # type: ignore
+    base_queryset = Invoice.objects.filter(user=request.user)
 
-    # Apply status filter at database level (not in Python)
-    filter_status = request.GET.get("status", "all")
-    if filter_status == "paid":
-        invoices_queryset = base_queryset.filter(status="paid")
-    elif filter_status == "unpaid":
-        invoices_queryset = base_queryset.filter(status="unpaid")
-    else:
-        invoices_queryset = base_queryset
-
-    # Fetch filtered invoices with prefetched line_items (efficient join)
-    invoices = list(invoices_queryset.prefetch_related("line_items").order_by("-created_at")[:100])
-
-    # Use AnalyticsService for efficient stats calculation
+    # Core statistics
     stats = AnalyticsService.get_user_dashboard_stats(request.user)
-
-    # Get monthly revenue data for chart (last 6 months)
-    six_months_ago = timezone.now() - timedelta(days=180)
-    monthly_revenue = (
-        base_queryset.filter(status="paid", invoice_date__gte=six_months_ago)
+    today = timezone.now().date()
+    
+    # Calculate key metrics
+    overdue_count = base_queryset.filter(status="unpaid", due_date__lt=today).count()
+    due_this_week = base_queryset.filter(
+        status="unpaid", 
+        due_date__gte=today, 
+        due_date__lte=today + timedelta(days=7)
+    ).count()
+    
+    # Monthly revenue trends (last 12 months)
+    twelve_months_ago = timezone.now() - timedelta(days=365)
+    monthly_data = (
+        base_queryset.filter(status="paid", invoice_date__gte=twelve_months_ago)
         .annotate(month=TruncMonth("invoice_date"))
         .values("month")
         .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
         .order_by("month")
     )
-
-    # Format for Chart.js
+    
     chart_labels = []
     chart_data = []
-    for item in monthly_revenue:
+    for item in monthly_data:
         if item["month"]:
             chart_labels.append(item["month"].strftime("%b %Y"))
             chart_data.append(float(item["total"] or 0))
-
-    # Get overdue invoices (unpaid and past due date)
-    today = timezone.now().date()
-    overdue_count = base_queryset.filter(status="unpaid", due_date__lt=today).count()
-
-    # Get recent activity (last 10 invoice changes) with calculated total
-    # Use distinct to avoid duplicates from line_items join
-    recent_activity_qs = (
+    
+    # Recent invoices (last 5 with status)
+    recent_invoices = list(
         base_queryset.annotate(
             total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
-        ).order_by("-updated_at").values(
-            "id", "invoice_id", "client_name", "status", "updated_at", "total"
-        ).distinct()[:10]
+        ).order_by("-created_at").values(
+            "id", "invoice_id", "client_name", "status", "created_at", "due_date", "total"
+        )[:5]
     )
-    recent_activity = list(recent_activity_qs)
-
+    
+    # Invoice aging summary
+    aging_summary = {
+        "0_30": base_queryset.filter(
+            status="unpaid", 
+            due_date__gte=today - timedelta(days=30),
+            due_date__lte=today
+        ).count(),
+        "31_60": base_queryset.filter(
+            status="unpaid",
+            due_date__gte=today - timedelta(days=60),
+            due_date__lt=today - timedelta(days=30)
+        ).count(),
+        "60_plus": base_queryset.filter(
+            status="unpaid",
+            due_date__lt=today - timedelta(days=60)
+        ).count(),
+    }
+    
+    # Revenue breakdown by client (top 5)
+    top_clients = (
+        base_queryset.values("client_name")
+        .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
+        .order_by("-total")[:5]
+    )
+    
     context = {
-        "invoices": invoices,
+        "user": request.user,
+        "total_revenue": stats["total_revenue"],
         "total_invoices": stats["total_invoices"],
         "paid_count": stats["paid_count"],
         "unpaid_count": stats["unpaid_count"],
-        "total_revenue": stats["total_revenue"],
         "unique_clients": stats["unique_clients"],
-        "filter_status": filter_status,
-        "recent_invoices": invoices[:5],
-        "pending_invoices": stats["unpaid_count"],
-        "paid_invoices": stats["paid_count"],
         "overdue_count": overdue_count,
+        "due_this_week": due_this_week,
         "chart_labels": json.dumps(chart_labels),
         "chart_data": json.dumps(chart_data),
-        "recent_activity": recent_activity,
+        "recent_invoices": recent_invoices,
+        "aging_summary": aging_summary,
+        "top_clients": list(top_clients),
     }
     return render(request, "dashboard/main.html", context)
 

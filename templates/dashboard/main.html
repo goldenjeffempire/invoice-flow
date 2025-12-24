@@ -7,199 +7,146 @@
     {% include 'components/sidebar-light.html' with active='dashboard' %}
     
     <main class="dashboard-main">
+        <!-- Header Section -->
         <header class="dashboard-light-header">
             <div class="dashboard-light-header-content">
-                <h1>Welcome back, {{ user.first_name|default:user.username }}</h1>
-                <p>Dashboard • Overview of your invoicing activity</p>
-            </div>
-            <div class="dashboard-light-actions">
-                <a href="{% url 'invoices:create_invoice' %}" class="btn-light-primary" title="Create a new invoice">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    New Invoice
-                </a>
-                <button class="btn-light-secondary dashboard-menu-btn" aria-label="More options" title="Quick actions">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="1"/>
-                        <circle cx="19" cy="12" r="1"/>
-                        <circle cx="5" cy="12" r="1"/>
-                    </svg>
-                </button>
+                <div>
+                    <h1 style="font-size: 2rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">Welcome back, {{ user.first_name|default:user.username }}!</h1>
+                    <p style="color: #6b7280; font-size: 1rem;">Your invoicing dashboard • Track payments and manage clients</p>
+                </div>
+                <div class="dashboard-light-actions">
+                    <a href="{% url 'invoices:create_invoice' %}" class="btn-light-primary" title="Create a new invoice">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Create Invoice
+                    </a>
+                </div>
             </div>
         </header>
-        
-        <div class="stats-light-grid">
-            <div class="stat-light-card stat-revenue">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-success">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="1" x2="12" y2="23"/>
-                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                        </svg>
-                    </div>
-                    {% if revenue_trend > 0 %}
-                    <div class="stat-light-trend trend-up">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-                            <polyline points="17 6 23 6 23 12"/>
-                        </svg>
-                        +{{ revenue_trend|default:"0" }}%
-                    </div>
-                    {% endif %}
+
+        <!-- Key Performance Indicators -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <!-- Revenue Card -->
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <span style="font-size: 0.875rem; color: #6b7280; font-weight: 500;">Total Revenue</span>
+                    <svg style="width: 1.25rem; height: 1.25rem; color: #10b981;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
                 </div>
-                <div class="stat-light-value">${{ total_revenue|default:"0"|floatformat:2 }}</div>
-                <div class="stat-light-label">Total Revenue</div>
+                <div style="font-size: 1.875rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">${{ total_revenue|default:"0"|floatformat:2 }}</div>
+                <div style="font-size: 0.85rem; color: #10b981;">✓ All-time earnings</div>
             </div>
-            
-            <div class="stat-light-card stat-invoices">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-primary">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                    </div>
+
+            <!-- Total Invoices Card -->
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <span style="font-size: 0.875rem; color: #6b7280; font-weight: 500;">Total Invoices</span>
+                    <svg style="width: 1.25rem; height: 1.25rem; color: #6366f1;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
                 </div>
-                <div class="stat-light-value">{{ total_invoices|default:"0" }}</div>
-                <div class="stat-light-label">Total Invoices</div>
+                <div style="font-size: 1.875rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">{{ total_invoices|default:"0" }}</div>
+                <div style="font-size: 0.85rem; color: #6366f1;">{{ paid_count|default:"0" }} paid • {{ unpaid_count|default:"0" }} pending</div>
             </div>
-            
-            <div class="stat-light-card stat-pending">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-warning">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                    </div>
+
+            <!-- Overdue Invoices Card -->
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <span style="font-size: 0.875rem; color: #6b7280; font-weight: 500;">Overdue</span>
+                    <svg style="width: 1.25rem; height: 1.25rem; color: {% if overdue_count > 0 %}#ef4444{% else %}#10b981{% endif %};" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
                 </div>
-                <div class="stat-light-value">{{ pending_invoices|default:"0" }}</div>
-                <div class="stat-light-label">Pending</div>
+                <div style="font-size: 1.875rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">{{ overdue_count }}</div>
+                <div style="font-size: 0.85rem; color: {% if overdue_count > 0 %}#ef4444{% else %}#10b981{% endif %};">{% if overdue_count > 0 %}Action required{% else %}All caught up{% endif %}</div>
             </div>
-            
-            <div class="stat-light-card stat-paid">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-info">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                    </div>
+
+            <!-- Clients Card -->
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <span style="font-size: 0.875rem; color: #6b7280; font-weight: 500;">Active Clients</span>
+                    <svg style="width: 1.25rem; height: 1.25rem; color: #f59e0b;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
                 </div>
-                <div class="stat-light-value">{{ paid_invoices|default:"0" }}</div>
-                <div class="stat-light-label">Paid</div>
+                <div style="font-size: 1.875rem; font-weight: 700; color: #1f2937; margin-bottom: 0.5rem;">{{ unique_clients|default:"0" }}</div>
+                <div style="font-size: 0.85rem; color: #f59e0b;">Unique clients</div>
             </div>
-            
-            {% if overdue_count > 0 %}
-            <div class="stat-light-card stat-overdue">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-danger">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="12"/>
-                            <line x1="12" y1="16" x2="12.01" y2="16"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="stat-light-value">{{ overdue_count }}</div>
-                <div class="stat-light-label">Overdue</div>
-            </div>
-            {% endif %}
         </div>
-        
-        <div class="dashboard-light-grid">
-            <div class="card-light">
-                <div class="card-light-header">
-                    <h2 class="card-light-title">Revenue Overview</h2>
-                    <span style="font-size: 0.875rem; color: var(--light-text-tertiary);">Last 6 months</span>
+
+        <!-- Main Grid: Chart & Quick Actions -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+            <!-- Revenue Chart -->
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="margin-bottom: 1.5rem;">
+                    <h2 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 0.25rem;">Revenue Overview</h2>
+                    <p style="font-size: 0.875rem; color: #6b7280;">Last 12 months of paid invoices</p>
                 </div>
-                <div class="card-light-body">
-                    <div class="chart-light-container">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
+                <div style="background: #f9fafb; border-radius: 0.75rem; padding: 1rem; min-height: 300px;">
+                    <canvas id="revenueChart"></canvas>
                 </div>
             </div>
-            
-            <div class="card-light">
-                <div class="card-light-header">
-                    <h2 class="card-light-title">Quick Actions</h2>
-                </div>
-                <div class="card-light-body">
-                    <div class="quick-actions-light">
-                        <a href="{% url 'invoices:create_invoice' %}" class="quick-action-light">
-                            <div class="quick-action-light-icon icon-primary">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                </svg>
-                            </div>
-                            <span class="quick-action-light-label">New Invoice</span>
-                        </a>
-                        <a href="{% url 'invoices:invoice_list' %}?status=unpaid" class="quick-action-light">
-                            <div class="quick-action-light-icon icon-warning">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                                    <polyline points="22 4 12 14.01 9 11.01"/>
-                                </svg>
-                            </div>
-                            <span class="quick-action-light-label">Pending</span>
-                        </a>
-                        <a href="{% url 'invoices:analytics' %}" class="quick-action-light">
-                            <div class="quick-action-light-icon icon-accent">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="18" y1="20" x2="18" y2="10"/>
-                                    <line x1="12" y1="20" x2="12" y2="4"/>
-                                    <line x1="6" y1="20" x2="6" y2="14"/>
-                                </svg>
-                            </div>
-                            <span class="quick-action-light-label">Analytics</span>
-                        </a>
-                        <a href="{% url 'invoices:settings' %}" class="quick-action-light">
-                            <div class="quick-action-light-icon icon-neutral">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="3"/>
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9"/>
-                                </svg>
-                            </div>
-                            <span class="quick-action-light-label">Settings</span>
-                        </a>
-                    </div>
+
+            <!-- Quick Actions -->
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h2 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 1rem;">Quick Actions</h2>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <a href="{% url 'invoices:create_invoice' %}" style="padding: 1rem; background: linear-gradient(135deg, #6366f1, #818cf8); color: white; border-radius: 0.75rem; text-decoration: none; font-weight: 500; text-align: center; transition: all 0.3s ease;">
+                        + New Invoice
+                    </a>
+                    <a href="{% url 'invoices:invoice_list' %}?status=unpaid" style="padding: 1rem; background: #f3f4f6; color: #6b7280; border-radius: 0.75rem; text-decoration: none; font-weight: 500; text-align: center; transition: all 0.3s ease; border: 1px solid #e5e7eb;">
+                        View Pending ({{ unpaid_count }})
+                    </a>
+                    <a href="{% url 'invoices:invoice_list' %}" style="padding: 1rem; background: #f3f4f6; color: #6b7280; border-radius: 0.75rem; text-decoration: none; font-weight: 500; text-align: center; transition: all 0.3s ease; border: 1px solid #e5e7eb;">
+                        All Invoices
+                    </a>
+                    <a href="{% url 'invoices:settings' %}" style="padding: 1rem; background: #f3f4f6; color: #6b7280; border-radius: 0.75rem; text-decoration: none; font-weight: 500; text-align: center; transition: all 0.3s ease; border: 1px solid #e5e7eb;">
+                        Settings
+                    </a>
                 </div>
             </div>
         </div>
-        
-        <div class="dashboard-light-grid" style="grid-template-columns: 1.5fr 1fr;">
-            <div class="card-light">
-                <div class="card-light-header">
-                    <h2 class="card-light-title">Recent Invoices</h2>
-                    <a href="{% url 'invoices:invoice_list' %}" class="card-light-link">View all</a>
+
+        <!-- Recent Invoices & Invoice Aging -->
+        <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+            <!-- Recent Invoices Table -->
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h2 style="font-size: 1.25rem; font-weight: 600; color: #1f2937;">Recent Invoices</h2>
+                    <a href="{% url 'invoices:invoice_list' %}" style="color: #6366f1; text-decoration: none; font-size: 0.875rem; font-weight: 500;">View all →</a>
                 </div>
+                
                 {% if recent_invoices %}
                 <div style="overflow-x: auto;">
-                    <table class="table-light">
+                    <table style="width: 100%; font-size: 0.875rem;">
                         <thead>
-                            <tr>
-                                <th>Invoice</th>
-                                <th>Client</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th></th>
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <th style="text-align: left; padding: 0.75rem; color: #6b7280; font-weight: 500;">Invoice #</th>
+                                <th style="text-align: left; padding: 0.75rem; color: #6b7280; font-weight: 500;">Client</th>
+                                <th style="text-align: right; padding: 0.75rem; color: #6b7280; font-weight: 500;">Amount</th>
+                                <th style="text-align: center; padding: 0.75rem; color: #6b7280; font-weight: 500;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for invoice in recent_invoices %}
-                            <tr>
-                                <td>{{ invoice.invoice_id }}</td>
-                                <td>{{ invoice.client_name }}</td>
-                                <td>{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</td>
-                                <td>
-                                    <span class="badge-light badge-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
-                                </td>
-                                <td>{{ invoice.invoice_date|date:"M d, Y" }}</td>
-                                <td>
-                                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="table-action-light">View</a>
+                            <tr style="border-bottom: 1px solid #f3f4f6;">
+                                <td style="padding: 0.75rem; color: #1f2937; font-weight: 500;">{{ invoice.invoice_id }}</td>
+                                <td style="padding: 0.75rem; color: #6b7280;">{{ invoice.client_name }}</td>
+                                <td style="padding: 0.75rem; text-align: right; color: #1f2937; font-weight: 600;">${{ invoice.total|default:"0"|floatformat:2 }}</td>
+                                <td style="padding: 0.75rem; text-align: center;">
+                                    {% if invoice.status == 'paid' %}
+                                        <span style="display: inline-block; padding: 0.25rem 0.75rem; background: #d1fae5; color: #065f46; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">Paid</span>
+                                    {% else %}
+                                        <span style="display: inline-block; padding: 0.25rem 0.75rem; background: #fef3c7; color: #92400e; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">Pending</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% endfor %}
@@ -207,172 +154,116 @@
                     </table>
                 </div>
                 {% else %}
-                <div class="card-light-body">
-                    <div class="empty-light-state">
-                        <div class="empty-light-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                                <line x1="12" y1="11" x2="12" y2="17"/>
-                                <line x1="9" y1="14" x2="15" y2="14"/>
-                            </svg>
+                <p style="color: #6b7280; text-align: center; padding: 2rem;">No invoices yet. <a href="{% url 'invoices:create_invoice' %}" style="color: #6366f1; text-decoration: none;">Create your first invoice</a></p>
+                {% endif %}
+            </div>
+
+            <!-- Invoice Aging Analysis -->
+            <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h2 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 1.5rem;">Invoice Aging</h2>
+                
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- 0-30 Days -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.875rem; color: #6b7280;">0-30 Days</span>
+                            <span style="font-weight: 600; color: #1f2937;">{{ aging_summary.0_30 }}</span>
                         </div>
-                        <h3 class="empty-light-title">No invoices yet</h3>
-                        <p class="empty-light-description">Create your first professional invoice and start getting paid faster.</p>
-                        <a href="{% url 'invoices:create_invoice' %}" class="btn-light-primary">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"/>
-                                <line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            Create First Invoice
-                        </a>
+                        <div style="background: #f3f4f6; border-radius: 0.5rem; height: 0.5rem; overflow: hidden;">
+                            <div style="background: #10b981; height: 100%; width: {% widthratio aging_summary.0_30 unpaid_count 100 %}%;"></div>
+                        </div>
                     </div>
+
+                    <!-- 31-60 Days -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.875rem; color: #6b7280;">31-60 Days</span>
+                            <span style="font-weight: 600; color: #1f2937;">{{ aging_summary.31_60 }}</span>
+                        </div>
+                        <div style="background: #f3f4f6; border-radius: 0.5rem; height: 0.5rem; overflow: hidden;">
+                            <div style="background: #f59e0b; height: 100%; width: {% widthratio aging_summary.31_60 unpaid_count 100 %}%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 60+ Days -->
+                    <div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span style="font-size: 0.875rem; color: #6b7280;">60+ Days</span>
+                            <span style="font-weight: 600; color: #1f2937;">{{ aging_summary.60_plus }}</span>
+                        </div>
+                        <div style="background: #f3f4f6; border-radius: 0.5rem; height: 0.5rem; overflow: hidden;">
+                            <div style="background: #ef4444; height: 100%; width: {% widthratio aging_summary.60_plus unpaid_count 100 %}%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if overdue_count > 0 %}
+                <div style="margin-top: 1.5rem; padding: 1rem; background: #fef2f2; border-radius: 0.75rem; border: 1px solid #fee2e2;">
+                    <p style="margin: 0; font-size: 0.875rem; color: #7f1d1d;">
+                        <strong>{{ overdue_count }} overdue invoice{{ overdue_count|pluralize }}</strong> - Consider sending a reminder
+                    </p>
                 </div>
                 {% endif %}
             </div>
+        </div>
+
+        <!-- Top Clients -->
+        {% if top_clients %}
+        <div style="background: white; border-radius: 1rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            <h2 style="font-size: 1.25rem; font-weight: 600; color: #1f2937; margin-bottom: 1.5rem;">Top Clients</h2>
             
-            <div class="card-light">
-                <div class="card-light-header">
-                    <h2 class="card-light-title">Recent Activity</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                {% for client in top_clients %}
+                <div style="padding: 1rem; background: #f9fafb; border-radius: 0.75rem; border: 1px solid #e5e7eb;">
+                    <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #6b7280;">{{ client.client_name }}</p>
+                    <p style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #1f2937;">${{ client.total|floatformat:2 }}</p>
                 </div>
-                <div class="card-light-body" style="padding: 16px 24px;">
-                    {% if recent_activity %}
-                    <ul class="activity-light-list">
-                        {% for activity in recent_activity %}
-                        <li class="activity-light-item">
-                            <div class="activity-light-icon icon-{{ activity.status }}">
-                                {% if activity.status == 'paid' %}
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="20 6 9 17 4 12"/>
-                                </svg>
-                                {% else %}
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"/>
-                                    <polyline points="12 6 12 12 16 14"/>
-                                </svg>
-                                {% endif %}
-                            </div>
-                            <div class="activity-light-content">
-                                <div class="activity-light-title">
-                                    <a href="{% url 'invoices:invoice_detail' activity.id %}">{{ activity.invoice_id }}</a>
-                                    <span class="badge-light badge-{{ activity.status }}" style="margin-left: 8px;">{{ activity.status|title }}</span>
-                                </div>
-                                <div class="activity-light-meta">{{ activity.client_name }} &middot; {{ activity.updated_at|timesince }} ago</div>
-                            </div>
-                            <span class="activity-light-amount">${{ activity.total|floatformat:2 }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <div class="empty-light-state" style="padding: 24px 0;">
-                        <p style="color: var(--light-text-tertiary); margin: 0;">No recent activity</p>
-                    </div>
-                    {% endif %}
-                </div>
+                {% endfor %}
             </div>
         </div>
-        
-        {% include 'components/dashboard-footer.html' %}
+        {% endif %}
     </main>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script nonce="{{ request.csp_nonce }}">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
-    const mobileToggle = document.getElementById('mobile-toggle');
-    const sidebar = document.getElementById('dashboard-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        });
-    }
-    
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        });
-    }
-    
     const ctx = document.getElementById('revenueChart');
     if (ctx) {
-        const chartData = JSON.parse('{{ chart_data_json|safe|default:"{\"labels\": [\"Jan\", \"Feb\", \"Mar\", \"Apr\", \"May\", \"Jun\"], \"data\": [0, 0, 0, 0, 0, 0]}" }}');
-        
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: chartData.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: {{ chart_labels|safe }},
                 datasets: [{
                     label: 'Revenue',
-                    data: chartData.data || [0, 0, 0, 0, 0, 0],
+                    data: {{ chart_data|safe }},
                     borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
+                    backgroundColor: 'rgba(99, 102, 241, 0.05)',
                     tension: 0.4,
+                    fill: true,
                     pointBackgroundColor: '#6366f1',
-                    pointBorderColor: '#ffffff',
+                    pointBorderColor: '#fff',
                     pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7
+                    pointRadius: 4
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
                 plugins: {
                     legend: {
                         display: false
-                    },
-                    tooltip: {
-                        backgroundColor: '#0f172a',
-                        titleColor: '#ffffff',
-                        bodyColor: '#ffffff',
-                        padding: 12,
-                        cornerRadius: 8,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return '$' + context.parsed.y.toLocaleString();
-                            }
-                        }
                     }
                 },
                 scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        },
-                        ticks: {
-                            color: '#64748b',
-                            font: {
-                                size: 12
-                            }
-                        }
-                    },
                     y: {
-                        grid: {
-                            color: '#e2e8f0'
-                        },
+                        beginAtZero: true,
                         ticks: {
-                            color: '#64748b',
-                            font: {
-                                size: 12
-                            },
                             callback: function(value) {
                                 return '$' + value.toLocaleString();
                             }
                         }
                     }
-                },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
                 }
             }
         });
