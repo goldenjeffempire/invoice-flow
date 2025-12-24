@@ -542,31 +542,80 @@ def create_invoice(request):
     """Create a new invoice with line items and client details."""
     from invoices.services import InvoiceService
     from datetime import date, timedelta
+    import logging
+    
+    logger = logging.getLogger(__name__)
 
     if request.method == "POST":
-        line_items_data = json.loads(request.POST.get("line_items", "[]"))
+        try:
+            line_items_data = json.loads(request.POST.get("line_items", "[]"))
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"Invalid line items JSON: {e}")
+            messages.error(request, "Invalid line items format. Please try again.")
+            context = {
+                "invoice_form": InvoiceForm(),
+                "today": date.today(),
+                "default_due_date": date.today() + timedelta(days=30),
+            }
+            return render(request, "invoices/create_invoice.html", context)
 
         if not line_items_data:
-            messages.error(request, "Please add at least one line item.")
+            messages.error(request, "Please add at least one line item to create an invoice.")
             return render(
                 request,
                 "invoices/create_invoice.html",
-                {"invoice_form": InvoiceForm(request.POST, request.FILES), "today": date.today()},
+                {
+                    "invoice_form": InvoiceForm(request.POST, request.FILES),
+                    "today": date.today(),
+                    "default_due_date": date.today() + timedelta(days=30),
+                },
             )
 
-        invoice, invoice_form = InvoiceService.create_invoice(
-            user=request.user,
-            invoice_data=request.POST,
-            files_data=request.FILES,
-            line_items_data=line_items_data,
-        )
+        try:
+            invoice, invoice_form = InvoiceService.create_invoice(
+                user=request.user,
+                invoice_data=request.POST,
+                files_data=request.FILES,
+                line_items_data=line_items_data,
+            )
 
-        if invoice:
-            messages.success(request, f"Invoice {invoice.invoice_id} created successfully!")
-            return redirect("invoice_detail", invoice_id=invoice.id)
-        else:
-            messages.error(request, "Please correct the errors below.")
-            return render(request, "invoices/create_invoice.html", {"invoice_form": invoice_form, "today": date.today()})
+            if invoice:
+                messages.success(request, f"✓ Invoice {invoice.invoice_id} created successfully!")
+                return redirect("invoice_detail", invoice_id=invoice.id)
+            else:
+                # Form validation failed - display errors
+                error_messages = []
+                for field, errors in invoice_form.errors.items():
+                    for error in errors:
+                        error_messages.append(f"{field}: {error}")
+                
+                if error_messages:
+                    for error_msg in error_messages:
+                        messages.error(request, error_msg)
+                else:
+                    messages.error(request, "Please correct the errors and try again.")
+                
+                return render(
+                    request,
+                    "invoices/create_invoice.html",
+                    {
+                        "invoice_form": invoice_form,
+                        "today": date.today(),
+                        "default_due_date": date.today() + timedelta(days=30),
+                    },
+                )
+        except Exception as e:
+            logger.exception(f"Error creating invoice: {e}")
+            messages.error(request, f"An error occurred while creating the invoice: {str(e)}")
+            return render(
+                request,
+                "invoices/create_invoice.html",
+                {
+                    "invoice_form": InvoiceForm(),
+                    "today": date.today(),
+                    "default_due_date": date.today() + timedelta(days=30),
+                },
+            )
 
     context = {
         "invoice_form": InvoiceForm(),

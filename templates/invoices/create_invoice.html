@@ -716,10 +716,30 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (errors.length > 0) {
             e.preventDefault();
-            const errorMessage = 'Please fix the following errors:\n\n' + errors.join('\n');
-            alert(errorMessage);
+            
+            // Display errors in a nice container
+            let errorContainer = document.getElementById('message-container');
+            if (!errorContainer) {
+                errorContainer = document.createElement('div');
+                errorContainer.id = 'message-container';
+                errorContainer.style.marginBottom = '20px';
+                invoiceForm.insertAdjacentElement('beforebegin', errorContainer);
+            }
+            
+            const errorHTML = errors.map(err => `
+                <div class="alert alert-error" style="padding: 16px; border-radius: 8px; margin-bottom: 12px; background: var(--light-danger-light); color: var(--light-danger); border: 1px solid var(--light-danger);">
+                    ${err}
+                </div>
+            `).join('');
+            
+            errorContainer.innerHTML = errorHTML;
+            errorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
             return false;
         }
+        
+        // Clear any previous error messages
+        const msgContainer = document.getElementById('message-container');
+        if (msgContainer) msgContainer.innerHTML = '';
         
         // Disable submit button and show loading state
         const submitBtn = document.getElementById('submitBtn');
@@ -738,14 +758,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const clientEmail = document.querySelector('input[name="client_email"]').value.trim();
         const businessName = document.querySelector('input[name="business_name"]').value.trim();
         const businessEmail = document.querySelector('input[name="business_email"]').value.trim();
+        const invoiceDate = document.querySelector('input[name="invoice_date"]').value;
+        const dueDate = document.querySelector('input[name="due_date"]').value;
         
-        const isValid = lineItems.length > 0 && clientName && clientEmail && businessName && businessEmail;
+        const isValid = lineItems.length > 0 && clientName && clientEmail && businessName && businessEmail && invoiceDate && dueDate;
         submitBtn.disabled = !isValid;
     }
     
     // Attach validity checker to all important fields
-    document.querySelectorAll('input[name="client_name"], input[name="client_email"], input[name="business_name"], input[name="business_email"], .item-description').forEach(input => {
+    document.querySelectorAll('input[name="client_name"], input[name="client_email"], input[name="business_name"], input[name="business_email"], input[name="invoice_date"], input[name="due_date"], .item-description, .item-quantity, .item-price').forEach(input => {
         input.addEventListener('input', checkFormValidity);
+        input.addEventListener('change', checkFormValidity);
     });
 
     // Initial setup
