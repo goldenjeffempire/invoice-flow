@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework import serializers
 
 from invoices.models import Invoice, InvoiceTemplate, LineItem
@@ -5,8 +6,8 @@ from invoices.models import Invoice, InvoiceTemplate, LineItem
 
 class LineItemSerializer(serializers.ModelSerializer):
     description = serializers.CharField(max_length=500, min_length=1)
-    quantity = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=1)
-    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
+    quantity = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal("1"))
+    unit_price = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0"))
     total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
@@ -84,7 +85,7 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
 class InvoiceCreateSerializer(serializers.ModelSerializer):
     line_items = LineItemSerializer(many=True, min_length=1)
     currency = serializers.ChoiceField(choices=Invoice.CURRENCY_CHOICES)
-    tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=0, max_value=100)
+    tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=Decimal("0"), max_value=Decimal("100"))
 
     class Meta:
         model = Invoice
@@ -110,11 +111,11 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("At least one line item is required.")
         return value
 
-    def validate(self, data):
-        if data.get("due_date") and data.get("invoice_date"):
-            if data["due_date"] < data["invoice_date"]:
+    def validate(self, attrs):
+        if attrs.get("due_date") and attrs.get("invoice_date"):
+            if attrs["due_date"] < attrs["invoice_date"]:
                 raise serializers.ValidationError("Due date must be after invoice date.")
-        return data
+        return attrs
 
     def create(self, validated_data):
         line_items_data = validated_data.pop("line_items")
