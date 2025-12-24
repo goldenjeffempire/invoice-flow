@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap as sitemap_view
 from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from invoiceflow import cookie_consent, gdpr, mfa
 from invoices import paystack_views, views, admin_views, settings_views
@@ -14,6 +15,10 @@ handler404 = "invoices.views.custom_404"
 handler500 = "invoices.views.custom_500"
 
 urlpatterns = [
+    # OpenAPI/Swagger API Documentation
+    path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
+    path("api/docs/", SpectacularSwaggerView.as_view(url_name="api-schema"), name="swagger-ui"),
+    path("api/redoc/", SpectacularRedocView.as_view(url_name="api-schema"), name="redoc"),
     # REST API v1 (versioned endpoints)
     path("api/v1/", include("invoices.api.urls")),
     # Cookie Consent & GDPR Compliance
