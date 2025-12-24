@@ -83,7 +83,7 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
 
 
 class InvoiceCreateSerializer(serializers.ModelSerializer):
-    line_items = LineItemSerializer(many=True, min_length=1)
+    line_items = LineItemSerializer(many=True)
     currency = serializers.ChoiceField(choices=Invoice.CURRENCY_CHOICES)
     tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=Decimal("0"), max_value=Decimal("100"))
 
