@@ -300,7 +300,31 @@ SPECTACULAR_SETTINGS = {
     },
     "OPERATION_ID_BASE": "openapi_auto_schema",
     "DEFAULT_GENERATOR_CLASS": "drf_spectacular.generators.SchemaGenerator",
-    "ENUM_NAME_OVERRIDES": {},
+    "ENUM_NAME_OVERRIDES": {
+        # Contact Submission
+        "invoices.models.ContactSubmission.Status": "ContactSubmissionStatus",
+        
+        # Invoice Payment Status
+        "invoices.models.Invoice.Status": "InvoicePaymentStatus",
+        
+        # Payment Processing Status
+        "invoices.models.Payment.Status": "PaymentProcessingStatus",
+        
+        # Recurring Invoice Lifecycle
+        "invoices.models.RecurringInvoice.Status": "RecurringInvoiceLifecycleStatus",
+        
+        # Payment Payout Status
+        "invoices.models.PaymentPayout.Status": "PaymentPayoutProcessingStatus",
+        
+        # Payment Reconciliation Status
+        "invoices.models.PaymentReconciliation.ReconciliationStatus": "PaymentReconciliationStatus",
+        
+        # Recurring Invoice Execution Status
+        "invoices.models.RecurringInvoiceExecution.Status": "RecurringInvoiceExecutionStatus",
+        
+        # Email Delivery Status
+        "invoices.models.EmailDeliveryLog.Status": "EmailDeliveryStatus",
+    },
 }
 
 # =============================================================================
