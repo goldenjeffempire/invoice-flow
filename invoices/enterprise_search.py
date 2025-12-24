@@ -102,27 +102,31 @@ class FilterBuilder:
             from dateutil.parser import parse
             try:
                 filters['date_from'] = parse(query_params['date_from'])
-            except:
-                pass
+            except (ValueError, TypeError) as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Invalid date_from: {e}")
         
         if 'date_to' in query_params:
             from dateutil.parser import parse
             try:
                 filters['date_to'] = parse(query_params['date_to'])
-            except:
-                pass
+            except (ValueError, TypeError) as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Invalid date_to: {e}")
         
         if 'amount_min' in query_params:
             try:
                 filters['amount_min'] = query_params['amount_min']
-            except:
-                pass
+            except (ValueError, TypeError) as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Invalid amount_min: {e}")
         
         if 'amount_max' in query_params:
             try:
                 filters['amount_max'] = query_params['amount_max']
-            except:
-                pass
+            except (ValueError, TypeError) as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Invalid amount_max: {e}")
         
         if 'currency' in query_params:
             filters['currency'] = query_params.get('currency')

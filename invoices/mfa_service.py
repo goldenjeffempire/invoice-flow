@@ -56,7 +56,9 @@ class MFAService:
         try:
             totp = pyotp.TOTP(secret)
             return totp.verify(token, valid_window=window)
-        except:
+        except (ValueError, TypeError) as e:
+            import logging
+            logging.getLogger(__name__).warning(f"TOTP verification error: {e}")
             return False
     
     @staticmethod
@@ -64,7 +66,7 @@ class MFAService:
         """Verify and consume a backup code (removes used code)"""
         try:
             mfa_profile = user.mfa_profile
-        except:
+        except AttributeError:
             return False
         
         if not mfa_profile.backup_codes:
@@ -104,7 +106,9 @@ class MFAService:
             mfa_profile.backup_codes = []
             mfa_profile.save()
             return True
-        except:
+        except (AttributeError, Exception) as e:
+            import logging
+            logging.getLogger(__name__).error(f"Failed to disable MFA: {e}")
             return False
     
     @staticmethod
@@ -112,7 +116,7 @@ class MFAService:
         """Check if MFA is enabled for user"""
         try:
             return user.mfa_profile.is_enabled
-        except:
+        except AttributeError:
             return False
     
     @staticmethod
@@ -121,7 +125,7 @@ class MFAService:
         try:
             mfa_profile = user.mfa_profile
             return len(mfa_profile.backup_codes or [])
-        except:
+        except AttributeError:
             return 0
     
     @staticmethod
@@ -131,7 +135,7 @@ class MFAService:
             mfa_profile = user.mfa_profile
             mfa_profile.last_used = timezone.now()
             mfa_profile.save(update_fields=['last_used'])
-        except:
+        except AttributeError:
             pass
     
     @staticmethod

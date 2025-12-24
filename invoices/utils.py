@@ -103,7 +103,9 @@ class CurrencyHelper:
         """Validate and convert to Decimal."""
         try:
             return Decimal(str(amount)).quantize(Decimal("0.01"))
-        except:
+        except (ValueError, TypeError, InvalidOperation) as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Invalid amount: {e}")
             return None
 
 

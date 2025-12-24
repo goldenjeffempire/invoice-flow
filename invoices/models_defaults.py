@@ -113,4 +113,6 @@ COMMON_TIMEZONES = [
     "Africa/Accra",
 ]
 
-print("✓ Default configuration loaded successfully")
+import logging
+logger = logging.getLogger(__name__)
+logger.debug("Default configuration loaded successfully")

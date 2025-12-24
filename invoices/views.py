@@ -79,8 +79,9 @@ def signup(request):
                         try:
                             email_service = SendGridEmailService()
                             email_service.send_verification_email(user, token.token)
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            import logging
+                            logging.getLogger(__name__).error(f"Failed to send verification email: {e}")
                     messages.success(
                         request,
                         "Account created! Please check your email to verify your account."
@@ -139,9 +140,12 @@ def resend_verification(request):
                     try:
                         email_service = SendGridEmailService()
                         email_service.send_verification_email(user, token.token)
-                    except Exception:
-                        pass
-            except Exception:  # User.DoesNotExist
+                    except Exception as e:
+                        import logging
+                        logging.getLogger(__name__).error(f"Failed to send verification email: {e}")
+            except Exception as e:  # User.DoesNotExist
+                import logging
+                logging.getLogger(__name__).debug(f"User not found: {e}")
                 pass
 
         messages.success(request, "If an account with this email exists and is pending verification, a new verification email has been sent.")
