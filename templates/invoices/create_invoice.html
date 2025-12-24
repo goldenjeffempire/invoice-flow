@@ -620,6 +620,36 @@ document.addEventListener('DOMContentLoaded', function() {
         return items;
     }
 
+    function validateFormData() {
+        const errors = [];
+        
+        // Validate required fields
+        const clientName = document.querySelector('input[name="client_name"]').value.trim();
+        const clientEmail = document.querySelector('input[name="client_email"]').value.trim();
+        const businessName = document.querySelector('input[name="business_name"]').value.trim();
+        const businessEmail = document.querySelector('input[name="business_email"]').value.trim();
+        const invoiceDate = document.querySelector('input[name="invoice_date"]').value;
+        const dueDate = document.querySelector('input[name="due_date"]').value;
+        
+        if (!clientName) errors.push('Client name is required');
+        if (!clientEmail) errors.push('Client email is required');
+        if (!businessName) errors.push('Business name is required');
+        if (!businessEmail) errors.push('Business email is required');
+        if (!invoiceDate) errors.push('Invoice date is required');
+        if (!dueDate) errors.push('Due date is required');
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (clientEmail && !emailRegex.test(clientEmail)) errors.push('Client email is invalid');
+        if (businessEmail && !emailRegex.test(businessEmail)) errors.push('Business email is invalid');
+        
+        // Validate line items
+        const lineItems = updateLineItemsInput();
+        if (lineItems.length === 0) errors.push('Please add at least one line item');
+        
+        return errors;
+    }
+
     window.addLineItem = function(e) {
         if (e) e.preventDefault();
         const tbody = document.getElementById('lineItemsBody');
@@ -627,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
         row.className = 'line-item';
         row.innerHTML = `
             <input type="text" placeholder="Item description" class="item-description" required>
-            <input type="number" placeholder="1" value="1" min="1" class="item-quantity">
+            <input type="number" placeholder="1" value="1" min="1" step="1" class="item-quantity">
             <input type="number" placeholder="0.00" step="0.01" min="0" class="item-price">
             <span class="line-item-total">${getCurrentCurrencySymbol()}0.00</span>
             <button type="button" class="remove-item-btn" onclick="removeLineItem(this)">
@@ -644,6 +674,11 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.removeLineItem = function(button) {
+        const items = document.querySelectorAll('.line-item');
+        if (items.length <= 1) {
+            alert('You must have at least one line item.');
+            return false;
+        }
         button.closest('.line-item').remove();
         calculateTotals();
         return false;
@@ -660,19 +695,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    currencySelect.addEventListener('change', function() {
+        calculateTotals();
+    });
+
     invoiceForm.addEventListener('submit', function(e) {
-        const lineItems = updateLineItemsInput();
+        const errors = validateFormData();
         
-        if (lineItems.length === 0) {
+        if (errors.length > 0) {
             e.preventDefault();
-            alert('Please add at least one line item before creating the invoice.');
+            const errorMessage = 'Please fix the following errors:\n\n' + errors.join('\n');
+            alert(errorMessage);
             return false;
         }
         
         return true;
     });
 
-    currencySelect.addEventListener('change', calculateTotals);
+    // Initial setup
     attachInputListeners();
     calculateTotals();
 });
