@@ -278,7 +278,6 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "InvoiceStatusEnum": "invoices.models.Invoice.status",
         "PaymentStatusEnum": "invoices.models.Payment.status",
-        "TemplateStatusEnum": "invoices.models.InvoiceTemplate.status",
     },
     "SCHEMA_PATH_PREFIX": "/api/v[0-9]",
     "AUTHENTICATION_FLOWS": {
