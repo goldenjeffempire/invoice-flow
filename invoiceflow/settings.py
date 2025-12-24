@@ -308,8 +308,6 @@ SPECTACULAR_SETTINGS = {
         "invoices.models.PaymentPayout.Status": "PaymentPayoutStatus",
         "invoices.models.RecurringInvoiceExecution.Status": "RecurringInvoiceExecutionStatus",
         "invoices.models.EmailDeliveryLog.Status": "EmailDeliveryStatus",
-        "invoices.models.RecurringInvoicePaymentHistory.ReconciliationStatus": "PaymentReconciliationStatus",
-        "invoices.models.MFADevice.VerificationStatus": "MFAVerificationStatus",
     },
 }
 
