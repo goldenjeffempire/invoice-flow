@@ -44,6 +44,12 @@ worker_class = "gthread"
 threads = int(os.getenv("GUNICORN_THREADS", 4))
 worker_connections = 1000
 
+# Connection pooling for database (Django's CONN_MAX_AGE should handle this)
+# but we set reasonable TCP limits here
+tcp_keepalives_idle = 5
+tcp_keepalives_intvl = 1
+tcp_keepalives_probes = 3
+
 # =============================================================================
 # TIMEOUTS & LIMITS
 # =============================================================================
@@ -70,9 +76,9 @@ limit_request_line = 4094
 limit_request_fields = 100
 limit_request_field_size = 8190
 
-forwarded_allow_ips = "*"
-proxy_allow_ips = "*"
-proxy_protocol = False
+forwarded_allow_ips = os.getenv("FORWARDED_ALLOW_IPS", "*")
+proxy_allow_ips = os.getenv("PROXY_ALLOW_IPS", "*")
+proxy_protocol = os.getenv("PROXY_PROTOCOL", "false").lower() == "true"
 
 secure_scheme_headers = {
     "X-FORWARDED-PROTO": "https",

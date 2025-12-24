@@ -350,8 +350,18 @@ class Payment(models.Model):
 # ============================================================================
 
 class ProcessedWebhook(models.Model):
-    event_id = models.CharField(max_length=255, unique=True)
+    event_id = models.CharField(max_length=255, unique=True, db_index=True)
     processed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-processed_at"]
+        indexes = [
+            models.Index(fields=["event_id"]),
+            models.Index(fields=["-processed_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"WebhookEvent {self.event_id}"
 
 
 # ============================================================================
