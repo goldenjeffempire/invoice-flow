@@ -280,10 +280,8 @@ SPECTACULAR_SETTINGS = {
     "COERCE_DECIMAL_TO_STRING": True,
     "ENABLE_SPECTACULAR_DEFAULTS": True,
     "PREFER_HTTPS": not DEBUG,
-    "ENUM_NAME_OVERRIDES": {
-        "InvoiceStatusEnum": "invoices.models.Invoice.status",
-        "PaymentStatusEnum": "invoices.models.Payment.status",
-    },
+    "ENUM_MAPPING_FAIL_SAFE": True,
+    "DISABLE_ENUM_COERCION": True,
     "SCHEMA_PATH_PREFIX": "/api/v[0-9]",
     "SCHEMA_EXEMPT_VIEWS": [
         "django.views.static.serve",
