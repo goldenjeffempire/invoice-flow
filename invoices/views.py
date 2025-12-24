@@ -837,8 +837,22 @@ def templates_page(request):
 
 
 def api_access(request):
-    """API access coming soon page."""
-    return render(request, "pages/api.html")
+    """API access page with documentation and key management for authenticated users."""
+    context = {
+        "is_authenticated": request.user.is_authenticated,
+    }
+    
+    if request.user.is_authenticated:
+        try:
+            from .models import APIKey
+            api_keys = APIKey.objects.filter(user=request.user, is_active=True).values(
+                'id', 'key_prefix', 'created_at', 'last_used_at'
+            )
+            context['api_keys'] = list(api_keys)
+        except Exception:
+            context['api_keys'] = []
+    
+    return render(request, "pages/api.html", context)
 
 
 def about(request):
