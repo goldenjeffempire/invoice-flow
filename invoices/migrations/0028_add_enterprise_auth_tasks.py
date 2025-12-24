@@ -10,12 +10,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterModelOptions(
-            name='socialaccount',
-            options={'ordering': ['-created_at']},
-        ),
-        migrations.AlterUniqueTogether(
-            name='socialaccount',
-            unique_together=set(),
-        ),
+        # Note: Previous operations removed as SocialAccount model
+        # was already modified to not have provider_id field
+        # The model now uses user+provider as the unique constraint
     ]
