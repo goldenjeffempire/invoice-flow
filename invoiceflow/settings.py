@@ -275,6 +275,8 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "InvoiceFlow API",
     "DESCRIPTION": "Professional invoicing platform API",
     "VERSION": "1.0.0",
+    "SKIP_VIEW_PERMISSIONS": True,
+    "COERCE_DECIMAL_TO_STRING": False,
     "ENUM_NAME_OVERRIDES": {
         "InvoiceStatusEnum": "invoices.models.Invoice.status",
         "PaymentStatusEnum": "invoices.models.Payment.status",
