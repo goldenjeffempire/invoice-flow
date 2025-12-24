@@ -1,131 +1,255 @@
 {% extends "base/layout-light.html" %}
-{% block title %}Admin Dashboard - InvoiceFlow{% endblock %}
+{% block title %}Dashboard - InvoiceFlow{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/dashboard-modern.css' %}">{% endblock %}
 {% block content %}
-    <div class="min-h-screen bg-gray-50 py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p class="mt-2 text-gray-600">Overview of system metrics and user activity.</p>
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div class="dashboard-header-content">
+            <div>
+                <h1 class="dashboard-title">Dashboard</h1>
+                <p class="dashboard-subtitle">Welcome back! Here's your business overview.</p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-2xl p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-gray-500 text-sm">Total Users</span>
-                        <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-indigo-600"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
-                                </path>
+            <div class="dashboard-header-actions">
+                <button class="btn-secondary" aria-label="Refresh data">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2-8.83"></path>
+                    </svg>
+                    Refresh
+                </button>
+                <a href="{% url 'admin_invoices' %}" class="btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"></path>
+                    </svg>
+                    New Invoice
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Total Users</p>
+                <p class="metric-value">{{ total_users|default:0 }}</p>
+                <p class="metric-change positive">↑ 12.5% this month</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2H3v20h18V9m-5-5l5 5m-5-5v5h5"></path>
+                </svg>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Total Invoices</p>
+                <p class="metric-value">{{ total_invoices|default:0 }}</p>
+                <p class="metric-change positive">↑ 8.2% this month</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-purple">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18"></rect>
+                    <line x1="7" y1="2" x2="7" y2="22"></line>
+                    <line x1="17" y1="2" x2="17" y2="22"></line>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <line x1="2" y1="7" x2="7" y2="7"></line>
+                    <line x1="2" y1="17" x2="7" y2="17"></line>
+                    <line x1="17" y1="17" x2="22" y2="17"></line>
+                    <line x1="17" y1="7" x2="22" y2="7"></line>
+                </svg>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">Active Sessions</p>
+                <p class="metric-value">{{ active_sessions|default:0 }}</p>
+                <p class="metric-change neutral">→ Steady</p>
+            </div>
+        </div>
+
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-emerald">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+            <div class="metric-content">
+                <p class="metric-label">System Health</p>
+                <p class="metric-value">Optimal</p>
+                <p class="metric-change positive">✓ All systems operational</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+        <!-- Recent Activity Section -->
+        <div class="dashboard-card dashboard-card-lg">
+            <div class="card-header">
+                <h2 class="card-title">Recent Activity</h2>
+                <a href="#" class="card-link">View all</a>
+            </div>
+            <div class="card-body">
+                <div class="activity-list">
+                    <div class="activity-item">
+                        <div class="activity-icon activity-icon-invoice">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H3v20h18V9m-5-5l5 5m-5-5v5h5"></path>
                             </svg>
                         </div>
+                        <div class="activity-content">
+                            <p class="activity-title">Invoice INV-001 created</p>
+                            <p class="activity-time">2 minutes ago</p>
+                        </div>
+                        <span class="activity-badge">New</span>
                     </div>
-                    <p class="text-3xl font-bold text-gray-900">{{ total_users|default:0 }}</p>
-                </div>
-                <div class="bg-white rounded-2xl p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-gray-500 text-sm">Total Invoices</span>
-                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-green-600"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                                </path>
+                    <div class="activity-item">
+                        <div class="activity-icon activity-icon-user">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
                             </svg>
                         </div>
+                        <div class="activity-content">
+                            <p class="activity-title">New user registered</p>
+                            <p class="activity-time">1 hour ago</p>
+                        </div>
+                        <span class="activity-badge">User</span>
                     </div>
-                    <p class="text-3xl font-bold text-gray-900">{{ total_invoices|default:0 }}</p>
-                </div>
-                <div class="bg-white rounded-2xl p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-gray-500 text-sm">Active Sessions</span>
-                        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-purple-600"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                                </path>
+                    <div class="activity-item">
+                        <div class="activity-icon activity-icon-payment">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                <line x1="1" y1="10" x2="23" y2="10"></line>
                             </svg>
                         </div>
-                    </div>
-                    <p class="text-3xl font-bold text-gray-900">{{ active_sessions|default:0 }}</p>
-                </div>
-                <div class="bg-white rounded-2xl p-6 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-gray-500 text-sm">System Health</span>
-                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
-                            <svg class="w-5 h-5 text-green-600"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
+                        <div class="activity-content">
+                            <p class="activity-title">Payment received - $1,250.00</p>
+                            <p class="activity-time">3 hours ago</p>
                         </div>
+                        <span class="activity-badge">Payment</span>
                     </div>
-                    <p class="text-xl font-bold text-green-600">Healthy</p>
                 </div>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white rounded-2xl p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h3>
-                    <div class="space-y-4">
-                        <p class="text-gray-500 text-center py-8">No recent activity</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2 class="card-title">Quick Stats</h2>
+            </div>
+            <div class="card-body card-body-compact">
+                <div class="stat-row">
+                    <div class="stat-info">
+                        <p class="stat-name">This Month Revenue</p>
+                        <p class="stat-number">$12,450</p>
+                    </div>
+                    <div class="stat-change positive">+22%</div>
+                </div>
+                <div class="divider"></div>
+                <div class="stat-row">
+                    <div class="stat-info">
+                        <p class="stat-name">Pending Payments</p>
+                        <p class="stat-number">$3,200</p>
+                    </div>
+                    <div class="stat-change neutral">5 invoices</div>
+                </div>
+                <div class="divider"></div>
+                <div class="stat-row">
+                    <div class="stat-info">
+                        <p class="stat-name">Avg Invoice Value</p>
+                        <p class="stat-number">$856</p>
+                    </div>
+                    <div class="stat-change neutral">→</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Resources -->
+    <div class="dashboard-grid dashboard-grid-cols-2">
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2 class="card-title">Quick Actions</h2>
+            </div>
+            <div class="card-body card-body-minimal">
+                <div class="action-grid">
+                    <a href="{% url 'admin_users' %}" class="action-btn">
+                        <div class="action-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <span>Manage Users</span>
+                    </a>
+                    <a href="{% url 'admin_invoices' %}" class="action-btn">
+                        <div class="action-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H3v20h18V9m-5-5l5 5m-5-5v5h5"></path>
+                            </svg>
+                        </div>
+                        <span>Manage Invoices</span>
+                    </a>
+                    <a href="{% url 'admin_payments' %}" class="action-btn">
+                        <div class="action-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                <line x1="1" y1="10" x2="23" y2="10"></line>
+                            </svg>
+                        </div>
+                        <span>View Payments</span>
+                    </a>
+                    <a href="{% url 'admin_settings' %}" class="action-btn">
+                        <div class="action-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m2.12 2.12l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m2.12-2.12l4.24-4.24"></path>
+                            </svg>
+                        </div>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2 class="card-title">System Status</h2>
+            </div>
+            <div class="card-body card-body-compact">
+                <div class="status-item">
+                    <div class="status-indicator online"></div>
+                    <div>
+                        <p class="status-name">Database</p>
+                        <p class="status-value">Operational</p>
                     </div>
                 </div>
-                <div class="bg-white rounded-2xl p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <a href="{% url 'admin_users' %}"
-                           class="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-center">
-                            <svg class="w-6 h-6 text-gray-600 mx-auto mb-2"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
-                                </path>
-                            </svg>
-                            <span class="text-sm text-gray-700">Manage Users</span>
-                        </a>
-                        <a href="{% url 'admin_invoices' %}"
-                           class="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-center">
-                            <svg class="w-6 h-6 text-gray-600 mx-auto mb-2"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                                </path>
-                            </svg>
-                            <span class="text-sm text-gray-700">Manage Invoices</span>
-                        </a>
-                        <a href="{% url 'admin_settings' %}"
-                           class="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-center">
-                            <svg class="w-6 h-6 text-gray-600 mx-auto mb-2"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                                </path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                            <span class="text-sm text-gray-700">Settings</span>
-                        </a>
-                        <a href="{% url 'status' %}"
-                           class="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-center">
-                            <svg class="w-6 h-6 text-gray-600 mx-auto mb-2"
-                                 fill="none"
-                                 stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                                </path>
-                            </svg>
-                            <span class="text-sm text-gray-700">System Status</span>
-                        </a>
+                <div class="status-item">
+                    <div class="status-indicator online"></div>
+                    <div>
+                        <p class="status-name">API Server</p>
+                        <p class="status-value">Operational</p>
+                    </div>
+                </div>
+                <div class="status-item">
+                    <div class="status-indicator online"></div>
+                    <div>
+                        <p class="status-name">Email Service</p>
+                        <p class="status-value">Operational</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 {% endblock %}
