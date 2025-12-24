@@ -467,21 +467,21 @@
                 <div class="form-grid full">
                     <div class="form-group">
                         <label class="form-label required">Business Name</label>
-                        <input type="text" name="business_name" class="form-input" placeholder="Your Company Name" required aria-label="Business Name" value="{{ user.profile.company_name|default:'' }}">
+                        <input type="text" name="business_name" class="form-input" placeholder="Your Company Name" required aria-label="Business Name">
                     </div>
                     <div class="form-group">
                         <label class="form-label required">Business Email</label>
-                        <input type="email" name="business_email" class="form-input" placeholder="your@business.com" required aria-label="Business Email" autocomplete="email" value="{{ user.profile.business_email|default:'' }}">
+                        <input type="email" name="business_email" class="form-input" placeholder="your@business.com" required aria-label="Business Email" autocomplete="email">
                     </div>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Phone</label>
-                        <input type="tel" name="business_phone" class="form-input" placeholder="(555) 987-6543" aria-label="Business Phone" value="{{ user.profile.business_phone|default:'' }}">
+                        <input type="tel" name="business_phone" class="form-input" placeholder="(555) 987-6543" aria-label="Business Phone">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Address</label>
-                        <input type="text" name="business_address" class="form-input" placeholder="456 Oak Ave, City, State, ZIP" aria-label="Business Address" value="{{ user.profile.business_address|default:'' }}">
+                        <input type="text" name="business_address" class="form-input" placeholder="456 Oak Ave, City, State, ZIP" aria-label="Business Address">
                     </div>
                 </div>
             </div>
@@ -655,9 +655,27 @@ document.addEventListener('DOMContentLoaded', function() {
         if (clientEmail && !emailRegex.test(clientEmail)) errors.push('Client email is invalid');
         if (businessEmail && !emailRegex.test(businessEmail)) errors.push('Business email is invalid');
         
+        // Validate date order
+        if (invoiceDate && dueDate && invoiceDate >= dueDate) {
+            errors.push('Due date must be after invoice date');
+        }
+        
         // Validate line items
-        const lineItems = updateLineItemsInput();
-        if (lineItems.length === 0) errors.push('Please add at least one line item');
+        const lineItems = document.querySelectorAll('.line-item');
+        let validItems = 0;
+        
+        lineItems.forEach(item => {
+            const desc = item.querySelector('.item-description').value.trim();
+            const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
+            const price = parseFloat(item.querySelector('.item-price').value) || 0;
+            
+            if (!desc) errors.push('All line items must have a description');
+            if (qty <= 0) errors.push('Quantity must be greater than 0');
+            if (price < 0) errors.push('Unit price cannot be negative');
+            if (desc && qty > 0 && price >= 0) validItems++;
+        });
+        
+        if (validItems === 0) errors.push('Please add at least one valid line item');
         
         return errors;
     }
@@ -753,7 +771,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Enable submit button when form changes (has valid data)
     function checkFormValidity() {
         const submitBtn = document.getElementById('submitBtn');
-        const lineItems = updateLineItemsInput();
         const clientName = document.querySelector('input[name="client_name"]').value.trim();
         const clientEmail = document.querySelector('input[name="client_email"]').value.trim();
         const businessName = document.querySelector('input[name="business_name"]').value.trim();
@@ -761,7 +778,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const invoiceDate = document.querySelector('input[name="invoice_date"]').value;
         const dueDate = document.querySelector('input[name="due_date"]').value;
         
-        const isValid = lineItems.length > 0 && clientName && clientEmail && businessName && businessEmail && invoiceDate && dueDate;
+        // Check line items validity
+        let hasValidItems = false;
+        document.querySelectorAll('.line-item').forEach(item => {
+            const desc = item.querySelector('.item-description').value.trim();
+            const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
+            const price = parseFloat(item.querySelector('.item-price').value) || 0;
+            if (desc && qty > 0 && price >= 0) hasValidItems = true;
+        });
+        
+        // Check email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const validEmails = emailRegex.test(clientEmail) && emailRegex.test(businessEmail);
+        
+        // Check date validity
+        const validDates = invoiceDate && dueDate && invoiceDate < dueDate;
+        
+        const isValid = hasValidItems && clientName && clientEmail && businessName && businessEmail && validDates && validEmails;
         submitBtn.disabled = !isValid;
     }
     
