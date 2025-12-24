@@ -368,6 +368,16 @@
             <p class="create-subtitle">Fill in the details below to generate a new invoice</p>
         </div>
 
+        {% if messages %}
+        <div id="message-container" style="margin-bottom: 20px;">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 16px; border-radius: 8px; margin-bottom: 12px; background: {% if 'error' in message.tags %}var(--light-danger-light){% else %}var(--light-success-light){% endif %}; color: {% if 'error' in message.tags %}var(--light-danger){% else %}var(--light-success){% endif %}; border: 1px solid {% if 'error' in message.tags %}var(--light-danger){% else %}var(--light-success){% endif %};">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <form method="POST" id="invoiceForm">
             {% csrf_token %}
             <input type="hidden" name="line_items" id="lineItemsInput" value="[]">
@@ -388,21 +398,23 @@
                 <div class="form-grid form-grid-3">
                     <div class="form-group">
                         <label class="form-label required">Invoice Date</label>
-                        <input type="date" name="invoice_date" class="form-input" value="{{ today|date:'Y-m-d' }}" required>
+                        <input type="date" name="invoice_date" class="form-input" value="{{ today|date:'Y-m-d' }}" required aria-label="Invoice Date">
                     </div>
                     <div class="form-group">
                         <label class="form-label required">Due Date</label>
-                        <input type="date" name="due_date" class="form-input" value="{{ default_due_date|date:'Y-m-d' }}" required>
+                        <input type="date" name="due_date" class="form-input" value="{{ default_due_date|date:'Y-m-d' }}" required aria-label="Due Date">
                     </div>
                     <div class="form-group">
                         <label class="form-label required">Currency</label>
-                        <select name="currency" id="currencySelect" class="form-select" required>
+                        <select name="currency" id="currencySelect" class="form-select" required aria-label="Currency">
                             <option value="USD" data-symbol="$">USD ($)</option>
                             <option value="EUR" data-symbol="€">EUR (€)</option>
                             <option value="GBP" data-symbol="£">GBP (£)</option>
                             <option value="NGN" data-symbol="₦">NGN (₦)</option>
                             <option value="CAD" data-symbol="C$">CAD (C$)</option>
                             <option value="AUD" data-symbol="A$">AUD (A$)</option>
+                            <option value="INR" data-symbol="₹">INR (₹)</option>
+                            <option value="JPY" data-symbol="¥">JPY (¥)</option>
                         </select>
                     </div>
                 </div>
@@ -422,21 +434,21 @@
                 <div class="form-grid full">
                     <div class="form-group">
                         <label class="form-label required">Client Name</label>
-                        <input type="text" name="client_name" class="form-input" placeholder="Company or Individual" required>
+                        <input type="text" name="client_name" class="form-input" placeholder="Company or Individual" required aria-label="Client Name" autocomplete="off">
                     </div>
                     <div class="form-group">
                         <label class="form-label required">Client Email</label>
-                        <input type="email" name="client_email" class="form-input" placeholder="client@example.com" required>
+                        <input type="email" name="client_email" class="form-input" placeholder="client@example.com" required aria-label="Client Email" autocomplete="email">
                     </div>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Phone</label>
-                        <input type="tel" name="client_phone" class="form-input" placeholder="(555) 123-4567">
+                        <input type="tel" name="client_phone" class="form-input" placeholder="(555) 123-4567" aria-label="Client Phone">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Address</label>
-                        <input type="text" name="client_address" class="form-input" placeholder="123 Main St, City, State, ZIP">
+                        <input type="text" name="client_address" class="form-input" placeholder="123 Main St, City, State, ZIP" aria-label="Client Address">
                     </div>
                 </div>
             </div>
@@ -455,21 +467,21 @@
                 <div class="form-grid full">
                     <div class="form-group">
                         <label class="form-label required">Business Name</label>
-                        <input type="text" name="business_name" class="form-input" placeholder="Your Company Name" required>
+                        <input type="text" name="business_name" class="form-input" placeholder="Your Company Name" required aria-label="Business Name" value="{{ user.profile.company_name|default:'' }}">
                     </div>
                     <div class="form-group">
                         <label class="form-label required">Business Email</label>
-                        <input type="email" name="business_email" class="form-input" placeholder="your@business.com" required>
+                        <input type="email" name="business_email" class="form-input" placeholder="your@business.com" required aria-label="Business Email" autocomplete="email" value="{{ user.profile.business_email|default:'' }}">
                     </div>
                 </div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label class="form-label">Phone</label>
-                        <input type="tel" name="business_phone" class="form-input" placeholder="(555) 987-6543">
+                        <input type="tel" name="business_phone" class="form-input" placeholder="(555) 987-6543" aria-label="Business Phone" value="{{ user.profile.business_phone|default:'' }}">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Address</label>
-                        <input type="text" name="business_address" class="form-input" placeholder="456 Oak Ave, City, State, ZIP">
+                        <input type="text" name="business_address" class="form-input" placeholder="456 Oak Ave, City, State, ZIP" aria-label="Business Address" value="{{ user.profile.business_address|default:'' }}">
                     </div>
                 </div>
             </div>
@@ -553,13 +565,13 @@
             <!-- Form Actions -->
             <div class="form-actions">
                 <a href="{% url 'invoices:invoice_list' %}" class="btn-light-secondary">Cancel</a>
-                <button type="submit" class="btn-light-primary">
+                <button type="submit" id="submitBtn" class="btn-light-primary" disabled>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
                         <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                         <polyline points="17 21 17 13 7 13 7 21"/>
                         <polyline points="7 3 7 8 15 8"/>
                     </svg>
-                    Create Invoice
+                    <span id="submitText">Create Invoice</span>
                 </button>
             </div>
         </form>
@@ -709,12 +721,37 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
+        // Disable submit button and show loading state
+        const submitBtn = document.getElementById('submitBtn');
+        const submitText = document.getElementById('submitText');
+        submitBtn.disabled = true;
+        submitText.textContent = 'Creating Invoice...';
+        
         return true;
+    });
+    
+    // Enable submit button when form changes (has valid data)
+    function checkFormValidity() {
+        const submitBtn = document.getElementById('submitBtn');
+        const lineItems = updateLineItemsInput();
+        const clientName = document.querySelector('input[name="client_name"]').value.trim();
+        const clientEmail = document.querySelector('input[name="client_email"]').value.trim();
+        const businessName = document.querySelector('input[name="business_name"]').value.trim();
+        const businessEmail = document.querySelector('input[name="business_email"]').value.trim();
+        
+        const isValid = lineItems.length > 0 && clientName && clientEmail && businessName && businessEmail;
+        submitBtn.disabled = !isValid;
+    }
+    
+    // Attach validity checker to all important fields
+    document.querySelectorAll('input[name="client_name"], input[name="client_email"], input[name="business_name"], input[name="business_email"], .item-description').forEach(input => {
+        input.addEventListener('input', checkFormValidity);
     });
 
     // Initial setup
     attachInputListeners();
     calculateTotals();
+    checkFormValidity();
 });
 </script>
 {% endblock %}
