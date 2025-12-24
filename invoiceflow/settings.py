@@ -5,6 +5,7 @@ Domain: https://invoiceflow.com.ng
 
 from pathlib import Path
 import os
+from typing import Any, cast
 import environ
 
 from .env_validation import validate_env
@@ -21,11 +22,11 @@ validate_env()
 # =============================================================================
 # ENVIRONMENT DETECTION
 # =============================================================================
-IS_REPLIT = bool(os.getenv("REPL_ID") or os.getenv("REPLIT"))
-IS_RENDER = bool(os.getenv("RENDER"))
-IS_PRODUCTION = os.getenv("PRODUCTION") == "true"
+IS_REPLIT: bool = bool(os.getenv("REPL_ID") or os.getenv("REPLIT"))
+IS_RENDER: bool = bool(os.getenv("RENDER"))
+IS_PRODUCTION: bool = os.getenv("PRODUCTION") == "true"
 
-DEBUG = False if IS_PRODUCTION else env.bool("DEBUG", default=IS_REPLIT)
+DEBUG: bool = False if IS_PRODUCTION else cast(bool, env.bool("DEBUG", default=IS_REPLIT))
 
 # =============================================================================
 # DOMAIN
@@ -36,8 +37,8 @@ PRODUCTION_URL = f"https://{PRODUCTION_DOMAIN}"
 # =============================================================================
 # SECURITY KEYS
 # =============================================================================
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-only")
-ENCRYPTION_SALT = env("ENCRYPTION_SALT", default="dev-salt")
+SECRET_KEY: str = cast(str, env("SECRET_KEY", default="django-insecure-dev-only"))
+ENCRYPTION_SALT: str = cast(str, env("ENCRYPTION_SALT", default="dev-salt"))
 
 if IS_PRODUCTION:
     if SECRET_KEY.startswith("django-insecure"):
@@ -49,16 +50,16 @@ if IS_PRODUCTION:
 # =============================================================================
 # ALLOWED HOSTS / CSRF
 # =============================================================================
-ALLOWED_HOSTS = (
-    env.list(
+ALLOWED_HOSTS: list[str] = (
+    cast(list[str], env.list(
         "ALLOWED_HOSTS",
         default=[PRODUCTION_DOMAIN, f".{PRODUCTION_DOMAIN}", f"www.{PRODUCTION_DOMAIN}"],
-    )
+    ))
     if IS_PRODUCTION
     else ["*"]
 )
 
-CSRF_TRUSTED_ORIGINS = [
+CSRF_TRUSTED_ORIGINS: list[str] = [
     f"https://{PRODUCTION_DOMAIN}",
     f"https://www.{PRODUCTION_DOMAIN}",
 ]
@@ -70,10 +71,11 @@ if not IS_PRODUCTION:
         "https://*.onrender.com",
     ]
 
-if os.getenv("CSRF_TRUSTED_ORIGINS"):
+csrf_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS")
+if csrf_origins_env:
     CSRF_TRUSTED_ORIGINS = [
         x.strip()
-        for x in os.getenv("CSRF_TRUSTED_ORIGINS").split(",")
+        for x in csrf_origins_env.split(",")
         if x.strip()
     ]
 
@@ -158,8 +160,9 @@ WSGI_APPLICATION = "invoiceflow.wsgi.application"
 # =============================================================================
 # DATABASE
 # =============================================================================
-if env("DATABASE_URL", default=None):
-    DATABASES = {
+database_url: Any = env("DATABASE_URL", default=None)
+if database_url:
+    DATABASES: dict[str, dict[str, Any]] = {
         "default": {
             **env.db(),
             "CONN_MAX_AGE": 600,
@@ -346,23 +349,23 @@ CONTENT_SECURITY_POLICY = {
 # =============================================================================
 # EMAIL
 # =============================================================================
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env("EMAIL_HOST", default="smtp.gmail.com")
-EMAIL_PORT = env.int("EMAIL_PORT", default=587)
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
-DEFAULT_FROM_EMAIL = f"noreply@{PRODUCTION_DOMAIN}"
+EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST: str = cast(str, env("EMAIL_HOST", default="smtp.gmail.com"))
+EMAIL_PORT: int = cast(int, env.int("EMAIL_PORT", default=587))
+EMAIL_USE_TLS: bool = True
+EMAIL_HOST_USER: str = cast(str, env("EMAIL_HOST_USER", default=""))
+EMAIL_HOST_PASSWORD: str = cast(str, env("EMAIL_HOST_PASSWORD", default=""))
+DEFAULT_FROM_EMAIL: str = f"noreply@{PRODUCTION_DOMAIN}"
 
 # =============================================================================
 # THIRD-PARTY
 # =============================================================================
-HCAPTCHA_SITEKEY = env("HCAPTCHA_SITEKEY", default="")
-HCAPTCHA_SECRET = env("HCAPTCHA_SECRET", default="")
-HCAPTCHA_ENABLED = bool(HCAPTCHA_SITEKEY and HCAPTCHA_SECRET)
+HCAPTCHA_SITEKEY: str = cast(str, env("HCAPTCHA_SITEKEY", default=""))
+HCAPTCHA_SECRET: str = cast(str, env("HCAPTCHA_SECRET", default=""))
+HCAPTCHA_ENABLED: bool = bool(HCAPTCHA_SITEKEY and HCAPTCHA_SECRET)
 
 # =============================================================================
 # API / WEBHOOKS
 # =============================================================================
-API_BASE_URL = env("API_BASE_URL", default=PRODUCTION_URL)
-WEBHOOK_BASE_URL = env("WEBHOOK_BASE_URL", default=PRODUCTION_URL)
+API_BASE_URL: str = cast(str, env("API_BASE_URL", default=PRODUCTION_URL))
+WEBHOOK_BASE_URL: str = cast(str, env("WEBHOOK_BASE_URL", default=PRODUCTION_URL))
