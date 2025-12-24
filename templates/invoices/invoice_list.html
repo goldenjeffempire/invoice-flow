@@ -1,763 +1,162 @@
 {% extends "base/layout-light.html" %}
 {% load static %}
 {% block title %}Invoices - InvoiceFlow{% endblock %}
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/invoices-modern.css' %}">
-<style>
-.bulk-actions-bar {
-    display: none;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--light-primary-light);
-    border-radius: var(--light-radius-lg);
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-}
-
-.bulk-actions-bar.active {
-    display: flex;
-}
-
-.bulk-actions-bar .selected-count {
-    font-weight: 600;
-    color: var(--light-primary);
-    margin-right: auto;
-}
-
-.bulk-actions-bar .btn-bulk {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    border-radius: var(--light-radius-md);
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.bulk-actions-bar .btn-bulk svg {
-    width: 16px;
-    height: 16px;
-}
-
-.btn-bulk-primary {
-    background: var(--light-primary);
-    color: white;
-}
-
-.btn-bulk-primary:hover {
-    background: var(--light-primary-dark);
-}
-
-.btn-bulk-success {
-    background: var(--light-success);
-    color: white;
-}
-
-.btn-bulk-success:hover {
-    opacity: 0.9;
-}
-
-.btn-bulk-warning {
-    background: var(--light-warning);
-    color: white;
-}
-
-.btn-bulk-warning:hover {
-    opacity: 0.9;
-}
-
-.btn-bulk-danger {
-    background: var(--light-danger);
-    color: white;
-}
-
-.btn-bulk-danger:hover {
-    opacity: 0.9;
-}
-
-.btn-bulk-secondary {
-    background: var(--light-bg-secondary);
-    color: var(--light-text-primary);
-    border: 1px solid var(--light-border-primary);
-}
-
-.btn-bulk-secondary:hover {
-    background: var(--light-bg-tertiary);
-}
-
-.export-dropdown {
-    position: relative;
-}
-
-.export-dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 4px;
-    background: var(--light-bg-secondary);
-    border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-md);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    z-index: 100;
-    min-width: 150px;
-}
-
-.export-dropdown-menu.show {
-    display: block;
-}
-
-.export-dropdown-menu a {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    font-size: 0.875rem;
-    color: var(--light-text-primary);
-    text-decoration: none;
-    transition: background 0.2s;
-}
-
-.export-dropdown-menu a:hover {
-    background: var(--light-bg-tertiary);
-}
-
-.export-dropdown-menu a svg {
-    width: 16px;
-    height: 16px;
-}
-
-.checkbox-cell {
-    width: 40px;
-    text-align: center;
-}
-
-.invoice-checkbox {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    accent-color: var(--light-primary);
-}
-
-@media (max-width: 768px) {
-    .table-light {
-        display: none;
-    }
-    
-    .mobile-invoice-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-    
-    .mobile-invoice-card {
-        background: var(--light-bg-secondary);
-        border: 1px solid var(--light-border-primary);
-        border-radius: var(--light-radius-lg);
-        padding: 16px;
-        transition: all 0.2s ease;
-    }
-    
-    .mobile-invoice-card:hover {
-        border-color: var(--light-primary);
-    }
-    
-    .mobile-invoice-card.selected {
-        border-color: var(--light-primary);
-        background: var(--light-primary-light);
-    }
-    
-    .mobile-card-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-    
-    .mobile-card-header .invoice-checkbox {
-        flex-shrink: 0;
-    }
-    
-    .mobile-card-title {
-        flex: 1;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    
-    .mobile-card-title a {
-        font-weight: 600;
-        color: var(--light-primary);
-        text-decoration: none;
-    }
-    
-    .mobile-card-body {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-    
-    .mobile-card-field {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-    
-    .mobile-card-label {
-        font-size: 0.75rem;
-        color: var(--light-text-tertiary);
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    .mobile-card-value {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--light-text-primary);
-    }
-    
-    .mobile-card-actions {
-        display: flex;
-        gap: 8px;
-        padding-top: 12px;
-        border-top: 1px solid var(--light-border-primary);
-    }
-    
-    .mobile-card-actions a {
-        flex: 1;
-        text-align: center;
-        padding: 8px;
-        font-size: 0.8125rem;
-        font-weight: 500;
-        color: var(--light-primary);
-        text-decoration: none;
-        border-radius: var(--light-radius-md);
-        background: var(--light-bg-tertiary);
-    }
-    
-    .mobile-card-actions a:hover {
-        background: var(--light-primary-light);
-    }
-}
-
-@media (min-width: 769px) {
-    .mobile-invoice-list {
-        display: none;
-    }
-}
-
-.header-with-export {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.btn-export-all {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--light-text-secondary);
-    background: var(--light-bg-tertiary);
-    border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-md);
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-export-all:hover {
-    background: var(--light-bg-secondary);
-    color: var(--light-text-primary);
-}
-
-.btn-export-all svg {
-    width: 16px;
-    height: 16px;
-}
-</style>
-{% endblock %}
-
-{% block nav %}{% endblock %}
-{% block footer %}{% endblock %}
-
+{% block extra_css %}<style>
+.invoice-list-container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+.list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.list-title { font-size: 2rem; font-weight: 700; color: #1f2937; }
+.list-actions { display: flex; gap: 1rem; }
+.btn-primary { padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #6366f1, #818cf8); color: white; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+.stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-item { background: white; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e5e7eb; text-align: center; }
+.stat-value { font-size: 1.875rem; font-weight: 700; color: #1f2937; }
+.stat-label { font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem; }
+.filters-section { background: white; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e5e7eb; margin-bottom: 2rem; }
+.filter-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+.filter-group { display: flex; flex-direction: column; }
+.filter-label { font-size: 0.875rem; color: #6b7280; margin-bottom: 0.5rem; font-weight: 600; }
+.filter-input { padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; font-size: 0.875rem; }
+.invoices-table { width: 100%; border-collapse: collapse; background: white; border-radius: 1rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.invoices-table th { background: #f9fafb; padding: 1rem; text-align: left; font-weight: 600; color: #6b7280; font-size: 0.875rem; border-bottom: 1px solid #e5e7eb; }
+.invoices-table td { padding: 1rem; border-bottom: 1px solid #f3f4f6; }
+.invoice-id { font-weight: 600; color: #1f2937; }
+.invoice-status { display: inline-block; padding: 0.375rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+.status-paid { background: #d1fae5; color: #065f46; }
+.status-unpaid { background: #fef3c7; color: #92400e; }
+.status-overdue { background: #fee2e2; color: #991b1b; }
+.invoice-amount { text-align: right; font-weight: 600; color: #1f2937; }
+.invoice-actions { display: flex; gap: 0.5rem; }
+.action-link { padding: 0.5rem 0.75rem; background: #f3f4f6; color: #6366f1; border-radius: 0.5rem; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.3s; }
+.action-link:hover { background: #e5e7eb; }
+.pagination { display: flex; justify-content: center; gap: 0.5rem; margin-top: 2rem; }
+.page-link { padding: 0.5rem 0.75rem; background: white; border: 1px solid #d1d5db; border-radius: 0.5rem; text-decoration: none; color: #6366f1; font-weight: 500; }
+.page-link.active { background: #6366f1; color: white; border-color: #6366f1; }
+.empty-state { text-align: center; padding: 3rem 2rem; color: #6b7280; }
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+</style>{% endblock %}
 {% block content %}
-<div class="dashboard-layout">
-    {% include 'components/sidebar-light.html' with active='invoices' %}
-    
-    <main class="dashboard-main">
-        <header class="dashboard-light-header">
-            <div class="dashboard-light-header-content">
-                <h1>📄 Invoices</h1>
-                <p>Create, manage, and track professional invoices</p>
-            </div>
-            <div class="dashboard-light-actions header-with-export">
-                <div class="export-dropdown">
-                    <button type="button" class="btn-export-all" id="exportAllBtn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                        Export
-                    </button>
-                    <div class="export-dropdown-menu" id="exportMenu">
-                        <a href="{% url 'invoices:export_invoices_csv' %}?status={{ status_filter }}&search={{ search_query }}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                            Export as CSV
-                        </a>
-                    </div>
-                </div>
-                <a href="{% url 'invoices:create_invoice' %}" class="btn-light-primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    New Invoice
-                </a>
-            </div>
-        </header>
-        
-        <div class="tabs-light" style="max-width: 600px;">
-            <a href="?status=all" class="tab-light {% if status_filter == 'all' or not status_filter %}active{% endif %}">
-                All ({{ total_count|default:0 }})
-            </a>
-            <a href="?status=paid" class="tab-light {% if status_filter == 'paid' %}active{% endif %}">
-                Paid ({{ paid_count|default:0 }})
-            </a>
-            <a href="?status=unpaid" class="tab-light {% if status_filter == 'unpaid' %}active{% endif %}">
-                Unpaid ({{ unpaid_count|default:0 }})
-            </a>
-            <a href="?status=overdue" class="tab-light {% if status_filter == 'overdue' %}active{% endif %}">
-                Overdue ({{ overdue_count|default:0 }})
-            </a>
+<div class="invoice-list-container">
+    <div class="list-header">
+        <h1 class="list-title">Invoices</h1>
+        <div class="list-actions">
+            <a href="{% url 'invoices:create_invoice' %}" class="btn-primary">+ Create Invoice</a>
         </div>
-        
-        <div class="filter-bar-modern">
-            <div class="filter-light-search">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
-                <form method="get" id="searchForm">
-                    <input type="text" name="search" placeholder="Search by invoice ID, client name..." value="{{ search_query }}" class="filter-input-modern">
-                    <input type="hidden" name="status" value="{{ status_filter }}">
-                </form>
-            </div>
-            <form method="get" id="filterForm" style="display: flex; gap: 12px;">
-                <select name="date_range" class="filter-light-select" onchange="this.form.submit()">
-                    <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
-                    <option value="7days" {% if date_filter == '7days' %}selected{% endif %}>Last 7 Days</option>
-                    <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last 30 Days</option>
-                    <option value="90days" {% if date_filter == '90days' %}selected{% endif %}>Last 90 Days</option>
-                </select>
-                <select name="sort" class="filter-light-select" onchange="this.form.submit()">
-                    <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
-                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
-                    <option value="-total" {% if sort_by == '-total' %}selected{% endif %}>Highest Amount</option>
-                    <option value="total" {% if sort_by == 'total' %}selected{% endif %}>Lowest Amount</option>
-                </select>
-                <input type="hidden" name="status" value="{{ status_filter }}">
-                <input type="hidden" name="search" value="{{ search_query }}">
-            </form>
-        </div>
-        
-        {% if invoices %}
-        <div class="bulk-actions-bar" id="bulkActionsBar">
-            <span class="selected-count"><span id="selectedCount">0</span> invoice(s) selected</span>
-            <form method="post" action="{% url 'invoices:bulk_invoice_action' %}" id="bulkActionForm" style="display: contents;">
-                {% csrf_token %}
-                <input type="hidden" name="invoice_ids" id="selectedInvoiceIds" value="">
-                <input type="hidden" name="action" id="bulkActionType" value="">
-                <button type="button" class="btn-bulk btn-bulk-success" onclick="submitBulkAction('mark_paid')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                    Mark Paid
-                </button>
-                <button type="button" class="btn-bulk btn-bulk-warning" onclick="submitBulkAction('mark_unpaid')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    Mark Unpaid
-                </button>
-                <button type="button" class="btn-bulk btn-bulk-danger" onclick="submitBulkAction('delete')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="3 6 5 6 21 6"/>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                    </svg>
-                    Delete
-                </button>
-                <button type="button" class="btn-bulk btn-bulk-secondary" onclick="exportSelected()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Export Selected
-                </button>
-            </form>
-            <button type="button" class="btn-bulk btn-bulk-secondary" onclick="clearSelection()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-                Clear
-            </button>
-        </div>
-        
-        <div class="card-light">
-            <div style="overflow-x: auto;">
-                <table class="table-light">
-                    <thead>
-                        <tr>
-                            <th class="checkbox-cell">
-                                <input type="checkbox" class="invoice-checkbox" id="selectAllCheckbox" title="Select all">
-                            </th>
-                            <th>Invoice</th>
-                            <th>Client</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th>Due Date</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for invoice in invoices %}
-                        <tr data-invoice-id="{{ invoice.id }}">
-                            <td class="checkbox-cell">
-                                <input type="checkbox" class="invoice-checkbox invoice-row-checkbox" value="{{ invoice.id }}">
-                            </td>
-                            <td>
-                                <a href="{% url 'invoices:invoice_detail' invoice.id %}" style="color: var(--light-primary); text-decoration: none; font-weight: 600;">
-                                    {{ invoice.invoice_id }}
-                                </a>
-                            </td>
-                            <td>
-                                <div>
-                                    <div style="font-weight: 500; color: var(--light-text-primary);">{{ invoice.client_name }}</div>
-                                    <div style="font-size: 0.75rem; color: var(--light-text-tertiary);">{{ invoice.client_email }}</div>
-                                </div>
-                            </td>
-                            <td style="font-weight: 600;">
-                                <span class="currency-display" data-currency="{{ invoice.currency }}">{{ invoice.currency }}</span>
-                                {{ invoice.total|floatformat:2 }}
-                            </td>
-                            <td>
-                                {% if invoice.status == 'paid' %}
-                                    <span class="badge-light badge-paid">Paid</span>
-                                {% elif invoice.due_date and invoice.due_date < today %}
-                                    <span class="badge-light badge-overdue">Overdue</span>
-                                {% else %}
-                                    <span class="badge-light badge-unpaid">Unpaid</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ invoice.invoice_date|date:"M d, Y" }}</td>
-                            <td>
-                                {% if invoice.due_date %}
-                                    <span {% if invoice.due_date < today and invoice.status == 'unpaid' %}style="color: var(--light-danger);"{% endif %}>
-                                        {{ invoice.due_date|date:"M d, Y" }}
-                                    </span>
-                                {% else %}
-                                    <span style="color: var(--light-text-muted);">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div style="display: flex; gap: 8px;">
-                                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="table-action-light" title="View">View</a>
-                                    <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="table-action-light" title="Edit">Edit</a>
-                                    <a href="{% url 'invoices:generate_pdf' invoice.id %}" class="table-action-light" title="PDF">PDF</a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <div class="mobile-invoice-list">
-            {% for invoice in invoices %}
-            <div class="mobile-invoice-card" data-invoice-id="{{ invoice.id }}">
-                <div class="mobile-card-header">
-                    <input type="checkbox" class="invoice-checkbox mobile-invoice-checkbox" value="{{ invoice.id }}">
-                    <div class="mobile-card-title">
-                        <a href="{% url 'invoices:invoice_detail' invoice.id %}">{{ invoice.invoice_id }}</a>
-                        {% if invoice.status == 'paid' %}
-                            <span class="badge-light badge-paid">Paid</span>
-                        {% elif invoice.due_date and invoice.due_date < today %}
-                            <span class="badge-light badge-overdue">Overdue</span>
-                        {% else %}
-                            <span class="badge-light badge-unpaid">Unpaid</span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="mobile-card-body">
-                    <div class="mobile-card-field">
-                        <span class="mobile-card-label">Client</span>
-                        <span class="mobile-card-value">{{ invoice.client_name }}</span>
-                    </div>
-                    <div class="mobile-card-field">
-                        <span class="mobile-card-label">Amount</span>
-                        <span class="mobile-card-value">
-                            <span class="currency-display" data-currency="{{ invoice.currency }}">{{ invoice.currency }}</span>
-                            {{ invoice.total|floatformat:2 }}
-                        </span>
-                    </div>
-                    <div class="mobile-card-field">
-                        <span class="mobile-card-label">Invoice Date</span>
-                        <span class="mobile-card-value">{{ invoice.invoice_date|date:"M d, Y" }}</span>
-                    </div>
-                    <div class="mobile-card-field">
-                        <span class="mobile-card-label">Due Date</span>
-                        <span class="mobile-card-value" {% if invoice.due_date < today and invoice.status == 'unpaid' %}style="color: var(--light-danger);"{% endif %}>
-                            {% if invoice.due_date %}{{ invoice.due_date|date:"M d, Y" }}{% else %}-{% endif %}
-                        </span>
-                    </div>
-                </div>
-                <div class="mobile-card-actions">
-                    <a href="{% url 'invoices:invoice_detail' invoice.id %}">View</a>
-                    <a href="{% url 'invoices:edit_invoice' invoice.id %}">Edit</a>
-                    <a href="{% url 'invoices:generate_pdf' invoice.id %}">PDF</a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        
-        {% if page_obj.paginator.num_pages > 1 %}
-        <div class="pagination-light">
-            {% if page_obj.has_previous %}
-            <a href="?page=1&status={{ status_filter }}&search={{ search_query }}" class="pagination-light-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="11 17 6 12 11 7"/>
-                    <polyline points="18 17 13 12 18 7"/>
-                </svg>
-            </a>
-            <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&search={{ search_query }}" class="pagination-light-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 18 9 12 15 6"/>
-                </svg>
-            </a>
-            {% endif %}
-            
-            <span style="padding: 0 16px; font-size: 0.875rem; color: var(--light-text-secondary);">
-                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-            </span>
-            
-            {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&search={{ search_query }}" class="pagination-light-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 18 15 12 9 6"/>
-                </svg>
-            </a>
-            <a href="?page={{ page_obj.paginator.num_pages }}&status={{ status_filter }}&search={{ search_query }}" class="pagination-light-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="13 17 18 12 13 7"/>
-                    <polyline points="6 17 11 12 6 7"/>
-                </svg>
-            </a>
-            {% endif %}
-        </div>
-        {% endif %}
-        
-        {% else %}
-        <div class="card-light">
-            <div class="card-light-body">
-                <div class="empty-light-state">
-                    <div class="empty-light-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="12" y1="11" x2="12" y2="17"/>
-                            <line x1="9" y1="14" x2="15" y2="14"/>
-                        </svg>
-                    </div>
-                    {% if search_query or status_filter != 'all' %}
-                    <h3 class="empty-light-title">No invoices found</h3>
-                    <p class="empty-light-description">Try adjusting your search or filter criteria.</p>
-                    <a href="{% url 'invoices:invoice_list' %}" class="btn-light-secondary">Clear Filters</a>
-                    {% else %}
-                    <h3 class="empty-light-title">No invoices yet</h3>
-                    <p class="empty-light-description">Create your first professional invoice and start getting paid faster.</p>
-                    <a href="{% url 'invoices:create_invoice' %}" class="btn-light-primary">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Create First Invoice
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
-        {% include 'components/dashboard-footer.html' %}
-    </main>
-</div>
-{% endblock %}
+    </div>
 
-{% block extra_js %}
-<script nonce="{{ request.csp_nonce }}">
-document.addEventListener('DOMContentLoaded', function() {
-    const mobileToggle = document.getElementById('mobile-toggle');
-    const sidebar = document.getElementById('dashboard-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        });
-    }
-    
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        });
-    }
-    
-    const currencySymbols = {
-        'USD': '$',
-        'EUR': '\u20AC',
-        'GBP': '\u00A3',
-        'NGN': '\u20A6',
-        'CAD': 'CA$',
-        'AUD': 'A$'
-    };
-    
-    document.querySelectorAll('.currency-display').forEach(el => {
-        const currency = el.dataset.currency;
-        if (currencySymbols[currency]) {
-            el.textContent = currencySymbols[currency];
-        }
-    });
-    
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const rowCheckboxes = document.querySelectorAll('.invoice-row-checkbox');
-    const mobileCheckboxes = document.querySelectorAll('.mobile-invoice-checkbox');
-    const bulkActionsBar = document.getElementById('bulkActionsBar');
-    const selectedCountEl = document.getElementById('selectedCount');
-    const selectedIdsInput = document.getElementById('selectedInvoiceIds');
-    
-    function updateSelection() {
-        const allCheckboxes = [...rowCheckboxes, ...mobileCheckboxes];
-        const checked = allCheckboxes.filter(cb => cb.checked);
-        const selectedIds = [...new Set(checked.map(cb => cb.value))];
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-value">{{ total_count }}</div>
+            <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ paid_count }}</div>
+            <div class="stat-label">Paid</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ unpaid_count }}</div>
+            <div class="stat-label">Pending</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value">{{ overdue_count }}</div>
+            <div class="stat-label">Overdue</div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <form method="get" class="filter-form">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label class="filter-label">Search</label>
+                    <input type="text" name="search" class="filter-input" placeholder="Invoice #, Client name..." value="{{ search_query }}">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select name="status" class="filter-input">
+                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+                        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
+                        <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>Unpaid</option>
+                        <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Date Range</label>
+                    <select name="date_range" class="filter-input">
+                        <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
+                        <option value="7days" {% if date_filter == '7days' %}selected{% endif %}>Last 7 Days</option>
+                        <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last 30 Days</option>
+                        <option value="90days" {% if date_filter == '90days' %}selected{% endif %}>Last 90 Days</option>
+                        <option value="year" {% if date_filter == 'year' %}selected{% endif %}>This Year</option>
+                    </select>
+                </div>
+                <div class="filter-group" style="justify-content: flex-end;">
+                    <button type="submit" class="btn-primary" style="margin-top: 1.5rem;">Filter</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Invoices Table -->
+    {% if invoices %}
+    <table class="invoices-table">
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Client</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Due Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr>
+                <td><span class="invoice-id">{{ invoice.invoice_id }}</span></td>
+                <td>{{ invoice.client_name }}</td>
+                <td class="invoice-amount">${{ invoice.total|default:"0"|floatformat:2 }}</td>
+                <td>
+                    <span class="invoice-status {% if invoice.status == 'paid' %}status-paid{% elif invoice.due_date < today and invoice.status == 'unpaid' %}status-overdue{% else %}status-unpaid{% endif %}">
+                        {% if invoice.status == 'paid' %}Paid{% elif invoice.due_date < today and invoice.status == 'unpaid' %}Overdue{% else %}Pending{% endif %}
+                    </span>
+                </td>
+                <td>{{ invoice.invoice_date|date:"M d, Y" }}</td>
+                <td>{{ invoice.due_date|date:"M d, Y" }}</td>
+                <td>
+                    <div class="invoice-actions">
+                        <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="action-link">View</a>
+                        <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="action-link">Edit</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="page-link">First</a>
+            <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="page-link">← Prev</a>
+        {% endif %}
         
-        selectedCountEl.textContent = selectedIds.length;
-        selectedIdsInput.value = selectedIds.join(',');
+        <span style="align-self: center; color: #6b7280;">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
         
-        if (selectedIds.length > 0) {
-            bulkActionsBar.classList.add('active');
-        } else {
-            bulkActionsBar.classList.remove('active');
-        }
-        
-        document.querySelectorAll('.mobile-invoice-card').forEach(card => {
-            const checkbox = card.querySelector('.mobile-invoice-checkbox');
-            if (checkbox && checkbox.checked) {
-                card.classList.add('selected');
-            } else {
-                card.classList.remove('selected');
-            }
-        });
-        
-        const allRowsChecked = [...rowCheckboxes].every(cb => cb.checked);
-        selectAllCheckbox.checked = rowCheckboxes.length > 0 && allRowsChecked;
-        selectAllCheckbox.indeterminate = checked.length > 0 && !allRowsChecked;
-    }
-    
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            rowCheckboxes.forEach(cb => cb.checked = isChecked);
-            mobileCheckboxes.forEach(cb => {
-                const matchingRow = [...rowCheckboxes].find(r => r.value === cb.value);
-                if (matchingRow) {
-                    cb.checked = isChecked;
-                }
-            });
-            updateSelection();
-        });
-    }
-    
-    rowCheckboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            const matchingMobile = [...mobileCheckboxes].find(m => m.value === this.value);
-            if (matchingMobile) matchingMobile.checked = this.checked;
-            updateSelection();
-        });
-    });
-    
-    mobileCheckboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            const matchingRow = [...rowCheckboxes].find(r => r.value === this.value);
-            if (matchingRow) matchingRow.checked = this.checked;
-            updateSelection();
-        });
-    });
-    
-    window.submitBulkAction = function(action) {
-        const selectedIds = selectedIdsInput.value;
-        if (!selectedIds) {
-            alert('Please select at least one invoice.');
-            return;
-        }
-        
-        if (action === 'delete') {
-            if (!confirm('Are you sure you want to delete the selected invoices? This cannot be undone.')) {
-                return;
-            }
-        }
-        
-        document.getElementById('bulkActionType').value = action;
-        document.getElementById('bulkActionForm').submit();
-    };
-    
-    window.exportSelected = function() {
-        const selectedIds = selectedIdsInput.value;
-        if (!selectedIds) {
-            alert('Please select at least one invoice to export.');
-            return;
-        }
-        window.location.href = "{% url 'invoices:export_invoices_csv' %}?ids=" + selectedIds;
-    };
-    
-    window.clearSelection = function() {
-        rowCheckboxes.forEach(cb => cb.checked = false);
-        mobileCheckboxes.forEach(cb => cb.checked = false);
-        if (selectAllCheckbox) selectAllCheckbox.checked = false;
-        updateSelection();
-    };
-    
-    const exportBtn = document.getElementById('exportAllBtn');
-    const exportMenu = document.getElementById('exportMenu');
-    
-    if (exportBtn && exportMenu) {
-        exportBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            exportMenu.classList.toggle('show');
-        });
-        
-        document.addEventListener('click', function() {
-            exportMenu.classList.remove('show');
-        });
-    }
-});
-</script>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="page-link">Next →</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="page-link">Last</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📄</div>
+        <p>No invoices found</p>
+        <a href="{% url 'invoices:create_invoice' %}" class="btn-primary" style="margin-top: 1rem;">Create your first invoice</a>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

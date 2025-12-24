@@ -408,19 +408,17 @@ def dashboard(request):
 
 @login_required
 def invoice_list(request):
-    """Display paginated invoice list with filtering, sorting, and bulk actions."""
+    """Display comprehensive invoice list with advanced filtering and bulk actions."""
     from datetime import timedelta
     from django.db.models import Sum, F
 
     base_queryset = Invoice.objects.filter(user=request.user).prefetch_related("line_items")
 
-    # Get filter parameters
     status_filter = request.GET.get("status", "all")
     search_query = request.GET.get("search", "").strip()
     date_filter = request.GET.get("date_range", "all")
     sort_by = request.GET.get("sort", "-created_at")
 
-    # Apply status filter
     if status_filter == "paid":
         base_queryset = base_queryset.filter(status="paid")
     elif status_filter == "unpaid":
@@ -429,16 +427,14 @@ def invoice_list(request):
         today = timezone.now().date()
         base_queryset = base_queryset.filter(status="unpaid", due_date__lt=today)
 
-    # Apply search filter
     if search_query:
         query_filter = (
-            Q(invoice_id__icontains=search_query) |  # type: ignore
+            Q(invoice_id__icontains=search_query) |
             Q(client_name__icontains=search_query) |
             Q(client_email__icontains=search_query)
         )
         base_queryset = base_queryset.filter(query_filter)
 
-    # Apply date range filter
     today = timezone.now().date()
     if date_filter == "7days":
         start_date = today - timedelta(days=7)
@@ -453,7 +449,6 @@ def invoice_list(request):
         start_date = today.replace(month=1, day=1)
         base_queryset = base_queryset.filter(invoice_date__gte=start_date)
 
-    # Apply sorting
     valid_sorts = {
         "-created_at": "-created_at",
         "created_at": "created_at",
@@ -469,15 +464,14 @@ def invoice_list(request):
     order_by = valid_sorts.get(sort_by, "-created_at")
     base_queryset = base_queryset.order_by(order_by)
 
-    # Get unique clients for filter dropdown
-    clients = Invoice.objects.filter(user=request.user).values_list("client_name", flat=True).distinct()[:50]
+    invoices_with_totals = base_queryset.annotate(
+        total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
+    )
 
-    # Pagination
-    paginator = Paginator(base_queryset, 20)
+    paginator = Paginator(invoices_with_totals, 15)
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
-    # Calculate stats
     total_count = Invoice.objects.filter(user=request.user).count()
     paid_count = Invoice.objects.filter(user=request.user, status="paid").count()
     unpaid_count = Invoice.objects.filter(user=request.user, status="unpaid").count()
@@ -490,7 +484,6 @@ def invoice_list(request):
         "search_query": search_query,
         "date_filter": date_filter,
         "sort_by": sort_by,
-        "clients": list(clients),
         "total_count": total_count,
         "paid_count": paid_count,
         "unpaid_count": unpaid_count,
@@ -546,7 +539,9 @@ def bulk_invoice_action(request):
 
 @login_required
 def create_invoice(request):
+    """Create a new invoice with line items and client details."""
     from invoices.services import InvoiceService
+    from datetime import date, timedelta
 
     if request.method == "POST":
         line_items_data = json.loads(request.POST.get("line_items", "[]"))
@@ -556,7 +551,7 @@ def create_invoice(request):
             return render(
                 request,
                 "invoices/create_invoice.html",
-                {"invoice_form": InvoiceForm(request.POST, request.FILES)},
+                {"invoice_form": InvoiceForm(request.POST, request.FILES), "today": date.today()},
             )
 
         invoice, invoice_form = InvoiceService.create_invoice(
@@ -568,12 +563,17 @@ def create_invoice(request):
 
         if invoice:
             messages.success(request, f"Invoice {invoice.invoice_id} created successfully!")
-            return redirect("invoice_detail", invoice_id=invoice.id)  # type: ignore[union-attr]
+            return redirect("invoice_detail", invoice_id=invoice.id)
         else:
             messages.error(request, "Please correct the errors below.")
-            return render(request, "invoices/create_invoice.html", {"invoice_form": invoice_form})
+            return render(request, "invoices/create_invoice.html", {"invoice_form": invoice_form, "today": date.today()})
 
-    return render(request, "invoices/create_invoice.html", {"invoice_form": InvoiceForm()})
+    context = {
+        "invoice_form": InvoiceForm(),
+        "today": date.today(),
+        "default_due_date": date.today() + timedelta(days=30),
+    }
+    return render(request, "invoices/create_invoice.html", context)
 
 
 @login_required
