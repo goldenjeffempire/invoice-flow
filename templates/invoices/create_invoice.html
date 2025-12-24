@@ -572,6 +572,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const currencySelect = document.getElementById('currencySelect');
     const taxRateInput = document.getElementById('taxRate');
+    const invoiceForm = document.getElementById('invoiceForm');
     
     function getCurrentCurrencySymbol() {
         const selected = currencySelect.options[currencySelect.selectedIndex];
@@ -608,17 +609,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateLineItemsInput() {
         const items = [];
         document.querySelectorAll('.line-item').forEach(item => {
-            const description = item.querySelector('.item-description').value;
+            const description = item.querySelector('.item-description').value.trim();
             const quantity = parseFloat(item.querySelector('.item-quantity').value) || 0;
             const unitPrice = parseFloat(item.querySelector('.item-price').value) || 0;
-            if (description && quantity && unitPrice) {
+            if (description && quantity > 0 && unitPrice > 0) {
                 items.push({ description, quantity, unit_price: unitPrice });
             }
         });
         document.getElementById('lineItemsInput').value = JSON.stringify(items);
+        return items;
     }
 
-    window.addLineItem = function() {
+    window.addLineItem = function(e) {
+        if (e) e.preventDefault();
         const tbody = document.getElementById('lineItemsBody');
         const row = document.createElement('div');
         row.className = 'line-item';
@@ -637,25 +640,41 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.appendChild(row);
         attachInputListeners(row);
         calculateTotals();
+        return false;
     };
 
     window.removeLineItem = function(button) {
         button.closest('.line-item').remove();
         calculateTotals();
+        return false;
     };
 
     function attachInputListeners(container = document) {
-        container.querySelectorAll('.item-quantity, .item-price, #taxRate').forEach(input => {
+        container.querySelectorAll('.item-description, .item-quantity, .item-price').forEach(input => {
             input.removeEventListener('input', calculateTotals);
             input.addEventListener('input', calculateTotals);
         });
+        if (container === document) {
+            taxRateInput.removeEventListener('input', calculateTotals);
+            taxRateInput.addEventListener('input', calculateTotals);
+        }
     }
+
+    invoiceForm.addEventListener('submit', function(e) {
+        const lineItems = updateLineItemsInput();
+        
+        if (lineItems.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one line item before creating the invoice.');
+            return false;
+        }
+        
+        return true;
+    });
 
     currencySelect.addEventListener('change', calculateTotals);
     attachInputListeners();
     calculateTotals();
-
-    document.getElementById('invoiceForm').addEventListener('submit', updateLineItemsInput);
 });
 </script>
 {% endblock %}
