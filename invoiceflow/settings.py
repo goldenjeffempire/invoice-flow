@@ -354,7 +354,7 @@ CONTENT_SECURITY_POLICY = {
         "frame-src": ("https://hcaptcha.com",),
         "object-src": ("'none'",),
     },
-    "INCLUDE_NONCE_IN": ["script-src"],
+    "INCLUDE_NONCE_IN": ["script-src", "style-src"],
 }
 
 # =============================================================================
