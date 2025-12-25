@@ -57,7 +57,7 @@ ALLOWED_HOSTS: list[str] = (
     )  # type: ignore[arg-type,list-item]
     if IS_PRODUCTION
     else ["*"]
-)
+)  # type: ignore[assignment]
 
 CSRF_TRUSTED_ORIGINS: list[str] = [
     f"https://{PRODUCTION_DOMAIN}",
