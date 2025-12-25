@@ -450,7 +450,8 @@ class MFAProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"MFA for {getattr(self.user, 'username', 'Unknown')} ({status})"
+        status_val = "enabled" if self.is_enabled else "disabled"
+        return f"MFA for {getattr(self.user, 'username', 'Unknown')} ({status_val})"
 
 
 # ============================================================================
@@ -1072,8 +1073,8 @@ class UserSettings(models.Model):
         if self.preferred_timezone not in ["UTC", "Africa/Lagos", "Europe/London", "America/New_York"]:
             try:
                 import pytz
-                pytz.timezone(self.preferred_timezone)
-            except pytz.exceptions.UnknownTimeZoneError:
+                pytz.timezone(str(self.preferred_timezone))
+            except Exception:
                 errors["preferred_timezone"] = "Invalid timezone"
         return errors
 
@@ -1310,7 +1311,7 @@ class EmailRetryQueue(models.Model):
         related_name="retry_queue",
     )
     retry_count = models.PositiveIntegerField(default=0)  # type: ignore[assignment]
-    max_retries = models.PositiveIntegerField(default=5)
+    max_retries = models.PositiveIntegerField(default=5)  # type: ignore[assignment]
     retry_strategy = models.CharField(
         max_length=20,
         choices=RetryStrategy.choices,
