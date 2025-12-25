@@ -630,10 +630,10 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(revenueCtx, {
             type: 'line',
             data: {
-                labels: revenueData.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                labels: revenueData.labels.length > 0 ? revenueData.labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                 datasets: [{
                     label: 'Revenue',
-                    data: revenueData.data || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                    data: revenueData.data.length > 0 ? revenueData.data : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                     backgroundColor: 'rgba(99, 102, 241, 0.1)',
                     borderColor: '#6366f1',
                     borderWidth: 3,
@@ -703,9 +703,9 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(statusCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Paid (' + paidCount + ')', 'Unpaid (' + unpaidCount + ')', 'Overdue (' + overdueCount + ')'],
+                labels: ['Paid', 'Unpaid', 'Overdue'],
                 datasets: [{
-                    data: [paidCount, unpaidCount, overdueCount],
+                    data: total > 0 ? [paidCount, unpaidCount, overdueCount] : [0, 0, 0],
                     backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
                     borderWidth: 0,
                     spacing: 4
@@ -734,7 +734,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             label: function(context) {
                                 const value = context.parsed;
                                 const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                return context.label.split(' (')[0] + ': ' + value + ' (' + percentage + '%)';
+                                return context.label + ': ' + value + ' (' + percentage + '%)';
                             }
                         }
                     }

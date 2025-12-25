@@ -335,15 +335,15 @@ class PasswordChangeForm(forms.Form):
         )
     )
     new_password = forms.CharField(
-        min_length=8,
+        min_length=12,
         widget=forms.PasswordInput(
             attrs={
                 "class": "input-field",
-                "placeholder": "New Password (min 8 characters)",
+                "placeholder": "New Password (min 12 characters)",
                 "autocomplete": "new-password",
             }
         ),
-        help_text="Password must be at least 8 characters and include a mix of letters and numbers.",
+        help_text="Password must be at least 12 characters and include a mix of letters and numbers.",
     )
     confirm_password = forms.CharField(
         widget=forms.PasswordInput(
@@ -358,8 +358,8 @@ class PasswordChangeForm(forms.Form):
     def clean_new_password(self) -> str:
         password = self.cleaned_data.get("new_password")
         if password:
-            if len(password) < 8:
-                raise forms.ValidationError("Password must be at least 8 characters long.")
+            if len(password) < 12:
+                raise forms.ValidationError("Password must be at least 12 characters long.")
             if password.isalpha():
                 raise forms.ValidationError("Password must contain at least one number.")
             if password.isdigit():
