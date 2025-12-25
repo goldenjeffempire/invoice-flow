@@ -875,9 +875,18 @@ def pricing(request):
     return render(request, "pages/pricing-light.html")
 
 
+@login_required
 def templates_page(request):
     """Invoice templates coming soon page."""
     return render(request, "pages/templates.html")
+
+
+@login_required
+def invoice_templates(request):
+    """Manage reusable invoice templates."""
+    from .models import InvoiceTemplate
+    templates = InvoiceTemplate.objects.filter(user=request.user)
+    return render(request, "invoices/templates.html", {"templates": templates})
 
 
 def api_access(request):
@@ -2022,7 +2031,7 @@ def delete_recurring_invoice(request, recurring_id):
 
 @login_required
 def pause_recurring_invoice(request, recurring_id):
-    """Pause a recurring invoice."""
+    """Pause or resume a recurring invoice."""
     recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
     
     recurring.is_active = not recurring.is_active
@@ -2031,4 +2040,14 @@ def pause_recurring_invoice(request, recurring_id):
     status = "paused" if not recurring.is_active else "resumed"
     messages.success(request, f"Recurring invoice {status}!")
     
+    return redirect("recurring_invoices")
+
+
+@login_required
+def resume_recurring_invoice(request, recurring_id):
+    """Resume a paused recurring invoice schedule."""
+    recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
+    recurring.is_active = True
+    recurring.save()
+    messages.success(request, f"Recurring invoice for {recurring.client_name} resumed.")
     return redirect("recurring_invoices")

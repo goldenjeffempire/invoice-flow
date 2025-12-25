@@ -108,4 +108,5 @@ urlpatterns = [
     path("recurring/<int:recurring_id>/edit/", views.edit_recurring_invoice, name="edit_recurring"),
     path("recurring/<int:recurring_id>/delete/", views.delete_recurring_invoice, name="delete_recurring"),
     path("recurring/<int:recurring_id>/pause/", views.pause_recurring_invoice, name="pause_recurring"),
+    path("recurring/<int:recurring_id>/resume/", views.resume_recurring_invoice, name="resume_recurring"),
 ]

@@ -19,6 +19,7 @@ from .forms import (
     PaymentSettingsForm,
     NotificationPreferencesForm,
 )
+from django.contrib.auth.models import User
 from .models import UserProfile, PaymentSettings, UserSession
 
 logger = logging.getLogger(__name__)
