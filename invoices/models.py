@@ -246,16 +246,6 @@ class Invoice(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["user", "status"]),
-            models.Index(fields=["invoice_id"]),
-            models.Index(fields=["client_email"]),
-        ]
-
-    def clean(self):
-        from django.core.exceptions import ValidationError
-        if self.due_date and self.invoice_date and self.due_date < self.invoice_date:
-            raise ValidationError("Due date cannot be earlier than invoice date.")
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.full_clean()
@@ -517,10 +507,6 @@ class SocialAccount(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["user", "provider"]),
-        ]
-        unique_together = ("user", "provider")
 
     def __str__(self) -> str:
         return f"{self.user.username} - {self.get_provider_display()}"
