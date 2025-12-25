@@ -451,9 +451,8 @@ class MFAProfile(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        status_val = "enabled" if self.is_enabled else "disabled"
         username = getattr(self.user, 'username', 'Unknown')
-        return f"MFA for {username} ({status_val})"  # type: ignore[attr-defined]
+        return f"MFA for {username} ({status_val})"  # type: ignore[attr-defined, name-defined]
 
 
 # ============================================================================
@@ -878,7 +877,8 @@ class PaymentReconciliation(models.Model):
         return self.status in [self.ReconciliationStatus.VERIFIED, self.ReconciliationStatus.RECOVERED]
 
     def __str__(self) -> str:
-        return f"Reconciliation {self.payment.reference} ({self.status})"
+        reference = getattr(self.payment, 'reference', 'Unknown')
+        return f"Reconciliation {reference} ({self.status})"  # type: ignore[attr-defined]
 
 
 # ============================================================================
