@@ -221,7 +221,7 @@
                         <input type="number" placeholder="1" value="1" min="1" step="0.01" class="item-quantity">
                         <input type="number" placeholder="0.00" step="0.01" min="0" class="item-price">
                         <span class="line-item-total">0.00</span>
-                        <button type="button" class="remove-item-btn" onclick="removeLineItem(this)">
+                        <button type="button" class="remove-item-btn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="18" y1="6" x2="6" y2="18"/>
                                 <line x1="6" y1="6" x2="18" y2="18"/>
@@ -230,7 +230,7 @@
                     </div>
                 </div>
 
-                <button type="button" class="add-item-btn" onclick="addLineItem()">
+                <button type="button" class="add-item-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
                         <line x1="12" y1="8" x2="12" y2="16"/>
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <input type="number" placeholder="1" value="1" min="1" step="0.01" class="item-quantity">
             <input type="number" placeholder="0.00" step="0.01" min="0" class="item-price">
             <span class="line-item-total">0.00</span>
-            <button type="button" class="remove-item-btn" onclick="removeLineItem(this)">
+            <button type="button" class="remove-item-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
@@ -320,6 +320,18 @@ document.addEventListener('DOMContentLoaded', function() {
         row.querySelectorAll('input').forEach(input => {
             input.addEventListener('input', calculateTotals);
         });
+        
+        row.querySelector('.remove-item-btn').addEventListener('click', function(e) {
+            e.preventDefault();
+            const items = document.querySelectorAll('.line-item');
+            if (items.length > 1) {
+                this.closest('.line-item').remove();
+                calculateTotals();
+            } else {
+                alert('At least one line item is required.');
+            }
+        });
+        
         calculateTotals();
     };
 
@@ -375,6 +387,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.querySelectorAll('.line-item input').forEach(input => {
         input.addEventListener('input', calculateTotals);
+    });
+    
+    document.querySelectorAll('.remove-item-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const items = document.querySelectorAll('.line-item');
+            if (items.length > 1) {
+                this.closest('.line-item').remove();
+                calculateTotals();
+            } else {
+                alert('At least one line item is required.');
+            }
+        });
+    });
+    
+    document.querySelector('.add-item-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        addLineItem();
     });
 
     invoiceForm.addEventListener('submit', function(e) {

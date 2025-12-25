@@ -374,11 +374,11 @@
         </header>
         
         <div class="quick-filters">
-            <button type="button" class="quick-filter-btn {% if not start_date %}active{% endif %}" onclick="window.location.href='{% url 'invoices:analytics' %}'">All Time</button>
-            <button type="button" class="quick-filter-btn" onclick="setDateRange(7)">Last 7 Days</button>
-            <button type="button" class="quick-filter-btn" onclick="setDateRange(30)">Last 30 Days</button>
-            <button type="button" class="quick-filter-btn" onclick="setDateRange(90)">Last 90 Days</button>
-            <button type="button" class="quick-filter-btn" onclick="setDateRange(365)">This Year</button>
+            <button type="button" class="quick-filter-btn quick-filter-all-time {% if not start_date %}active{% endif %}">All Time</button>
+            <button type="button" class="quick-filter-btn quick-filter-7days">Last 7 Days</button>
+            <button type="button" class="quick-filter-btn quick-filter-30days">Last 30 Days</button>
+            <button type="button" class="quick-filter-btn quick-filter-90days">Last 90 Days</button>
+            <button type="button" class="quick-filter-btn quick-filter-365days">This Year</button>
         </div>
         
         <div class="insights-grid">
@@ -572,6 +572,18 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script nonce="{{ request.csp_nonce }}">
+function setDateRange(days) {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - days);
+    const form = document.querySelector('.date-filter-form');
+    const startInput = form.querySelector('input[name="start_date"]');
+    const endInput = form.querySelector('input[name="end_date"]');
+    startInput.value = startDate.toISOString().split('T')[0];
+    endInput.value = endDate.toISOString().split('T')[0];
+    form.submit();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const mobileToggle = document.getElementById('mobile-toggle');
     const sidebar = document.getElementById('dashboard-sidebar');
@@ -590,6 +602,26 @@ document.addEventListener('DOMContentLoaded', function() {
             overlay.classList.remove('active');
         });
     }
+    
+    document.querySelector('.quick-filter-all-time').addEventListener('click', function() {
+        window.location.href = '{% url 'invoices:analytics' %}';
+    });
+    
+    document.querySelector('.quick-filter-7days').addEventListener('click', function() {
+        setDateRange(7);
+    });
+    
+    document.querySelector('.quick-filter-30days').addEventListener('click', function() {
+        setDateRange(30);
+    });
+    
+    document.querySelector('.quick-filter-90days').addEventListener('click', function() {
+        setDateRange(90);
+    });
+    
+    document.querySelector('.quick-filter-365days').addEventListener('click', function() {
+        setDateRange(365);
+    });
     
     const revenueCtx = document.getElementById('revenueChart');
     if (revenueCtx) {
