@@ -19,14 +19,6 @@ class Migration(migrations.Migration):
             name='socialaccount',
             options={'ordering': ['-created_at']},
         ),
-        migrations.RemoveIndex(
-            model_name='socialaccount',
-            name='invoices_so_user_id_a5b60f_idx',
-        ),
-        migrations.AlterUniqueTogether(
-            name='socialaccount',
-            unique_together=set(),
-        ),
         migrations.AddField(
             model_name='socialaccount',
             name='provider_id',
