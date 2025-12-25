@@ -355,12 +355,14 @@ def dashboard(request):
             chart_labels.append(item["month"].strftime("%b %Y"))
             chart_data.append(float(item["total"] or 0))
     
-    # Recent invoices (last 5 with status)
+    # Recent activity - limit to last 5
     recent_invoices = base_queryset.prefetch_related("line_items").order_by("-created_at")[:5]
     
     # Calculate totals for recent invoices
     for inv in recent_invoices:
         inv.calculated_total = sum(item.quantity * item.unit_price for item in inv.line_items.all())
+        # Check if overdue based on today
+        inv.is_overdue = inv.status == "unpaid" and inv.due_date < today
     
     # Invoice aging summary
     aging_summary = {

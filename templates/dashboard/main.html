@@ -460,6 +460,20 @@
         grid-template-columns: 1fr;
     }
 }
+.activity-badge.status-paid {
+    background: var(--light-success-light);
+    color: var(--light-success);
+}
+
+.activity-badge.status-unpaid {
+    background: var(--light-warning-light);
+    color: var(--light-warning);
+}
+
+.activity-badge.status-overdue {
+    background: var(--light-danger-light);
+    color: var(--light-danger);
+}
 </style>
 {% endblock %}
 
@@ -571,7 +585,7 @@
                                 <p class="activity-time">{{ invoice.created_at|timesince }} ago</p>
                                 <p style="font-size: 0.8125rem; font-weight: 600; color: var(--light-text-primary); margin-top: 4px;">{{ invoice.currency }} {{ invoice.calculated_total|floatformat:2 }}</p>
                             </div>
-                            <span class="activity-badge">
+                            <span class="activity-badge {% if invoice.status == 'paid' %}status-paid{% elif invoice.is_overdue %}status-overdue{% else %}status-unpaid{% endif %}">
                                 {% if invoice.status == 'paid' %}Paid{% elif invoice.is_overdue %}Overdue{% else %}Pending{% endif %}
                             </span>
                         </div>
