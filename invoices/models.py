@@ -452,6 +452,7 @@ class MFAProfile(models.Model):
 
     def __str__(self) -> str:
         username = getattr(self.user, 'username', 'Unknown')
+        status_val = "enabled" if self.is_enabled else "disabled"
         return f"MFA for {username} ({status_val})"  # type: ignore[attr-defined, name-defined]
 
 
@@ -934,7 +935,8 @@ class PaymentRecovery(models.Model):
         return not self.is_successful and self.attempt_number < self.max_attempts
 
     def __str__(self) -> str:
-        return f"Recovery {self.payment.reference} (Attempt {self.attempt_number})"
+        reference = getattr(self.payment, 'reference', 'Unknown')
+        return f"Recovery {reference} (Attempt {self.attempt_number})"  # type: ignore[attr-defined]
 
 
 # ============================================================================
