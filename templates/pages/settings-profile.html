@@ -77,12 +77,18 @@
                     <h2 class="settings-light-section-title">Profile Information</h2>
                     <p class="settings-light-section-description">Update your personal account details</p>
                     
-                    <form method="post">
+                    <form method="post" action="{% url 'invoices:settings_profile' %}" enctype="multipart/form-data">
                         {% csrf_token %}
                         
                         <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 32px;">
-                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--light-primary) 0%, var(--light-accent) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                <span style="font-size: 1.75rem; font-weight: 700; color: white;">{{ user.first_name.0|default:"U"|upper }}{{ user.last_name.0|default:"" }}</span>
+                            <div style="position: relative;">
+                                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--light-primary) 0%, var(--light-accent) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                    {% if profile.company_logo %}
+                                        <img src="{{ profile.company_logo.url }}" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                                    {% else %}
+                                        <span style="font-size: 1.75rem; font-weight: 700; color: white;">{{ user.first_name.0|default:"U"|upper }}{{ user.last_name.0|default:"" }}</span>
+                                    {% endif %}
+                                </div>
                             </div>
                             <div>
                                 <h3 style="font-size: 1rem; font-weight: 600; color: var(--light-text-primary); margin: 0 0 4px 0;">Profile Photo</h3>
@@ -93,17 +99,20 @@
                         <div class="form-light-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
                             <div class="form-light-group">
                                 <label class="form-light-label">First Name</label>
-                                <input type="text" name="first_name" class="form-light-input" value="{{ user.first_name }}">
+                                {{ user_form.first_name }}
+                                {% if user_form.first_name.errors %}<p class="form-light-error" style="color: var(--light-danger); font-size: 0.75rem; margin-top: 4px;">{{ user_form.first_name.errors.0 }}</p>{% endif %}
                             </div>
                             <div class="form-light-group">
                                 <label class="form-light-label">Last Name</label>
-                                <input type="text" name="last_name" class="form-light-input" value="{{ user.last_name }}">
+                                {{ user_form.last_name }}
+                                {% if user_form.last_name.errors %}<p class="form-light-error" style="color: var(--light-danger); font-size: 0.75rem; margin-top: 4px;">{{ user_form.last_name.errors.0 }}</p>{% endif %}
                             </div>
                         </div>
                         
                         <div class="form-light-group" style="margin-top: 20px;">
                             <label class="form-light-label">Email Address</label>
-                            <input type="email" name="email" class="form-light-input" value="{{ user.email }}">
+                            {{ user_form.email }}
+                            {% if user_form.email.errors %}<p class="form-light-error" style="color: var(--light-danger); font-size: 0.75rem; margin-top: 4px;">{{ user_form.email.errors.0 }}</p>{% endif %}
                         </div>
                         
                         <div class="form-light-group" style="margin-top: 20px;">

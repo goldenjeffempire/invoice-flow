@@ -77,53 +77,54 @@
                     <h2 class="settings-light-section-title">Business Information</h2>
                     <p class="settings-light-section-description">Configure your business details for invoices</p>
                     
-                    <form method="post" enctype="multipart/form-data">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'invoices:settings_business' %}">
                         {% csrf_token %}
                         
                         <div class="form-light-group">
                             <label class="form-light-label">Company Name</label>
-                            <input type="text" name="company_name" class="form-light-input" value="{{ profile.company_name|default:'' }}">
+                            {{ form.company_name }}
+                            {% if form.company_name.errors %}<p class="form-light-error" style="color: var(--light-danger); font-size: 0.75rem; margin-top: 4px;">{{ form.company_name.errors.0 }}</p>{% endif %}
                         </div>
                         
                         <div class="form-light-group" style="margin-top: 20px;">
                             <label class="form-light-label">Company Logo</label>
-                            <input type="file" name="company_logo" class="form-light-input" accept="image/*">
+                            {{ form.company_logo }}
+                            {% if profile.company_logo %}
+                                <div style="margin-top: 8px;">
+                                    <img src="{{ profile.company_logo.url }}" alt="Logo" style="max-height: 40px; border-radius: 4px;">
+                                </div>
+                            {% endif %}
                             <span class="form-light-help">Upload your logo to appear on invoices. Recommended size: 200x60px</span>
                         </div>
                         
                         <div class="form-light-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px;">
                             <div class="form-light-group">
                                 <label class="form-light-label">Business Email</label>
-                                <input type="email" name="business_email" class="form-light-input" value="{{ profile.business_email|default:'' }}">
+                                {{ form.business_email }}
                             </div>
                             <div class="form-light-group">
                                 <label class="form-light-label">Business Phone</label>
-                                <input type="tel" name="business_phone" class="form-light-input" value="{{ profile.business_phone|default:'' }}">
+                                {{ form.business_phone }}
                             </div>
                         </div>
                         
                         <div class="form-light-group" style="margin-top: 20px;">
                             <label class="form-light-label">Business Address</label>
-                            <textarea name="business_address" class="form-light-textarea" rows="3">{{ profile.business_address|default:'' }}</textarea>
+                            {{ form.business_address }}
                         </div>
                         
                         <div class="form-light-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 20px;">
                             <div class="form-light-group">
                                 <label class="form-light-label">Default Currency</label>
-                                <select name="default_currency" class="form-light-select">
-                                    <option value="USD" {% if profile.default_currency == 'USD' %}selected{% endif %}>USD ($)</option>
-                                    <option value="EUR" {% if profile.default_currency == 'EUR' %}selected{% endif %}>EUR (&euro;)</option>
-                                    <option value="GBP" {% if profile.default_currency == 'GBP' %}selected{% endif %}>GBP (&pound;)</option>
-                                    <option value="NGN" {% if profile.default_currency == 'NGN' %}selected{% endif %}>NGN (&#8358;)</option>
-                                </select>
+                                {{ form.default_currency }}
                             </div>
                             <div class="form-light-group">
                                 <label class="form-light-label">Default Tax Rate (%)</label>
-                                <input type="number" name="default_tax_rate" class="form-light-input" step="0.01" min="0" max="100" value="{{ profile.default_tax_rate|default:'0' }}">
+                                {{ form.default_tax_rate }}
                             </div>
                             <div class="form-light-group">
                                 <label class="form-light-label">Invoice Prefix</label>
-                                <input type="text" name="invoice_prefix" class="form-light-input" value="{{ profile.invoice_prefix|default:'INV' }}">
+                                {{ form.invoice_prefix }}
                             </div>
                         </div>
                         
