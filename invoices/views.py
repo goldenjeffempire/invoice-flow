@@ -16,6 +16,7 @@ from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator
 from django.http import HttpResponse
+from django.db import transaction, models
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import (
@@ -538,6 +539,7 @@ def bulk_invoice_action(request):
 
 
 @login_required
+@transaction.atomic
 def create_invoice(request):
     """Create a new invoice with line items and client details."""
     from invoices.services import InvoiceService
@@ -545,6 +547,21 @@ def create_invoice(request):
     import logging
     
     logger = logging.getLogger(__name__)
+    
+    # Pre-populate business details from user profile
+    initial_data = {}
+    try:
+        profile = request.user.profile
+        initial_data = {
+            "business_name": profile.company_name,
+            "business_email": profile.business_email or request.user.email,
+            "business_phone": profile.business_phone,
+            "business_address": profile.business_address,
+            "currency": profile.default_currency,
+            "tax_rate": profile.default_tax_rate,
+        }
+    except Exception:
+        pass
 
     if request.method == "POST":
         try:
@@ -552,73 +569,37 @@ def create_invoice(request):
         except (json.JSONDecodeError, ValueError) as e:
             logger.warning(f"Invalid line items JSON: {e}")
             messages.error(request, "Invalid line items format. Please try again.")
-            context = {
-                "invoice_form": InvoiceForm(),
-                "today": date.today(),
-                "default_due_date": date.today() + timedelta(days=30),
-            }
-            return render(request, "invoices/create_invoice.html", context)
+            return redirect("invoices:create_invoice")
 
         if not line_items_data:
             messages.error(request, "Please add at least one line item to create an invoice.")
-            return render(
-                request,
-                "invoices/create_invoice.html",
-                {
-                    "invoice_form": InvoiceForm(request.POST, request.FILES),
-                    "today": date.today(),
-                    "default_due_date": date.today() + timedelta(days=30),
-                },
-            )
-
-        try:
-            invoice, invoice_form = InvoiceService.create_invoice(
-                user=request.user,
-                invoice_data=request.POST,
-                files_data=request.FILES,
-                line_items_data=line_items_data,
-            )
-
-            if invoice:
-                messages.success(request, f"✓ Invoice {invoice.invoice_id} created successfully!")
-                return redirect("invoice_detail", invoice_id=invoice.id)
-            else:
-                # Form validation failed - display errors
-                error_messages = []
-                for field, errors in invoice_form.errors.items():
-                    for error in errors:
-                        error_messages.append(f"{field}: {error}")
-                
-                if error_messages:
-                    for error_msg in error_messages:
-                        messages.error(request, error_msg)
-                else:
-                    messages.error(request, "Please correct the errors and try again.")
-                
-                return render(
-                    request,
-                    "invoices/create_invoice.html",
-                    {
-                        "invoice_form": invoice_form,
-                        "today": date.today(),
-                        "default_due_date": date.today() + timedelta(days=30),
-                    },
+            form = InvoiceForm(request.POST)
+        else:
+            try:
+                invoice, invoice_form = InvoiceService.create_invoice(
+                    user=request.user,
+                    invoice_data=request.POST,
+                    files_data=request.FILES,
+                    line_items_data=line_items_data,
                 )
-        except Exception as e:
-            logger.exception(f"Error creating invoice: {e}")
-            messages.error(request, f"An error occurred while creating the invoice: {str(e)}")
-            return render(
-                request,
-                "invoices/create_invoice.html",
-                {
-                    "invoice_form": InvoiceForm(),
-                    "today": date.today(),
-                    "default_due_date": date.today() + timedelta(days=30),
-                },
-            )
+
+                if invoice:
+                    messages.success(request, f"✓ Invoice {invoice.invoice_id} created successfully!")
+                    return redirect("invoices:invoice_detail", invoice_id=invoice.id)
+                else:
+                    form = invoice_form
+                    for field, errors in form.errors.items():
+                        for error in errors:
+                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+            except Exception as e:
+                logger.exception("Failed to create invoice")
+                messages.error(request, f"Critical error during invoice creation: {str(e)}")
+                form = InvoiceForm(request.POST)
+    else:
+        form = InvoiceForm(initial=initial_data)
 
     context = {
-        "invoice_form": InvoiceForm(),
+        "invoice_form": form,
         "today": date.today(),
         "default_due_date": date.today() + timedelta(days=30),
     }

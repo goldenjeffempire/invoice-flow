@@ -224,27 +224,41 @@ class Invoice(models.Model):
     business_phone = models.CharField(max_length=50, blank=True)
     business_address = models.TextField(blank=True)
 
-    client_name = models.CharField(max_length=200)
-    client_email = models.EmailField()
+    client_name = models.CharField(max_length=200, db_index=True)
+    client_email = models.EmailField(db_index=True)
     client_phone = models.CharField(max_length=50, blank=True)
     client_address = models.TextField(blank=True)
 
     notes = models.TextField(blank=True)
 
-    invoice_date = models.DateField(default=timezone.now)
-    due_date = models.DateField(null=True, blank=True)
+    invoice_date = models.DateField(default=timezone.now, db_index=True)
+    due_date = models.DateField(null=True, blank=True, db_index=True)
 
-    currency = models.CharField(max_length=3, default="USD")
+    currency = models.CharField(max_length=3, default="USD", db_index=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
     status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.UNPAID
+        max_length=10, choices=Status.choices, default=Status.UNPAID, db_index=True
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["invoice_id"]),
+            models.Index(fields=["client_email"]),
+        ]
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.due_date and self.invoice_date and self.due_date < self.invoice_date:
+            raise ValidationError("Due date cannot be earlier than invoice date.")
+
     def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
         if not self.invoice_id:
             self.invoice_id = self._generate_invoice_id()
         super().save(*args, **kwargs)
@@ -493,6 +507,7 @@ class SocialAccount(models.Model):
         related_name="social_accounts",
     )
     provider = models.CharField(max_length=20, choices=Provider.choices)
+    provider_id = models.CharField(max_length=255, blank=True)
     access_token = models.TextField(blank=True)
     refresh_token = models.TextField(blank=True)
     token_scopes = models.TextField(blank=True)
@@ -505,6 +520,7 @@ class SocialAccount(models.Model):
         indexes = [
             models.Index(fields=["user", "provider"]),
         ]
+        unique_together = ("user", "provider")
 
     def __str__(self) -> str:
         return f"{self.user.username} - {self.get_provider_display()}"

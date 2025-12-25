@@ -202,9 +202,12 @@ class InvoiceForm(forms.ModelForm):
 
     def clean(self) -> dict:
         cleaned_data = super().clean()
-        InvoiceBusinessRules.validate_due_date(
-            cleaned_data.get("invoice_date"), cleaned_data.get("due_date")
-        )
+        invoice_date = cleaned_data.get("invoice_date")
+        due_date = cleaned_data.get("due_date")
+        
+        if invoice_date and due_date and due_date < invoice_date:
+            self.add_error("due_date", "Due date cannot be earlier than invoice date.")
+            
         return cleaned_data
 
 
