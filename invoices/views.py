@@ -356,7 +356,7 @@ def dashboard(request):
             chart_data.append(float(item["total"] or 0))
     
     # Recent invoices (last 5 with status)
-    recent_invoices = base_queryset.order_by("-created_at")[:5]
+    recent_invoices = base_queryset.prefetch_related("line_items").order_by("-created_at")[:5]
     
     # Calculate totals for recent invoices
     for inv in recent_invoices:
