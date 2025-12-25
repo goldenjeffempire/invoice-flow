@@ -497,7 +497,7 @@ class SocialAccount(models.Model):
         related_name="social_accounts",
     )
     provider = models.CharField(max_length=20, choices=Provider.choices)
-    provider_id = models.CharField(max_length=255, blank=True)
+    provider_id = models.CharField(max_length=255, default="", db_index=True)
     access_token = models.TextField(blank=True)
     refresh_token = models.TextField(blank=True)
     token_scopes = models.TextField(blank=True)
