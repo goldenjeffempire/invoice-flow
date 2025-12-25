@@ -6,436 +6,299 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
 <style>
-.invoice-detail-container {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 32px;
-    margin-bottom: 32px;
-}
-
-@media (max-width: 1024px) {
-    .invoice-detail-container {
-        grid-template-columns: 1fr;
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.4);
+        --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
     }
-}
 
-.invoice-preview {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-lg);
-    border: 1px solid var(--light-border-primary);
-    padding: 32px;
-}
-
-.invoice-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-}
-
-.invoice-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--light-text-primary);
-}
-
-.invoice-meta {
-    display: flex;
-    gap: 32px;
-    flex-wrap: wrap;
-    padding-bottom: 24px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--light-border-primary);
-}
-
-.meta-item {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.meta-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--light-text-tertiary);
-}
-
-.meta-value {
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: var(--light-text-primary);
-}
-
-.meta-value.overdue {
-    color: var(--light-danger);
-}
-
-.parties-grid {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 24px;
-    align-items: start;
-    margin-bottom: 32px;
-}
-
-@media (max-width: 768px) {
-    .parties-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.party-card {
-    padding: 20px;
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-lg);
-}
-
-.party-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-.party-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: var(--light-radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.party-icon.from {
-    background: var(--light-primary-light);
-}
-
-.party-icon.from svg {
-    stroke: var(--light-primary);
-    width: 20px;
-    height: 20px;
-}
-
-.party-icon.to {
-    background: var(--light-success-light);
-}
-
-.party-icon.to svg {
-    stroke: var(--light-success);
-    width: 20px;
-    height: 20px;
-}
-
-.party-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: var(--light-text-tertiary);
-}
-
-.party-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin: 0;
-}
-
-.party-detail {
-    font-size: 0.875rem;
-    color: var(--light-text-secondary);
-    margin: 4px 0;
-}
-
-.party-arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--light-text-muted);
-}
-
-.party-arrow svg {
-    width: 24px;
-    height: 24px;
-}
-
-@media (max-width: 768px) {
-    .party-arrow {
-        transform: rotate(90deg);
-        margin: 0;
-    }
-}
-
-.items-section {
-    margin-bottom: 24px;
-}
-
-.items-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin-bottom: 16px;
-}
-
-.items-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.items-table th {
-    text-align: left;
-    padding: 12px 16px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: var(--light-text-tertiary);
-    background: var(--light-bg-tertiary);
-    border-bottom: 1px solid var(--light-border-primary);
-}
-
-.items-table th:last-child {
-    text-align: right;
-}
-
-.items-table td {
-    padding: 16px;
-    font-size: 0.9375rem;
-    color: var(--light-text-secondary);
-    border-bottom: 1px solid var(--light-border-primary);
-}
-
-.items-table td:first-child {
-    font-weight: 500;
-    color: var(--light-text-primary);
-}
-
-.items-table td:last-child {
-    text-align: right;
-    font-weight: 600;
-    color: var(--light-text-primary);
-}
-
-.invoice-summary {
-    padding: 24px;
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-lg);
-    margin-bottom: 24px;
-}
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 0.9375rem;
-}
-
-.summary-row.total {
-    border-top: 2px solid var(--light-border-primary);
-    margin-top: 8px;
-    padding-top: 16px;
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--light-text-primary);
-}
-
-.invoice-notes {
-    padding: 20px;
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-lg);
-}
-
-.notes-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin-bottom: 12px;
-}
-
-.notes-content {
-    font-size: 0.9375rem;
-    color: var(--light-text-secondary);
-    line-height: 1.6;
-    margin: 0;
-    white-space: pre-wrap;
-}
-
-.invoice-sidebar {
-    height: fit-content;
-    position: sticky;
-    top: 24px;
-}
-
-.sidebar-card {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-lg);
-    border: 1px solid var(--light-border-primary);
-    padding: 24px;
-}
-
-.sidebar-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin: 0 0 20px 0;
-}
-
-.amount-card {
-    padding: 16px;
-    background: linear-gradient(135deg, var(--light-primary) 0%, var(--light-primary-dark) 100%);
-    border-radius: var(--light-radius-lg);
-    color: white;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.amount-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    opacity: 0.8;
-    margin-bottom: 4px;
-}
-
-.amount-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-}
-
-.status-card {
-    padding: 16px;
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-lg);
-    margin-bottom: 20px;
-}
-
-.status-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: var(--light-text-tertiary);
-    margin-bottom: 8px;
-}
-
-.status-value {
-    font-size: 1.125rem;
-    font-weight: 700;
-}
-
-.status-value.paid {
-    color: var(--light-success);
-}
-
-.status-value.unpaid {
-    color: var(--light-warning);
-}
-
-.status-value.overdue {
-    color: var(--light-danger);
-}
-
-.payment-link-box {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 12px;
-}
-
-.payment-link-input {
-    width: 100%;
-    background: transparent;
-    border: none;
-    font-size: 0.8125rem;
-    color: #166534;
-    outline: none;
-}
-
-.quick-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.quick-action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 8px 14px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    border-radius: var(--light-radius-md);
-    border: 1px solid var(--light-border-primary);
-    background: var(--light-bg-secondary);
-    color: var(--light-text-secondary);
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.quick-action-btn:hover {
-    background: var(--light-bg-tertiary);
-    color: var(--light-text-primary);
-    border-color: var(--light-primary);
-}
-
-.quick-action-btn svg {
-    width: 16px;
-    height: 16px;
-}
-
-.sidebar-section {
-    margin-bottom: 20px;
-}
-
-.sidebar-section:not(:last-child) {
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--light-border-primary);
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.875rem;
-    color: var(--light-text-secondary);
-    text-decoration: none;
-    margin-bottom: 16px;
-    transition: all 0.2s ease;
-}
-
-.back-link:hover {
-    color: var(--light-primary);
-}
-
-.back-link svg {
-    width: 16px;
-    height: 16px;
-}
-
-@media print {
-    .invoice-sidebar,
-    .quick-actions,
-    .back-link {
-        display: none !important;
+    .dashboard-main {
+        background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent),
+                    radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.05), transparent);
     }
 
     .invoice-detail-container {
-        grid-template-columns: 1fr;
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 32px;
+        margin-bottom: 32px;
+        align-items: start;
+    }
+
+    @media (max-width: 1200px) {
+        .invoice-detail-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Modern Glassmorphism Card */
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        box-shadow: var(--glass-shadow);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
     .invoice-preview {
-        border: none;
-        padding: 0;
+        padding: 48px;
+        position: relative;
+        overflow: hidden;
     }
-}
+
+    /* Dynamic Watermark */
+    .invoice-preview::after {
+        content: "{{ invoice.get_status_display }}";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 10rem;
+        font-weight: 900;
+        opacity: 0.02;
+        pointer-events: none;
+        text-transform: uppercase;
+    }
+
+    .invoice-header-grid {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 48px;
+    }
+
+    .brand-section h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--light-primary), var(--light-primary-dark));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    .status-badge {
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .badge-paid { background: #dcfce7; color: #166534; }
+    .badge-unpaid { background: #fef9c3; color: #854d0e; }
+    .badge-overdue { background: #fee2e2; color: #991b1b; }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 40px;
+        margin-bottom: 48px;
+        padding: 32px;
+        background: rgba(248, 250, 252, 0.5);
+        border-radius: 20px;
+    }
+
+    .info-block label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--light-text-tertiary);
+        margin-bottom: 8px;
+        letter-spacing: 0.05em;
+    }
+
+    .info-block p {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--light-text-primary);
+        margin: 0;
+    }
+
+    .parties-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-bottom: 48px;
+    }
+
+    @media (max-width: 768px) {
+        .parties-grid { grid-template-columns: 1fr; }
+        .invoice-preview { padding: 24px; }
+    }
+
+    .party-box h3 {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--light-primary);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .party-box .name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--light-text-primary);
+        margin-bottom: 8px;
+    }
+
+    .party-box .details {
+        font-size: 0.9375rem;
+        color: var(--light-text-secondary);
+        line-height: 1.6;
+    }
+
+    /* Modern Table */
+    .items-container {
+        margin-bottom: 48px;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid var(--light-border-primary);
+    }
+
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .modern-table th {
+        background: var(--light-bg-tertiary);
+        padding: 16px 24px;
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--light-text-tertiary);
+    }
+
+    .modern-table td {
+        padding: 20px 24px;
+        border-top: 1px solid var(--light-border-primary);
+        font-size: 0.9375rem;
+    }
+
+    .modern-table tr:hover {
+        background: rgba(99, 102, 241, 0.02);
+    }
+
+    .total-section {
+        margin-left: auto;
+        max-width: 360px;
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        font-size: 1rem;
+    }
+
+    .summary-item.grand-total {
+        margin-top: 16px;
+        padding-top: 24px;
+        border-top: 2px solid var(--light-primary);
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--light-primary);
+    }
+
+    /* Enhanced Sidebar */
+    .invoice-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .sidebar-widget {
+        padding: 24px;
+    }
+
+    .action-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .action-grid .btn-full {
+        grid-column: span 2;
+    }
+
+    .modern-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 14px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
+
+    .btn-primary {
+        background: var(--light-primary);
+        color: white;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn-primary:hover {
+        background: var(--light-primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-outline {
+        background: white;
+        border-color: var(--light-border-primary);
+        color: var(--light-text-primary);
+    }
+
+    .btn-outline:hover {
+        border-color: var(--light-primary);
+        color: var(--light-primary);
+        background: var(--light-primary-light);
+    }
+
+    .share-link-box {
+        margin-top: 16px;
+        padding: 16px;
+        background: var(--light-bg-tertiary);
+        border-radius: 16px;
+        border: 1px dashed var(--light-border-secondary);
+    }
+
+    .link-display {
+        font-size: 0.75rem;
+        color: var(--light-text-tertiary);
+        word-break: break-all;
+        margin-bottom: 12px;
+        font-family: monospace;
+    }
+
+    /* Print Styles */
+    @media print {
+        .dashboard-layout { display: block; }
+        .dashboard-main { padding: 0; background: white; }
+        .invoice-sidebar, .back-link { display: none !important; }
+        .invoice-detail-container { grid-template-columns: 1fr; }
+        .glass-card { box-shadow: none; border: none; background: white; backdrop-filter: none; }
+        .invoice-preview { padding: 0; }
+        .info-grid { background: #f8fafc; }
+    }
 </style>
 {% endblock %}
-
-{% block nav %}{% endblock %}
-{% block footer %}{% endblock %}
 
 {% block content %}
 <div class="dashboard-layout">
@@ -443,209 +306,172 @@
     
     <main class="dashboard-main">
         <a href="{% url 'invoices:invoice_list' %}" class="back-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <line x1="19" y1="12" x2="5" y2="12"/>
                 <polyline points="12 19 5 12 12 5"/>
             </svg>
-            Back to Invoices
+            Dashboard
         </a>
 
         <div class="invoice-detail-container">
-            <div class="invoice-preview" id="invoice-preview">
-                <div class="invoice-header">
-                    <h1 class="invoice-number">{{ invoice.invoice_id }}</h1>
-                    {% if invoice.status == 'paid' %}
-                        <span class="badge-light badge-paid">Paid</span>
-                    {% elif invoice.is_overdue %}
-                        <span class="badge-light badge-overdue">Overdue</span>
-                    {% else %}
-                        <span class="badge-light badge-unpaid">Unpaid</span>
-                    {% endif %}
+            <!-- Main Invoice Preview -->
+            <div class="glass-card invoice-preview">
+                <div class="invoice-header-grid">
+                    <div class="brand-section">
+                        <h1>{{ invoice.business_name }}</h1>
+                        <p style="color: var(--light-text-tertiary); font-weight: 600; margin-top: 4px;">INVOICE #{{ invoice.invoice_id }}</p>
+                    </div>
+                    <div class="status-section">
+                        {% if invoice.status == 'paid' %}
+                            <div class="status-badge badge-paid">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                                Paid
+                            </div>
+                        {% elif invoice.is_overdue %}
+                            <div class="status-badge badge-overdue">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                Overdue
+                            </div>
+                        {% else %}
+                            <div class="status-badge badge-unpaid">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                Unpaid
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
 
-                <div class="invoice-meta">
-                    <div class="meta-item">
-                        <span class="meta-label">Invoice Date</span>
-                        <span class="meta-value">{{ invoice.invoice_date|date:"F d, Y" }}</span>
+                <div class="info-grid">
+                    <div class="info-block">
+                        <label>Issued On</label>
+                        <p>{{ invoice.invoice_date|date:"M d, Y" }}</p>
                     </div>
-                    <div class="meta-item">
-                        <span class="meta-label">Due Date</span>
-                        <span class="meta-value {% if invoice.is_overdue %}overdue{% endif %}">
-                            {{ invoice.due_date|date:"F d, Y" }}
-                        </span>
+                    <div class="info-block">
+                        <label>Due Date</label>
+                        <p {% if invoice.is_overdue %}style="color: var(--light-danger);"{% endif %}>{{ invoice.due_date|date:"M d, Y" }}</p>
                     </div>
-                    <div class="meta-item">
-                        <span class="meta-label">Currency</span>
-                        <span class="meta-value">{{ invoice.currency }}</span>
+                    <div class="info-block">
+                        <label>Currency</label>
+                        <p>{{ invoice.currency }}</p>
                     </div>
                 </div>
 
                 <div class="parties-grid">
-                    <div class="party-card">
-                        <div class="party-header">
-                            <div class="party-icon from">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                                </svg>
-                            </div>
-                            <span class="party-label">From</span>
+                    <div class="party-box">
+                        <h3>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 21v-2a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            From
+                        </h3>
+                        <div class="name">{{ invoice.business_name }}</div>
+                        <div class="details">
+                            {{ invoice.business_email }}<br>
+                            {% if invoice.business_phone %}{{ invoice.business_phone }}<br>{% endif %}
+                            {{ invoice.business_address|linebreaksbr }}
                         </div>
-                        <h3 class="party-name">{{ invoice.business_name }}</h3>
-                        {% if invoice.business_email %}<p class="party-detail">{{ invoice.business_email }}</p>{% endif %}
-                        {% if invoice.business_phone %}<p class="party-detail">{{ invoice.business_phone }}</p>{% endif %}
-                        {% if invoice.business_address %}<p class="party-detail">{{ invoice.business_address|linebreaksbr }}</p>{% endif %}
                     </div>
-
-                    <div class="party-arrow">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                            <polyline points="12 5 19 12 12 19"/>
-                        </svg>
-                    </div>
-
-                    <div class="party-card">
-                        <div class="party-header">
-                            <div class="party-icon to">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="12" cy="7" r="4"/>
-                                </svg>
-                            </div>
-                            <span class="party-label">To</span>
+                    <div class="party-box">
+                        <h3>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+                            Billed To
+                        </h3>
+                        <div class="name">{{ invoice.client_name }}</div>
+                        <div class="details">
+                            {{ invoice.client_email }}<br>
+                            {% if invoice.client_phone %}{{ invoice.client_phone }}<br>{% endif %}
+                            {{ invoice.client_address|linebreaksbr }}
                         </div>
-                        <h3 class="party-name">{{ invoice.client_name }}</h3>
-                        {% if invoice.client_email %}<p class="party-detail">{{ invoice.client_email }}</p>{% endif %}
-                        {% if invoice.client_phone %}<p class="party-detail">{{ invoice.client_phone }}</p>{% endif %}
-                        {% if invoice.client_address %}<p class="party-detail">{{ invoice.client_address|linebreaksbr }}</p>{% endif %}
                     </div>
                 </div>
 
-                <div class="items-section">
-                    <h3 class="items-title">Line Items</h3>
-                    <table class="items-table">
+                <div class="items-container">
+                    <table class="modern-table">
                         <thead>
                             <tr>
                                 <th>Description</th>
-                                <th>Qty</th>
-                                <th>Unit Price</th>
-                                <th>Total</th>
+                                <th style="text-align: center;">Qty</th>
+                                <th style="text-align: right;">Price</th>
+                                <th style="text-align: right;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for item in invoice.line_items.all %}
                             <tr>
-                                <td>{{ item.description }}</td>
-                                <td>{{ item.quantity }}</td>
-                                <td>{{ invoice.currency }} {{ item.unit_price|floatformat:2 }}</td>
-                                <td>{{ invoice.currency }} {{ item.total|floatformat:2 }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: var(--light-text-muted);">No line items</td>
+                                <td style="font-weight: 600;">{{ item.description }}</td>
+                                <td style="text-align: center; color: var(--light-text-secondary);">{{ item.quantity }}</td>
+                                <td style="text-align: right; color: var(--light-text-secondary);">{{ invoice.currency }} {{ item.unit_price|floatformat:2 }}</td>
+                                <td style="text-align: right; font-weight: 700;">{{ invoice.currency }} {{ item.total|floatformat:2 }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
 
-                <div class="invoice-summary">
-                    <div class="summary-row">
-                        <span>Subtotal</span>
-                        <span>{{ invoice.currency }} {{ invoice.subtotal|floatformat:2 }}</span>
+                <div class="total-section">
+                    <div class="summary-item">
+                        <span style="color: var(--light-text-tertiary);">Subtotal</span>
+                        <span style="font-weight: 600;">{{ invoice.currency }} {{ invoice.subtotal|floatformat:2 }}</span>
                     </div>
-                    <div class="summary-row">
-                        <span>Tax ({{ invoice.tax_rate }}%)</span>
-                        <span>{{ invoice.currency }} {{ invoice.tax_amount|floatformat:2 }}</span>
+                    <div class="summary-item">
+                        <span style="color: var(--light-text-tertiary);">Tax ({{ invoice.tax_rate }}%)</span>
+                        <span style="font-weight: 600;">{{ invoice.currency }} {{ invoice.tax_amount|floatformat:2 }}</span>
                     </div>
-                    <div class="summary-row total">
+                    <div class="summary-item grand-total">
                         <span>Total</span>
                         <span>{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</span>
                     </div>
                 </div>
 
                 {% if invoice.notes %}
-                <div class="invoice-notes">
-                    <h3 class="notes-title">Notes</h3>
-                    <p class="notes-content">{{ invoice.notes|linebreaksbr }}</p>
+                <div style="margin-top: 64px; padding-top: 32px; border-top: 1px dashed var(--light-border-primary);">
+                    <h4 style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--light-text-tertiary); margin-bottom: 12px;">Notes & Terms</h4>
+                    <p style="font-size: 0.9375rem; color: var(--light-text-secondary); line-height: 1.6; margin: 0;">{{ invoice.notes|linebreaksbr }}</p>
                 </div>
                 {% endif %}
             </div>
 
+            <!-- Sidebar Actions -->
             <div class="invoice-sidebar">
-                <div class="sidebar-card">
-                    <h3 class="sidebar-title">Summary</h3>
-
-                    <div class="sidebar-section">
-                        <div class="amount-card">
-                            <div class="amount-label">Total Amount</div>
-                            <div class="amount-value">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</div>
-                        </div>
-
-                        <div class="status-card">
-                            <div class="status-label">Payment Status</div>
-                            <div class="status-value {% if invoice.status == 'paid' %}paid{% elif invoice.is_overdue %}overdue{% else %}unpaid{% endif %}">
-                                {% if invoice.status == 'paid' %}Paid{% elif invoice.is_overdue %}Overdue{% else %}Unpaid{% endif %}
-                            </div>
-                        </div>
+                <div class="glass-card sidebar-widget">
+                    <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 24px;">Manage Invoice</h3>
+                    
+                    <div class="action-grid">
+                        <a href="{% url 'invoices:generate_pdf' invoice.id %}" class="modern-btn btn-primary btn-full">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download PDF
+                        </a>
+                        <button onclick="window.print()" class="modern-btn btn-outline">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                            Print
+                        </button>
+                        <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="modern-btn btn-outline">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            Edit
+                        </a>
+                        <a href="{% url 'invoices:send_invoice_email' invoice.id %}" class="modern-btn btn-outline btn-full">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            Email Client
+                        </a>
+                        <a href="{% url 'invoices:whatsapp_share' invoice.id %}" class="modern-btn btn-outline btn-full" style="color: #25d366; border-color: #25d36622;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-14.7 8.38 8.38 0 0 1 3.8.9L21 3z"/></svg>
+                            WhatsApp Share
+                        </a>
                     </div>
 
-                    <div class="sidebar-section">
-                        <div style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--light-text-tertiary); margin-bottom: 12px;">Payment Link</div>
-                        <div class="payment-link-box">
-                            <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}{% url 'invoices:public_invoice' invoice_id=invoice.id %}" class="payment-link-input" id="paymentLink">
-                        </div>
-                        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('paymentLink').value); this.textContent='Copied!'; setTimeout(() => { this.textContent='Copy Payment Link'; }, 2000);" class="btn-light-primary btn-light-block">
-                            Copy Payment Link
+                    <div class="share-link-box">
+                        <label style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--light-text-tertiary); margin-bottom: 8px; display: block;">Public Payment Link</label>
+                        <div class="link-display" id="paymentLink">{{ request.scheme }}://{{ request.get_host }}{% url 'invoices:public_invoice' invoice_id=invoice.id %}</div>
+                        <button onclick="copyLink()" id="copyBtn" class="modern-btn btn-outline" style="width: 100%; padding: 8px;">
+                            Copy Link
                         </button>
                     </div>
+                </div>
 
-                    <div class="sidebar-section">
-                        <div class="quick-actions">
-                            <button type="button" class="quick-action-btn" onclick="window.print()" title="Print Invoice">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="6 9 6 2 18 2 18 9"/>
-                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-                                    <rect x="6" y="14" width="12" height="8"/>
-                                </svg>
-                                Print
-                            </button>
-                            <a href="{% url 'invoices:send_invoice_email' invoice.id %}" class="quick-action-btn" title="Send Email">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                                    <polyline points="22,6 12,13 2,6"/>
-                                </svg>
-                                Send Email
-                            </a>
-                            <a href="{% url 'invoices:whatsapp_share' invoice.id %}" class="quick-action-btn" title="Share via WhatsApp">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-14.7 8.38 8.38 0 0 1 3.8.9L21 3z"/>
-                                </svg>
-                                WhatsApp
-                            </a>
-                            <a href="{% url 'invoices:duplicate_invoice' invoice.id %}" class="quick-action-btn" title="Duplicate">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                                Duplicate
-                            </a>
-                            <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="quick-action-btn" title="Edit">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                </svg>
-                                Edit
-                            </a>
-                            <a href="{% url 'invoices:generate_pdf' invoice.id %}" class="btn-light-primary" title="Download PDF">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                    <polyline points="7 10 12 15 17 10"/>
-                                    <line x1="12" y1="15" x2="12" y2="3"/>
-                                </svg>
-                                Download
-                            </a>
-                        </div>
-                    </div>
+                <div class="glass-card sidebar-widget" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(16, 185, 129, 0.05));">
+                    <h4 style="font-size: 0.875rem; font-weight: 700; margin-bottom: 12px;">Quick Duplicate</h4>
+                    <p style="font-size: 0.8125rem; color: var(--light-text-secondary); margin-bottom: 16px;">Create a new invoice using these details as a template.</p>
+                    <a href="{% url 'invoices:duplicate_invoice' invoice.id %}" class="modern-btn btn-outline" style="width: 100%;">
+                        Duplicate Invoice
+                    </a>
                 </div>
             </div>
         </div>
@@ -653,4 +479,22 @@
         {% include 'components/dashboard-footer.html' %}
     </main>
 </div>
+
+<script nonce="{{ request.csp_nonce }}">
+    function copyLink() {
+        const link = document.getElementById('paymentLink').innerText;
+        const btn = document.getElementById('copyBtn');
+        navigator.clipboard.writeText(link).then(() => {
+            const originalText = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.borderColor = 'var(--light-success)';
+            btn.style.color = 'var(--light-success)';
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.borderColor = '';
+                btn.style.color = '';
+            }, 2000);
+        });
+    }
+</script>
 {% endblock %}
