@@ -1976,7 +1976,24 @@ def mfa_backup_codes(request):
 @login_required
 def recurring_invoices_list(request):
     """Display list of recurring invoices."""
-    recurring = RecurringInvoice.objects.filter(user=request.user).order_by("-created_at")
+    q = request.GET.get("q")
+    status = request.GET.get("status")
+    
+    recurring = RecurringInvoice.objects.filter(user=request.user)
+    
+    if q:
+        recurring = recurring.filter(
+            Q(client_name__icontains=q) | 
+            Q(client_email__icontains=q) |
+            Q(business_name__icontains=q)
+        )
+    
+    if status == "active":
+        recurring = recurring.filter(is_active=True)
+    elif status == "paused":
+        recurring = recurring.filter(is_active=False)
+        
+    recurring = recurring.order_by("-created_at")
     
     return render(request, "invoices/recurring.html", {
         "recurring_invoices": recurring,

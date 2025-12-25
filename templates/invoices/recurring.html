@@ -168,6 +168,25 @@
         
         <div class="recurring-grid-light">
             <div class="recurring-list-light">
+                <div class="search-section" style="margin-bottom: 24px;">
+                    <form method="get" class="search-form" style="display: flex; gap: 12px; align-items: center; background: var(--light-bg-secondary); padding: 16px; border-radius: var(--light-radius-lg); border: 1px solid var(--light-border-primary);">
+                        <div style="flex: 1; position: relative;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--light-text-tertiary);">
+                                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search by client or email..." style="width: 100%; padding: 10px 12px 10px 40px; border: 1px solid var(--light-border-primary); border-radius: var(--light-radius-md); background: var(--light-bg-tertiary);">
+                        </div>
+                        <select name="status" style="padding: 10px 12px; border: 1px solid var(--light-border-primary); border-radius: var(--light-radius-md); background: var(--light-bg-tertiary);">
+                            <option value="">All Statuses</option>
+                            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                            <option value="paused" {% if request.GET.status == 'paused' %}selected{% endif %}>Paused</option>
+                        </select>
+                        <button type="submit" class="btn-light-primary">Filter</button>
+                        {% if request.GET.q or request.GET.status %}
+                        <a href="{% url 'invoices:recurring_invoices' %}" class="btn-light-secondary">Clear</a>
+                        {% endif %}
+                    </form>
+                </div>
                 {% if recurring_invoices %}
                 {% for recurring in recurring_invoices %}
                 <div class="recurring-card-light">
