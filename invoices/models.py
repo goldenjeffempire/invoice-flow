@@ -644,7 +644,8 @@ class PaymentSettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        return f"Payment Settings for {self.user.username}"
+        username = getattr(self.user, 'username', 'Unknown')
+        return f"Payment Settings for {username}"  # type: ignore[attr-defined]
 
 
 # ============================================================================
