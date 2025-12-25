@@ -356,13 +356,11 @@ def dashboard(request):
             chart_data.append(float(item["total"] or 0))
     
     # Recent invoices (last 5 with status)
-    recent_invoices = list(
-        base_queryset.annotate(
-            total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
-        ).order_by("-created_at").values(
-            "id", "invoice_id", "client_name", "status", "created_at", "due_date", "total"
-        )[:5]
-    )
+    recent_invoices = base_queryset.order_by("-created_at")[:5]
+    
+    # Calculate totals for recent invoices
+    for inv in recent_invoices:
+        inv.calculated_total = sum(item.quantity * item.unit_price for item in inv.line_items.all())
     
     # Invoice aging summary
     aging_summary = {
