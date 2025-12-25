@@ -54,7 +54,7 @@ ALLOWED_HOSTS: list[str] = (
     env.list(
         "ALLOWED_HOSTS",
         default=[PRODUCTION_DOMAIN, f".{PRODUCTION_DOMAIN}", f"www.{PRODUCTION_DOMAIN}"],
-    )  # type: ignore[arg-type]
+    )  # type: ignore[arg-type,list-item]
     if IS_PRODUCTION
     else ["*"]
 )
