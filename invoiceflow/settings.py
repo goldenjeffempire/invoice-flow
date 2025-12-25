@@ -346,7 +346,7 @@ LOGGING = {
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "script-src": ("'self'", "https://cdn.jsdelivr.net", "https://js.hcaptcha.com"),
+        "script-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://js.hcaptcha.com"),
         "style-src": ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com"),
         "img-src": ("'self'", "data:", "https:"),
         "font-src": ("'self'", "https://fonts.gstatic.com"),
