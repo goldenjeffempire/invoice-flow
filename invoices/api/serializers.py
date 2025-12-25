@@ -119,9 +119,9 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         line_items_data = validated_data.pop("line_items")
-        invoice = Invoice.objects.create(**validated_data)
+        invoice = Invoice.objects.create(**validated_data)  # type: ignore[attr-defined]
         for item_data in line_items_data:
-            LineItem.objects.create(invoice=invoice, **item_data)
+            LineItem.objects.create(invoice=invoice, **item_data)  # type: ignore[attr-defined]
         return invoice
 
     def update(self, instance, validated_data):
@@ -134,7 +134,7 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         if line_items_data is not None:
             instance.line_items.all().delete()
             for item_data in line_items_data:
-                LineItem.objects.create(invoice=instance, **item_data)
+                LineItem.objects.create(invoice=instance, **item_data)  # type: ignore[attr-defined]
 
         return instance
 

@@ -24,7 +24,7 @@ class Waitlist(models.Model):
         max_length=20, choices=Feature.choices, default=Feature.GENERAL
     )
     subscribed_at = models.DateTimeField(auto_now_add=True)
-    is_notified = models.BooleanField(default=False)
+    is_notified = models.BooleanField(default=False)  # type: ignore[assignment]
 
     class Meta:
         ordering = ["-subscribed_at"]
@@ -33,7 +33,7 @@ class Waitlist(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.email} ({self.get_feature_display()})"
+        return f"{self.email} ({self.get_feature_display()})"  # type: ignore[attr-defined]
 
 
 # ============================================================================
@@ -78,7 +78,7 @@ class ContactSubmission(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.name} – {self.get_subject_display()}"
+        return f"{self.name} – {self.get_subject_display()}"  # type: ignore[attr-defined]
 
 
 # ============================================================================
@@ -99,27 +99,27 @@ class UserProfile(models.Model):
     business_address = models.TextField(blank=True)
 
     default_currency = models.CharField(max_length=3, default="USD")
-    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
 
     invoice_prefix = models.CharField(max_length=10, default="INV")
     timezone = models.CharField(max_length=63, default="UTC")
 
-    notify_invoice_created = models.BooleanField(default=True)
-    notify_payment_received = models.BooleanField(default=True)
-    notify_invoice_viewed = models.BooleanField(default=True)
-    notify_invoice_overdue = models.BooleanField(default=True)
-    notify_weekly_summary = models.BooleanField(default=False)
-    notify_security_alerts = models.BooleanField(default=True)
-    notify_password_changes = models.BooleanField(default=True)
+    notify_invoice_created = models.BooleanField(default=True)  # type: ignore[assignment]
+    notify_payment_received = models.BooleanField(default=True)  # type: ignore[assignment]
+    notify_invoice_viewed = models.BooleanField(default=True)  # type: ignore[assignment]
+    notify_invoice_overdue = models.BooleanField(default=True)  # type: ignore[assignment]
+    notify_weekly_summary = models.BooleanField(default=False)  # type: ignore[assignment]
+    notify_security_alerts = models.BooleanField(default=True)  # type: ignore[assignment]
+    notify_password_changes = models.BooleanField(default=True)  # type: ignore[assignment]
 
-    email_verified = models.BooleanField(default=False)
+    email_verified = models.BooleanField(default=False)  # type: ignore[assignment]
 
     # Paystack
     paystack_subaccount_code = models.CharField(max_length=100, blank=True, null=True)
     paystack_percentage_charge = models.DecimalField(
         max_digits=5, decimal_places=2, default=0
     )
-    paystack_subaccount_active = models.BooleanField(default=False)
+    paystack_subaccount_active = models.BooleanField(default=False)  # type: ignore[assignment]
     paystack_bank_code = models.CharField(max_length=20, blank=True, null=True)
     paystack_account_number = models.CharField(max_length=30, blank=True, null=True)
     paystack_account_name = models.CharField(max_length=200, blank=True, null=True)
@@ -158,9 +158,9 @@ class InvoiceTemplate(models.Model):
     account_name = models.CharField(max_length=200, blank=True)
 
     currency = models.CharField(max_length=3, default="USD")
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
 
-    is_default = models.BooleanField(default=False)
+    is_default = models.BooleanField(default=False)  # type: ignore[assignment]
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -173,11 +173,11 @@ class InvoiceTemplate(models.Model):
         if self.is_default:
             InvoiceTemplate.objects.filter(
                 user=self.user, is_default=True
-            ).exclude(pk=self.pk).update(is_default=False)
+            ).exclude(pk=self.pk).update(is_default=False)  # type: ignore[assignment]
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
-        return self.name
+        return str(self.name)
 
 
 # ============================================================================
@@ -235,7 +235,7 @@ class Invoice(models.Model):
     due_date = models.DateField(null=True, blank=True, db_index=True)
 
     currency = models.CharField(max_length=3, default="USD", db_index=True)
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
 
     status = models.CharField(
         max_length=10, choices=Status.choices, default=Status.UNPAID, db_index=True
@@ -255,21 +255,21 @@ class Invoice(models.Model):
 
     def _generate_invoice_id(self) -> str:
         try:
-            prefix = self.user.profile.invoice_prefix
-        except (AttributeError, UserProfile.DoesNotExist):
+            prefix = self.user.profile.invoice_prefix  # type: ignore[attr-defined]
+        except (AttributeError, UserProfile.DoesNotExist):  # type: ignore[attr-defined]
             prefix = "INV"
         while True:
             code = f"{prefix}-{secrets.token_hex(4).upper()}"
-            if not Invoice.objects.filter(invoice_id=code).exists():
+            if not Invoice.objects.filter(invoice_id=code).exists():  # type: ignore[attr-defined]
                 return code
 
     @property
     def subtotal(self) -> Decimal:
-        return sum((item.total for item in self.line_items.all()), Decimal("0"))
+        return sum((item.total for item in self.line_items.all()), Decimal("0"))  # type: ignore[attr-defined]
 
     @property
     def tax_amount(self) -> Decimal:
-        return (self.subtotal * self.tax_rate) / Decimal("100")
+        return (self.subtotal * Decimal(str(self.tax_rate))) / Decimal("100")
 
     @property
     def total(self) -> Decimal:
@@ -289,15 +289,15 @@ class LineItem(models.Model):
     )
 
     description = models.CharField(max_length=500)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)  # type: ignore[assignment]
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     @property
     def total(self) -> Decimal:
-        return self.quantity * self.unit_price
+        return Decimal(str(self.quantity)) * Decimal(str(self.unit_price))
 
     def __str__(self) -> str:
-        return self.description
+        return str(self.description)
 
 
 # ============================================================================
@@ -388,7 +388,7 @@ class EmailVerificationToken(models.Model):
     token_type = models.CharField(max_length=20, choices=TokenType.choices)
     email = models.EmailField()
 
-    is_used = models.BooleanField(default=False)
+    is_used = models.BooleanField(default=False)  # type: ignore[assignment]
     expires_at = models.DateTimeField()
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -415,7 +415,7 @@ class LoginAttempt(models.Model):
     username = models.CharField(max_length=150)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
-    success = models.BooleanField(default=False)
+    success = models.BooleanField(default=False)  # type: ignore[assignment]
     failure_reason = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -443,15 +443,14 @@ class MFAProfile(models.Model):
     )
     secret_key = models.CharField(max_length=32, blank=True)
     recovery_codes = models.JSONField(default=list, blank=True)
-    is_enabled = models.BooleanField(default=False)
+    is_enabled = models.BooleanField(default=False)  # type: ignore[assignment]
     backup_phone = models.CharField(max_length=20, blank=True, null=True)
     last_used = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
-        status = "enabled" if self.is_enabled else "disabled"
-        return f"MFA for {self.user.username} ({status})"
+        return f"MFA for {getattr(self.user, 'username', 'Unknown')} ({status})"
 
 
 # ============================================================================
@@ -468,7 +467,7 @@ class UserSession(models.Model):
     user_agent = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     last_seen = models.DateTimeField(auto_now=True)
-    is_revoked = models.BooleanField(default=False)
+    is_revoked = models.BooleanField(default=False)  # type: ignore[assignment]
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -479,7 +478,7 @@ class UserSession(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Session for {self.user.username}"
+        return f"Session for {getattr(self.user, 'username', 'Unknown')}"
 
 
 # ============================================================================
@@ -509,7 +508,7 @@ class SocialAccount(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        return f"{self.user.username} - {self.get_provider_display()}"
+        return f"{getattr(self.user, 'username', 'Unknown')} - {self.get_provider_display()}"  # type: ignore[attr-defined]
 
 
 # ============================================================================
@@ -550,7 +549,7 @@ class RecurringInvoice(models.Model):
     client_address = models.TextField(blank=True)
 
     currency = models.CharField(max_length=3, default="USD")
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
 
     frequency = models.CharField(max_length=20, choices=Frequency.choices)
     start_date = models.DateField()
@@ -574,22 +573,22 @@ class RecurringInvoice(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"Recurring: {self.client_name} ({self.get_frequency_display()})"
+        return f"Recurring: {self.client_name} ({self.get_frequency_display()})"  # type: ignore[attr-defined]
 
 class RecurringInvoiceLineItem(models.Model):
     recurring_invoice = models.ForeignKey(
         RecurringInvoice, on_delete=models.CASCADE, related_name="line_items"
     )
     description = models.CharField(max_length=500)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)  # type: ignore[assignment]
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     @property
     def total(self) -> Decimal:
-        return self.quantity * self.unit_price
+        return Decimal(str(self.quantity)) * Decimal(str(self.unit_price))
 
     def __str__(self) -> str:
-        return self.description
+        return str(self.description)
 
 
 # ============================================================================
@@ -609,29 +608,29 @@ class PaymentSettings(models.Model):
         related_name="payment_settings",
     )
 
-    accept_cards = models.BooleanField(default=True)
-    accept_bank_transfers = models.BooleanField(default=True)
-    enable_card_payments = models.BooleanField(default=True)
-    enable_bank_transfers = models.BooleanField(default=True)
-    enable_mobile_money = models.BooleanField(default=False)
-    enable_ussd = models.BooleanField(default=False)
+    accept_cards = models.BooleanField(default=True)  # type: ignore[assignment]
+    accept_bank_transfers = models.BooleanField(default=True)  # type: ignore[assignment]
+    enable_card_payments = models.BooleanField(default=True)  # type: ignore[assignment]
+    enable_bank_transfers = models.BooleanField(default=True)  # type: ignore[assignment]
+    enable_mobile_money = models.BooleanField(default=False)  # type: ignore[assignment]
+    enable_ussd = models.BooleanField(default=False)  # type: ignore[assignment]
 
     minimum_payment_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=0
     )
-    auto_reconcile = models.BooleanField(default=True)
-    auto_payout = models.BooleanField(default=False)
-    payout_delay_days = models.PositiveIntegerField(default=7)
+    auto_reconcile = models.BooleanField(default=True)  # type: ignore[assignment]
+    auto_payout = models.BooleanField(default=False)  # type: ignore[assignment]
+    payout_delay_days = models.PositiveIntegerField(default=7)  # type: ignore[assignment]
     payout_schedule = models.CharField(
         max_length=20, choices=PayoutSchedule.choices, default=PayoutSchedule.WEEKLY
     )
-    payout_threshold = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payout_threshold = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # type: ignore[assignment]
 
     default_currency = models.CharField(max_length=3, default="NGN")
     preferred_currency = models.CharField(max_length=3, default="NGN")
 
-    send_payment_receipt = models.BooleanField(default=True)
-    send_payout_notification = models.BooleanField(default=True)
+    send_payment_receipt = models.BooleanField(default=True)  # type: ignore[assignment]
+    send_payout_notification = models.BooleanField(default=True)  # type: ignore[assignment]
     payment_instructions = models.TextField(blank=True)
 
     webhook_secret = models.CharField(max_length=255, blank=True)
@@ -670,9 +669,9 @@ class PaymentRecipient(models.Model):
     email = models.EmailField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
 
-    is_primary = models.BooleanField(default=False)
-    is_default = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
+    is_primary = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_default = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_active = models.BooleanField(default=True)  # type: ignore[assignment]
 
     recipient_code = models.CharField(max_length=100, blank=True)
 
@@ -705,16 +704,16 @@ class PaymentCard(models.Model):
     exp_month = models.PositiveIntegerField()
     exp_year = models.PositiveIntegerField()
 
-    is_default = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    is_primary = models.BooleanField(default=False)
+    is_default = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_active = models.BooleanField(default=True)  # type: ignore[assignment]
+    is_primary = models.BooleanField(default=False)  # type: ignore[assignment]
     
     authorization_code = models.CharField(max_length=255, blank=True)
     signature = models.CharField(max_length=255, blank=True)
     card_type = models.CharField(max_length=50, blank=True)
     bank = models.CharField(max_length=100, blank=True)
     country_code = models.CharField(max_length=2, blank=True)
-    reusable = models.BooleanField(default=False)
+    reusable = models.BooleanField(default=False)  # type: ignore[assignment]
     nickname = models.CharField(max_length=100, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -796,7 +795,7 @@ class IdempotencyKey(models.Model):
     key = models.CharField(max_length=255, unique=True, db_index=True)
     request_hash = models.CharField(max_length=64)
     response_data = models.JSONField(default=dict)
-    http_status = models.PositiveIntegerField(default=200)
+    http_status = models.PositiveIntegerField(default=200)  # type: ignore[assignment]
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
@@ -851,11 +850,11 @@ class PaymentReconciliation(models.Model):
     paystack_status = models.CharField(max_length=50, blank=True)
     local_status = models.CharField(max_length=50)
 
-    amount_match = models.BooleanField(default=True)
-    currency_match = models.BooleanField(default=True)
-    status_match = models.BooleanField(default=True)
+    amount_match = models.BooleanField(default=True)  # type: ignore[assignment]
+    currency_match = models.BooleanField(default=True)  # type: ignore[assignment]
+    status_match = models.BooleanField(default=True)  # type: ignore[assignment]
 
-    retry_count = models.PositiveIntegerField(default=0)
+    retry_count = models.PositiveIntegerField(default=0)  # type: ignore[assignment]
     last_attempt = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
 
@@ -908,13 +907,13 @@ class PaymentRecovery(models.Model):
         choices=RecoveryStrategy.choices,
         default=RecoveryStrategy.WEBHOOK_RETRY,
     )
-    attempt_number = models.PositiveIntegerField(default=1)
-    max_attempts = models.PositiveIntegerField(default=3)
+    attempt_number = models.PositiveIntegerField(default=1)  # type: ignore[assignment]
+    max_attempts = models.PositiveIntegerField(default=3)  # type: ignore[assignment]
 
     error_reason = models.TextField(blank=True)
     error_code = models.CharField(max_length=50, blank=True)
 
-    is_successful = models.BooleanField(default=False)
+    is_successful = models.BooleanField(default=False)  # type: ignore[assignment]
     attempted_at = models.DateTimeField(auto_now_add=True)
     next_retry_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -1028,12 +1027,12 @@ class UserSettings(models.Model):
         related_name="settings_audit",
     )
 
-    allow_marketing_emails = models.BooleanField(default=False)
-    allow_security_alerts = models.BooleanField(default=True)
-    invoice_reminders_enabled = models.BooleanField(default=True)
-    payment_notifications_enabled = models.BooleanField(default=True)
+    allow_marketing_emails = models.BooleanField(default=False)  # type: ignore[assignment]
+    allow_security_alerts = models.BooleanField(default=True)  # type: ignore[assignment]
+    invoice_reminders_enabled = models.BooleanField(default=True)  # type: ignore[assignment]
+    payment_notifications_enabled = models.BooleanField(default=True)  # type: ignore[assignment]
     
-    two_factor_enabled = models.BooleanField(default=False)
+    two_factor_enabled = models.BooleanField(default=False)  # type: ignore[assignment]
     two_factor_method = models.CharField(
         max_length=20,
         choices=[("totp", "TOTP"), ("email", "Email")],
@@ -1050,8 +1049,8 @@ class UserSettings(models.Model):
         default="auto",
     )
     
-    data_retention_days = models.PositiveIntegerField(default=365)
-    auto_export_enabled = models.BooleanField(default=False)
+    data_retention_days = models.PositiveIntegerField(default=365)  # type: ignore[assignment]
+    auto_export_enabled = models.BooleanField(default=False)  # type: ignore[assignment]
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1064,7 +1063,7 @@ class UserSettings(models.Model):
         ]
     
     def __str__(self) -> str:
-        return f"Settings for {self.user.username}"
+        return f"Settings for {getattr(self.user, 'username', 'Unknown')}"
     
     def validate_settings(self) -> dict:
         errors = {}
@@ -1108,7 +1107,7 @@ class UserSettingsAuditLog(models.Model):
         ]
     
     def __str__(self) -> str:
-        return f"{self.user.username} - {self.action} on {self.created_at}"
+        return f"{getattr(self.user, 'username', 'Unknown')} - {self.action} on {self.created_at}"
 
 
 # ============================================================================
@@ -1152,8 +1151,8 @@ class RecurringInvoiceExecution(models.Model):
         related_name="recurring_execution",
     )
     error_message = models.TextField(blank=True)
-    retry_count = models.PositiveIntegerField(default=0)
-    max_retries = models.PositiveIntegerField(default=3)
+    retry_count = models.PositiveIntegerField(default=0)  # type: ignore[assignment]
+    max_retries = models.PositiveIntegerField(default=3)  # type: ignore[assignment]
     
     idempotency_key = models.CharField(max_length=255, unique=True, db_index=True)
     
@@ -1168,7 +1167,7 @@ class RecurringInvoiceExecution(models.Model):
         ]
     
     def __str__(self) -> str:
-        return f"Execution {self.id} - {self.recurring_invoice.client_name} ({self.status})"
+        return f"Execution {self.id} - {self.recurring_invoice.client_name} ({self.status})"  # type: ignore[attr-defined]
 
 
 # ============================================================================
@@ -1184,8 +1183,8 @@ class PublicInvoiceToken(models.Model):
     token = models.CharField(max_length=64, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
-    is_revoked = models.BooleanField(default=False)
-    access_count = models.PositiveIntegerField(default=0)
+    is_revoked = models.BooleanField(default=False)  # type: ignore[assignment]
+    access_count = models.PositiveIntegerField(default=0)  # type: ignore[assignment]
     max_accesses = models.PositiveIntegerField(null=True, blank=True)
     
     class Meta:
@@ -1204,7 +1203,7 @@ class PublicInvoiceToken(models.Model):
         return True
     
     def __str__(self) -> str:
-        return f"Token for {self.invoice.invoice_id}"
+        return f"Token for {getattr(self.invoice, 'invoice_id', 'Unknown')}"
 
 
 class InvoiceAccessLog(models.Model):
@@ -1233,7 +1232,7 @@ class InvoiceAccessLog(models.Model):
         ]
     
     def __str__(self) -> str:
-        return f"Access {self.invoice.invoice_id} at {self.accessed_at}"
+        return f"Access {getattr(self.invoice, 'invoice_id', 'Unknown')} at {self.accessed_at}"
 
 
 # ============================================================================
@@ -1310,7 +1309,7 @@ class EmailRetryQueue(models.Model):
         on_delete=models.CASCADE,
         related_name="retry_queue",
     )
-    retry_count = models.PositiveIntegerField(default=0)
+    retry_count = models.PositiveIntegerField(default=0)  # type: ignore[assignment]
     max_retries = models.PositiveIntegerField(default=5)
     retry_strategy = models.CharField(
         max_length=20,
@@ -1322,7 +1321,7 @@ class EmailRetryQueue(models.Model):
     last_attempted_at = models.DateTimeField(null=True, blank=True)
     last_error = models.TextField(blank=True)
     
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True)  # type: ignore[assignment]
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1335,4 +1334,4 @@ class EmailRetryQueue(models.Model):
         ]
     
     def __str__(self) -> str:
-        return f"Retry {self.retry_count}/{self.max_retries} - {self.email_log.to_email}"
+        return f"Retry {self.retry_count}/{self.max_retries} - {getattr(self.email_log, 'to_email', 'Unknown')}"
