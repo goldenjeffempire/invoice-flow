@@ -481,33 +481,34 @@
 </div>
 
 <script nonce="{{ request.csp_nonce }}">
-    function copyLink() {
-        const link = document.getElementById('paymentLink').innerText;
-        const btn = document.getElementById('copyBtn');
-        navigator.clipboard.writeText(link).then(() => {
-            const originalText = btn.innerText;
-            btn.innerText = 'Copied!';
-            btn.style.borderColor = 'var(--light-success)';
-            btn.style.color = 'var(--light-success)';
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.borderColor = '';
+function copyLink() {
+    const link = document.getElementById('paymentLink').innerText;
+    const btn = document.getElementById('copyBtn');
+    navigator.clipboard.writeText(link).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.borderColor = 'var(--light-success)';
+        btn.style.color = 'var(--light-success)';
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.borderColor = '';
+            btn.style.color = '';
+        }, 2000);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const copyLinkBtn = document.querySelector('.copy-link-btn');
+    if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', copyLink);
+    }
     
-    document.addEventListener('DOMContentLoaded', function() {
-        const copyLinkBtn = document.querySelector('.copy-link-btn');
-        if (copyLinkBtn) {
-            copyLinkBtn.addEventListener('click', copyLink);
-        }
-        
-        const printBtn = document.querySelector('.print-btn');
-        if (printBtn) {
-            printBtn.addEventListener('click', function() {
-                window.print();
-            });
-        }
-                btn.style.color = '';
-            }, 2000);
+    const printBtn = document.querySelector('.print-btn');
+    if (printBtn) {
+        printBtn.addEventListener('click', function() {
+            window.print();
         });
     }
+});
 </script>
 {% endblock %}
