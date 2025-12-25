@@ -171,9 +171,10 @@ class InvoiceTemplate(models.Model):
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         if self.is_default:
-            InvoiceTemplate.objects.filter(
+            # type: ignore[attr-defined]
+            self.__class__.objects.filter(
                 user=self.user, is_default=True
-            ).exclude(pk=self.pk).update(is_default=False)  # type: ignore[assignment]
+            ).exclude(pk=self.pk).update(is_default=False)
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:
@@ -451,7 +452,7 @@ class MFAProfile(models.Model):
 
     def __str__(self) -> str:
         status_val = "enabled" if self.is_enabled else "disabled"
-        return f"MFA for {getattr(self.user, 'username', 'Unknown')} ({status_val})"
+        return f"MFA for {getattr(self.user, 'username', 'Unknown')} ({status_val})"  # type: ignore[attr-defined]
 
 
 # ============================================================================
@@ -811,7 +812,7 @@ class IdempotencyKey(models.Model):
         return self.expires_at > timezone.now()
 
     def __str__(self) -> str:
-        return f"IdempotencyKey {self.key[:8]}... ({self.user})"
+        return f"IdempotencyKey {str(self.key)[:8]}... ({getattr(self.user, 'username', 'Unknown')})"  # type: ignore[attr-defined, name-defined]
 
 
 # ============================================================================
@@ -1014,7 +1015,7 @@ class UserIdentityVerification(models.Model):
         return self.is_verified()
 
     def __str__(self) -> str:
-        return f"Identity Verification {self.user.email} ({self.status})"
+        return f"Identity Verification {getattr(self.user, 'email', 'Unknown')} ({str(self.status)})"  # type: ignore[attr-defined]
 
 
 # ============================================================================
@@ -1064,7 +1065,7 @@ class UserSettings(models.Model):
         ]
     
     def __str__(self) -> str:
-        return f"Settings for {getattr(self.user, 'username', 'Unknown')}"
+        return f"Settings for {getattr(self.user, 'username', 'Unknown')}"  # type: ignore[attr-defined, name-defined]
     
     def validate_settings(self) -> dict:
         errors = {}
