@@ -72,7 +72,7 @@ def settings_business(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Business settings updated successfully.")
-            return redirect("settings_business")
+            return redirect("invoices:settings_business")
     else:
         form = UserProfileForm(instance=user_profile)
     
@@ -97,7 +97,7 @@ def settings_payments(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Payment settings updated successfully.")
-            return redirect("settings_payments")
+            return redirect("invoices:settings_payments")
     else:
         form = PaymentSettingsForm(instance=payment_settings)
     
@@ -185,7 +185,7 @@ def settings_notifications(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Notification preferences updated successfully.")
-            return redirect("settings_notifications")
+            return redirect("invoices:settings_notifications")
     else:
         form = NotificationPreferencesForm(instance=user_profile)
     
@@ -218,7 +218,7 @@ def revoke_session(request, session_id):
     session = get_object_or_404(UserSession, id=session_id, user=request.user)
     session.revoke()
     messages.success(request, "Session revoked successfully.")
-    return redirect("settings_security")
+    return redirect("invoices:settings_security")
 
 
 @login_required
@@ -233,7 +233,7 @@ def revoke_all_sessions(request):
         session.revoke()
     
     messages.success(request, "All other sessions have been revoked.")
-    return redirect("settings_security")
+    return redirect("invoices:settings_security")
 
 
 @login_required
