@@ -50,14 +50,17 @@ if IS_PRODUCTION:
 # =============================================================================
 # ALLOWED HOSTS / CSRF
 # =============================================================================
-ALLOWED_HOSTS: list[str] = (
-    env.list(
-        "ALLOWED_HOSTS",
-        default=[PRODUCTION_DOMAIN, f".{PRODUCTION_DOMAIN}", f"www.{PRODUCTION_DOMAIN}"],
-    )  # type: ignore[arg-type,list-item]
-    if IS_PRODUCTION
-    else ["*"]
-)  # type: ignore[assignment]
+ALLOWED_HOSTS: list[str] = env.list(
+    "ALLOWED_HOSTS",
+    default=[
+        PRODUCTION_DOMAIN,
+        f".{PRODUCTION_DOMAIN}",
+        f"www.{PRODUCTION_DOMAIN}",
+        "*.onrender.com",
+        "*.replit.dev",
+        "*.repl.co",
+    ] if IS_PRODUCTION else ["*"],
+)  # type: ignore[arg-type,list-item]
 
 CSRF_TRUSTED_ORIGINS: list[str] = [
     f"https://{PRODUCTION_DOMAIN}",
@@ -68,6 +71,10 @@ if not IS_PRODUCTION:
     CSRF_TRUSTED_ORIGINS += [
         "https://*.replit.dev",
         "https://*.repl.co",
+        "https://*.onrender.com",
+    ]
+else:
+    CSRF_TRUSTED_ORIGINS += [
         "https://*.onrender.com",
     ]
 
