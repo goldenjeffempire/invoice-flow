@@ -1,51 +1,14 @@
 services:
   - type: web
     name: invoiceflow
-    plan: standard
     runtime: python
     pythonVersion: 3.11
-    startCommand: >
-      python manage.py migrate &&
-      python manage.py collectstatic --noinput &&
-      gunicorn invoiceflow.wsgi -c gunicorn.conf.py
+    plan: standard
+    startCommand: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn invoiceflow.wsgi -c gunicorn.conf.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11
       - key: PRODUCTION
         value: "true"
       - key: DEBUG
         value: "false"
       - key: ALLOWED_HOSTS
         value: invoiceflow.com.ng,www.invoiceflow.com.ng,api.invoiceflow.com.ng
-      - key: SECRET_KEY
-        sync: false
-      - key: ENCRYPTION_SALT
-        sync: false
-      - key: DATABASE_URL
-        sync: false
-      - key: PAYSTACK_SECRET_KEY
-        sync: false
-      - key: PAYSTACK_PUBLIC_KEY
-        sync: false
-      - key: SENDGRID_API_KEY
-        sync: false
-      - key: CSRF_TRUSTED_ORIGINS
-        value: "https://invoiceflow.com.ng,https://www.invoiceflow.com.ng"
-      - key: SECURE_SSL_REDIRECT
-        value: "true"
-      - key: SESSION_COOKIE_SECURE
-        value: "true"
-      - key: CSRF_COOKIE_SECURE
-        value: "true"
-    staticFilesDir: static
-    buildFilter:
-      paths:
-        - "!tests"
-        - "!docs"
-        - "!.github"
-      ignoredFiles:
-        - "*.md"
-        - ".env"
-        - ".env.local"
-        - ".gitignore"
-        - "pytest.ini"
