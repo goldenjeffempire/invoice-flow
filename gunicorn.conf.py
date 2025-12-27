@@ -209,7 +209,7 @@ def worker_abort(worker):
 def child_exit(server, worker):
     """Called when a worker exits."""
     print(
-        f"[InvoiceFlow] Worker {worker.pid} exited (requests: {worker.requests})",
+        f"[InvoiceFlow] Worker {worker.pid} exited",
         file=sys.stderr,
     )
 
