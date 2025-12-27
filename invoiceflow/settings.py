@@ -92,8 +92,12 @@ if csrf_origins_env:
 # SECURITY HEADERS (HARDENED)
 # =============================================================================
 SECURE_SSL_REDIRECT = IS_PRODUCTION
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+
+# Secure cookies only in production (prevents conflicts with HTTP in development)
+SESSION_COOKIE_SECURE = IS_PRODUCTION
+CSRF_COOKIE_SECURE = IS_PRODUCTION
+
+# HttpOnly always enabled (no JavaScript access to cookies)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
