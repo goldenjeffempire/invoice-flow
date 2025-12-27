@@ -1,181 +1,215 @@
 """
-InvoiceFlow Production Gunicorn Configuration - 24/7 Uptime Optimized
-Enterprise-Grade Server Setup for Render Deployment
-Version: 3.0.0 | December 26, 2025
+InvoiceFlow - Professional Gunicorn Configuration
+Production-Ready WSGI Server Setup for Django 5.2
 
-Features:
-- Dynamic worker scaling for Render environment
-- Memory leak prevention (worker restart cycles)
-- Optimized timeouts for 24/7 reliability
-- Health check integration with Render
-- Comprehensive monitoring and logging
-- Graceful shutdown and connection handling
-- Auto-restart on failure
+This configuration is optimized for:
+- Render cloud deployment
+- 24/7 production stability
+- Resource-constrained environments
+- Zero-downtime deployments
+- Comprehensive monitoring and observability
 """
 
 import multiprocessing
 import os
 import sys
-import gunicorn
 
 # =============================================================================
 # ENVIRONMENT DETECTION
 # =============================================================================
 
-IS_RENDER = bool(os.getenv("RENDER"))
 IS_PRODUCTION = os.getenv("PRODUCTION") == "true"
+IS_RENDER = bool(os.getenv("RENDER"))
+
 
 # =============================================================================
 # SERVER BINDING
 # =============================================================================
 
-# Use PORT environment variable from Render, default to 5000
-port = int(os.getenv("PORT", 5000))
-bind = f"0.0.0.0:{port}"
+# Dynamic port detection (Render uses PORT environment variable)
+PORT = int(os.getenv("PORT", 5000))
+bind = f"0.0.0.0:{PORT}"
 
-# HTTPS support - can be overridden with --certfile and --keyfile flags
-certfile = os.getenv("SSL_CERTFILE", None)
-keyfile = os.getenv("SSL_KEYFILE", None)
+# Support for SSL/TLS (can be overridden via CLI flags)
+certfile = os.getenv("SSL_CERTFILE")
+keyfile = os.getenv("SSL_KEYFILE")
+
+# SSL version and options for production
+ssl_version = 5  # TLS 1.2+
+do_handshake_on_connect = True
+suppress_ragged_eof = True
+
 
 # =============================================================================
-# WORKER CONFIGURATION (24/7 OPTIMIZED)
+# WORKER CONFIGURATION
 # =============================================================================
 
-
-def calculate_workers():
-    """Calculate optimal worker count for 24/7 uptime on Render."""
+def get_worker_count():
+    """Calculate optimal worker count based on CPU cores and environment."""
+    cpu_count = multiprocessing.cpu_count()
+    
     if IS_RENDER:
-        # Render Pro: 4GB RAM, ~2-4 CPU cores
-        # Use conservative worker count to prevent OOM
-        cpu_count = multiprocessing.cpu_count()
-        
-        if cpu_count <= 2:
-            return 3  # Small instance: 3 workers
+        # Render standard: 2-4 CPU cores, 4GB RAM
+        # Conservative scaling to prevent OOM kills
+        if cpu_count <= 1:
+            return 2
+        elif cpu_count <= 2:
+            return 3
         elif cpu_count <= 4:
-            return 5  # Medium instance: 5 workers
+            return 5
         else:
-            return 7  # Large instance: 7 workers
+            return 7
     else:
-        # Development/other environments
-        cpu_count = multiprocessing.cpu_count()
-        recommended = (cpu_count * 2) + 1
-        return max(2, min(recommended, 17))
+        # Development environments
+        return min((cpu_count * 2) + 1, 17)
 
 
-workers = int(os.getenv("WEB_CONCURRENCY", calculate_workers()))
-worker_class = "gthread"  # Thread-safe worker for Django
-threads = int(os.getenv("GUNICORN_THREADS", 4))  # Threads per worker
+# Use environment override or calculated value
+workers = int(os.getenv("WEB_CONCURRENCY", get_worker_count()))
 
-# Connection pool optimization
+# gthread worker class for Django (synchronous with threading)
+worker_class = "gthread"
+threads = int(os.getenv("GUNICORN_THREADS", 4))
+
+# Memory and connection management
 worker_connections = 1000
-max_requests = 1000  # Restart worker after 1000 requests (prevent memory leaks)
-max_requests_jitter = 100  # Randomize to prevent thundering herd
+max_requests = 1000  # Restart worker after 1000 requests (prevents memory leaks)
+max_requests_jitter = 100  # Randomize restart to avoid thundering herd
 
-# TCP connection settings for 24/7 uptime
-tcp_keepalives_idle = 5  # Check connection every 5 seconds
+# TCP keepalive settings
+tcp_keepalives_idle = 5  # Check connection health every 5 seconds
 tcp_keepalives_intvl = 1  # Retry interval
 tcp_keepalives_probes = 3  # Number of probes before giving up
 
+
 # =============================================================================
-# TIMEOUTS & LIMITS (24/7 OPTIMIZED)
+# TIMEOUTS AND LIMITS
 # =============================================================================
 
-timeout = 120  # 2 minute request timeout (prevent hanging requests)
-graceful_timeout = 30  # 30 second graceful shutdown window
-keepalive = 5  # 5 second HTTP keepalive
+# Request timeout (prevent hanging requests from consuming resources)
+timeout = 120  # 2 minutes for typical requests
 
-# Memory management for 24/7 uptime
-# Worker restarts prevent memory leaks
-max_requests = 1000
-max_requests_jitter = 100
+# Graceful shutdown window (allow in-flight requests to complete)
+graceful_timeout = 30
+
+# HTTP keepalive timeout
+keepalive = 5
+
+# Request size limits (prevent DoS attacks)
+limit_request_line = 8190  # HTTP request line size
+limit_request_fields = 100  # Number of header fields
+limit_request_field_size = 8190  # Size of header field
+
 
 # =============================================================================
 # APPLICATION LOADING
 # =============================================================================
 
-preload_app = True  # Pre-load application code before forking workers
+# Preload application before forking workers
+preload_app = True
+
+# Reload settings only in development
 reload = os.getenv("GUNICORN_RELOAD", "false").lower() == "true"
-reload_engine = "auto"
-reload_extra_files = []  # Don't reload on static file changes
+reload_extra_files = []  # Don't watch static files
+
 
 # =============================================================================
-# SECURITY SETTINGS
+# PROXY AND FORWARDING (For Render/nginx)
 # =============================================================================
 
-# Request size limits (prevent DoS attacks)
-limit_request_line = 4094
-limit_request_fields = 100
-limit_request_field_size = 8190
-
-# Proxy settings for Render/nginx
+# Trust forwarded headers from reverse proxy
 forwarded_allow_ips = os.getenv("FORWARDED_ALLOW_IPS", "*")
 proxy_allow_ips = os.getenv("PROXY_ALLOW_IPS", "*")
-proxy_protocol = os.getenv("PROXY_PROTOCOL", "false").lower() == "true"
 
-# HTTPS headers (only in production with actual HTTPS proxy)
-secure_scheme_headers = (
-    {
+# X-Forwarded-* headers for HTTPS detection (production only)
+if IS_PRODUCTION:
+    secure_scheme_headers = {
         "X-FORWARDED-PROTO": "https",
         "X-FORWARDED-FOR": "%(h)s",
+        "X-FORWARDED-HOST": "%(H)s",
     }
-    if IS_PRODUCTION
-    else {}
-)
+else:
+    secure_scheme_headers = {}
+
 
 # =============================================================================
-# LOGGING CONFIGURATION (MONITORING FOR 24/7)
+# LOGGING
 # =============================================================================
 
-accesslog = "-"  # Log to stdout (Render captures this)
-errorlog = "-"  # Error log to stdout
+# Write logs to stdout (Render captures stdout automatically)
+accesslog = "-"
+errorlog = "-"
+
+# Log level (INFO in production, DEBUG in development)
 loglevel = os.getenv("LOG_LEVEL", "info" if IS_PRODUCTION else "debug")
-capture_output = True  # Capture print statements
-enable_stdio_inheritance = True  # Allow worker output
 
-# Structured logging format for monitoring
+# Capture stdout/stderr from application
+capture_output = True
+enable_stdio_inheritance = True
+
+# Professional access log format with timing information
 access_log_format = (
-    '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" '
-    'response_time=%(D)sμs worker=%(p)d'
+    '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s '
+    '"%(f)s" "%(a)s" response_time=%(D)sμs worker_id=%(p)d'
 )
 
-# =============================================================================
-# PROCESS NAMING & DAEMON MODE
-# =============================================================================
+# Process naming for monitoring
+proc_name = "invoiceflow-wsgi"
 
-proc_name = "invoiceflow"
-daemon = False  # Run in foreground (important for Docker/Render)
 
 # =============================================================================
-# SIGNAL HANDLING FOR 24/7 RELIABILITY
+# PROCESS MANAGEMENT
 # =============================================================================
 
-# Graceful exit
-sig_default_worker_int = "INT"  # SIGINT gracefully shuts down worker
-sig_default_worker_quit = "QUIT"  # SIGQUIT exits immediately
-sig_hup_not_implemented = False  # Support SIGHUP for reloading
+# Run in foreground (important for containerized environments)
+daemon = False
+
+# Don't detach from controlling process
+umask = 0
+
+# UID/GID (optional, use for security hardening)
+# user = None
+# group = None
+
 
 # =============================================================================
-# SERVER HOOKS (24/7 MONITORING)
+# SIGNAL HANDLERS
+# =============================================================================
+
+# Signal handling for graceful restarts and shutdowns
+sig_default_worker_int = "INT"  # Graceful shutdown on SIGINT
+sig_default_worker_quit = "QUIT"  # Immediate exit on SIGQUIT
+
+
+# =============================================================================
+# SERVER HOOKS FOR MONITORING AND LIFECYCLE
 # =============================================================================
 
 
 def on_starting(server):
-    """Called just before the master process is initialized."""
-    msg = (
-        f"[InvoiceFlow] Starting Gunicorn v{gunicorn.__version__} server\n"
-        f"[InvoiceFlow] Listening on {bind}\n"
-        f"[InvoiceFlow] Workers: {workers} | Threads: {threads} | Class: {worker_class}\n"
-        f"[InvoiceFlow] Max requests: {max_requests} (prevents memory leaks)\n"
-        f"[InvoiceFlow] Timeout: {timeout}s | Graceful timeout: {graceful_timeout}s\n"
-        f"[InvoiceFlow] Environment: {'RENDER' if IS_RENDER else 'other'}\n"
-        f"[InvoiceFlow] Production mode: {IS_PRODUCTION}"
+    """Called when Gunicorn master starts."""
+    message = (
+        f"\n{'=' * 70}\n"
+        f"InvoiceFlow WSGI Server Starting\n"
+        f"{'=' * 70}\n"
+        f"Bind Address:      {bind}\n"
+        f"Workers:           {workers} (class: {worker_class})\n"
+        f"Threads/Worker:    {threads}\n"
+        f"Max Requests:      {max_requests}\n"
+        f"Timeout:           {timeout}s\n"
+        f"Environment:       {'PRODUCTION' if IS_PRODUCTION else 'DEVELOPMENT'}\n"
+        f"Platform:          {'Render' if IS_RENDER else 'Other'}\n"
+        f"Python Version:    {sys.version.split()[0]}\n"
+        f"{'=' * 70}\n"
     )
-    print(msg, file=sys.stderr)
+    sys.stderr.write(message)
+    sys.stderr.flush()
 
 
-def on_reload(server):
-    """Called when receiving SIGHUP for reloading."""
-    print("[InvoiceFlow] Reloading server configuration...", file=sys.stderr)
+def on_exit(server):
+    """Called when Gunicorn is shutting down."""
+    sys.stderr.write("\n[gunicorn] Server shutting down - finalizing requests...\n")
+    sys.stderr.flush()
 
 
 def pre_fork(server, worker):
@@ -185,105 +219,94 @@ def pre_fork(server, worker):
 
 def post_fork(server, worker):
     """Called just after a worker is forked."""
-    print(
-        f"[InvoiceFlow] Worker {worker.pid} spawned",
-        file=sys.stderr,
-    )
+    sys.stderr.write(f"[gunicorn] Worker {worker.pid} spawned\n")
+    sys.stderr.flush()
 
 
 def post_worker_init(worker):
     """Called just after a worker has initialized."""
-    # Reset database connection for new process
+    # Reset any database connections for the new process
     pass
 
 
 def worker_int(worker):
-    """Called when a worker receives SIGINT or SIGQUIT."""
-    print(
-        f"[InvoiceFlow] Worker {worker.pid} interrupted (graceful shutdown)",
-        file=sys.stderr,
-    )
+    """Called when a worker receives SIGINT (graceful shutdown)."""
+    sys.stderr.write(f"[gunicorn] Worker {worker.pid} interrupted (graceful shutdown)\n")
+    sys.stderr.flush()
 
 
 def worker_abort(worker):
-    """Called when a worker receives SIGABRT."""
-    print(
-        f"[InvoiceFlow] Worker {worker.pid} aborted (timeout or error)",
-        file=sys.stderr,
-    )
+    """Called when a worker receives SIGABRT (timeout/error)."""
+    sys.stderr.write(f"[gunicorn] Worker {worker.pid} aborted (timeout or error)\n")
+    sys.stderr.flush()
 
 
 def child_exit(server, worker):
     """Called when a worker exits."""
-    print(
-        f"[InvoiceFlow] Worker {worker.pid} exited",
-        file=sys.stderr,
-    )
+    sys.stderr.write(f"[gunicorn] Worker {worker.pid} exited\n")
+    sys.stderr.flush()
 
 
 def worker_exit(server, worker):
-    """Called when a worker has been exited from the master process."""
-    print(
-        f"[InvoiceFlow] Worker {worker.pid} exit confirmed",
-        file=sys.stderr,
-    )
+    """Called when a worker has been removed from the master."""
+    sys.stderr.write(f"[gunicorn] Worker {worker.pid} exit confirmed\n")
+    sys.stderr.flush()
 
 
 def nworkers_changed(server, new_value, old_value):
-    """Called when the number of workers is changed."""
-    print(
-        f"[InvoiceFlow] Worker count changed: {old_value} → {new_value}",
-        file=sys.stderr,
-    )
+    """Called when worker count changes."""
+    sys.stderr.write(f"[gunicorn] Worker count changed: {old_value} → {new_value}\n")
+    sys.stderr.flush()
 
-
-def on_exit(server):
-    """Called just before exiting gunicorn."""
-    print(
-        "[InvoiceFlow] Server shutting down gracefully (finalizing requests)...",
-        file=sys.stderr,
-    )
 
 # =============================================================================
-# 24/7 UPTIME FEATURES
+# CONFIGURATION SUMMARY
 # =============================================================================
-# 
-# This Gunicorn configuration is optimized for 24/7 production uptime:
-#
-# 1. WORKER RESTART CYCLES
-#    - max_requests=1000: Restarts each worker after 1000 requests
-#    - Prevents memory leaks and zombie processes
-#    - max_requests_jitter=100: Randomizes to prevent all restarts at once
-#
-# 2. TIMEOUT PROTECTION
-#    - timeout=120s: Kills hanging requests (prevent resource exhaustion)
-#    - graceful_timeout=30s: Allows graceful shutdown
-#
-# 3. CONNECTION POOLING
-#    - tcp_keepalives enabled (5s idle detection)
-#    - Prevents stale/dead connections
-#    - Worker connections limit: 1000 concurrent
-#
-# 4. MEMORY MANAGEMENT
-#    - Conservative worker count for Render environment
-#    - Thread pooling (4 threads per worker)
-#    - Graceful worker shutdown prevents OOM
-#
-# 5. MONITORING & LOGGING
-#    - Structured log format with response times
-#    - Worker lifecycle logged (spawn, exit, errors)
-#    - Integration with Render logs (stdout/stderr)
-#
-# 6. AUTO-RESTART ON FAILURE
-#    - Render health checks every 30 seconds
-#    - Failed health check = Render restarts entire app
-#    - Gunicorn worker restart on crash = instant recovery
-#
-# 7. GRACEFUL SHUTDOWN
-#    - SIGTERM triggers graceful shutdown (30 seconds)
-#    - Existing requests finish before process exits
-#    - Zero downtime deployments on Render
-#
-# =============================================================================
+"""
+PRODUCTION-READY FEATURES:
 
-print("[InvoiceFlow] 24/7 Uptime Configuration Loaded", file=sys.stderr)
+1. PERFORMANCE
+   - Gthread workers for Django (synchronous + threaded)
+   - Dynamic worker scaling based on CPU cores
+   - Connection pooling (1000 concurrent connections)
+   - HTTP keepalive support
+
+2. STABILITY
+   - Worker restart cycle (1000 requests) prevents memory leaks
+   - Graceful shutdown (30s window) allows in-flight requests
+   - Timeout protection (120s) kills hanging requests
+   - TCP keepalive (5s) detects dead connections
+
+3. SECURITY
+   - Request size limits prevent DoS attacks
+   - Production-only secure headers for HTTPS
+   - Process isolation via worker separation
+   - No hardcoded credentials in config
+
+4. MONITORING
+   - Structured logging to stdout (Render capture)
+   - Detailed access logs with timing
+   - Worker lifecycle hooks
+   - Clear startup/shutdown messages
+
+5. DEPLOYMENT
+   - Dynamic PORT binding (Render compatible)
+   - Preload app for fast restarts
+   - Graceful signal handling
+   - Zero-downtime deployment ready
+
+6. RESOURCE OPTIMIZATION
+   - Conservative worker count for Render (prevents OOM)
+   - Max requests jitter (prevents thundering herd)
+   - Thread pooling for I/O-bound operations
+   - Memory-efficient gthread worker class
+
+ENVIRONMENT VARIABLES:
+- PORT: Server port (default: 5000)
+- PRODUCTION: Set to "true" for production mode
+- WEB_CONCURRENCY: Override worker count
+- GUNICORN_THREADS: Threads per worker (default: 4)
+- GUNICORN_RELOAD: Enable reload in development
+- LOG_LEVEL: Logging level (default: info/debug)
+- SSL_CERTFILE/SSL_KEYFILE: SSL certificate paths
+"""
