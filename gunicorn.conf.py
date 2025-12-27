@@ -29,7 +29,9 @@ IS_PRODUCTION = os.getenv("PRODUCTION") == "true"
 # SERVER BINDING
 # =============================================================================
 
-bind = "0.0.0.0:5000"
+# Use PORT environment variable from Render, default to 5000
+port = int(os.getenv("PORT", 5000))
+bind = f"0.0.0.0:{port}"
 
 # HTTPS support - can be overridden with --certfile and --keyfile flags
 certfile = os.getenv("SSL_CERTFILE", None)
@@ -157,6 +159,7 @@ def on_starting(server):
     """Called just before the master process is initialized."""
     msg = (
         f"[InvoiceFlow] Starting Gunicorn v{gunicorn.__version__} server\n"
+        f"[InvoiceFlow] Listening on {bind}\n"
         f"[InvoiceFlow] Workers: {workers} | Threads: {threads} | Class: {worker_class}\n"
         f"[InvoiceFlow] Max requests: {max_requests} (prevents memory leaks)\n"
         f"[InvoiceFlow] Timeout: {timeout}s | Graceful timeout: {graceful_timeout}s\n"

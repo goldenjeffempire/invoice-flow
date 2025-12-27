@@ -1,13 +1,41 @@
 services:
   - type: web
     name: invoiceflow
-    runtime: python3.11
+    runtime: python3.13
     plan: standard
-    startCommand: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn invoiceflow.wsgi -c gunicorn.conf.py
+    buildCommand: bash build.sh
+    startCommand: gunicorn invoiceflow.wsgi -c gunicorn.conf.py
     envVars:
       - key: PRODUCTION
         value: "true"
       - key: DEBUG
         value: "false"
-      - key: ALLOWED_HOSTS
-        value: invoiceflow.com.ng,www.invoiceflow.com.ng,api.invoiceflow.com.ng
+      - key: PYTHON_VERSION
+        value: "3.13.4"
+      # Database is auto-connected via Render
+      - key: DATABASE_URL
+        fromService:
+          name: invoiceflow-db
+          property: connectionString
+      # Secret variables - set these in Render dashboard
+      - key: SECRET_KEY
+        sync: false
+      - key: ENCRYPTION_SALT
+        sync: false
+      - key: HCAPTCHA_SITEKEY
+        sync: false
+      - key: HCAPTCHA_SECRET
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+
+databases:
+  - name: invoiceflow-db
+    engine: postgres
+    version: "15"
+    plan: starter
+    initialDatabase: invoiceflow_prod
