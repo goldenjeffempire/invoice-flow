@@ -3,35 +3,84 @@ services:
     name: invoiceflow
     runtime: python3.13
     plan: standard
+    
+    # =========================================================================
+    # BUILD & RUNTIME COMMANDS
+    # =========================================================================
     buildCommand: bash build.sh
-    startCommand: gunicorn invoiceflow.wsgi -c gunicorn.conf.py
+    startCommand: gunicorn invoiceflow.wsgi:application -c gunicorn.conf.py
+    
+    # =========================================================================
+    # ENVIRONMENT VARIABLES (Public)
+    # =========================================================================
     envVars:
+      # Django Configuration
       - key: PRODUCTION
         value: "true"
       - key: DEBUG
         value: "false"
+      
+      # Python Version
       - key: PYTHON_VERSION
-        value: "3.13.4"
-      # Database is auto-connected via Render
+        value: "3.13"
+      
+      # Application Domain
+      - key: ALLOWED_HOSTS
+        value: "invoiceflow.com.ng,www.invoiceflow.com.ng,*.onrender.com"
+      
+      # Cache Configuration
+      - key: CACHE_LOCATION
+        value: "default"
+      
+      # Email Configuration (Defaults)
+      - key: EMAIL_BACKEND
+        value: "sendgrid_backend.SendgridBackend"
+      
+      # Database Connection (from Render PostgreSQL)
       - key: DATABASE_URL
         fromService:
           name: invoiceflow-db
           property: connectionString
-      # Secret variables - set these in Render dashboard
-      - key: SECRET_KEY
-        sync: false
-      - key: ENCRYPTION_SALT
-        sync: false
-      - key: HCAPTCHA_SITEKEY
-        sync: false
-      - key: HCAPTCHA_SECRET
-        sync: false
-      - key: EMAIL_HOST_USER
-        sync: false
-      - key: EMAIL_HOST_PASSWORD
-        sync: false
-      - key: SENDGRID_API_KEY
-        sync: false
+    
+    # =========================================================================
+    # SECRET VARIABLES (Set in Render Dashboard)
+    # =========================================================================
+    envVarsFile: .env.render
+    # Note: These must be set via Render Dashboard > Environment tab
+    # - SECRET_KEY: Django secret key (generate: django-admin shell -> from django.core.management.utils import get_random_secret_key; print(get_random_secret_key()))
+    # - ENCRYPTION_SALT: Field encryption salt
+    # - SENDGRID_API_KEY: SendGrid API key for email delivery
+    # - HCAPTCHA_SITEKEY: hCaptcha public key
+    # - HCAPTCHA_SECRET: hCaptcha secret key
+    
+    # =========================================================================
+    # DEPLOYMENT SETTINGS
+    # =========================================================================
+    region: ohio
+    
+    # Auto-deploy on push to main branch
+    autoDeployOnPush: true
+    autoDeployBranch: main
+    
+    # Health check configuration
+    healthCheckPath: /api/health/
+    healthCheckStartupTimeout: 300  # 5 minutes for cold start
+    healthCheckInterval: 30  # Check every 30 seconds
+    
+    # =========================================================================
+    # METRICS & MONITORING
+    # =========================================================================
+    # Render captures logs automatically from stdout/stderr
+    # Access logs available in Render dashboard > Logs
+    
+    # =========================================================================
+    # ZERO-DOWNTIME DEPLOYMENT
+    # =========================================================================
+    # Render handles graceful shutdown automatically:
+    # - Sends SIGTERM to old process
+    # - Waits for graceful timeout (30s in gunicorn.conf.py)
+    # - Kills with SIGKILL if timeout exceeded
+    # - Routes new requests to new deployment immediately
 
 databases:
   - name: invoiceflow-db
@@ -39,3 +88,10 @@ databases:
     version: "15"
     plan: starter
     initialDatabase: invoiceflow_prod
+    
+    # Automatically manages:
+    # - Backups (daily)
+    # - Connection pooling
+    # - High availability
+    
+    # Exposed as DATABASE_URL environment variable automatically
