@@ -179,7 +179,7 @@ def pre_fork(server, worker):
 def post_fork(server, worker):
     """Called just after a worker is forked."""
     print(
-        f"[InvoiceFlow] Worker {worker.pid} spawned (total: {len(server.workers)})",
+        f"[InvoiceFlow] Worker {worker.pid} spawned",
         file=sys.stderr,
     )
 
