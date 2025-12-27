@@ -498,7 +498,7 @@ class AsyncTaskService:
         from .sendgrid_service import SendGridEmailService
 
         def _send():
-            invoice = Invoice.objects.get(id=invoice_id)
+            invoice = Invoice.objects.get(id=invoice_id)  # type: ignore[union-attr]
             service = SendGridEmailService()
             result = service.send_invoice_ready(invoice, recipient_email)
 
@@ -535,7 +535,7 @@ class AsyncTaskService:
         from .sendgrid_service import SendGridEmailService
 
         def _send():
-            invoice = Invoice.objects.get(id=invoice_id)
+            invoice = Invoice.objects.get(id=invoice_id)  # type: ignore[union-attr]
             service = SendGridEmailService()
             result = service.send_payment_reminder(invoice, invoice.client_email)
 
@@ -568,7 +568,7 @@ class AsyncTaskService:
 
             try:
                 invoice = (
-                    Invoice.objects.select_related()
+                    Invoice.objects.select_related()  # type: ignore[union-attr]
                     .prefetch_related("line_items")
                     .get(id=invoice_id)
                 )
@@ -646,7 +646,7 @@ class AsyncTaskService:
 
             for invoice_id in invoice_ids:
                 try:
-                    invoice = Invoice.objects.get(id=invoice_id)
+                    invoice = Invoice.objects.get(id=invoice_id)  # type: ignore[union-attr]
                     result = service.send_payment_reminder(invoice, invoice.client_email)
                     results.append(
                         {
