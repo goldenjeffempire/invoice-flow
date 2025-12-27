@@ -16,6 +16,7 @@ Features:
 import multiprocessing
 import os
 import sys
+import gunicorn
 
 # =============================================================================
 # ENVIRONMENT DETECTION
@@ -155,7 +156,7 @@ sig_hup_not_implemented = False  # Support SIGHUP for reloading
 def on_starting(server):
     """Called just before the master process is initialized."""
     msg = (
-        f"[InvoiceFlow] Starting Gunicorn v{server.cfg.version} server\n"
+        f"[InvoiceFlow] Starting Gunicorn v{gunicorn.__version__} server\n"
         f"[InvoiceFlow] Workers: {workers} | Threads: {threads} | Class: {worker_class}\n"
         f"[InvoiceFlow] Max requests: {max_requests} (prevents memory leaks)\n"
         f"[InvoiceFlow] Timeout: {timeout}s | Graceful timeout: {graceful_timeout}s\n"
