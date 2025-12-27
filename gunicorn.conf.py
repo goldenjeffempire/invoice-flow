@@ -112,11 +112,15 @@ forwarded_allow_ips = os.getenv("FORWARDED_ALLOW_IPS", "*")
 proxy_allow_ips = os.getenv("PROXY_ALLOW_IPS", "*")
 proxy_protocol = os.getenv("PROXY_PROTOCOL", "false").lower() == "true"
 
-# HTTPS headers
-secure_scheme_headers = {
-    "X-FORWARDED-PROTO": "https",
-    "X-FORWARDED-FOR": "%(h)s",
-}
+# HTTPS headers (only in production with actual HTTPS proxy)
+secure_scheme_headers = (
+    {
+        "X-FORWARDED-PROTO": "https",
+        "X-FORWARDED-FOR": "%(h)s",
+    }
+    if IS_PRODUCTION
+    else {}
+)
 
 # =============================================================================
 # LOGGING CONFIGURATION (MONITORING FOR 24/7)
