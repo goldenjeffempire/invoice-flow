@@ -14,6 +14,7 @@ import multiprocessing
 import os
 import sys
 import logging
+import ssl
 
 # =============================================================================
 # ENVIRONMENT DETECTION
@@ -32,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 # =============================================================================
-# SERVER BINDING & SSL
+# SERVER BINDING & SSL/TLS
 # =============================================================================
 
 # Dynamic port (Render sets PORT environment variable)
@@ -42,9 +43,19 @@ bind = [f"0.0.0.0:{PORT}"]
 # SSL/TLS Configuration (if certificates provided)
 certfile = os.getenv("SSL_CERTFILE")
 keyfile = os.getenv("SSL_KEYFILE")
-ssl_version = 5  # TLS 1.2+
-do_handshake_on_connect = True
-suppress_ragged_eof = True
+
+# Modern SSL/TLS context (replaces deprecated ssl_version)
+if certfile and keyfile:
+    # Create proper SSL context with TLS 1.2+ minimum
+    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    ssl_context.load_cert_chain(certfile, keyfile)
+    ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+    ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+    ssl_context.options |= ssl.OP_NO_COMPRESSION  # Prevent CRIME attack
+else:
+    ssl_context = None
+
+# Optional CA certificate bundle for client verification
 ca_certs = os.getenv("SSL_CA_CERTS")
 
 
