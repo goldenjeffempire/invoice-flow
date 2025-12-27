@@ -474,7 +474,7 @@ class AsyncTaskService:
 
         def _generate():
             invoice = (
-                Invoice.objects.select_related().prefetch_related("line_items").get(id=invoice_id)
+                Invoice.objects.select_related().prefetch_related("line_items").get(id=invoice_id)  # type: ignore[union-attr]
             )
             pdf_bytes = PDFService.generate_pdf_bytes(invoice)
             logger.info(f"Generated PDF for invoice #{invoice.invoice_id} ({len(pdf_bytes)} bytes)")

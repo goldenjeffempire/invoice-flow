@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class InvoicesConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
-    name = "invoices"
+    default_auto_field: str = "django.db.models.BigAutoField"
+    name: str = "invoices"
 
     def ready(self):
         """
