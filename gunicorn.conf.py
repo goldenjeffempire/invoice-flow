@@ -41,22 +41,23 @@ PORT = int(os.getenv("PORT", 5000))
 bind = [f"0.0.0.0:{PORT}"]
 
 # SSL/TLS Configuration (if certificates provided)
+# Note: Render uses HTTPS termination, so SSL is not needed in Gunicorn
+# Only configure SSL if explicitly provided via environment variables
 certfile = os.getenv("SSL_CERTFILE")
 keyfile = os.getenv("SSL_KEYFILE")
 
-# Modern SSL/TLS context (replaces deprecated ssl_version)
 if certfile and keyfile:
+    # Modern SSL/TLS context (replaces deprecated ssl_version)
     # Create proper SSL context with TLS 1.2+ minimum
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     ssl_context.load_cert_chain(certfile, keyfile)
     ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
     ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
     ssl_context.options |= ssl.OP_NO_COMPRESSION  # Prevent CRIME attack
-else:
-    ssl_context = None
-
-# Optional CA certificate bundle for client verification
-ca_certs = os.getenv("SSL_CA_CERTS")
+    
+    # Optional CA certificate bundle for client verification
+    ca_certs = os.getenv("SSL_CA_CERTS")
+# Note: Render uses HTTPS termination, so ssl_context not needed in base config
 
 
 # =============================================================================

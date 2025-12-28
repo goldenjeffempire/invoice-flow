@@ -154,17 +154,14 @@ Architecture prioritizes security-by-default with idempotent payment processing 
 ✓ Build pipeline automated
 ✓ Environment variables managed securely
 
-## Recent Changes (December 27, 2025)
-- Completely rebuilt gunicorn.conf.py from scratch (enterprise-grade)
-- Updated render.yaml with complete Render configuration
-- Rebuilt build.sh with professional build pipeline
-- Created Procfile for Render process management
-- Enhanced invoiceflow/wsgi.py with logging and validation
-- Created DEPLOYMENT_GUIDE.md with complete instructions
-- Added .env.render template for environment configuration
-- All LSP diagnostics resolved
-- All security warnings addressed
-- All deployment configurations production-ready
+## Recent Changes (December 28, 2025)
+- Fixed SSL/TLS configuration: Removed `ssl_context = None` causing Gunicorn errors
+- Made cookie security settings conditional on IS_PRODUCTION (fixes contradictory scheme headers)
+- SSL/TLS context now only set when certificates are provided
+- Render HTTPS termination configured (no SSL needed in Gunicorn)
+- All Gunicorn configuration issues resolved
+- Development server running cleanly without errors
+- Render deployment fully compatible with modern SSL/TLS handling
 
 ## Files Structure
 ```
