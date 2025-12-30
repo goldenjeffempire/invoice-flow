@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from django.conf import settings
 from django.core.cache import caches
 from django.db import transaction
-from django.db.models import Count, DecimalField, F, Q, Sum, Value
+from django.db.models import Count, DecimalField, F, Q, Sum, Value, Manager
 from django.db.models.functions import Coalesce
 from django.template.loader import render_to_string
 from weasyprint import HTML
@@ -25,6 +25,7 @@ from .models import Invoice, LineItem
 
 if TYPE_CHECKING:
     from .forms import InvoiceForm
+    from django.db.models.query import QuerySet
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ class InvoiceService:
         if not invoice_form.is_valid():
             return None, invoice_form
 
-        user_id = invoice.user_id
+        user_id = invoice.user_id  # type: ignore[attr-defined]
         invoice = invoice_form.save()
         invoice.line_items.all().delete()  # type: ignore[attr-defined]
 
@@ -185,7 +186,7 @@ class AnalyticsService:
         if cached_stats is not None:
             return cached_stats
 
-        invoices = Invoice.objects.filter(user=user)
+        invoices = Invoice.objects.filter(user=user)  # type: ignore[attr-defined]
 
         stats = invoices.aggregate(
             total_invoices=Count("id"),
@@ -194,7 +195,7 @@ class AnalyticsService:
             unique_clients=Count("client_email", distinct=True),
         )
 
-        total_revenue = LineItem.objects.filter(
+        total_revenue = LineItem.objects.filter(  # type: ignore[attr-defined]
             invoice__user=user, invoice__status="paid"
         ).aggregate(
             total=Coalesce(
@@ -236,7 +237,7 @@ class AnalyticsService:
         timeout = getattr(settings, "CACHE_TIMEOUT_ANALYTICS", 120)
 
         cached_stats = cache.get(cache_key)
-        invoices = Invoice.objects.filter(user=user)
+        invoices = Invoice.objects.filter(user=user)  # type: ignore[attr-defined]
 
         if cached_stats is not None:
             all_invoices_list = list(
@@ -255,7 +256,7 @@ class AnalyticsService:
         paid_count = stats["paid_count"] or 0
         unpaid_count = stats["unpaid_count"] or 0
 
-        revenue_stats = LineItem.objects.filter(invoice__user=user).aggregate(
+        revenue_stats = LineItem.objects.filter(invoice__user=user).aggregate(  # type: ignore[attr-defined]
             total_revenue=Coalesce(
                 Sum(F("quantity") * F("unit_price"), filter=Q(invoice__status="paid")),
                 Value(Decimal("0")),
@@ -325,7 +326,7 @@ class AnalyticsService:
             return cached_result
 
         clients = (
-            Invoice.objects.filter(user=user)
+            Invoice.objects.filter(user=user)  # type: ignore[attr-defined]
             .values("client_name")
             .annotate(
                 invoice_count=Count("id"),
@@ -345,7 +346,7 @@ class AnalyticsService:
             }
 
         revenue_by_client = (
-            LineItem.objects.filter(invoice__user=user)
+            LineItem.objects.filter(invoice__user=user)  # type: ignore[attr-defined]
             .values("invoice__client_name")
             .annotate(
                 paid_revenue=Coalesce(
