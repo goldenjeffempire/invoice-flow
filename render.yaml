@@ -1,0 +1,100 @@
+services:
+  - type: web
+    name: invoiceflow
+    runtime: python3.13
+    plan: standard
+    
+    # =========================================================================
+    # BUILD & RUNTIME COMMANDS
+    # =========================================================================
+    buildCommand: bash build.sh
+    startCommand: gunicorn invoiceflow.wsgi:application -c gunicorn.conf.py
+    
+    # =========================================================================
+    # ENVIRONMENT VARIABLES (Public)
+    # =========================================================================
+    envVars:
+      # Django Configuration
+      - key: PRODUCTION
+        value: "true"
+      - key: DEBUG
+        value: "false"
+      
+      # Python Runtime
+      - key: PYTHON_VERSION
+        value: "3.13"
+      
+      # Application Domain
+      - key: ALLOWED_HOSTS
+        value: "invoiceflow.com.ng,www.invoiceflow.com.ng,*.onrender.com"
+      
+      # Cache Configuration
+      - key: CACHE_LOCATION
+        value: "default"
+      
+      # Email Backend (SendGrid)
+      - key: EMAIL_BACKEND
+        value: "sendgrid_backend.SendgridBackend"
+      
+      # Database Connection (from Render PostgreSQL)
+      - key: DATABASE_URL
+        fromService:
+          name: invoiceflow-db
+          property: connectionString
+    
+    # =========================================================================
+    # SECRET VARIABLES (Set in Render Dashboard > Environment)
+    # =========================================================================
+    envVarsFile: .env.render
+    # Required secrets (set via Render Dashboard):
+    # - SECRET_KEY: Django secret key
+    # - ENCRYPTION_SALT: Field encryption salt
+    # - SENDGRID_API_KEY: SendGrid email service API key
+    # - HCAPTCHA_SITEKEY: hCaptcha site key (optional)
+    # - HCAPTCHA_SECRET: hCaptcha secret key (optional)
+    
+    # =========================================================================
+    # DEPLOYMENT SETTINGS
+    # =========================================================================
+    region: ohio
+    
+    # Auto-deploy on push to main branch
+    autoDeployOnPush: true
+    autoDeployBranch: main
+    
+    # Health check configuration
+    healthCheckPath: /api/health/
+    healthCheckStartupTimeout: 300  # 5 minutes for cold start
+    healthCheckInterval: 30  # Check every 30 seconds
+    
+    # =========================================================================
+    # METRICS & MONITORING
+    # =========================================================================
+    # Render captures logs automatically from stdout/stderr
+    # Access via Render dashboard > Logs
+    
+    # =========================================================================
+    # ZERO-DOWNTIME DEPLOYMENT
+    # =========================================================================
+    # Render handles graceful shutdown:
+    # - Sends SIGTERM to old process
+    # - Waits for graceful timeout (30s in gunicorn.conf.py)
+    # - Kills with SIGKILL if timeout exceeded
+    # - Routes new requests to new deployment immediately
+
+# =========================================================================
+# DATABASE CONFIGURATION
+# =========================================================================
+databases:
+  - name: invoiceflow-db
+    engine: postgres
+    version: "15"
+    plan: starter
+    initialDatabase: invoiceflow_prod
+    
+    # Automatically manages:
+    # - Backups (daily)
+    # - Connection pooling
+    # - High availability
+    
+    # Exposed as DATABASE_URL environment variable
