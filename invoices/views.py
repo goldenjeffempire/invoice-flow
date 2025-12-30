@@ -393,11 +393,11 @@ def dashboard(request):
     # Calculate total unpaid amount for aging summary
     total_unpaid = base_queryset.filter(status="unpaid").aggregate(
         total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
-    )["total"] or 0
+    )["total"] or Decimal("0")
     
     context = {
         "user": request.user,
-        "total_revenue": stats["total_revenue"],
+        "total_revenue": float(stats["total_revenue"]),
         "total_invoices": stats["total_invoices"],
         "paid_count": stats["paid_count"],
         "unpaid_count": stats["unpaid_count"],
