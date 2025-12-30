@@ -114,7 +114,10 @@ tcp_keepalives_probes = 3
 # =============================================================================
 
 timeout = 120  # 2-minute request timeout (prevents hanging requests)
-graceful_timeout = 30  # Graceful shutdown window
+# Graceful shutdown: Use environment variable to override for continuous deployment
+# Set GUNICORN_GRACEFUL_TIMEOUT=5 for fast CI/CD deployments
+# Default: 10 seconds for production, ensures clean shutdown during continuous deployment
+graceful_timeout = int(os.getenv("GUNICORN_GRACEFUL_TIMEOUT", 10))
 keepalive = 5  # HTTP keepalive timeout
 
 # Prevent DoS attacks
@@ -193,6 +196,22 @@ def when_ready(server):
     logger.info("✓ GET /health/live/ for quick liveness check (no external dependencies)")
 
 
+def on_exit(server):
+    """
+    Called when Gunicorn is shutting down.
+    Ensures clean exit for continuous deployment.
+    """
+    logger.info("Gunicorn shutting down gracefully...")
+
+
+def pre_request(worker, req):
+    """
+    Called just before a worker processes a request.
+    Used for tracking request lifecycle.
+    """
+    worker.log.debug(f"Processing request: {req.method} {req.path}")
+
+
 # =============================================================================
 # RENDER STARTUP MESSAGES
 # =============================================================================
@@ -203,6 +222,7 @@ if IS_RENDER:
     logger.info("[Gunicorn] ✓ Memory leak prevention: 1000-request restart cycles")
     logger.info("[Gunicorn] ⚠ To profile memory usage: set GUNICORN_MAX_REQUESTS=0 in env")
     logger.info("[Gunicorn] ✓ Timeout protection: 120 seconds per request")
-    logger.info("[Gunicorn] ✓ Graceful shutdown: 30-second window")
+    logger.info(f"[Gunicorn] ✓ Graceful shutdown: {graceful_timeout}-second window (continuous deployment optimized)")
+    logger.info("[Gunicorn] 📝 Tip: Set GUNICORN_GRACEFUL_TIMEOUT=5 for faster CI/CD deployments")
     if IS_PRODUCTION:
         logger.info("[Gunicorn] ✓ Secure scheme headers active")

@@ -54,5 +54,5 @@ ALLOWED_HOSTS = "invoiceflow.com.ng,.invoiceflow.com.ng,www.invoiceflow.com.ng"
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["gunicorn", "--bind=0.0.0.0:5000", "--workers=4", "--worker-class=sync", "--worker-connections=1000", "--timeout=30", "--access-logfile=-", "--error-logfile=-", "invoiceflow.wsgi:application"]
-build = ["python3.11", "manage.py", "collectstatic", "--noinput"]
+run = ["gunicorn", "invoiceflow.wsgi:application", "-c", "gunicorn.conf.py"]
+build = ["python", "manage.py", "migrate", "&&", "python", "manage.py", "collectstatic", "--noinput"]
