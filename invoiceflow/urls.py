@@ -70,53 +70,8 @@ urlpatterns = [
     path("reset-password/<str:token>/", views.reset_password, name="reset_password"),
     # Dashboard
     path("dashboard/", views.dashboard, name="dashboard"),
-    # Design System (Phase 1)
-    path("components-showcase/", views.components_showcase, name="components_showcase"),
-    # Footer pages
-    path("features/", views.features, name="features"),
-    path("pricing/", views.pricing, name="pricing"),
-    path("templates/", views.templates_page, name="templates"),
-    path("api-access/", views.api_access, name="api"),
-    path("about/", views.about, name="about"),
-    path("careers/", views.careers, name="careers"),
-    path("contact/", views.contact, name="contact"),
-    path("changelog/", views.changelog, name="changelog"),
-    path("system-status/", views.system_status, name="status"),
-    path("support/", views.support, name="support"),
-    path("faq/", views.faq, name="faq"),
-    path("terms/", views.terms, name="terms"),
-    path("privacy/", views.privacy, name="privacy"),
-    path("security/", views.security, name="security"),
-    path("blog/", views.blog, name="blog"),
-    path("blog/<slug:slug>/", views.blog_article, name="blog_article"),
-    path("offline/", views.offline, name="offline"),
-    path("newsletter/signup/", views.newsletter_signup, name="newsletter_signup"),
-    path("newsletter/subscribe/", views.newsletter_signup, name="newsletter_subscribe"),
-    # User features
-    path("my-templates/", views.invoice_templates, name="invoice_templates"),
-    path("my-templates/<int:template_id>/delete/", views.delete_template, name="delete_template"),
-    path("recurring/", views.recurring_invoices, name="recurring_invoices"),
-    # Admin endpoints
-    path("admin-dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
-    path("admin-users/", admin_views.admin_users, name="admin_users"),
-    path("admin-payments/", admin_views.admin_payments, name="admin_payments"),
-    path("admin-invoices/", admin_views.admin_invoices, name="admin_invoices"),
-    path("admin-contacts/", admin_views.admin_contacts, name="admin_contacts"),
-    path("admin-contacts/<int:submission_id>/update/", admin_views.update_contact_status, name="update_contact_status"),
-    path("admin-settings/", admin_views.admin_settings, name="admin_settings"),
-    # Payment routes (Paystack)
-    path("payments/invoice/<int:invoice_id>/pay/", paystack_views.initiate_invoice_payment, name="initiate_payment"),
-    path("payments/callback/<int:invoice_id>/", paystack_views.payment_callback, name="payment_callback"),
-    path("payments/webhook/", paystack_views.paystack_webhook, name="paystack_webhook"),
-    path("payments/status/<int:invoice_id>/", paystack_views.payment_status, name="payment_status"),
-    # Public invoice payment (client access without login)
-    path("pay/<int:invoice_id>/", paystack_views.public_invoice_view, name="public_invoice"),
-    path("pay/<int:invoice_id>/checkout/", paystack_views.public_initiate_payment, name="public_payment"),
-    path("pay/<int:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
-    # User Profile - redirect to settings
-    path("profile/", views.profile_page, name="profile"),
     # Invoices (all invoice routes including settings, payments)
-    path("invoices/", include("invoices.urls")),
+    # path("invoices/", include("invoices.urls")),
 ]
 
 if settings.DEBUG:

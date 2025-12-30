@@ -21,8 +21,8 @@ urlpatterns = [
     # ------------------------------------------------------------------
     # INVOICE CORE
     # ------------------------------------------------------------------
-    path("", views.invoice_list, name="invoice_list"),
-    path("list/", views.invoice_list, name="invoice_list_alt"),
+    # path("", views.invoice_list, name="invoice_list"),
+    # path("list/", views.invoice_list, name="invoice_list_alt"),
     path("analytics/", views.analytics, name="analytics"),
     path("bulk-action/", views.bulk_invoice_action, name="bulk_invoice_action"),
     path("export-csv/", views.export_invoices_csv, name="export_invoices_csv"),
