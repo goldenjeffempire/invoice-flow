@@ -1,326 +1,411 @@
-{% extends 'base/layout.html' %}
+{% extends "base/layout-light.html" %}
 {% load static %}
 
-{% block title %}Dashboard | InvoiceFlow{% endblock %}
+{% block title %}Dashboard - InvoiceFlow{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-modern.css' %}">
 <style>
-    :root {
-        --dashboard-bg: #f1f5f9;
-        --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    }
+:root {
+    --primary: #4f46e5;
+    --primary-light: #6366f1;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --bg: #f9fafb;
+    --bg-card: #ffffff;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --border: #e5e7eb;
+}
 
-    body {
-        background-color: var(--dashboard-bg);
-    }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-    .dashboard-layout {
-        display: grid;
-        grid-template-columns: 280px 1fr;
-        min-height: 100vh;
-    }
+body { background-color: var(--bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-    @media (max-width: 1024px) {
-        .dashboard-layout {
-            grid-template-columns: 1fr;
-        }
-    }
+.dashboard-wrapper { min-height: 100vh; padding: 2rem 1rem; }
 
-    .dashboard-content {
-        padding: 2rem;
-        max-width: 1600px;
-        margin: 0 auto;
-        width: 100%;
-    }
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
 
-    .stat-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: var(--card-shadow);
-        transition: transform 0.2s ease;
-    }
+.dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
 
-    .stat-card:hover {
-        transform: translateY(-2px);
-    }
+.dashboard-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
 
-    .chart-container {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: var(--card-shadow);
-        height: 400px;
-    }
+.btn-action {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 
-    .data-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: var(--card-shadow);
-    }
+.btn-primary-action {
+    background: var(--primary);
+    color: white;
+}
 
-    .status-pill {
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
+.btn-primary-action:hover {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
 
-    .status-paid { background: #dcfce7; color: #166534; }
-    .status-unpaid { background: #fee2e2; color: #991b1b; }
-    .status-overdue { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+.btn-secondary-action {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
 
-    .btn-modern {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.625rem 1.25rem;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.2s;
-    }
+.btn-secondary-action:hover {
+    background: var(--bg);
+    border-color: var(--primary);
+}
 
-    .btn-modern-primary {
-        background: #4f46e5;
-        color: white;
-    }
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
 
-    .btn-modern-primary:hover {
-        background: #4338ca;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-    }
+.stat-card {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary);
+}
+
+.stat-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.stat-icon-blue { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
+.stat-icon-green { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+.stat-icon-orange { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+.stat-icon-red { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.stat-change {
+    font-size: 0.875rem;
+    color: var(--success);
+    font-weight: 600;
+}
+
+.stat-change.negative { color: var(--danger); }
+
+/* Main Grid */
+.main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-card {
+    background: var(--bg-card);
+    border-radius: 1rem;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary);
+}
+
+.card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.card-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.card-link:hover { text-decoration: underline; }
+
+.card-body { padding: 1.5rem; }
+
+/* Activity List */
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.activity-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: var(--bg);
+    transition: all 0.2s;
+}
+
+.activity-item:hover { background: #f3f4f6; }
+
+.activity-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.activity-icon-invoice { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
+.activity-icon-payment { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+
+.activity-content { flex: 1; min-width: 0; }
+
+.activity-title {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.activity-time {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.activity-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* Quick Actions */
+.quick-actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.quick-action {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border-radius: 0.5rem;
+    background: var(--bg);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+    text-align: left;
+    font-family: inherit;
+}
+
+.quick-action:hover {
+    background: #f3f4f6;
+    transform: translateX(4px);
+}
+
+.quick-action-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--primary);
+}
+
+.quick-action-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-wrapper { padding: 1rem; }
+    .dashboard-title { font-size: 1.75rem; }
+    .dashboard-header { flex-direction: column; align-items: flex-start; }
+    .main-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+    .btn-action { width: 100%; justify-content: center; }
+    .dashboard-actions { width: 100%; flex-direction: column; }
+}
 </style>
 {% endblock %}
 
-{% block nav %}{% endblock %}
-
 {% block content %}
-<div class="dashboard-layout">
-    {% include 'components/dashboard-sidebar.html' with active='dashboard' %}
-    
-    <main class="dashboard-content">
-        <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Dashboard</h1>
-                <p class="text-slate-500 mt-1">Manage your invoices and track business performance.</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <!-- Create Invoice button removed -->
-            </div>
+<div class="dashboard-wrapper">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div>
+            <h1 class="dashboard-title">Dashboard</h1>
+        </div>
+        <div class="dashboard-actions">
+            <button class="btn-action btn-secondary-action" onclick="location.reload()">
+                ↻ Refresh
+            </button>
+            <a href="{% url 'admin_invoices' %}" class="btn-action btn-primary-action">
+                + New Invoice
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-blue">💰</div>
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value">${{ total_revenue|default:"0" }}</div>
+            <div class="stat-change">↑ 12.5% this month</div>
         </div>
 
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-            <div class="stat-card border border-slate-100 p-6 flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Total Revenue</span>
-                    <div class="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </div>
-                </div>
-                <div>
-                    <p class="text-3xl font-black text-slate-900">${{ total_revenue|floatformat:2 }}</p>
-                    <div class="mt-2 flex items-center text-xs font-bold text-emerald-600 bg-emerald-50 w-fit px-2 py-1 rounded-full">
-                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 10l7-7m0 0l7 7m-7-7v18" stroke-width="3"></path></svg>
-                        12.5% vs last month
-                    </div>
-                </div>
-            </div>
-
-            <div class="stat-card border border-slate-100 p-6 flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Outstanding</span>
-                    <div class="p-2 bg-amber-50 rounded-lg text-amber-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </div>
-                </div>
-                <div>
-                    <p class="text-3xl font-black text-slate-900">${{ aging_summary.total_unpaid|default:"0.00"|floatformat:2 }}</p>
-                    <p class="text-slate-400 text-xs mt-2 font-medium">Pending payments</p>
-                </div>
-            </div>
-
-            <div class="stat-card border border-slate-100 p-6 flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Paid Items</span>
-                    <div class="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-                </div>
-                <div>
-                    <p class="text-3xl font-black text-slate-900">{{ paid_count }}</p>
-                </div>
-            </div>
-
-            <div class="stat-card border border-slate-100 p-6 flex flex-col justify-between">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-slate-500 text-sm font-semibold uppercase tracking-wider">Overdue</span>
-                    <div class="p-2 bg-rose-50 rounded-lg text-rose-600">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    </div>
-                </div>
-                <div>
-                    <p class="text-3xl font-black text-slate-900">{{ overdue_count }}</p>
-                </div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-green">📄</div>
+            <div class="stat-label">Total Invoices</div>
+            <div class="stat-value">{{ total_invoices|default:"0" }}</div>
+            <div class="stat-change">↑ 8.2% this month</div>
         </div>
 
-        <!-- Main Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Revenue Chart -->
-            <div class="lg:col-span-2 chart-container">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-lg font-bold text-slate-900">Revenue Trends</h2>
-                    <div class="text-sm text-slate-500">Last 12 Months</div>
-                </div>
-                <canvas id="revenueChart"></canvas>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-orange">⏰</div>
+            <div class="stat-label">Pending Payment</div>
+            <div class="stat-value">${{ pending_amount|default:"0" }}</div>
+            <div class="stat-change negative">{{ overdue_invoices|default:"0" }} overdue</div>
+        </div>
 
-            <!-- Top Clients -->
-            <div class="data-card">
-                <h2 class="text-lg font-bold text-slate-900 mb-6">Top Clients</h2>
-                <div class="space-y-6">
-                    {% for client in top_clients %}
-                    <div class="flex items-center justify-between group">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
-                                {{ client.client_name.0|upper }}
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-green">✓</div>
+            <div class="stat-label">Paid Invoices</div>
+            <div class="stat-value">{{ paid_invoices|default:"0" }}</div>
+            <div class="stat-change">{{ payment_rate|default:"0" }}% payment rate</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-grid">
+        <!-- Recent Activity -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2 class="card-title">Recent Activity</h2>
+                <a href="{% url 'admin_invoices' %}" class="card-link">View all →</a>
+            </div>
+            <div class="card-body">
+                <div class="activity-list">
+                    {% if recent_invoices %}
+                        {% for invoice in recent_invoices|slice:":5" %}
+                        <div class="activity-item">
+                            <div class="activity-icon activity-icon-invoice">📋</div>
+                            <div class="activity-content">
+                                <div class="activity-title">Invoice {{ invoice.invoice_id }}</div>
+                                <div class="activity-time">{{ invoice.created_at|timesince }} ago</div>
                             </div>
-                            <div>
-                                <p class="text-sm font-bold text-slate-900">{{ client.client_name }}</p>
-                                <p class="text-xs text-slate-500">{{ client.invoice_count }} items</p>
-                            </div>
+                            <div class="activity-badge">{{ invoice.get_status_display }}</div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold text-slate-900">${{ client.total|floatformat:2 }}</p>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="text-center py-10">
-                        <p class="text-slate-400">No client data available.</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
-            <div class="lg:col-span-3 data-card">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-lg font-bold text-slate-900">Recent Activity</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
-                                <th class="pb-4 font-bold">Item</th>
-                                <th class="pb-4 font-bold">Client</th>
-                                <th class="pb-4 font-bold">Date</th>
-                                <th class="pb-4 font-bold">Amount</th>
-                                <th class="pb-4 font-bold">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50">
-                            {% for invoice in recent_invoices %}
-                            <tr class="group hover:bg-slate-50 transition-colors">
-                                <td class="py-4">
-                                    <span class="font-bold text-slate-900">#{{ invoice.invoice_id }}</span>
-                                </td>
-                                <td class="py-4">
-                                    <div class="text-sm font-medium text-slate-900">{{ invoice.client_name }}</div>
-                                    <div class="text-xs text-slate-500">{{ invoice.client_email }}</div>
-                                </td>
-                                <td class="py-4 text-sm text-slate-600">{{ invoice.invoice_date|date:"M d, Y" }}</td>
-                                <td class="py-4 font-bold text-slate-900">${{ invoice.calculated_total|floatformat:2 }}</td>
-                                <td class="py-4">
-                                    <span class="status-pill status-{{ invoice.status }} {% if invoice.is_overdue %}status-overdue{% endif %}">
-                                        {% if invoice.is_overdue %}Overdue{% else %}{{ invoice.status }}{% endif %}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="py-12 text-center text-slate-400">No recent activity.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                        {% endfor %}
+                    {% else %}
+                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No recent activity</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
-    </main>
+
+        <!-- Quick Actions -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h2 class="card-title">Quick Actions</h2>
+            </div>
+            <div class="card-body">
+                <div class="quick-actions-list">
+                    <a href="{% url 'admin_invoice_create' %}" class="quick-action">
+                        <div class="quick-action-icon">➕</div>
+                        <div class="quick-action-text">Create Invoice</div>
+                    </a>
+                    <a href="{% url 'admin_invoices' %}" class="quick-action">
+                        <div class="quick-action-icon">📊</div>
+                        <div class="quick-action-text">View All Invoices</div>
+                    </a>
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">📧</div>
+                        <div class="quick-action-text">Send Reminder</div>
+                    </a>
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon">⚙️</div>
+                        <div class="quick-action-text">Settings</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const ctx = document.getElementById('revenueChart').getContext('2d');
-        const labels = {{ chart_labels|safe }};
-        const data = {{ chart_data|safe }};
-        
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.2)');
-        gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
-
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Revenue',
-                    data: data,
-                    borderColor: '#4f46e5',
-                    borderWidth: 3,
-                    backgroundColor: gradient,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointBackgroundColor: '#fff',
-                    pointBorderColor: '#4f46e5',
-                    pointBorderWidth: 2,
-                    pointHoverRadius: 6,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        backgroundColor: '#1e293b',
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 14 },
-                        padding: 12,
-                        cornerRadius: 8,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return '$' + context.parsed.y.toLocaleString();
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#64748b', font: { weight: '500' } }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#f1f5f9' },
-                        ticks: {
-                            color: '#64748b',
-                            font: { weight: '500' },
-                            callback: value => '$' + value.toLocaleString()
-                        }
-                    }
-                }
-            }
-        });
-    });
-</script>
 {% endblock %}

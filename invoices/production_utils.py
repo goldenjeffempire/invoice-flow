@@ -6,7 +6,7 @@ Provides helpers for PDF generation, data validation, and reporting.
 import logging
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 
 if TYPE_CHECKING:
     from invoices.models import Invoice
