@@ -67,12 +67,19 @@ class PaystackService:
             payload["subaccount"] = subaccount_code
             payload["bearer"] = bearer
 
-        response = requests.post(
-            f"{PAYSTACK_BASE_URL}/transaction/initialize",
-            headers=self.headers,
-            json=payload,
-            timeout=30,
-        )
+        try:
+            response = requests.post(
+                f"{PAYSTACK_BASE_URL}/transaction/initialize",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as e:
+            return {"status": "error", "message": f"Connection error: {str(e)}"}
+        except ValueError:
+            return {"status": "error", "message": "Invalid response format from Paystack"}
 
         data = response.json()
 
