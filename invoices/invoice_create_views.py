@@ -108,9 +108,17 @@ def create_invoice_start(request):
     default_tax = float(user_profile.default_tax_rate) if user_profile else 0
     
     templates = []
+    recent_clients = []
     if user_profile:
         templates = list(
             user_profile.user.invoice_templates.values('id', 'name', 'currency', 'tax_rate')
+        )
+        # Get recent clients (last 10 unique clients)
+        recent_clients = list(
+            Invoice.objects.filter(user=request.user)
+            .values('client_name', 'client_email', 'client_phone', 'client_address')
+            .distinct()
+            .order_by('-created_at')[:10]
         )
     
     if request.method == "POST":
@@ -130,6 +138,7 @@ def create_invoice_start(request):
                     'default_currency': default_currency,
                     'default_tax': default_tax,
                     'templates': templates,
+                    'recent_clients': recent_clients,
                     'active': 'create_invoice',
                 })
             
@@ -146,6 +155,7 @@ def create_invoice_start(request):
                     'default_currency': default_currency,
                     'default_tax': default_tax,
                     'templates': templates,
+                    'recent_clients': recent_clients,
                     'active': 'create_invoice',
                 })
             
@@ -176,6 +186,7 @@ def create_invoice_start(request):
                     'default_currency': default_currency,
                     'default_tax': default_tax,
                     'templates': templates,
+                    'recent_clients': recent_clients,
                     'active': 'create_invoice',
                 })
         
@@ -194,6 +205,7 @@ def create_invoice_start(request):
         'default_currency': default_currency,
         'default_tax': default_tax,
         'templates': templates,
+        'recent_clients': recent_clients,
         'active': 'create_invoice',
     }
     
