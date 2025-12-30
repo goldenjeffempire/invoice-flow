@@ -16,7 +16,19 @@ OPTIONAL_PRODUCTION_ENV_VARS = [
     "HCAPTCHA_SECRET",
 ]
 
+# Track if validation has been run to prevent duplicate logs in multi-worker deployments
+_validation_completed = False
+
 def validate_env():
+    """
+    Validate critical environment variables for Django settings.
+    Runs once per process; subsequent calls are idempotent.
+    """
+    global _validation_completed
+    
+    if _validation_completed:
+        return  # Already validated in this process
+    
     is_production = os.getenv("PRODUCTION") == "true"
     is_replit = bool(os.getenv("REPL_ID") or os.getenv("REPLIT"))
     
@@ -47,6 +59,7 @@ def validate_env():
         logger.info("Running in Replit environment with relaxed validation")
     
     logger.info("Environment validation passed successfully")
+    _validation_completed = True
 
 
 def get_env_status() -> dict:

@@ -16,7 +16,10 @@ from .env_validation import validate_env
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(DEBUG=(bool, False))  # type: ignore[call-overload]
 
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+# Only load .env in development; production uses environment variables exclusively
+if not os.getenv("PRODUCTION") == "true":
+    environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+
 validate_env()
 
 # =============================================================================
@@ -118,6 +121,12 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_EMBEDDER_POLICY = "require-corp"
+
+# =============================================================================
+# TIMEZONE
+# =============================================================================
+TIME_ZONE = "UTC"
+USE_TZ = True
 
 PERMISSIONS_POLICY = {
     "accelerometer": "():",

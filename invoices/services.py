@@ -495,6 +495,7 @@ class CacheWarmingService:
     def warm_active_users_cache(cls) -> int:
         """
         Warm cache for recently active users on startup.
+        Skips if no active users exist (optimization for new deployments).
         Returns number of users warmed.
         """
         try:
@@ -510,6 +511,11 @@ class CacheWarmingService:
                     : cls.MAX_STARTUP_USERS
                 ]
                 active_user_ids = [u.id for u in recent_users if u.last_login]
+                
+                # Skip cache warming if no active users exist (new deployment optimization)
+                if not active_user_ids:
+                    logger.info("Startup cache warming skipped: no active users")
+                    return 0
             else:
                 active_user_ids = list(active_users)[: cls.MAX_STARTUP_USERS]
 

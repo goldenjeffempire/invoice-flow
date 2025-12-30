@@ -3,6 +3,7 @@ import os
 import threading
 import time
 import logging
+import fcntl
 
 from django.apps import AppConfig
 from django.conf import settings
@@ -19,8 +20,8 @@ class InvoicesConfig(AppConfig):
         Application initialization:
         - Register signals
         - Register safe shutdown handlers
-        - Warm critical caches (once, non-blocking)
-        - Start keep-alive ONLY in production runtime
+        - Warm critical caches (once, cluster-wide)
+        - Start keep-alive ONLY in production runtime (once per cluster)
         """
 
         # ---------------------------------------------------------------------
@@ -43,47 +44,66 @@ class InvoicesConfig(AppConfig):
         except Exception as exc:
             logger.warning("Failed to register shutdown handlers: %s", exc)
 
-        # ---------------------------------------------------------------------
-        # 3. ONE-TIME CACHE WARMUP (PER PROCESS)
-        # ---------------------------------------------------------------------
-        # Prevent multiple executions in autoreload / gunicorn workers
-        run_once_flag = "_invoiceflow_startup_ran"
-
+        # Per-process flag to prevent re-execution in autoreload
+        run_once_flag = "_invoiceflow_startup_ran_per_process"
         if getattr(self.__class__, run_once_flag, False):
             return
-
         setattr(self.__class__, run_once_flag, True)
 
-        def delayed_cache_warmup():
+        # Only ONE worker in the entire cluster should run these operations
+        # Use file-based lock to coordinate across workers
+        lock_file = "/tmp/invoiceflow_startup.lock"
+
+        def _acquire_startup_lock():
+            """Acquire exclusive lock for startup operations."""
+            try:
+                lock_fd = os.open(lock_file, os.O_CREAT | os.O_WRONLY, 0o644)
+                fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return lock_fd
+            except (OSError, IOError, BlockingIOError):
+                return None
+
+        def delayed_startup_tasks():
             """
+            Run startup tasks (cache warmup, keep-alive) exactly ONCE per cluster.
             Delay execution to allow DB, cache, and migrations to settle.
             Must never crash the process.
             """
             time.sleep(3)
 
-            try:
-                from invoices.services import CacheWarmingService
+            lock_fd = _acquire_startup_lock()
+            if lock_fd is None:
+                logger.debug("Startup lock held by another worker; skipping startup tasks")
+                return
 
-                CacheWarmingService.bump_cache_version()
-                CacheWarmingService.warm_active_users_cache()
-                logger.info("Startup cache warmup completed")
-            except Exception as exc:
-                logger.warning("Startup cache warmup failed: %s", exc)
+            try:
+                # Cache warmup
+                try:
+                    from invoices.services import CacheWarmingService
+                    CacheWarmingService.bump_cache_version()
+                    warmed = CacheWarmingService.warm_active_users_cache()
+                    logger.info(f"Startup cache warmup completed: {warmed} users")
+                except Exception as exc:
+                    logger.warning(f"Startup cache warmup failed: {exc}")
+
+                # Keep-alive (production only)
+                if os.environ.get("RENDER") and not settings.DEBUG:
+                    try:
+                        from invoices.keep_alive import start_keep_alive
+                        start_keep_alive()
+                        logger.info("Keep-alive service started")
+                    except Exception as exc:
+                        logger.warning(f"Failed to start keep-alive service: {exc}")
+
+            finally:
+                try:
+                    fcntl.flock(lock_fd, fcntl.LOCK_UN)
+                    os.close(lock_fd)
+                except Exception:
+                    pass
 
         threading.Thread(
-            target=delayed_cache_warmup,
+            target=delayed_startup_tasks,
             daemon=True,
-            name="invoiceflow-cache-warmup",
+            name="invoiceflow-startup",
         ).start()
-
-        # ---------------------------------------------------------------------
-        # 4. KEEP-ALIVE (ONLY FOR PRODUCTION PLATFORM RUNTIME)
-        # ---------------------------------------------------------------------
-        if os.environ.get("RENDER") and not settings.DEBUG:
-            try:
-                from invoices.keep_alive import start_keep_alive
-
-                start_keep_alive()
-                logger.info("Keep-alive service started")
-            except Exception as exc:
-                logger.warning("Failed to start keep-alive service: %s", exc)

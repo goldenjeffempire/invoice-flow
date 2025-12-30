@@ -139,11 +139,10 @@ proxy_allow_ips = os.getenv("PROXY_ALLOW_IPS", "*")
 
 # X-Forwarded-* headers (PRODUCTION ONLY)
 # Gunicorn handles scheme detection; Django delegates to Gunicorn (SECURE_PROXY_SSL_HEADER=None)
+# Only trust X-Forwarded-Proto from Render's reverse proxy to avoid contradictory scheme warnings
 if IS_PRODUCTION:
     secure_scheme_headers = {
         "X-FORWARDED-PROTO": "https",
-        "X-FORWARDED-FOR": "%(h)s",
-        "X-FORWARDED-HOST": "%(H)s",
     }
 
 
