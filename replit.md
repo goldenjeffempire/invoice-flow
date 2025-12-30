@@ -1,7 +1,7 @@
 # InvoiceFlow - Production-Ready Deployment Platform
 
 ## Overview
-InvoiceFlow is a Django SaaS invoicing platform designed for secure, scalable, and reliable invoicing. It offers secure payment processing, robust API validation, optimized database performance, and enhanced security features. The platform is production-hardened and configured for 24/7 operation with a 99.9% uptime SLA, making it suitable for thousands of users. Key capabilities include a rebuilt "Create Invoice" page with real-time calculations, a comprehensive "Settings" page, and an enhanced "Invoice List/Dashboard" with bulk actions and advanced filtering.
+InvoiceFlow is a Django SaaS invoicing platform designed for secure, scalable, and reliable invoicing. It offers secure payment processing, robust API validation, optimized database performance, and enhanced security features. The platform is production-hardened and configured for 24/7 operation with a 99.9% uptime SLA, making it suitable for thousands of users. Key capabilities include a professional "Create Invoice" page with real-time calculations, a comprehensive "Settings" page, and an enhanced "Invoice List/Dashboard" with bulk actions and advanced filtering.
 
 ## User Preferences
 I prefer detailed explanations and iterative development. Ask before making major changes. I value clear, concise communication and prefer if the agent focuses on high-level feature implementation rather than granular code details unless specifically asked.
@@ -21,25 +21,14 @@ Key technical implementations include strict API validation using Decimal types 
 Core features include a professional "Create Invoice" form with real-time calculations and currency support, an "Invoice List" with bulk actions and advanced filtering, and a unified "Settings" interface. The platform also supports comprehensive API documentation, health check endpoints, structured JSON logging, multi-currency support, recurring invoice automation, an admin interface, hCaptcha form protection, SendGrid email integration, and role-based access control.
 
 ### Template System Architecture & Implementation Strategy
-The project maintains dual template systems for flexibility and stability:
+The project maintains a standardized authenticated layout for all core pages:
 
-**Create Invoice Page:**
-- **Primary System**: Multi-step workflow (4 steps) via `invoice_create_views.py`
-  - Step 1: Invoice details (`/invoices/create/`)
-  - Step 2: Line items (`/invoices/create/items/`)
-  - Step 3: Taxes & discounts (`/invoices/create/taxes/`)
-  - Step 4: Review & confirm (`/invoices/create/review/`)
-- **Alternative System**: Single-page form via `views.create_invoice()` (fallback compatibility)
-- **Status**: Both operational, multi-step is production-primary
+**Dashboard & Core Pages:**
+- **Primary Layout**: `base/layout-light.html` with `components/sidebar-light.html`
+- **Pages**: Dashboard, Invoice List, Create Invoice, Settings (all tabs), Analytics, Templates, Recurring Invoices.
+- **Status**: Standardized and production-ready.
 
-**Settings Page:**
-- **Primary System**: Unified tabbed interface via `settings_views.settings_unified()`
-  - Tabs: Profile, Business, Security, Payments, Notifications, Billing
-  - Single unified template: `pages/settings-unified.html`
-- **Alternative System**: Individual feature pages (profile, business, security, etc.)
-- **Status**: Both operational, unified is production-primary
-
-**Decision**: Dual systems maintained for flexibility. Primary systems are fully tested and production-ready. Alternative systems available for feature-specific optimization and gradual migration.
+**Decision**: Redundant multi-step and alternative systems have been removed to prioritize maintainability and a unified user experience.
 
 ### System Design Choices
 The architecture emphasizes security-by-default, with idempotent payment processing and webhook deduplication. Performance is optimized through database indexing and efficient server configurations. The system is designed for scalability and maintainability, ensuring clear separation of concerns.
