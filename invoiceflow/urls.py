@@ -111,7 +111,7 @@ urlpatterns = [
     path("pay/<int:invoice_id>/checkout/", paystack_views.public_initiate_payment, name="public_payment"),
     path("pay/<int:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
     # User Profile - redirect to settings
-    path("profile/", settings_views.profile, name="profile"),
+    path("profile/", views.profile_page, name="profile"),
     # Invoices (all invoice routes including settings, payments)
     path("invoices/", include("invoices.urls")),
 ]

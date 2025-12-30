@@ -1813,9 +1813,8 @@ def payment_webhook(request):
 
 @login_required
 def profile_page(request):
-    """Display user profile page."""
-    user_profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    return render(request, "pages/profile-light.html", {"profile": user_profile})
+    """User profile management - redirects to settings profile."""
+    return redirect("invoices:settings_tab", tab="profile")
 
 
 @login_required

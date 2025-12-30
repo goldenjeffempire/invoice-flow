@@ -48,18 +48,13 @@ urlpatterns = [
     path("waitlist/", views.waitlist_subscribe, name="waitlist_subscribe"),
 
     # ------------------------------------------------------------------
-    # USER SETTINGS
+    # USER SETTINGS (Unified)
     # ------------------------------------------------------------------
     path("settings/", settings_views.settings_dashboard, name="settings"),
-    path("settings/profile/", settings_views.settings_profile, name="settings_profile"),
-    path("settings/business/", settings_views.settings_business, name="settings_business"),
-    path("settings/payments/", settings_views.settings_payments, name="settings_payments"),
-    path("settings/security/", settings_views.settings_security, name="settings_security"),
-    path("settings/notifications/", settings_views.settings_notifications, name="settings_notifications"),
-    path("settings/billing/", settings_views.settings_billing, name="settings_billing"),
+    path("settings/<str:tab>/", settings_views.settings_unified, name="settings_tab"),
 
-    path("settings/sessions/<int:session_id>/revoke/", settings_views.revoke_session, name="revoke_session"),
-    path("settings/sessions/revoke-all/", settings_views.revoke_all_sessions, name="revoke_all_sessions"),
+    path("settings/sessions/<int:session_id>/revoke/", settings_views.settings_unified, name="revoke_session"),
+    path("settings/sessions/revoke-all/", settings_views.settings_unified, name="revoke_all_sessions"),
 
     # ------------------------------------------------------------------
     # PAYMENT SETTINGS & HISTORY
