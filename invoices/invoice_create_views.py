@@ -74,9 +74,11 @@ def create_invoice_start(request):
                 for error in errors:
                     messages.error(request, f"Client - {field}: {error}")
     else:
+        today = timezone.now().date()
+        default_due_date = today + timezone.timedelta(days=30)
         details_form = InvoiceDetailsForm(initial={
-            'invoice_date': timezone.now().date(),
-            'due_date': timezone.now().date() + timezone.timedelta(days=30),
+            'invoice_date': today,
+            'due_date': default_due_date,
             'currency': user_profile.default_currency,
         })
         client_form = ClientDetailsForm()
@@ -86,6 +88,18 @@ def create_invoice_start(request):
         'details_form': details_form,
         'client_form': client_form,
         'user_profile': user_profile,
+        'today': timezone.now().date(),
+        'default_due_date': timezone.now().date() + timezone.timedelta(days=30),
+        'currencies': [
+            ('USD', 'US Dollar'),
+            ('EUR', 'Euro'),
+            ('GBP', 'British Pound'),
+            ('NGN', 'Nigerian Naira'),
+            ('INR', 'Indian Rupee'),
+            ('CAD', 'Canadian Dollar'),
+            ('AUD', 'Australian Dollar'),
+        ],
+        'draft_data': {},
     }
     return render(request, 'invoices/create_invoice_start.html', context)
 
