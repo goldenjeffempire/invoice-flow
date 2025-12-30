@@ -1,22 +1,22 @@
-{% extends "settings/base_settings.html" %}
-{% block title %}Security - Settings{% endblock %}
+{% extends "settings/settings_base.html" %}
+{% block settings_title %}Security Settings{% endblock %}
 {% block settings_content %}
 <div class="space-y-10">
     <section>
-        <h3 class="text-xl font-bold mb-6">Change Password</h3>
+        <h3 class="text-lg font-bold mb-6">Change Password</h3>
         <form method="post" class="space-y-4">
             {% csrf_token %}
             <input type="hidden" name="action" value="change_password">
-            <div class="form-group">
-                <label class="form-label">Current Password</label>
+            <div class="form-light-group">
+                <label class="form-light-label">Current Password</label>
                 {{ password_form.current_password }}
             </div>
-            <div class="form-group">
-                <label class="form-label">New Password</label>
+            <div class="form-light-group">
+                <label class="form-light-label">New Password</label>
                 {{ password_form.new_password }}
             </div>
-            <div class="form-group">
-                <label class="form-label">Confirm Password</label>
+            <div class="form-light-group">
+                <label class="form-light-label">Confirm Password</label>
                 {{ password_form.confirm_password }}
             </div>
             <button type="submit" class="btn-light-primary">Update Password</button>
@@ -26,18 +26,18 @@
     <hr class="border-gray-100">
 
     <section>
-        <h3 class="text-xl font-bold mb-4">Active Sessions</h3>
+        <h3 class="text-lg font-bold mb-4">Active Sessions</h3>
         <div class="space-y-3">
             {% for session in sessions %}
-            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-100">
                 <div>
-                    <div class="font-medium">{% if session.is_current %}Current Session{% else %}Other Device{% endif %}</div>
+                    <div class="font-medium text-gray-900">{% if session.is_current %}Current Session{% else %}Other Device{% endif %}</div>
                     <div class="text-xs text-gray-500">{{ session.ip_address }} • {{ session.last_seen|timesince }} ago</div>
                 </div>
                 {% if not session.is_current %}
                 <form method="post" action="{% url 'invoices:revoke_session' session.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="text-red-500 text-sm font-medium hover:underline">Revoke</button>
+                    <button type="submit" class="text-red-500 text-sm font-semibold hover:text-red-700">Revoke</button>
                 </form>
                 {% endif %}
             </div>

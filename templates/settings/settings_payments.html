@@ -1,91 +1,73 @@
-{% extends "settings/base_settings.html" %}
-
+{% extends "settings/settings_base.html" %}
+{% block settings_title %}Payment Settings{% endblock %}
 {% block settings_content %}
-<div class="form-section">
-  <h2>Payment Settings</h2>
-  <p class="form-description">Configure how you receive payments from clients</p>
-
-  <form method="post" class="settings-form">
+<form method="post" class="space-y-6">
     {% csrf_token %}
     
-    <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-      <p style="margin: 0; color: #1e40af; font-size: 0.95rem;">
-        <strong>Payment Methods:</strong> Configure which payment methods your clients can use
-      </p>
+    <div class="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg mb-6">
+        <p class="text-sm text-blue-800 font-medium">
+            <strong>Payment Methods:</strong> Configure how your clients can settle their invoices.
+        </p>
     </div>
 
-    <div class="checkbox-item">
-      <label>
-        {{ form.accept_cards }}
-        <div>
-          <div style="font-weight: 500;">Accept Card Payments</div>
-          <small class="help-text">Allow clients to pay via credit/debit cards</small>
-        </div>
-      </label>
+    <div class="space-y-4">
+        <label class="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-white hover:border-indigo-200 transition-all">
+            <div class="mt-1">{{ form.accept_cards }}</div>
+            <div>
+                <div class="font-semibold text-gray-900">Accept Card Payments</div>
+                <div class="text-xs text-gray-500 mt-1">Allow clients to pay via credit/debit cards</div>
+            </div>
+        </label>
+
+        <label class="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-white hover:border-indigo-200 transition-all">
+            <div class="mt-1">{{ form.accept_bank_transfers }}</div>
+            <div>
+                <div class="font-semibold text-gray-900">Accept Bank Transfers</div>
+                <div class="text-xs text-gray-500 mt-1">Allow clients to pay via bank transfer</div>
+            </div>
+        </label>
+
+        <label class="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-white hover:border-indigo-200 transition-all">
+            <div class="mt-1">{{ form.enable_mobile_money }}</div>
+            <div>
+                <div class="font-semibold text-gray-900">Enable Mobile Money</div>
+                <div class="text-xs text-gray-500 mt-1">Allow clients to pay via mobile money services</div>
+            </div>
+        </label>
     </div>
 
-    <div class="checkbox-item">
-      <label>
-        {{ form.accept_bank_transfers }}
-        <div>
-          <div style="font-weight: 500;">Accept Bank Transfers</div>
-          <small class="help-text">Allow clients to pay via bank transfer</small>
-        </div>
-      </label>
+    <div class="form-light-group mt-6">
+        <label class="form-light-label">Minimum Payment Amount</label>
+        {{ form.minimum_payment_amount }}
+        <p class="text-xs text-gray-500 mt-1">Set a minimum amount clients must pay (leave 0 for no minimum)</p>
     </div>
 
-    <div class="checkbox-item">
-      <label>
-        {{ form.enable_mobile_money }}
-        <div>
-          <div style="font-weight: 500;">Enable Mobile Money</div>
-          <small class="help-text">Allow clients to pay via mobile money services</small>
-        </div>
-      </label>
+    <div class="space-y-4 mt-6">
+        <label class="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-white hover:border-indigo-200 transition-all">
+            <div class="mt-1">{{ form.auto_reconcile }}</div>
+            <div>
+                <div class="font-semibold text-gray-900">Auto-Reconcile Payments</div>
+                <div class="text-xs text-gray-500 mt-1">Automatically match payments to invoices</div>
+            </div>
+        </label>
+
+        <label class="flex items-start gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-white hover:border-indigo-200 transition-all">
+            <div class="mt-1">{{ form.send_payment_receipt }}</div>
+            <div>
+                <div class="font-semibold text-gray-900">Send Payment Receipts</div>
+                <div class="text-xs text-gray-500 mt-1">Automatically send receipts to clients after payment</div>
+            </div>
+        </label>
     </div>
 
-    <div class="form-group">
-      <label for="{{ form.minimum_payment_amount.id_for_label }}">Minimum Payment Amount</label>
-      {% if form.minimum_payment_amount.errors %}
-        <div class="alert alert-error">{{ form.minimum_payment_amount.errors }}</div>
-      {% endif %}
-      {{ form.minimum_payment_amount }}
-      <small class="help-text">Set a minimum amount clients must pay (leave 0 for no minimum)</small>
+    <div class="form-light-group mt-6">
+        <label class="form-light-label">Payment Instructions</label>
+        {{ form.payment_instructions }}
+        <p class="text-xs text-gray-500 mt-1">Additional payment instructions visible to clients (optional)</p>
     </div>
 
-    <div class="checkbox-item">
-      <label>
-        {{ form.auto_reconcile }}
-        <div>
-          <div style="font-weight: 500;">Auto-Reconcile Payments</div>
-          <small class="help-text">Automatically match payments to invoices</small>
-        </div>
-      </label>
+    <div class="pt-6">
+        <button type="submit" class="btn-light-primary">Save Settings</button>
     </div>
-
-    <div class="checkbox-item">
-      <label>
-        {{ form.send_payment_receipt }}
-        <div>
-          <div style="font-weight: 500;">Send Payment Receipts</div>
-          <small class="help-text">Automatically send receipts to clients after payment</small>
-        </div>
-      </label>
-    </div>
-
-    <div class="form-group">
-      <label for="{{ form.payment_instructions.id_for_label }}">Payment Instructions</label>
-      {% if form.payment_instructions.errors %}
-        <div class="alert alert-error">{{ form.payment_instructions.errors }}</div>
-      {% endif %}
-      {{ form.payment_instructions }}
-      <small class="help-text">Additional payment instructions visible to clients (optional)</small>
-    </div>
-
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Save Settings</button>
-      <a href="{% url 'invoices:dashboard' %}" class="btn btn-secondary">Cancel</a>
-    </div>
-  </form>
-</div>
+</form>
 {% endblock %}
