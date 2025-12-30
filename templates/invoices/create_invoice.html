@@ -836,18 +836,55 @@ document.addEventListener('DOMContentLoaded', function() {
     addLineItem();
   });
 
+  // Form submission handler - ensure items are saved before submitting
+  const form = document.querySelector('form');
+  form.addEventListener('submit', (e) => {
+    saveItems();
+    const items = JSON.parse(lineItemsInput.value || '[]');
+    
+    if (items.length === 0) {
+      e.preventDefault();
+      // Show error message
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'alert alert-error';
+      errorDiv.textContent = '❌ Please add at least one item to your invoice.';
+      form.insertBefore(errorDiv, form.firstChild);
+      
+      // Remove error after 5 seconds
+      setTimeout(() => {
+        errorDiv.remove();
+      }, 5000);
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  });
+
   // Initialize
   updateCurrencyDisplay();
   updateItemCount();
   
-  // Allow Enter key to add item in description field
+  // Allow Enter key to add item in description field and move to next field
   container.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && e.target.classList.contains('item-description')) {
       e.preventDefault();
       const row = e.target.closest('.line-item-row');
-      const nextItem = row.nextElementSibling;
-      if (nextItem && nextItem.classList.contains('line-item-row')) {
-        nextItem.querySelector('.item-description').focus();
+      const qtyInput = row.querySelector('.item-quantity');
+      qtyInput.focus();
+    }
+  });
+  
+  // Allow Tab to move through quantity -> price -> next description
+  container.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      const input = e.target;
+      if (input.classList.contains('item-price')) {
+        const row = input.closest('.line-item-row');
+        const nextRow = row.nextElementSibling;
+        if (nextRow && nextRow.classList.contains('line-item-row')) {
+          e.preventDefault();
+          nextRow.querySelector('.item-description').focus();
+        }
       }
     }
   });

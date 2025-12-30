@@ -124,7 +124,7 @@ def create_invoice_start(request):
     if request.method == "POST":
         try:
             # Parse line items from JSON
-            line_items_json = request.POST.get("line_items_json", "[]")
+            line_items_json = request.POST.get("line_items", "[]")
             line_items_data = json.loads(line_items_json)
             
             # Validate line items
