@@ -10,12 +10,4 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveIndex(
-            model_name='socialaccount',
-            name='invoices_so_user_id_a5b60f_idx',
-        ),
-        migrations.AlterUniqueTogether(
-            name='socialaccount',
-            unique_together=set(),
-        ),
     ]
