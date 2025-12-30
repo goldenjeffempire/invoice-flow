@@ -390,6 +390,11 @@ def dashboard(request):
         .order_by("-total")[:5]
     )
     
+    # Calculate total unpaid amount for aging summary
+    total_unpaid = base_queryset.filter(status="unpaid").aggregate(
+        total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
+    )["total"] or 0
+    
     context = {
         "user": request.user,
         "total_revenue": stats["total_revenue"],
@@ -402,7 +407,7 @@ def dashboard(request):
         "chart_labels": json.dumps(chart_labels),
         "chart_data": json.dumps(chart_data),
         "recent_invoices": recent_invoices,
-        "aging_summary": aging_summary,
+        "aging_summary": {**aging_summary, "total_unpaid": float(total_unpaid)},
         "top_clients": list(top_clients),
         "active": "dashboard",
     }

@@ -1,0 +1,295 @@
+{% extends 'base/layout.html' %}
+{% load static %}
+
+{% block title %}Dashboard | InvoiceFlow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-modern.css' %}">
+<style>
+    :root {
+        --dashboard-bg: #f8fafc;
+        --sidebar-width: 280px;
+    }
+    body {
+        background-color: var(--dashboard-bg);
+    }
+    .dashboard-container {
+        display: flex;
+        min-height: 100vh;
+    }
+    .dashboard-main {
+        flex: 1;
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+    }
+    @media (max-width: 1024px) {
+        .dashboard-main {
+            padding: 1rem;
+        }
+    }
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+    }
+    .stat-label {
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    .stat-value {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    .stat-footer {
+        margin-top: 1rem;
+        display: flex;
+        align-items: center;
+        font-size: 0.875rem;
+    }
+    .trend-up { color: #10b981; }
+    .trend-down { color: #ef4444; }
+    
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+    }
+    @media (max-width: 1024px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+    }
+    .card-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .invoice-table th {
+        text-align: left;
+        padding: 0.75rem;
+        color: #64748b;
+        font-weight: 600;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .invoice-table td {
+        padding: 1rem 0.75rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .status-paid { background: #dcfce7; color: #15803d; }
+    .status-unpaid { background: #fee2e2; color: #b91c1c; }
+</style>
+{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    {% include 'components/dashboard-sidebar.html' with active='dashboard' %}
+    
+    <div class="dashboard-main">
+        <header class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Welcome back, {{ user.first_name|default:user.username }}</h1>
+                <p class="text-slate-500">Here's what's happening with your business today.</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'invoices:create_invoice_start' %}" class="btn btn-primary px-6 py-2 rounded-lg font-semibold flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    New Invoice
+                </a>
+            </div>
+        </header>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <span class="stat-label">Total Revenue</span>
+                <span class="stat-value">${{ total_revenue|floatformat:2 }}</span>
+                <div class="stat-footer trend-up">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    <span>12% from last month</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Outstanding</span>
+                <span class="stat-value">${{ aging_summary.total_unpaid|default:"0.00"|floatformat:2 }}</span>
+                <div class="stat-footer {% if overdue_count > 0 %}trend-down{% endif %}">
+                    <span>{{ unpaid_count }} unpaid invoices</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Paid Invoices</span>
+                <span class="stat-value">{{ paid_count }}</span>
+                <div class="stat-footer text-slate-500">
+                    <span>Out of {{ total_invoices }} total</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Active Clients</span>
+                <span class="stat-value">{{ unique_clients }}</span>
+                <div class="stat-footer text-slate-500">
+                    <span>Across all regions</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <div class="card-title">
+                    <span>Revenue Trend</span>
+                    <select class="text-sm border-none bg-slate-50 rounded p-1">
+                        <option>Last 12 months</option>
+                        <option>Last 30 days</option>
+                    </select>
+                </div>
+                <div class="h-64 flex items-center justify-center bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Top Clients</div>
+                <div class="space-y-4">
+                    {% for client in top_clients %}
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
+                                {{ client.client_name.0 }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-slate-900">{{ client.client_name }}</p>
+                                <p class="text-xs text-slate-500">{{ client.invoice_count }} invoices</p>
+                            </div>
+                        </div>
+                        <span class="font-bold text-slate-900">${{ client.total|floatformat:2 }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-slate-500 py-8">No client data yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card lg:col-span-2">
+                <div class="card-title">
+                    <span>Recent Invoices</span>
+                    <a href="{% url 'invoices:invoice_list' %}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">View All</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice ID</th>
+                                <th>Client</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for invoice in recent_invoices %}
+                            <tr>
+                                <td class="font-semibold text-indigo-600">#{{ invoice.invoice_id }}</td>
+                                <td>{{ invoice.client_name }}</td>
+                                <td class="font-bold">${{ invoice.calculated_total|floatformat:2 }}</td>
+                                <td>{{ invoice.due_date|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ invoice.status }}">
+                                        {{ invoice.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="text-slate-400 hover:text-slate-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-8 text-slate-500">No invoices found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        const labels = {{ chart_labels|safe }};
+        const data = {{ chart_data|safe }};
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Revenue ($)',
+                    data: data,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#6366f1',
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 2], color: '#e2e8f0' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
