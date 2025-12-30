@@ -3,6 +3,7 @@ Production-grade Settings views with comprehensive error handling and security.
 """
 
 import logging
+from typing import TYPE_CHECKING
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -21,6 +22,9 @@ from .settings_forms import (
     PasswordChangeForm,
     PaymentSettingsForm,
 )
+
+if TYPE_CHECKING:
+    from django.forms import BaseForm
 
 logger = logging.getLogger(__name__)
 

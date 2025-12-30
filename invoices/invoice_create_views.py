@@ -5,6 +5,7 @@ Production-grade Create Invoice views with comprehensive security, validation, a
 import json
 import logging
 from decimal import Decimal
+from typing import TYPE_CHECKING
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -23,6 +24,9 @@ from .invoice_create_forms import (
     TaxesDiscountsForm,
     InvoicePreviewForm,
 )
+
+if TYPE_CHECKING:
+    from django.forms import BaseForm
 
 logger = logging.getLogger(__name__)
 
