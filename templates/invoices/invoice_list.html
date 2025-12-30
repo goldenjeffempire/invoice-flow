@@ -1,505 +1,119 @@
-{% extends "base/layout-light.html" %}
+{% extends 'base/layout.html' %}
 {% load static %}
-{% block title %}Invoices - InvoiceFlow{% endblock %}
-{% block body_class %}dashboard-light-page{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
-<style>
-.invoices-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
-.invoices-title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--light-text-primary);
-}
-
-.invoices-header-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
-}
-
-.stat-card {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-lg);
-    border: 1px solid var(--light-border-primary);
-    padding: 24px;
-    text-align: center;
-}
-
-.stat-card-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--light-text-primary);
-    margin-bottom: 8px;
-}
-
-.stat-card-label {
-    font-size: 0.875rem;
-    color: var(--light-text-tertiary);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.filters-card {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-lg);
-    border: 1px solid var(--light-border-primary);
-    padding: 24px;
-    margin-bottom: 24px;
-}
-
-.filter-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    align-items: flex-end;
-}
-
-.filter-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.filter-label {
-    font-size: 0.875rem;
-    color: var(--light-text-secondary);
-    font-weight: 500;
-    margin-bottom: 8px;
-}
-
-.filter-input,
-.filter-select {
-    padding: 10px 12px;
-    border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-md);
-    font-size: 0.9375rem;
-    background: var(--light-bg-tertiary);
-    color: var(--light-text-primary);
-    transition: all 0.2s ease;
-}
-
-.filter-input:focus,
-.filter-select:focus {
-    outline: none;
-    border-color: var(--light-primary);
-    background: var(--light-bg-secondary);
-}
-
-.invoices-table-card {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-lg);
-    border: 1px solid var(--light-border-primary);
-    overflow: hidden;
-}
-
-.table-toolbar {
-    padding: 16px 24px;
-    background: var(--light-bg-tertiary);
-    border-bottom: 1px solid var(--light-border-primary);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.table-toolbar.hidden {
-    display: none;
-}
-
-.selection-info {
-    font-size: 0.9375rem;
-    color: var(--light-text-secondary);
-}
-
-.bulk-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.bulk-btn {
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 0.875rem;
-}
-
-.bulk-btn-primary {
-    background: #6366f1;
-    color: white;
-}
-
-.bulk-btn-primary:hover {
-    background: #4f46e5;
-}
-
-.bulk-btn-danger {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-}
-
-.bulk-btn-danger:hover {
-    background: #ef4444;
-    color: white;
-}
-
-.bulk-btn-secondary {
-    background: var(--light-bg-secondary);
-    color: var(--light-text-primary);
-    border: 1px solid var(--light-border-primary);
-}
-
-.bulk-btn-secondary:hover {
-    border-color: #6366f1;
-    color: #6366f1;
-}
-
-.invoices-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.invoices-table th {
-    background: var(--light-bg-tertiary);
-    padding: 16px;
-    text-align: left;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--light-text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid var(--light-border-primary);
-}
-
-.invoices-table td {
-    padding: 16px;
-    border-bottom: 1px solid var(--light-border-primary);
-    font-size: 0.9375rem;
-    color: var(--light-text-secondary);
-}
-
-.invoices-table tr:last-child td {
-    border-bottom: none;
-}
-
-.invoice-id-cell {
-    font-weight: 600;
-    color: var(--light-text-primary);
-}
-
-.invoice-amount-cell {
-    font-weight: 600;
-    color: var(--light-text-primary);
-    text-align: right;
-}
-
-.status-badge {
-    display: inline-block;
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.status-paid {
-    background: var(--light-success-light);
-    color: var(--light-success);
-}
-
-.status-unpaid {
-    background: var(--light-warning-light);
-    color: var(--light-warning);
-}
-
-.status-overdue {
-    background: var(--light-danger-light);
-    color: var(--light-danger);
-}
-
-.table-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-}
-
-.action-link {
-    padding: 8px 12px;
-    background: var(--light-bg-tertiary);
-    border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-md);
-    color: var(--light-text-secondary);
-    text-decoration: none;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-.action-link:hover {
-    background: var(--light-primary);
-    border-color: var(--light-primary);
-    color: white;
-}
-
-.checkbox-col {
-    width: 40px;
-    text-align: center;
-}
-
-.table-checkbox {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-}
-
-.empty-state {
-    padding: 60px 32px;
-    text-align: center;
-}
-
-.empty-icon {
-    font-size: 3rem;
-    margin-bottom: 16px;
-}
-
-.empty-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin-bottom: 8px;
-}
-
-.empty-description {
-    color: var(--light-text-secondary);
-    margin-bottom: 24px;
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    align-items: center;
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid var(--light-border-primary);
-}
-
-.page-link {
-    padding: 8px 12px;
-    background: var(--light-bg-tertiary);
-    border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-md);
-    color: var(--light-text-secondary);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.page-link:hover {
-    background: var(--light-primary);
-    border-color: var(--light-primary);
-    color: white;
-}
-
-.page-link.active {
-    background: var(--light-primary);
-    border-color: var(--light-primary);
-    color: white;
-}
-
-.page-info {
-    color: var(--light-text-secondary);
-    font-size: 0.875rem;
-}
-
-@media (max-width: 768px) {
-    .invoices-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .invoices-title {
-        font-size: 1.5rem;
-    }
-
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .filter-row {
-        grid-template-columns: 1fr;
-    }
-
-    .invoices-table th,
-    .invoices-table td {
-        padding: 12px;
-        font-size: 0.8rem;
-    }
-
-    .table-actions {
-        flex-direction: column;
-    }
-
-    .action-link {
-        width: 100%;
-        text-align: center;
-    }
-
-    .table-toolbar {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-}
-</style>
-{% endblock %}
-
-{% block nav %}{% endblock %}
-{% block footer %}{% endblock %}
+{% block title %}Invoices | InvoiceFlow{% endblock %}
 
 {% block content %}
-<div class="dashboard-layout">
-    {% include 'components/dashboard-sidebar.html' with active='invoices' %}
+<div class="dashboard-layout min-h-screen bg-slate-50 flex">
+    {% include 'components/dashboard-sidebar.html' with active='invoice_list' %}
     
-    <main class="dashboard-content">
+    <main class="dashboard-content flex-1 p-4 md:p-8 w-full max-w-7xl mx-auto overflow-hidden">
+        <!-- Header Section -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
                 <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Invoices</h1>
-                <p class="text-slate-500 mt-1">Manage and track all your business invoices.</p>
+                <p class="text-slate-500 mt-1">Manage your billing and track payments.</p>
             </div>
             <div class="flex items-center gap-3">
-                <a href="{% url 'invoices:create_invoice_start' %}" class="btn-modern btn-modern-primary">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Create Invoice
+                <a href="{% url 'invoices:create_invoice_start' %}" class="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20 active:scale-[0.98]">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    New Invoice
                 </a>
             </div>
         </div>
 
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="stat-card">
-                <h3 class="text-slate-500 text-sm font-medium">Total Invoices</h3>
-                <p class="text-2xl font-bold text-slate-900 mt-1">{{ total_count }}</p>
-            </div>
-            <div class="stat-card">
-                <h3 class="text-slate-500 text-sm font-medium">Paid</h3>
-                <p class="text-2xl font-bold text-emerald-600 mt-1">{{ paid_count }}</p>
-            </div>
-            <div class="stat-card">
-                <h3 class="text-slate-500 text-sm font-medium">Pending/Overdue</h3>
-                <p class="text-2xl font-bold text-rose-600 mt-1">{{ unpaid_count }}</p>
-            </div>
-        </div>
+        <!-- Filter Bar -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-wrap items-center gap-4">
+            <form method="GET" class="flex-1 flex flex-wrap items-center gap-4">
+                <div class="relative flex-1 min-w-[240px]">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </span>
+                    <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search client, invoice ID..." class="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+                
+                <select name="status" class="px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
+                    <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid Only</option>
+                    <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>Unpaid Only</option>
+                    <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
+                </select>
 
-        <!-- Filters -->
-        <div class="data-card mb-8">
-            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Search</label>
-                    <input type="text" name="search" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="Invoice #, Client..." value="{{ search_query|default:'' }}">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Status</label>
-                    <select name="status" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
-                        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
-                        <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
-                        <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>Unpaid</option>
-                        <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
-                    </select>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-500 uppercase">Date Range</label>
-                    <select name="date_range" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
-                        <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
-                        <option value="7days" {% if date_filter == '7days' %}selected{% endif %}>Last 7 Days</option>
-                        <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last 30 Days</option>
-                        <option value="year" {% if date_filter == 'year' %}selected{% endif %}>This Year</option>
-                    </select>
-                </div>
-                <div class="flex items-end">
-                    <button type="submit" class="w-full btn-modern btn-modern-primary justify-center">
-                        Filter Results
-                    </button>
-                </div>
+                <select name="date_range" class="px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                    <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
+                    <option value="7days" {% if date_filter == '7days' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="year" {% if date_filter == 'year' %}selected{% endif %}>This Year</option>
+                </select>
+
+                <button type="submit" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all">Apply</button>
             </form>
         </div>
 
-        <!-- Invoices Table -->
-        <div class="data-card">
+        <!-- Table Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
-                            <th class="pb-4 font-bold">Invoice</th>
-                            <th class="pb-4 font-bold">Client</th>
-                            <th class="pb-4 font-bold">Amount</th>
-                            <th class="pb-4 font-bold">Date</th>
-                            <th class="pb-4 font-bold">Status</th>
-                            <th class="pb-4 font-bold text-right">Actions</th>
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Invoice</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Client</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Due Date</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-50">
+                    <tbody class="divide-y divide-slate-100">
                         {% for invoice in invoices %}
-                        <tr class="group hover:bg-slate-50 transition-colors">
-                            <td class="py-4">
-                                <span class="font-bold text-slate-900">#{{ invoice.invoice_id }}</span>
+                        <tr class="hover:bg-slate-50 transition-colors group">
+                            <td class="px-6 py-4">
+                                <div class="font-bold text-slate-900">#{{ invoice.invoice_id }}</div>
+                                <div class="text-xs text-slate-400 font-medium">{{ invoice.invoice_date|date:"M d, Y" }}</div>
                             </td>
-                            <td class="py-4">
-                                <div class="text-sm font-medium text-slate-900">{{ invoice.client_name }}</div>
-                                <div class="text-xs text-slate-500">{{ invoice.client_email }}</div>
+                            <td class="px-6 py-4">
+                                <div class="font-semibold text-slate-700">{{ invoice.client_name }}</div>
+                                <div class="text-xs text-slate-400">{{ invoice.client_email }}</div>
                             </td>
-                            <td class="py-4 font-bold text-slate-900">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</td>
-                            <td class="py-4 text-sm text-slate-600">{{ invoice.invoice_date|date:"M d, Y" }}</td>
-                            <td class="py-4">
-                                <span class="status-pill status-{{ invoice.status }} {% if invoice.due_date < today and invoice.status == 'unpaid' %}status-overdue{% endif %}">
-                                    {% if invoice.due_date < today and invoice.status == 'unpaid' %}Overdue{% else %}{{ invoice.status }}{% endif %}
+                            <td class="px-6 py-4 text-right">
+                                <div class="font-bold text-slate-900">
+                                    {% if invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% else %}${% endif %}{{ invoice.total|floatformat:2 }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if invoice.status == 'paid' %}
+                                <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full uppercase tracking-tighter">Paid</span>
+                                {% else %}
+                                <span class="px-3 py-1 {% if invoice.due_date < today %}bg-rose-100 text-rose-700{% else %}bg-amber-100 text-amber-700{% endif %} text-xs font-bold rounded-full uppercase tracking-tighter">
+                                    {% if invoice.due_date < today %}Overdue{% else %}Pending{% endif %}
                                 </span>
+                                {% endif %}
                             </td>
-                            <td class="py-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="p-2 text-slate-400 hover:text-indigo-600 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium {% if invoice.status == 'unpaid' and invoice.due_date < today %}text-rose-500{% else %}text-slate-600{% endif %}">
+                                    {{ invoice.due_date|date:"M d, Y" }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="View">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     </a>
-                                    <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="p-2 text-slate-400 hover:text-emerald-600 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00 2 2h11a2 2 0 00 2-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    <a href="{% url 'invoices:generate_pdf' invoice.id %}" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="Download PDF">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                                     </a>
                                 </div>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="py-12 text-center">
+                            <td colspan="6" class="px-6 py-20 text-center">
                                 <div class="flex flex-col items-center">
-                                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    <div class="p-4 bg-slate-100 rounded-full text-slate-400 mb-4">
+                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                     </div>
                                     <h3 class="text-lg font-bold text-slate-900">No invoices found</h3>
-                                    <p class="text-slate-500 max-w-xs mx-auto">Try adjusting your filters or create a new invoice to get started.</p>
+                                    <p class="text-slate-500">Try adjusting your filters or create a new invoice.</p>
                                 </div>
                             </td>
                         </tr>
@@ -507,19 +121,24 @@
                     </tbody>
                 </table>
             </div>
-
+            
             <!-- Pagination -->
             {% if page_obj.has_other_pages %}
-            <div class="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
-                <div class="text-sm text-slate-500">
-                    Showing <span class="font-bold text-slate-900">{{ page_obj.start_index }}</span> to <span class="font-bold text-slate-900">{{ page_obj.end_index }}</span> of <span class="font-bold text-slate-900">{{ paginator.count }}</span> results
-                </div>
-                <div class="flex gap-2">
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <p class="text-sm text-slate-500 font-medium">
+                    Showing <span class="text-slate-900 font-bold">{{ page_obj.start_index }}</span> to <span class="text-slate-900 font-bold">{{ page_obj.end_index }}</span> of <span class="text-slate-900 font-bold">{{ paginator.count }}</span> invoices
+                </p>
+                <div class="flex items-center gap-2">
                     {% if page_obj.has_previous %}
-                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">Previous</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="p-2 border border-slate-200 rounded-lg hover:bg-white transition-all text-slate-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    </a>
                     {% endif %}
+                    
                     {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-colors">Next</a>
+                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="p-2 border border-slate-200 rounded-lg hover:bg-white transition-all text-slate-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </a>
                     {% endif %}
                 </div>
             </div>
@@ -527,58 +146,4 @@
         </div>
     </main>
 </div>
-{% endblock %}
-
-<script nonce="{{ request.csp_nonce }}">
-document.addEventListener('DOMContentLoaded', function() {
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
-    const tableToolbar = document.getElementById('tableToolbar');
-    const selectedCountSpan = document.getElementById('selectedCount');
-    const bulkActionsForm = document.getElementById('bulkActionsForm');
-
-    function updateSelection() {
-        const selectedInvoices = Array.from(invoiceCheckboxes).filter(cb => cb.checked);
-        const selectedCount = selectedInvoices.length;
-        
-        selectedCountSpan.textContent = selectedCount;
-        
-        if (selectedCount > 0) {
-            tableToolbar.classList.remove('hidden');
-            selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < invoiceCheckboxes.length;
-        } else {
-            tableToolbar.classList.add('hidden');
-            selectAllCheckbox.indeterminate = false;
-            selectAllCheckbox.checked = false;
-        }
-    }
-
-    selectAllCheckbox.addEventListener('change', function() {
-        invoiceCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-        updateSelection();
-    });
-
-    invoiceCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateSelection);
-    });
-
-    window.performBulkAction = function(action) {
-        const selectedInvoices = Array.from(invoiceCheckboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.value)
-            .join(',');
-
-        if (!selectedInvoices) {
-            alert('Please select at least one invoice.');
-            return;
-        }
-
-        document.getElementById('invoiceIds').value = selectedInvoices;
-        document.getElementById('bulkAction').value = action;
-        bulkActionsForm.submit();
-    };
-});
-</script>
 {% endblock %}
