@@ -30,11 +30,7 @@ urlpatterns = [
     # ------------------------------------------------------------------
     # CREATE INVOICE (Production-grade multi-step workflow)
     # ------------------------------------------------------------------
-    path("create/", invoice_create_views.create_invoice_start, name="create_invoice_start"),
-    path("create/items/", invoice_create_views.create_invoice_items, name="create_invoice_items"),
-    path("create/taxes/", invoice_create_views.create_invoice_taxes, name="create_invoice_taxes"),
-    path("create/review/", invoice_create_views.create_invoice_review, name="create_invoice_review"),
-    path("create/draft/", invoice_create_views.save_invoice_draft, name="save_invoice_draft"),
+    # create invoice templates removed
 
     path("invoice/<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
     path("invoice/<int:invoice_id>/edit/", views.edit_invoice, name="edit_invoice"),
