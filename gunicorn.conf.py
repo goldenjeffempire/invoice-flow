@@ -134,15 +134,14 @@ reload_extra_files = []  # Don't watch static files
 forwarded_allow_ips = os.getenv("FORWARDED_ALLOW_IPS", "*")
 proxy_allow_ips = os.getenv("PROXY_ALLOW_IPS", "*")
 
-# X-Forwarded-* headers (PRODUCTION ONLY to prevent header spoofing)
+# X-Forwarded-* headers (PRODUCTION ONLY to prevent header spoofing in development)
+# Only set secure_scheme_headers in production to avoid contradictory scheme warnings
 if IS_PRODUCTION:
     secure_scheme_headers = {
         "X-FORWARDED-PROTO": "https",
         "X-FORWARDED-FOR": "%(h)s",
         "X-FORWARDED-HOST": "%(H)s",
     }
-else:
-    secure_scheme_headers = {}
 
 
 # =============================================================================

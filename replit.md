@@ -154,13 +154,15 @@ Architecture prioritizes security-by-default with idempotent payment processing 
 ✓ Build pipeline automated
 ✓ Environment variables managed securely
 
-## Recent Changes (December 28, 2025)
+## Recent Changes (December 28-30, 2025)
 - Fixed SSL/TLS configuration: Removed `ssl_context = None` causing Gunicorn errors
-- Made cookie security settings conditional on IS_PRODUCTION (fixes contradictory scheme headers)
+- Made cookie security settings conditional on IS_PRODUCTION (SESSION_COOKIE_SECURE, CSRF_COOKIE_SECURE)
+- Removed empty `secure_scheme_headers = {}` in development to eliminate contradictory scheme warnings
 - SSL/TLS context now only set when certificates are provided
+- secure_scheme_headers only enabled in production mode
 - Render HTTPS termination configured (no SSL needed in Gunicorn)
 - All Gunicorn configuration issues resolved
-- Development server running cleanly without errors
+- Development server running cleanly without errors or warnings
 - Render deployment fully compatible with modern SSL/TLS handling
 
 ## Files Structure
