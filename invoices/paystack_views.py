@@ -293,7 +293,7 @@ def payment_callback(request, invoice_id):
         return redirect("dashboard")
     
     if payment.verified:
-        return redirect("invoice_detail", invoice_id=invoice_id)
+        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
     
     service = get_paystack_service()
     verification = service.verify_transaction(reference)
@@ -306,7 +306,7 @@ def payment_callback(request, invoice_id):
             invoice.status = "paid"
             invoice.save(update_fields=["status"])
     
-    return redirect("invoice_detail", invoice_id=invoice_id)
+    return redirect("invoices:invoice_detail", invoice_id=invoice_id)
 
 
 # ---------------------------------------------------------------------

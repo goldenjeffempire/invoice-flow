@@ -661,7 +661,7 @@ def edit_invoice(request, invoice_id):
 
         if updated_invoice:
             messages.success(request, f"Invoice {updated_invoice.invoice_id} updated successfully!")
-            return redirect("invoice_detail", invoice_id=updated_invoice.id)
+            return redirect("invoices:invoice_detail", invoice_id=updated_invoice.id)
         else:
             messages.error(request, "Please correct the errors below.")
             return render(
@@ -756,10 +756,10 @@ def duplicate_invoice(request, invoice_id):
     
     if new_invoice:
         messages.success(request, f"Invoice duplicated! New invoice: {new_invoice.invoice_id}")
-        return redirect("edit_invoice", invoice_id=new_invoice.pk)
+        return redirect("invoices:edit_invoice", invoice_id=new_invoice.pk)
     else:
         messages.error(request, "Failed to duplicate invoice. Please try again.")
-        return redirect("invoice_detail", invoice_id=invoice_id)
+        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
 
 
 @login_required
@@ -774,7 +774,7 @@ def update_invoice_status(request, invoice_id):
 
             AnalyticsService.invalidate_user_cache(request.user.id)
             messages.success(request, f"Invoice status updated to {new_status}!")
-        return redirect("invoice_detail", invoice_id=invoice.id)
+        return redirect("invoices:invoice_detail", invoice_id=invoice.id)
     return redirect("dashboard")
 
 
@@ -812,7 +812,7 @@ def send_invoice_email(request, invoice_id: int):
             f"Invoice #{invoice.invoice_id} is being sent to {recipient_email}. "
             "You'll be notified once delivered.",
         )
-        return redirect("invoice_detail", invoice_id=invoice.id)
+        return redirect("invoices:invoice_detail", invoice_id=invoice.id)
 
     return render(request, "invoices/send_email.html", {"invoice": invoice})
 
