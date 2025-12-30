@@ -215,11 +215,18 @@ Pages converted to use new modern authenticated layout:
 - ✅ Quick actions grid working
 - ✅ Activity timeline displaying
 
-## 🛠️ **Critical Fixes Applied (Dec 30, 2025 - 21:20)**
+## 🛠️ **Critical Fixes Applied**
+
+**Dashboard View (21:20 UTC)**
 - ✅ Fixed AttributeError on Invoice.total property setter
 - ✅ Removed problematic attribute assignments in dashboard view
-- ✅ Ensured read-only properties are not modified
 - ✅ Dashboard now safely accesses invoice.total through template
+
+**Invoice List View (21:27 UTC)**  
+- ✅ Fixed QuerySet annotation ordering bug
+- ✅ Moved annotate() BEFORE order_by() to ensure 'total' field exists for sorting
+- ✅ Invoice list now loads without errors
+- ✅ Sorting by total now works correctly
 
 ## 🌟 **Status: MODERNIZATION COMPLETE & STABLE**
 

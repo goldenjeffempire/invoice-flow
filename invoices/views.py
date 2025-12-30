@@ -451,6 +451,11 @@ def invoice_list(request):
         start_date = today.replace(month=1, day=1)
         base_queryset = base_queryset.filter(invoice_date__gte=start_date)
 
+    # Annotate BEFORE sorting to ensure 'total' field exists for sorting
+    invoices_with_totals = base_queryset.annotate(
+        total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
+    )
+
     valid_sorts = {
         "-created_at": "-created_at",
         "created_at": "created_at",
@@ -464,11 +469,7 @@ def invoice_list(request):
         "-status": "-status",
     }
     order_by = valid_sorts.get(sort_by, "-created_at")
-    base_queryset = base_queryset.order_by(order_by)
-
-    invoices_with_totals = base_queryset.annotate(
-        total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
-    )
+    invoices_with_totals = invoices_with_totals.order_by(order_by)
 
     paginator = Paginator(invoices_with_totals, 15)
     page_number = request.GET.get("page", 1)
