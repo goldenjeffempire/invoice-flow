@@ -8,149 +8,422 @@
     {% include 'components/sidebar-light.html' with active='invoices' %}
     
     <main class="dashboard-main">
+        <!-- Header Section -->
         <header class="dashboard-light-header">
             <div class="dashboard-light-header-content">
-                <h1>Invoices</h1>
-                <p>Manage your billing and track payments.</p>
+                <div>
+                    <h1>Invoices</h1>
+                    <p>Manage, track, and monitor all your invoices</p>
+                </div>
             </div>
             <div class="dashboard-header-actions">
-                <a href="{% url 'invoices:create_invoice_start' %}" class="btn-light-primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                    New Invoice
+                <a href="{% url 'invoices:create_invoice_start' %}" class="btn-light-primary" style="display: flex; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M12 5v14M5 12h14"/></svg>
+                    <span>New Invoice</span>
                 </a>
             </div>
         </header>
 
-        <div class="stats-light-grid">
-            <div class="stat-light-card stat-invoices">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-primary">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <!-- Stats Cards Grid - Responsive -->
+        <div class="stats-light-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px;">
+            <div class="stat-light-card" style="padding: 20px; border-radius: 12px; background: var(--light-bg-primary); border: 1px solid var(--light-border-primary); transition: all 0.3s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <div style="font-size: 0.875rem; color: var(--light-text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Total Invoices</div>
+                    <div style="padding: 8px; background: rgba(99, 102, 241, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="rgb(99, 102, 241)" stroke-width="2" style="width: 18px; height: 18px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                     </div>
                 </div>
-                <div class="stat-light-value">{{ total_count }}</div>
-                <div class="stat-light-label">Total Invoices</div>
+                <div style="font-size: 28px; font-weight: 700; color: var(--light-text-primary); margin-bottom: 4px;">{{ total_count }}</div>
+                <div style="font-size: 0.75rem; color: var(--light-text-tertiary);">All time invoices</div>
             </div>
-            <div class="stat-light-card stat-paid">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-success">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+
+            <div class="stat-light-card" style="padding: 20px; border-radius: 12px; background: var(--light-bg-primary); border: 1px solid var(--light-border-primary); transition: all 0.3s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <div style="font-size: 0.875rem; color: var(--light-text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Paid</div>
+                    <div style="padding: 8px; background: rgba(34, 197, 94, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="rgb(34, 197, 94)" stroke-width="2" style="width: 18px; height: 18px;"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                 </div>
-                <div class="stat-light-value">{{ paid_count }}</div>
-                <div class="stat-light-label">Paid</div>
+                <div style="font-size: 28px; font-weight: 700; color: var(--light-text-primary); margin-bottom: 4px;">{{ paid_count }}</div>
+                <div style="font-size: 0.75rem; color: var(--light-text-tertiary);">Successfully paid</div>
             </div>
-            <div class="stat-light-card stat-pending">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-warning">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+
+            <div class="stat-light-card" style="padding: 20px; border-radius: 12px; background: var(--light-bg-primary); border: 1px solid var(--light-border-primary); transition: all 0.3s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <div style="font-size: 0.875rem; color: var(--light-text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Pending</div>
+                    <div style="padding: 8px; background: rgba(251, 146, 60, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="rgb(251, 146, 60)" stroke-width="2" style="width: 18px; height: 18px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     </div>
                 </div>
-                <div class="stat-light-value">{{ unpaid_count }}</div>
-                <div class="stat-light-label">Pending</div>
+                <div style="font-size: 28px; font-weight: 700; color: var(--light-text-primary); margin-bottom: 4px;">{{ unpaid_count }}</div>
+                <div style="font-size: 0.75rem; color: var(--light-text-tertiary);">Awaiting payment</div>
             </div>
-            <div class="stat-light-card stat-overdue">
-                <div class="stat-light-header">
-                    <div class="stat-light-icon icon-danger">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+
+            <div class="stat-light-card" style="padding: 20px; border-radius: 12px; background: var(--light-bg-primary); border: 1px solid var(--light-border-primary); transition: all 0.3s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <div style="font-size: 0.875rem; color: var(--light-text-tertiary); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Overdue</div>
+                    <div style="padding: 8px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="rgb(239, 68, 68)" stroke-width="2" style="width: 18px; height: 18px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                     </div>
                 </div>
-                <div class="stat-light-value">{{ overdue_count }}</div>
-                <div class="stat-light-label">Overdue</div>
+                <div style="font-size: 28px; font-weight: 700; color: var(--light-text-primary); margin-bottom: 4px;">{{ overdue_count }}</div>
+                <div style="font-size: 0.75rem; color: var(--light-text-tertiary);">Past due date</div>
             </div>
         </div>
 
-        <div class="card-light">
-            <div class="card-light-header">
-                <form method="GET" class="filter-bar-modern">
-                    <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Search client, ID..." class="filter-input-modern">
-                    <select name="status" class="filter-select-modern">
+        <!-- Filtering & Search Section -->
+        <div class="card-light" style="margin-bottom: 24px;">
+            <form method="GET" class="filter-form-modern" style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: flex-end;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.875rem; font-weight: 500; color: var(--light-text-primary);">Search</label>
+                    <input type="text" name="search" value="{{ search_query|default:'' }}" placeholder="Invoice ID, client name, email..." 
+                           class="filter-input-modern" 
+                           style="padding: 10px 14px; border: 1px solid var(--light-border-primary); border-radius: 8px; font-size: 0.95rem; background: var(--light-bg-primary); color: var(--light-text-primary);">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.875rem; font-weight: 500; color: var(--light-text-primary);">Status</label>
+                    <select name="status" class="filter-select-modern" 
+                            style="padding: 10px 14px; border: 1px solid var(--light-border-primary); border-radius: 8px; font-size: 0.95rem; background: var(--light-bg-primary); color: var(--light-text-primary); cursor: pointer;">
                         <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Statuses</option>
                         <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
                         <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>Unpaid</option>
                         <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
                     </select>
-                    <select name="date_range" class="filter-select-modern">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 0.875rem; font-weight: 500; color: var(--light-text-primary);">Period</label>
+                    <select name="date_range" class="filter-select-modern"
+                            style="padding: 10px 14px; border: 1px solid var(--light-border-primary); border-radius: 8px; font-size: 0.95rem; background: var(--light-bg-primary); color: var(--light-text-primary); cursor: pointer;">
                         <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
                         <option value="7days" {% if date_filter == '7days' %}selected{% endif %}>Last 7 Days</option>
                         <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last 30 Days</option>
+                        <option value="90days" {% if date_filter == '90days' %}selected{% endif %}>Last 90 Days</option>
                         <option value="year" {% if date_filter == 'year' %}selected{% endif %}>This Year</option>
                     </select>
-                    <button type="submit" class="btn-light-primary">Filter</button>
-                </form>
+                </div>
+
+                <button type="submit" class="btn-light-primary" style="padding: 10px 20px; white-space: nowrap;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 6px; display: inline;">
+                        <circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    Filter
+                </button>
+            </form>
+
+            {% if search_query or status_filter != 'all' or date_filter != 'all' %}
+            <div style="padding: 0 20px 12px 20px; border-top: 1px solid var(--light-border-primary); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 0.875rem; color: var(--light-text-tertiary);">Active filters:</span>
+                {% if search_query %}
+                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(99, 102, 241, 0.1); border-radius: 20px; font-size: 0.85rem; color: var(--light-text-primary);">
+                    {{ search_query }}
+                </span>
+                {% endif %}
+                {% if status_filter != 'all' %}
+                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(99, 102, 241, 0.1); border-radius: 20px; font-size: 0.85rem; color: var(--light-text-primary);">
+                    {{ status_filter|title }}
+                </span>
+                {% endif %}
+                {% if date_filter != 'all' %}
+                <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(99, 102, 241, 0.1); border-radius: 20px; font-size: 0.85rem; color: var(--light-text-primary);">
+                    {{ date_filter|title }}
+                </span>
+                {% endif %}
+                <a href="{% url 'invoices:invoice_list' %}" style="font-size: 0.85rem; color: rgb(99, 102, 241); text-decoration: none; margin-left: auto;">Clear all</a>
             </div>
-            <div class="card-light-body" style="padding: 0;">
-                <div style="overflow-x: auto;">
-                    <table class="table-light">
+            {% endif %}
+        </div>
+
+        <!-- Invoices Table Card -->
+        <div class="card-light">
+            {% if invoices %}
+                <div style="overflow-x: auto; width: 100%;">
+                    <table style="width: 100%; border-collapse: collapse;">
                         <thead>
-                            <tr>
-                                <th>Invoice</th>
-                                <th>Client</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Due Date</th>
-                                <th>Actions</th>
+                            <tr style="background: var(--light-bg-secondary); border-bottom: 2px solid var(--light-border-primary);">
+                                <th style="padding: 16px; text-align: left; font-size: 0.875rem; font-weight: 600; color: var(--light-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Invoice ID</th>
+                                <th style="padding: 16px; text-align: left; font-size: 0.875rem; font-weight: 600; color: var(--light-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Client</th>
+                                <th style="padding: 16px; text-align: left; font-size: 0.875rem; font-weight: 600; color: var(--light-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Amount</th>
+                                <th style="padding: 16px; text-align: left; font-size: 0.875rem; font-weight: 600; color: var(--light-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Status</th>
+                                <th style="padding: 16px; text-align: left; font-size: 0.875rem; font-weight: 600; color: var(--light-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Date</th>
+                                <th style="padding: 16px; text-align: left; font-size: 0.875rem; font-weight: 600; color: var(--light-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Due Date</th>
+                                <th style="padding: 16px; text-align: right; font-size: 0.875rem; font-weight: 600; color: var(--light-text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for invoice in invoices %}
-                            <tr>
-                                <td>#{{ invoice.invoice_id }}</td>
-                                <td>
-                                    <div style="font-weight: 600;">{{ invoice.client_name }}</div>
-                                    <div style="font-size: 0.75rem; color: var(--light-text-tertiary);">{{ invoice.client_email }}</div>
+                            <tr style="border-bottom: 1px solid var(--light-border-primary); transition: background-color 0.2s ease;" 
+                                onmouseover="this.style.backgroundColor='var(--light-bg-secondary)'" 
+                                onmouseout="this.style.backgroundColor='transparent'">
+                                <td style="padding: 16px; font-weight: 600; color: var(--light-text-primary);">
+                                    <span style="font-family: 'Monaco', 'Courier New', monospace; font-size: 0.9rem;">#{{ invoice.invoice_id }}</span>
                                 </td>
-                                <td>{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</td>
-                                <td>
+                                <td style="padding: 16px;">
+                                    <div style="font-weight: 600; color: var(--light-text-primary); margin-bottom: 4px;">{{ invoice.client_name }}</div>
+                                    <div style="font-size: 0.85rem; color: var(--light-text-tertiary);">{{ invoice.client_email }}</div>
+                                </td>
+                                <td style="padding: 16px;">
+                                    <div style="font-weight: 600; color: var(--light-text-primary);">
+                                        {% if invoice.total %}
+                                            {{ invoice.currency }} {{ invoice.total|floatformat:2 }}
+                                        {% else %}
+                                            {{ invoice.currency }} 0.00
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td style="padding: 16px;">
                                     {% if invoice.status == 'paid' %}
-                                    <span class="badge-light badge-paid">Paid</span>
+                                        <span style="display: inline-block; padding: 6px 12px; background: rgba(34, 197, 94, 0.15); color: rgb(34, 197, 94); border-radius: 6px; font-size: 0.85rem; font-weight: 500;">✓ Paid</span>
+                                    {% elif invoice.due_date and invoice.due_date < today and invoice.status == 'unpaid' %}
+                                        <span style="display: inline-block; padding: 6px 12px; background: rgba(239, 68, 68, 0.15); color: rgb(239, 68, 68); border-radius: 6px; font-size: 0.85rem; font-weight: 500;">⚠ Overdue</span>
                                     {% else %}
-                                    <span class="badge-light {% if invoice.due_date < today %}badge-overdue{% else %}badge-pending{% endif %}">
-                                        {% if invoice.due_date < today %}Overdue{% else %}Pending{% endif %}
-                                    </span>
+                                        <span style="display: inline-block; padding: 6px 12px; background: rgba(251, 146, 60, 0.15); color: rgb(251, 146, 60); border-radius: 6px; font-size: 0.85rem; font-weight: 500;">⏱ Pending</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ invoice.due_date|date:"M d, Y" }}</td>
-                                <td>
-                                    <div style="display: flex; gap: 8px;">
-                                        <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="table-action-light">View</a>
-                                        <a href="{% url 'invoices:generate_pdf' invoice.id %}" class="table-action-light">PDF</a>
-                                    </div>
+                                <td style="padding: 16px; color: var(--light-text-secondary);">
+                                    {{ invoice.invoice_date|date:"M d, Y" }}
                                 </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="empty-light-state">
-                                    <div class="empty-light-icon">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <td style="padding: 16px; color: var(--light-text-secondary);">
+                                    {% if invoice.due_date %}
+                                        <span {% if invoice.due_date < today and invoice.status == 'unpaid' %}style="color: rgb(239, 68, 68); font-weight: 600;"{% endif %}>
+                                            {{ invoice.due_date|date:"M d, Y" }}
+                                        </span>
+                                    {% else %}
+                                        <span style="color: var(--light-text-tertiary);">—</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 16px; text-align: right;">
+                                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                        <a href="{% url 'invoices:invoice_detail' invoice.id %}" 
+                                           class="action-btn"
+                                           style="padding: 8px 12px; background: rgba(99, 102, 241, 0.1); color: rgb(99, 102, 241); border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.2s ease; border: 1px solid transparent;"
+                                           onmouseover="this.style.background='rgb(99, 102, 241)'; this.style.color='white';"
+                                           onmouseout="this.style.background='rgba(99, 102, 241, 0.1)'; this.style.color='rgb(99, 102, 241)';">
+                                            View
+                                        </a>
+                                        <a href="{% url 'invoices:generate_pdf' invoice.id %}" 
+                                           class="action-btn"
+                                           style="padding: 8px 12px; background: rgba(99, 102, 241, 0.1); color: rgb(99, 102, 241); border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.2s ease; border: 1px solid transparent;"
+                                           onmouseover="this.style.background='rgb(99, 102, 241)'; this.style.color='white';"
+                                           onmouseout="this.style.background='rgba(99, 102, 241, 0.1)'; this.style.color='rgb(99, 102, 241)';">
+                                            PDF
+                                        </a>
+                                        <div style="position: relative;">
+                                            <button class="action-btn more-btn"
+                                                    style="padding: 8px 12px; background: rgba(99, 102, 241, 0.1); color: rgb(99, 102, 241); border: none; border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s ease;"
+                                                    onmouseover="this.style.background='rgb(99, 102, 241)'; this.style.color='white';"
+                                                    onmouseout="this.style.background='rgba(99, 102, 241, 0.1)'; this.style.color='rgb(99, 102, 241)';"
+                                                    onclick="toggleMenu(event);">
+                                                ⋮
+                                            </button>
+                                            <div class="dropdown-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid var(--light-border-primary); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; min-width: 160px; margin-top: 4px;">
+                                                <a href="{% url 'invoices:edit_invoice' invoice.id %}" style="display: block; padding: 12px 16px; color: var(--light-text-primary); text-decoration: none; border-bottom: 1px solid var(--light-border-primary); transition: background 0.2s ease;"
+                                                   onmouseover="this.style.background='var(--light-bg-secondary)'" onmouseout="this.style.background='transparent'">
+                                                    Edit
+                                                </a>
+                                                <a href="{% url 'invoices:send_invoice_email' invoice.id %}" style="display: block; padding: 12px 16px; color: var(--light-text-primary); text-decoration: none; border-bottom: 1px solid var(--light-border-primary); transition: background 0.2s ease;"
+                                                   onmouseover="this.style.background='var(--light-bg-secondary)'" onmouseout="this.style.background='transparent'">
+                                                    Send Email
+                                                </a>
+                                                <a href="{% url 'invoices:duplicate_invoice' invoice.id %}" style="display: block; padding: 12px 16px; color: var(--light-text-primary); text-decoration: none; border-bottom: 1px solid var(--light-border-primary); transition: background 0.2s ease;"
+                                                   onmouseover="this.style.background='var(--light-bg-secondary)'" onmouseout="this.style.background='transparent'">
+                                                    Duplicate
+                                                </a>
+                                                <a href="{% url 'invoices:delete_invoice' invoice.id %}" style="display: block; padding: 12px 16px; color: rgb(239, 68, 68); text-decoration: none; transition: background 0.2s ease;"
+                                                   onmouseover="this.style.background='var(--light-bg-secondary)'" onmouseout="this.style.background='transparent'">
+                                                    Delete
+                                                </a>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <h3 class="empty-light-title">No invoices found</h3>
-                                    <p class="empty-light-description">Try adjusting your filters or create a new invoice.</p>
                                 </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                
+
+                <!-- Pagination -->
                 {% if page_obj.has_other_pages %}
-                <div style="padding: 16px; border-top: 1px solid var(--light-border-primary); display: flex; justify-content: space-between; align-items: center;">
+                <div style="padding: 20px; border-top: 1px solid var(--light-border-primary); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                     <div style="font-size: 0.875rem; color: var(--light-text-tertiary);">
-                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        Showing page <strong>{{ page_obj.number }}</strong> of <strong>{{ page_obj.paginator.num_pages }}</strong>
+                        <span style="margin-left: 8px;">({{ page_obj.paginator.count }} invoices)</span>
                     </div>
-                    <div style="display: flex; gap: 8px;">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         {% if page_obj.has_previous %}
-                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="btn-light-secondary" style="padding: 8px 16px;">Previous</a>
+                        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" 
+                           class="btn-light-secondary" style="padding: 8px 14px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; border: 1px solid var(--light-border-primary); background: var(--light-bg-primary); color: var(--light-text-primary); transition: all 0.2s ease;"
+                           onmouseover="this.style.background='var(--light-bg-secondary)'" onmouseout="this.style.background='var(--light-bg-primary)'">First</a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" 
+                           class="btn-light-secondary" style="padding: 8px 14px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; border: 1px solid var(--light-border-primary); background: var(--light-bg-primary); color: var(--light-text-primary); transition: all 0.2s ease;"
+                           onmouseover="this.style.background='var(--light-bg-secondary)'" onmouseout="this.style.background='var(--light-bg-primary)'">← Previous</a>
                         {% endif %}
                         {% if page_obj.has_next %}
-                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" class="btn-light-secondary" style="padding: 8px 16px;">Next</a>
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" 
+                           class="btn-light-secondary" style="padding: 8px 14px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; border: 1px solid var(--light-border-primary); background: var(--light-bg-primary); color: var(--light-text-primary); transition: all 0.2s ease;"
+                           onmouseover="this.style.background='var(--light-bg-secondary)'" onmouseout="this.style.background='var(--light-bg-primary)'">Next →</a>
+                        <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}&status={{ status_filter }}&date_range={{ date_filter }}" 
+                           class="btn-light-secondary" style="padding: 8px 14px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; font-weight: 500; border: 1px solid var(--light-border-primary); background: var(--light-bg-primary); color: var(--light-text-primary); transition: all 0.2s ease;"
+                           onmouseover="this.style.background='var(--light-bg-secondary)'" onmouseout="this.style.background='var(--light-bg-primary)'">Last</a>
                         {% endif %}
                     </div>
                 </div>
                 {% endif %}
-            </div>
+            {% else %}
+                <!-- Empty State -->
+                <div style="padding: 60px 20px; text-align: center;">
+                    <div style="margin-bottom: 20px; display: flex; justify-content: center;">
+                        <div style="width: 80px; height: 80px; background: rgba(99, 102, 241, 0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="rgb(99, 102, 241)" stroke-width="1.5" style="width: 40px; height: 40px;">
+                                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 600; color: var(--light-text-primary); margin-bottom: 8px;">
+                        {% if search_query or status_filter != 'all' or date_filter != 'all' %}
+                            No invoices found
+                        {% else %}
+                            No invoices yet
+                        {% endif %}
+                    </h3>
+                    <p style="font-size: 0.95rem; color: var(--light-text-tertiary); margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                        {% if search_query or status_filter != 'all' or date_filter != 'all' %}
+                            Try adjusting your filters or search criteria to find invoices.
+                        {% else %}
+                            Start creating invoices to streamline your billing workflow and get paid faster.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'invoices:create_invoice_start' %}" class="btn-light-primary" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; text-decoration: none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M12 5v14M5 12h14"/></svg>
+                        Create Your First Invoice
+                    </a>
+                </div>
+            {% endif %}
         </div>
+
         {% include 'components/dashboard-footer.html' %}
     </main>
 </div>
+
+<script>
+function toggleMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const menu = event.target.parentElement.querySelector('.dropdown-menu');
+    if (menu) {
+        const isVisible = menu.style.display === 'block';
+        // Close all menus first
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+        // Toggle current menu
+        menu.style.display = isVisible ? 'none' : 'block';
+    }
+}
+
+// Close menus when clicking elsewhere
+document.addEventListener('click', function() {
+    document.querySelectorAll('.dropdown-menu').forEach(menu => menu.style.display = 'none');
+});
+
+// Keyboard shortcuts for power users
+document.addEventListener('keydown', function(e) {
+    // Cmd/Ctrl + N to create new invoice
+    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = '{% url "invoices:create_invoice_start" %}';
+    }
+    // Cmd/Ctrl + K to focus search
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        document.querySelector('input[name="search"]').focus();
+    }
+});
+
+// Mobile responsive adjustments
+if (window.innerWidth < 768) {
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.querySelector('.filter-form-modern');
+        if (filterForm) {
+            filterForm.style.gridTemplateColumns = '1fr';
+        }
+    });
+}
+</script>
+
+<style>
+@media (max-width: 1024px) {
+    .filter-form-modern {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-light-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+    
+    .filter-form-modern {
+        grid-template-columns: 1fr !important;
+    }
+    
+    table {
+        font-size: 0.875rem;
+    }
+    
+    td, th {
+        padding: 12px 8px !important;
+    }
+    
+    .dashboard-light-header {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .dashboard-header-actions {
+        width: 100%;
+    }
+    
+    .dashboard-header-actions a {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-light-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    table thead {
+        display: none;
+    }
+    
+    table tbody tr {
+        display: block;
+        margin-bottom: 16px;
+        border: 1px solid var(--light-border-primary);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    table tbody td {
+        display: block;
+        padding: 12px !important;
+        text-align: right;
+        border-bottom: 1px solid var(--light-border-primary);
+    }
+    
+    table tbody td:last-child {
+        border-bottom: none;
+    }
+    
+    table tbody td::before {
+        content: attr(data-label);
+        float: left;
+        font-weight: 600;
+        color: var(--light-text-primary);
+    }
+}
+</style>
 {% endblock %}
