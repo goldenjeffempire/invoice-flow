@@ -455,15 +455,18 @@ class CacheWarmingService:
         Properly manages database connections for threaded execution.
         """
         from django.db import close_old_connections
+        from django.contrib.auth import get_user_model
 
         try:
             close_old_connections()
 
-            from django.contrib.auth import get_user_model
-
             User = get_user_model()
 
-            user = User.objects.get(id=user_id)
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                logger.debug(f"User {user_id} not found, skipping cache warming")
+                return
 
             AnalyticsService.get_user_dashboard_stats(user)
             AnalyticsService.get_user_analytics_stats(user)
@@ -473,7 +476,7 @@ class CacheWarmingService:
 
             logger.info(f"Cache warmed for user {user_id}")
         except Exception as e:
-            logger.warning(f"Failed to warm cache for user {user_id}: {e}")
+            logger.debug(f"Failed to warm cache for user {user_id}: {e}")
         finally:
             close_old_connections()
 
