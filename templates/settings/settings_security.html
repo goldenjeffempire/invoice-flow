@@ -1,0 +1,118 @@
+{% extends "settings/base_settings.html" %}
+
+{% block settings_content %}
+<!-- Change Password Section -->
+<div class="form-section">
+  <h2>Change Password</h2>
+  <p class="form-description">Update your password regularly to keep your account secure</p>
+
+  <form method="post" class="settings-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="change_password">
+    
+    <div class="form-group">
+      <label for="{{ password_form.current_password.id_for_label }}">Current Password</label>
+      {% if password_form.current_password.errors %}
+        <div class="alert alert-error">{{ password_form.current_password.errors }}</div>
+      {% endif %}
+      {{ password_form.current_password }}
+    </div>
+
+    <div class="form-group">
+      <label for="{{ password_form.new_password.id_for_label }}">New Password</label>
+      {% if password_form.new_password.errors %}
+        <div class="alert alert-error">{{ password_form.new_password.errors }}</div>
+      {% endif %}
+      {{ password_form.new_password }}
+      {% if password_form.new_password.help_text %}
+        <small class="help-text">{{ password_form.new_password.help_text|safe }}</small>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="{{ password_form.confirm_password.id_for_label }}">Confirm Password</label>
+      {% if password_form.confirm_password.errors %}
+        <div class="alert alert-error">{{ password_form.confirm_password.errors }}</div>
+      {% endif %}
+      {{ password_form.confirm_password }}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Update Password</button>
+    </div>
+  </form>
+</div>
+
+<!-- Active Sessions Section -->
+<div class="form-section">
+  <h2>Active Sessions</h2>
+  <p class="form-description">Manage your active sessions across devices</p>
+
+  {% if sessions %}
+    <div style="margin-bottom: 1.5rem;">
+      <p style="color: #6b7280; font-size: 0.9rem;">You have <strong>{{ session_count }}</strong> active session(s)</p>
+    </div>
+
+    {% for session in sessions %}
+    <div class="session-item">
+      <div class="session-info">
+        <div class="device">
+          {% if session.is_current %}
+            <span class="badge">Current Session</span>
+            Current Device
+          {% else %}
+            Other Device
+          {% endif %}
+        </div>
+        <div class="location">
+          IP: {{ session.ip_address|default:"Unknown" }}
+        </div>
+        <div class="location">
+          Last seen: {{ session.last_seen|timesince }} ago
+        </div>
+      </div>
+      {% if not session.is_current %}
+      <form method="post" action="{% url 'invoices:revoke_session' session.id %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+          Revoke
+        </button>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    <div style="margin-top: 1.5rem;">
+      <form method="post" class="settings-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="revoke_all">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('This will log you out from all other devices.');">
+          Revoke All Other Sessions
+        </button>
+      </form>
+    </div>
+  {% else %}
+    <p style="color: #6b7280;">No other active sessions</p>
+  {% endif %}
+</div>
+
+<!-- Two-Factor Authentication Section -->
+<div class="form-section">
+  <h2>Two-Factor Authentication</h2>
+  <p class="form-description">Add an extra layer of security to your account</p>
+
+  {% if mfa_profile.is_enabled %}
+    <div class="alert alert-success">
+      ✓ Two-factor authentication is enabled
+    </div>
+    <p style="color: #6b7280; margin: 1rem 0;">Last used: {{ mfa_profile.last_used|date:"M d, Y H:i"|default:"Never" }}</p>
+    <a href="{% url 'invoices:mfa_backup_codes' %}" class="btn btn-secondary">Generate Backup Codes</a>
+  {% else %}
+    <div class="alert alert-warning">
+      Two-factor authentication is not enabled
+    </div>
+    <p style="color: #6b7280; margin: 1rem 0;">Enable 2FA to protect your account from unauthorized access.</p>
+    <a href="{% url 'invoices:mfa_setup' %}" class="btn btn-primary">Enable 2FA</a>
+  {% endif %}
+</div>
+{% endblock %}

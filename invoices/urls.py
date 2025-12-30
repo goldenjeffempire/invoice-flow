@@ -5,6 +5,13 @@ from . import settings_views
 from . import payment_settings_views
 from . import admin_views
 from . import paystack_views
+from .settings_views import (
+    settings_profile,
+    settings_business,
+    settings_security,
+    settings_notifications,
+    settings_payments,
+)
 
 
 app_name = "invoices"
@@ -48,13 +55,18 @@ urlpatterns = [
     path("waitlist/", views.waitlist_subscribe, name="waitlist_subscribe"),
 
     # ------------------------------------------------------------------
-    # USER SETTINGS (Unified)
+    # USER SETTINGS (Production-grade)
     # ------------------------------------------------------------------
     path("settings/", settings_views.settings_dashboard, name="settings"),
     path("settings/<str:tab>/", settings_views.settings_unified, name="settings_tab"),
-
-    path("settings/sessions/<int:session_id>/revoke/", settings_views.settings_unified, name="revoke_session"),
-    path("settings/sessions/revoke-all/", settings_views.settings_unified, name="revoke_all_sessions"),
+    
+    path("settings/profile/", settings_profile, name="settings_profile"),
+    path("settings/business/", settings_business, name="settings_business"),
+    path("settings/security/", settings_security, name="settings_security"),
+    path("settings/notifications/", settings_notifications, name="settings_notifications"),
+    path("settings/payments/", settings_payments, name="settings_payments"),
+    
+    path("settings/sessions/<int:session_id>/revoke/", settings_views.revoke_session, name="revoke_session"),
 
     # ------------------------------------------------------------------
     # PAYMENT SETTINGS & HISTORY

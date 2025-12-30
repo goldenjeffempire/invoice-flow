@@ -1,0 +1,52 @@
+{% extends "settings/base_settings.html" %}
+
+{% block settings_content %}
+<div class="form-section">
+  <h2>Profile Information</h2>
+  <p class="form-description">Update your personal information</p>
+
+  <form method="post" class="settings-form">
+    {% csrf_token %}
+    
+    <div class="form-group">
+      <label for="{{ form.first_name.id_for_label }}">First Name</label>
+      {% if form.first_name.errors %}
+        <div class="alert alert-error">{{ form.first_name.errors }}</div>
+      {% endif %}
+      {{ form.first_name }}
+      {% if form.first_name.help_text %}
+        <small class="help-text">{{ form.first_name.help_text|safe }}</small>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="{{ form.last_name.id_for_label }}">Last Name</label>
+      {% if form.last_name.errors %}
+        <div class="alert alert-error">{{ form.last_name.errors }}</div>
+      {% endif %}
+      {{ form.last_name }}
+      {% if form.last_name.help_text %}
+        <small class="help-text">{{ form.last_name.help_text|safe }}</small>
+      {% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="{{ form.email.id_for_label }}">Email Address</label>
+      {% if form.email.errors %}
+        <div class="alert alert-error">{{ form.email.errors }}</div>
+      {% endif %}
+      {{ form.email }}
+      {% if not profile.email_verified %}
+        <small class="help-text" style="color: #f59e0b;">⚠️ Email not verified</small>
+      {% else %}
+        <small class="help-text" style="color: #10b981;">✓ Email verified</small>
+      {% endif %}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{% url 'invoices:dashboard' %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
