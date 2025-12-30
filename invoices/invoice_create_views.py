@@ -131,7 +131,7 @@ def create_invoice_start(request):
             valid, error_msg = CreateInvoiceValidator.validate_line_items(line_items_data)
             if not valid:
                 messages.error(request, error_msg)
-                return render(request, "invoices/create_invoice_modern.html", {
+                return render(request, "invoices/create_invoice.html", {
                     'form': InvoiceForm(request.POST),
                     'today': timezone.now().date(),
                     'default_due_date': timezone.now().date() + timedelta(days=30),
@@ -148,7 +148,7 @@ def create_invoice_start(request):
             date_valid, date_error = CreateInvoiceValidator.validate_invoice_dates(invoice_date, due_date)
             if not date_valid:
                 messages.error(request, date_error)
-                return render(request, "invoices/create_invoice_modern.html", {
+                return render(request, "invoices/create_invoice.html", {
                     'form': InvoiceForm(request.POST),
                     'today': timezone.now().date(),
                     'default_due_date': timezone.now().date() + timedelta(days=30),
@@ -179,7 +179,7 @@ def create_invoice_start(request):
                     for error in errors:
                         messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
                 
-                return render(request, "invoices/create_invoice_modern.html", {
+                return render(request, "invoices/create_invoice.html", {
                     'form': form,
                     'today': timezone.now().date(),
                     'default_due_date': timezone.now().date() + timedelta(days=30),
@@ -209,7 +209,7 @@ def create_invoice_start(request):
         'active': 'create_invoice',
     }
     
-    return render(request, "invoices/create_invoice_modern.html", context)
+    return render(request, "invoices/create_invoice.html", context)
 
 
 @login_required
