@@ -1,23 +1,24 @@
-# type: ignore
 import calendar
 import hashlib
 import json
+import logging
 import os
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 from functools import wraps
 
+from django.conf import settings
 from django.contrib import messages
-from django.utils import timezone
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
-from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator
-from django.http import HttpResponse
 from django.db import transaction, models
+from django.db.models import Count, Q, Sum, F, Avg
+from django.db.models.functions import TruncMonth
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from .forms import (
     InvoiceForm,
@@ -28,6 +29,17 @@ from .forms import (
 )
 from .models import Invoice, InvoiceTemplate, LineItem, RecurringInvoice, UserProfile
 from .search_filters import InvoiceExport
+
+logger = logging.getLogger(__name__)
+
+def get_client_ip(request):
+    """Extract client IP address from request headers."""
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(",")[0].strip()
+    else:
+        ip = request.META.get("REMOTE_ADDR", "unknown")
+    return ip
 
 
 def get_client_ip(request):
@@ -47,7 +59,6 @@ def home(request):
 
 def signup(request):
     """Handle user registration with form validation and email verification."""
-    from django.conf import settings as django_settings
     from .auth_services import RegistrationService
     from .sendgrid_service import SendGridEmailService
 
@@ -57,7 +68,7 @@ def signup(request):
     if request.method == "POST":
         form = SignUpForm(request.POST)
         if form.is_valid():
-            require_verification = getattr(django_settings, "REQUIRE_EMAIL_VERIFICATION", False)
+            require_verification = getattr(settings, "REQUIRE_EMAIL_VERIFICATION", False)
 
             user, error = RegistrationService.create_user(
                 username=form.cleaned_data["username"],
@@ -81,8 +92,7 @@ def signup(request):
                             email_service = SendGridEmailService()
                             email_service.send_verification_email(user, token.token)
                         except Exception as e:
-                            import logging
-                            logging.getLogger(__name__).error(f"Failed to send verification email: {e}")
+                            logger.error(f"Failed to send verification email: {e}")
                     messages.success(
                         request,
                         "Account created! Please check your email to verify your account."
