@@ -97,8 +97,11 @@ threads = int(os.getenv("GUNICORN_THREADS", 4))
 
 # Connection management
 worker_connections = 1000
-max_requests = 1000  # Restart after 1000 requests (prevent memory leaks)
-max_requests_jitter = 100  # Randomize to avoid thundering herd
+# max_requests: Restart workers after N requests to prevent memory leaks
+# Default: 1000 requests. Can be disabled with env var: GUNICORN_MAX_REQUESTS=0
+# WARNING: Only disable after profiling confirms no memory leaks with: py-spy, memory_profiler, or valgrind
+max_requests = int(os.getenv("GUNICORN_MAX_REQUESTS", 1000))
+max_requests_jitter = int(os.getenv("GUNICORN_MAX_REQUESTS_JITTER", 100))  # Randomize to avoid thundering herd
 
 # TCP keepalive for connection health
 tcp_keepalives_idle = 5
@@ -175,6 +178,21 @@ proc_name = "invoiceflow"
 
 backlog = 2048
 
+# =============================================================================
+# STARTUP HOOKS
+# =============================================================================
+
+def when_ready(server):
+    """
+    Called when the server is ready to handle requests.
+    Signals to orchestration systems (Render, Kubernetes) that app is ready for traffic.
+    Health checks should hit /health/ready/ for more robust readiness detection.
+    """
+    logger.info("✓ Gunicorn server is READY and accepting connections")
+    logger.info(f"✓ Listening on {server.address} with {workers} workers")
+    logger.info("✓ Health check endpoint: /health/ready/ (includes DB, cache, migrations)")
+    logger.info("✓ Liveness check endpoint: /health/live/ (quick responsiveness check)")
+
 
 # =============================================================================
 # RENDER STARTUP MESSAGES
@@ -184,6 +202,7 @@ if IS_RENDER:
     logger.info("[Gunicorn] ✓ Production mode enabled")
     logger.info(f"[Gunicorn] ✓ Workers: {workers} (dynamic scaling enabled)")
     logger.info("[Gunicorn] ✓ Memory leak prevention: 1000-request restart cycles")
+    logger.info("[Gunicorn] ⚠ To profile memory usage: set GUNICORN_MAX_REQUESTS=0 in env")
     logger.info("[Gunicorn] ✓ Timeout protection: 120 seconds per request")
     logger.info("[Gunicorn] ✓ Graceful shutdown: 30-second window")
     if IS_PRODUCTION:
