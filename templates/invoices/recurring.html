@@ -6,149 +6,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
 <link rel="stylesheet" href="{% static 'css/invoices-modern.css' %}">
-<style>
-.recurring-grid-light {
-    display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 32px;
-}
-
-@media (max-width: 1024px) {
-    .recurring-grid-light {
-        grid-template-columns: 1fr;
-    }
-}
-
-.recurring-card-light {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-xl);
-    border: 1px solid var(--light-border-primary);
-    padding: 24px;
-    margin-bottom: 16px;
-    transition: all 0.3s ease;
-}
-
-.recurring-card-light:hover {
-    border-color: var(--light-primary);
-    box-shadow: var(--light-shadow-md);
-}
-
-.recurring-header-light {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-}
-
-.recurring-client-light {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin: 0 0 4px 0;
-}
-
-.recurring-schedule-light {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.875rem;
-    color: var(--light-text-tertiary);
-}
-
-.recurring-schedule-light svg {
-    width: 16px;
-    height: 16px;
-}
-
-.recurring-details-light {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-.recurring-detail-light {
-    padding: 12px;
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-md);
-}
-
-.recurring-detail-label-light {
-    font-size: 0.75rem;
-    color: var(--light-text-muted);
-    margin-bottom: 4px;
-}
-
-.recurring-detail-value-light {
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-}
-
-.recurring-actions-light {
-    display: flex;
-    gap: 8px;
-    padding-top: 16px;
-    border-top: 1px solid var(--light-border-primary);
-}
-
-.recurring-form-light {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-xl);
-    border: 1px solid var(--light-border-primary);
-    padding: 24px;
-    height: fit-content;
-    position: sticky;
-    top: 24px;
-}
-
-.recurring-form-title-light {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin: 0 0 24px 0;
-}
-
-.frequency-options-light {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    margin-bottom: 20px;
-}
-
-.frequency-option-light {
-    padding: 12px 16px;
-    background: var(--light-bg-tertiary);
-    border: 2px solid transparent;
-    border-radius: var(--light-radius-md);
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s ease;
-}
-
-.frequency-option-light:hover {
-    border-color: var(--light-border-secondary);
-}
-
-.frequency-option-light input {
-    display: none;
-}
-
-.frequency-option-light input:checked + .frequency-label-light {
-    color: var(--light-primary);
-}
-
-.frequency-option-light:has(input:checked) {
-    background: var(--light-primary-light);
-    border-color: var(--light-primary);
-}
-
-.frequency-label-light {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--light-text-secondary);
-}
-</style>
 {% endblock %}
 
 {% block nav %}{% endblock %}
@@ -156,181 +13,101 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include 'components/sidebar-light.html' with active='recurring' %}
+    {% include 'components/dashboard-sidebar.html' with active='recurring' %}
     
-    <main class="dashboard-main">
-        <header class="dashboard-light-header">
-            <div class="dashboard-light-header-content">
-                <h1>Recurring Invoices</h1>
-                <p>Automate your billing with scheduled invoice generation</p>
-            </div>
-        </header>
-        
-        <div class="recurring-grid-light">
-            <div class="recurring-list-light">
-                <div class="search-section" style="margin-bottom: 24px;">
-                    <form method="get" class="search-form" style="display: flex; gap: 12px; align-items: center; background: var(--light-bg-secondary); padding: 16px; border-radius: var(--light-radius-lg); border: 1px solid var(--light-border-primary);">
-                        <div style="flex: 1; position: relative;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--light-text-tertiary);">
-                                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                            </svg>
-                            <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search by client or email..." style="width: 100%; padding: 10px 12px 10px 40px; border: 1px solid var(--light-border-primary); border-radius: var(--light-radius-md); background: var(--light-bg-tertiary);">
-                        </div>
-                        <select name="status" style="padding: 10px 12px; border: 1px solid var(--light-border-primary); border-radius: var(--light-radius-md); background: var(--light-bg-tertiary);">
-                            <option value="">All Statuses</option>
-                            <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
-                            <option value="paused" {% if request.GET.status == 'paused' %}selected{% endif %}>Paused</option>
-                        </select>
-                        <button type="submit" class="btn-light-primary">Filter</button>
-                        {% if request.GET.q or request.GET.status %}
-                        <a href="{% url 'invoices:recurring_invoices' %}" class="btn-light-secondary">Clear</a>
-                        {% endif %}
-                    </form>
-                </div>
-                {% if recurring_invoices %}
-                {% for recurring in recurring_invoices %}
-                <div class="recurring-card-light">
-                    <div class="recurring-header-light">
-                        <div>
-                            <h3 class="recurring-client-light">{{ recurring.client_name }}</h3>
-                            <div class="recurring-schedule-light">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="23 4 23 10 17 10"/>
-                                    <polyline points="1 20 1 14 7 14"/>
-                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                                </svg>
-                                {{ recurring.get_frequency_display }}
-                            </div>
-                        </div>
-                        {% if recurring.is_active %}
-                        <span class="badge-light badge-paid">Active</span>
-                        {% else %}
-                        <span class="badge-light badge-draft">Paused</span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="recurring-details-light">
-                        <div class="recurring-detail-light">
-                            <div class="recurring-detail-label-light">Amount</div>
-                            <div class="recurring-detail-value-light">{{ recurring.currency }} {{ recurring.amount|floatformat:2 }}</div>
-                        </div>
-                        <div class="recurring-detail-light">
-                            <div class="recurring-detail-label-light">Next Invoice</div>
-                            <div class="recurring-detail-value-light">{{ recurring.next_date|date:"M d, Y" }}</div>
-                        </div>
-                        <div class="recurring-detail-light">
-                            <div class="recurring-detail-label-light">Generated</div>
-                            <div class="recurring-detail-value-light">{{ recurring.invoices_generated }}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="recurring-actions-light">
-                        {% if recurring.is_active %}
-                        <a href="{% url 'invoices:pause_recurring' recurring.id %}" class="btn-light-secondary" style="flex: 1;">Pause</a>
-                        {% else %}
-                        <a href="{% url 'invoices:resume_recurring' recurring.id %}" class="btn-light-primary" style="flex: 1;">Resume</a>
-                        {% endif %}
-                        <a href="{% url 'invoices:edit_recurring' recurring.id %}" class="btn-light-secondary" style="flex: 1;">Edit</a>
-                        <a href="{% url 'invoices:delete_recurring' recurring.id %}" class="btn-light-danger" style="flex: 1;">Delete</a>
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="card-light">
-                    <div class="card-light-body">
-                        <div class="empty-light-state">
-                            <div class="empty-light-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                    <polyline points="23 4 23 10 17 10"/>
-                                    <polyline points="1 20 1 14 7 14"/>
-                                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                                </svg>
-                            </div>
-                            <h3 class="empty-light-title">No recurring invoices</h3>
-                            <p class="empty-light-description">Set up automated billing to save time on regular invoices.</p>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-            
-            <div class="recurring-form-light">
-                <h2 class="recurring-form-title-light">Create Recurring Invoice</h2>
-                
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <div class="form-light-group">
-                        <label class="form-light-label">Client Name</label>
-                        <input type="text" name="client_name" class="form-light-input" required>
-                    </div>
-                    
-                    <div class="form-light-group" style="margin-top: 16px;">
-                        <label class="form-light-label">Client Email</label>
-                        <input type="email" name="client_email" class="form-light-input">
-                    </div>
-                    
-                    <div class="form-light-group" style="margin-top: 16px;">
-                        <label class="form-light-label">Amount</label>
-                        <input type="number" name="amount" class="form-light-input" step="0.01" min="0" required>
-                    </div>
-                    
-                    <div class="form-light-group" style="margin-top: 16px;">
-                        <label class="form-light-label">Currency</label>
-                        <select name="currency" class="form-light-select">
-                            <option value="USD">USD ($)</option>
-                            <option value="EUR">EUR (&euro;)</option>
-                            <option value="GBP">GBP (&pound;)</option>
-                            <option value="NGN">NGN (&#8358;)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-light-group" style="margin-top: 16px;">
-                        <label class="form-light-label">Frequency</label>
-                        <div class="frequency-options-light">
-                            <label class="frequency-option-light">
-                                <input type="radio" name="frequency" value="weekly">
-                                <span class="frequency-label-light">Weekly</span>
-                            </label>
-                            <label class="frequency-option-light">
-                                <input type="radio" name="frequency" value="biweekly">
-                                <span class="frequency-label-light">Bi-weekly</span>
-                            </label>
-                            <label class="frequency-option-light">
-                                <input type="radio" name="frequency" value="monthly" checked>
-                                <span class="frequency-label-light">Monthly</span>
-                            </label>
-                            <label class="frequency-option-light">
-                                <input type="radio" name="frequency" value="quarterly">
-                                <span class="frequency-label-light">Quarterly</span>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="form-light-group" style="margin-top: 16px;">
-                        <label class="form-light-label">Start Date</label>
-                        <input type="date" name="start_date" class="form-light-input" required>
-                    </div>
-                    
-                    <div class="form-light-group" style="margin-top: 16px;">
-                        <label class="form-light-label">Description</label>
-                        <textarea name="description" class="form-light-textarea" rows="3" placeholder="Invoice description..."></textarea>
-                    </div>
-                    
-                    <div style="margin-top: 24px;">
-                        <button type="submit" class="btn-light-primary btn-light-block">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
-                                <polyline points="23 4 23 10 17 10"/>
-                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                            </svg>
-                            Create Recurring Invoice
-                        </button>
-                    </div>
-                </form>
+    <main class="dashboard-content">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Recurring Invoices</h1>
+                <p class="text-slate-500 mt-1">Automate your billing with scheduled invoice generation.</p>
             </div>
         </div>
-        
-        {% include 'components/dashboard-footer.html' %}
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div class="xl:col-span-2 space-y-4">
+                {% if recurring_invoices %}
+                    {% for recurring in recurring_invoices %}
+                    <div class="data-card p-6 border-l-4 {% if recurring.is_active %}border-emerald-500{% else %}border-slate-300{% endif %}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-black text-slate-900">{{ recurring.client_name }}</h3>
+                                <p class="text-sm text-slate-500 flex items-center gap-1 mt-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    {{ recurring.get_frequency_display }}
+                                </p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest {% if recurring.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {% if recurring.is_active %}Active{% else %}Paused{% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Amount</p>
+                                <p class="text-sm font-black text-slate-900">{{ recurring.currency }} {{ recurring.amount|floatformat:2 }}</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Next Date</p>
+                                <p class="text-sm font-black text-slate-900">{{ recurring.next_date|date:"M d, Y" }}</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Count</p>
+                                <p class="text-sm font-black text-slate-900">{{ recurring.invoices_generated }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            {% if recurring.is_active %}
+                                <a href="{% url 'invoices:pause_recurring' recurring.id %}" class="flex-1 text-center py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Pause</a>
+                            {% else %}
+                                <a href="{% url 'invoices:resume_recurring' recurring.id %}" class="flex-1 text-center py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Resume</a>
+                            {% endif %}
+                            <a href="{% url 'invoices:edit_recurring' recurring.id %}" class="flex-1 text-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Edit</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="data-card p-12 text-center">
+                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">No Recurring Invoices</h3>
+                        <p class="text-slate-500">Set up automated billing for your regular clients.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="xl:col-span-1">
+                <div class="data-card p-8 sticky top-8">
+                    <h2 class="text-xl font-bold text-slate-900 mb-6">Create New Schedule</h2>
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Client Name</label>
+                            <input type="text" name="client_name" class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Amount</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-slate-400">$</span>
+                                <input type="number" name="amount" step="0.01" class="w-full p-3 pl-8 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Frequency</label>
+                            <select name="frequency" class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500">
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-200">
+                            Create Schedule
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </main>
 </div>
 {% endblock %}
@@ -338,23 +115,7 @@
 {% block extra_js %}
 <script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
-    const mobileToggle = document.getElementById('mobile-toggle');
-    const sidebar = document.getElementById('dashboard-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        });
-    }
-    
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        });
-    }
+    // Legacy mobile toggle logic removed
 });
 </script>
 {% endblock %}

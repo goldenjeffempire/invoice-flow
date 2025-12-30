@@ -6,120 +6,6 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
 <link rel="stylesheet" href="{% static 'css/invoices-modern.css' %}">
-<style>
-.template-grid-light {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 24px;
-}
-
-.template-card-light {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-xl);
-    border: 1px solid var(--light-border-primary);
-    padding: 24px;
-    transition: all 0.3s ease;
-}
-
-.template-card-light:hover {
-    border-color: var(--light-primary);
-    box-shadow: var(--light-shadow-lg);
-    transform: translateY(-4px);
-}
-
-.template-header-light {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-}
-
-.template-name-light {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin: 0 0 4px 0;
-}
-
-.template-business-light {
-    font-size: 0.875rem;
-    color: var(--light-text-tertiary);
-}
-
-.template-description-light {
-    font-size: 0.875rem;
-    color: var(--light-text-secondary);
-    margin-bottom: 16px;
-    line-height: 1.5;
-}
-
-.template-meta-light {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 16px;
-    border-top: 1px solid var(--light-border-primary);
-}
-
-.template-info-light {
-    font-size: 0.8125rem;
-    color: var(--light-text-muted);
-}
-
-.template-actions-light {
-    display: flex;
-    gap: 8px;
-}
-
-.template-action-light {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--light-bg-tertiary);
-    border: none;
-    border-radius: var(--light-radius-md);
-    color: var(--light-text-tertiary);
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.template-action-light:hover {
-    background: var(--light-primary-light);
-    color: var(--light-primary);
-}
-
-.template-action-light svg {
-    width: 16px;
-    height: 16px;
-}
-
-.template-form-light {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-xl);
-    border: 1px solid var(--light-border-primary);
-    padding: 24px;
-    margin-bottom: 32px;
-}
-
-.template-form-header-light {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--light-border-primary);
-}
-
-.template-form-title-light {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin: 0;
-}
-</style>
 {% endblock %}
 
 {% block nav %}{% endblock %}
@@ -127,136 +13,52 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include 'components/sidebar-light.html' with active='templates' %}
+    {% include 'components/dashboard-sidebar.html' with active='templates' %}
     
-    <main class="dashboard-main">
-        <header class="dashboard-light-header">
-            <div class="dashboard-light-header-content">
-                <h1>Templates</h1>
-                <p>Save and reuse invoice templates for faster invoicing</p>
+    <main class="dashboard-content">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Invoice Templates</h1>
+                <p class="text-slate-500 mt-1">Speed up your workflow with reusable invoice presets.</p>
             </div>
-            <div class="dashboard-light-actions">
-                <button type="button" class="btn-light-primary toggle-template-form">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="5" x2="12" y2="19"/>
-                        <line x1="5" y1="12" x2="19" y2="12"/>
-                    </svg>
-                    Create Template
-                </button>
-            </div>
-        </header>
-        
-        <div id="template-form" class="template-form-light hidden">
-            <div class="template-form-header-light">
-                <h2 class="template-form-title-light">Create New Template</h2>
-                <button type="button" class="close-template-form" style="background: none; border: none; cursor: pointer; color: var(--light-text-tertiary);">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
-            </div>
-            <form method="post">
-                {% csrf_token %}
-                <div class="form-light-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-                    <div class="form-light-group">
-                        <label class="form-light-label">Template Name</label>
-                        <input type="text" name="name" class="form-light-input" required>
-                    </div>
-                    <div class="form-light-group">
-                        <label class="form-light-label">Description</label>
-                        <input type="text" name="description" class="form-light-input">
-                    </div>
-                    <div class="form-light-group">
-                        <label class="form-light-label">Business Name</label>
-                        <input type="text" name="business_name" class="form-light-input">
-                    </div>
-                    <div class="form-light-group">
-                        <label class="form-light-label">Business Email</label>
-                        <input type="email" name="business_email" class="form-light-input">
-                    </div>
-                    <div class="form-light-group">
-                        <label class="form-light-label">Currency</label>
-                        <select name="currency" class="form-light-select">
-                            <option value="USD">USD ($)</option>
-                            <option value="EUR">EUR (&euro;)</option>
-                            <option value="GBP">GBP (&pound;)</option>
-                            <option value="NGN">NGN (&#8358;)</option>
-                        </select>
-                    </div>
-                    <div class="form-light-group">
-                        <label class="form-light-label">Tax Rate (%)</label>
-                        <input type="number" name="tax_rate" class="form-light-input" step="0.01" min="0" max="100" value="0">
-                    </div>
-                </div>
-                <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px;">
-                    <button type="button" class="btn-light-secondary cancel-template-form">Cancel</button>
-                    <button type="submit" class="btn-light-primary">Save Template</button>
-                </div>
-            </form>
         </div>
-        
-        {% if templates %}
-        <div class="template-grid-light">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for template in templates %}
-            <div class="template-card-light">
-                <div class="template-header-light">
-                    <div>
-                        <h3 class="template-name-light">{{ template.name }}</h3>
-                        <span class="template-business-light">{{ template.business_name }}</span>
+            <div class="data-card p-6 group hover:border-indigo-500 transition-all cursor-pointer">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center group-hover:bg-indigo-50 transition-colors">
+                        <svg class="w-6 h-6 text-slate-400 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     </div>
-                    {% if template.is_default %}
-                    <span class="badge-light badge-paid">Default</span>
-                    {% endif %}
-                </div>
-                <p class="template-description-light">{{ template.description|default:"No description" }}</p>
-                <div class="template-meta-light">
-                    <span class="template-info-light">{{ template.currency }} | {{ template.tax_rate }}% tax</span>
-                    <div class="template-actions-light">
-                        <a href="{% url 'invoices:create_invoice_start' %}?template={{ template.id }}" class="template-action-light" title="Use Template">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="12" y1="8" x2="12" y2="16"/>
-                                <line x1="8" y1="12" x2="16" y2="12"/>
-                            </svg>
+                    <div class="flex gap-2">
+                        <a href="{% url 'invoices:create_invoice_start' %}?template={{ template.id }}" class="p-2 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors" title="Use">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         </a>
-                        <a href="{% url 'invoices:delete_template' template.id %}" class="template-action-light" title="Delete">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            </svg>
+                        <a href="{% url 'invoices:delete_template' template.id %}" class="p-2 hover:bg-rose-50 text-rose-600 rounded-lg transition-colors" title="Delete">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-4v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         </a>
                     </div>
                 </div>
+                <h3 class="text-lg font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{{ template.name }}</h3>
+                <p class="text-sm text-slate-500 mt-1">{{ template.description|default:"No description provided." }}</p>
+                <div class="mt-6 flex items-center justify-between text-xs font-black uppercase tracking-widest text-slate-400">
+                    <span>{{ template.currency }}</span>
+                    <span>{{ template.tax_rate }}% Tax</span>
+                </div>
+            </div>
+            {% empty %}
+            <div class="md:col-span-2 lg:col-span-3 data-card p-16 text-center">
+                <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-900 mb-2">No Templates Found</h3>
+                <p class="text-slate-500 mb-8">Save common invoice configurations to speed up your billing.</p>
+                <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-200">
+                    Create Your First Template
+                </button>
             </div>
             {% endfor %}
         </div>
-        {% else %}
-        <div class="card-light">
-            <div class="card-light-body">
-                <div class="empty-light-state">
-                    <div class="empty-light-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="3" y1="9" x2="21" y2="9"/>
-                            <line x1="9" y1="21" x2="9" y2="9"/>
-                        </svg>
-                    </div>
-                    <h3 class="empty-light-title">No templates yet</h3>
-                    <p class="empty-light-description">Create reusable templates to speed up your invoicing workflow.</p>
-                    <button type="button" class="btn-light-primary open-template-form">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Create First Template
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
-        {% include 'components/dashboard-footer.html' %}
     </main>
 </div>
 {% endblock %}
@@ -264,40 +66,7 @@
 {% block extra_js %}
 <script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
-    const mobileToggle = document.getElementById('mobile-toggle');
-    const sidebar = document.getElementById('dashboard-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    const templateForm = document.getElementById('template-form');
-    
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        });
-    }
-    
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        });
-    }
-    
-    document.querySelector('.toggle-template-form').addEventListener('click', function() {
-        templateForm.classList.toggle('hidden');
-    });
-    
-    document.querySelector('.close-template-form').addEventListener('click', function() {
-        templateForm.classList.add('hidden');
-    });
-    
-    document.querySelector('.cancel-template-form').addEventListener('click', function() {
-        templateForm.classList.add('hidden');
-    });
-    
-    document.querySelector('.open-template-form').addEventListener('click', function() {
-        templateForm.classList.remove('hidden');
-    });
+    // Legacy logic removed
 });
 </script>
 {% endblock %}

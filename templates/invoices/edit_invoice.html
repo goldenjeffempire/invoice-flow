@@ -290,202 +290,190 @@
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include 'components/sidebar-light.html' with active='invoices' %}
+    {% include 'components/dashboard-sidebar.html' with active='invoices' %}
     
-    <main class="dashboard-main">
-        <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="back-light-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="19" y1="12" x2="5" y2="12"/>
-                <polyline points="12 19 5 12 12 5"/>
-            </svg>
-            Back to Invoice
-        </a>
-        
-        <header class="dashboard-light-header">
-            <div class="dashboard-light-header-content">
-                <h1>Edit Invoice {{ invoice.invoice_id }}</h1>
-                <p>Update the invoice details below</p>
-            </div>
-        </header>
-        
-        <script type="application/json" id="existing-line-items">{{ line_items_json|safe }}</script>
-        
-        <form method="post" id="invoice-form">
+    <main class="dashboard-content">
+        <div class="flex items-center justify-between mb-8">
+            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                <span class="font-semibold">Back to Detail</span>
+            </a>
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Edit Invoice #{{ invoice.invoice_id }}</h1>
+        </div>
+
+        <form method="POST" id="editForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {% csrf_token %}
-            <input type="hidden" name="line_items" id="line_items_data" value="[]">
-            
-            <div class="form-light-sections">
-                <div class="section-light">
-                    <div class="section-light-header">
-                        <div class="section-light-icon icon-business">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                            </svg>
+            <input type="hidden" name="line_items" id="lineItemsInput">
+
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Client Details -->
+                <div class="data-card p-8">
+                    <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        Client Information
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-2 space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Client Name</label>
+                            <input type="text" name="client_name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all" required value="{{ invoice.client_name }}">
                         </div>
-                        <h2 class="section-light-title">Your Business</h2>
-                    </div>
-                    <div class="form-light-grid">
-                        <div class="form-light-group full-width">
-                            <label class="form-light-label">Business Name *</label>
-                            <input type="text" name="business_name" class="form-light-input" required value="{{ invoice.business_name|default:'' }}">
+                        <div class="space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Client Email</label>
+                            <input type="email" name="client_email" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all" required value="{{ invoice.client_email }}">
                         </div>
-                        <div class="form-light-group">
-                            <label class="form-light-label">Business Email</label>
-                            <input type="email" name="business_email" class="form-light-input" value="{{ invoice.business_email|default:'' }}">
+                        <div class="space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Client Phone (Optional)</label>
+                            <input type="tel" name="client_phone" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all" value="{{ invoice.client_phone }}">
                         </div>
-                        <div class="form-light-group">
-                            <label class="form-light-label">Phone Number</label>
-                            <input type="text" name="business_phone" class="form-light-input" value="{{ invoice.business_phone|default:'' }}">
-                        </div>
-                        <div class="form-light-group full-width">
-                            <label class="form-light-label">Address</label>
-                            <textarea name="business_address" class="form-light-textarea" rows="2">{{ invoice.business_address|default:'' }}</textarea>
+                        <div class="md:col-span-2 space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Client Address</label>
+                            <textarea name="client_address" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all" rows="3">{{ invoice.client_address }}</textarea>
                         </div>
                     </div>
                 </div>
-                
-                <div class="section-light">
-                    <div class="section-light-header">
-                        <div class="section-light-icon icon-client">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                                <circle cx="12" cy="7" r="4"/>
-                            </svg>
-                        </div>
-                        <h2 class="section-light-title">Client Details</h2>
+
+                <!-- Line Items -->
+                <div class="data-card p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            Invoice Items
+                        </h2>
+                        <button type="button" onclick="addItem()" class="text-sm font-bold text-indigo-600 hover:text-indigo-700">+ Add Item</button>
                     </div>
-                    <div class="form-light-grid">
-                        <div class="form-light-group full-width">
-                            <label class="form-light-label">Client Name *</label>
-                            <input type="text" name="client_name" class="form-light-input" required value="{{ invoice.client_name|default:'' }}">
-                        </div>
-                        <div class="form-light-group">
-                            <label class="form-light-label">Client Email</label>
-                            <input type="email" name="client_email" class="form-light-input" value="{{ invoice.client_email|default:'' }}">
-                        </div>
-                        <div class="form-light-group">
-                            <label class="form-light-label">Client Phone</label>
-                            <input type="text" name="client_phone" class="form-light-input" value="{{ invoice.client_phone|default:'' }}">
-                        </div>
-                        <div class="form-light-group full-width">
-                            <label class="form-light-label">Client Address</label>
-                            <textarea name="client_address" class="form-light-textarea" rows="2">{{ invoice.client_address|default:'' }}</textarea>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="section-light">
-                <div class="section-light-header">
-                    <div class="section-light-icon icon-invoice">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                        </svg>
-                    </div>
-                    <h2 class="section-light-title">Invoice Details</h2>
-                </div>
-                <div class="form-light-grid form-light-grid-3">
-                    <div class="form-light-group">
-                        <label class="form-light-label">Invoice Date *</label>
-                        <input type="date" name="invoice_date" class="form-light-input" required value="{{ invoice.invoice_date|date:'Y-m-d' }}">
-                    </div>
-                    <div class="form-light-group">
-                        <label class="form-light-label">Due Date *</label>
-                        <input type="date" name="due_date" class="form-light-input" required value="{{ invoice.due_date|date:'Y-m-d' }}">
-                    </div>
-                    <div class="form-light-group">
-                        <label class="form-light-label">Currency</label>
-                        <select name="currency" id="currency-select" class="form-light-select">
-                            <option value="USD" data-symbol="$" {% if invoice.currency == 'USD' %}selected{% endif %}>USD ($)</option>
-                            <option value="EUR" data-symbol="€" {% if invoice.currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
-                            <option value="GBP" data-symbol="£" {% if invoice.currency == 'GBP' %}selected{% endif %}>GBP (£)</option>
-                            <option value="CAD" data-symbol="C$" {% if invoice.currency == 'CAD' %}selected{% endif %}>CAD (C$)</option>
-                            <option value="AUD" data-symbol="A$" {% if invoice.currency == 'AUD' %}selected{% endif %}>AUD (A$)</option>
-                            <option value="NGN" data-symbol="₦" {% if invoice.currency == 'NGN' %}selected{% endif %}>NGN (₦)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-light-grid" style="margin-top: 20px;">
-                    <div class="form-light-group">
-                        <label class="form-light-label">Tax Rate (%)</label>
-                        <input type="number" name="tax_rate" id="tax_rate" class="form-light-input" step="0.01" min="0" max="100" value="{{ invoice.tax_rate|default:'0' }}">
-                    </div>
-                    <div class="form-light-group">
-                        <label class="form-light-label">Notes</label>
-                        <textarea name="notes" class="form-light-textarea" rows="2" placeholder="Payment terms, bank details, etc.">{{ invoice.notes|default:'' }}</textarea>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
+                                    <th class="pb-4 w-1/2">Description</th>
+                                    <th class="pb-4 text-center">Qty</th>
+                                    <th class="pb-4 text-right">Price</th>
+                                    <th class="pb-4 text-right">Total</th>
+                                    <th class="pb-4"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsBody" class="divide-y divide-slate-50">
+                                {% for item in invoice.line_items.all %}
+                                <tr class="item-row group">
+                                    <td class="py-4">
+                                        <input type="text" name="description[]" class="w-full bg-transparent border-none focus:ring-0 font-bold text-slate-900 p-0" required value="{{ item.description }}">
+                                    </td>
+                                    <td class="py-4 text-center">
+                                        <input type="number" name="quantity[]" class="qty-input w-20 bg-slate-50 border-none rounded-lg text-center font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500" required step="0.01" value="{{ item.quantity }}" oninput="updateTotals()">
+                                    </td>
+                                    <td class="py-4 text-right">
+                                        <input type="number" name="unit_price[]" class="price-input w-32 bg-slate-50 border-none rounded-lg text-right font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500" required step="0.01" value="{{ item.unit_price }}" oninput="updateTotals()">
+                                    </td>
+                                    <td class="py-4 text-right font-bold text-slate-900 item-total">
+                                        {{ invoice.currency }} {{ item.total|floatformat:2 }}
+                                    </td>
+                                    <td class="py-4 text-right">
+                                        <button type="button" onclick="this.closest('tr').remove(); updateTotals();" class="text-slate-300 hover:text-rose-500 transition-colors">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-            
-            <div class="section-light">
-                <div class="section-light-header">
-                    <div class="section-light-icon icon-items">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="8" y1="6" x2="21" y2="6"/>
-                            <line x1="8" y1="12" x2="21" y2="12"/>
-                            <line x1="8" y1="18" x2="21" y2="18"/>
-                            <line x1="3" y1="6" x2="3.01" y2="6"/>
-                            <line x1="3" y1="12" x2="3.01" y2="12"/>
-                            <line x1="3" y1="18" x2="3.01" y2="18"/>
-                        </svg>
+
+            <div class="space-y-8">
+                <!-- Settings -->
+                <div class="data-card p-8">
+                    <h2 class="text-lg font-bold text-slate-900 mb-6">Settings</h2>
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Invoice Date</label>
+                            <input type="date" name="invoice_date" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg" required value="{{ invoice.invoice_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Due Date</label>
+                            <input type="date" name="due_date" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg" required value="{{ invoice.due_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm font-bold text-slate-700">Currency</label>
+                            <select name="currency" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg" required>
+                                <option value="USD" {% if invoice.currency == 'USD' %}selected{% endif %}>USD</option>
+                                <option value="EUR" {% if invoice.currency == 'EUR' %}selected{% endif %}>EUR</option>
+                                <option value="GBP" {% if invoice.currency == 'GBP' %}selected{% endif %}>GBP</option>
+                            </select>
+                        </div>
                     </div>
-                    <h2 class="section-light-title">Line Items</h2>
                 </div>
-                
-                <div class="line-items-light">
-                    <div class="line-items-light-header">
-                        <span>Description</span>
-                        <span>Qty</span>
-                        <span>Unit Price</span>
-                        <span>Total</span>
-                        <span></span>
+
+                <!-- Totals -->
+                <div class="data-card p-8 bg-slate-900 text-white">
+                    <div class="space-y-4">
+                        <div class="flex justify-between text-slate-400">
+                            <span>Subtotal</span>
+                            <span id="displaySubtotal" class="text-white font-bold">{{ invoice.currency }} {{ invoice.subtotal|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400">Tax (%)</span>
+                            <input type="number" name="tax_rate" id="taxRate" value="{{ invoice.tax_rate }}" class="w-16 bg-slate-800 border-none rounded px-2 py-1 text-right text-white font-bold focus:ring-2 focus:ring-indigo-500" oninput="updateTotals()">
+                        </div>
+                        <div class="flex justify-between border-t border-slate-800 pt-4 text-2xl font-black text-indigo-400">
+                            <span>Total</span>
+                            <span id="displayTotal">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</span>
+                        </div>
                     </div>
-                    <div id="line-items-list"></div>
-                    <button type="button" id="add-line-item" class="add-item-light-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="8" x2="12" y2="16"/>
-                            <line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                        Add Line Item
+                    <button type="submit" class="w-full mt-8 py-4 bg-indigo-500 text-white rounded-xl font-bold text-lg hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20">
+                        Save Changes
                     </button>
                 </div>
-                
-                <div class="invoice-totals-light">
-                    <div class="totals-light-row">
-                        <span>Subtotal</span>
-                        <span id="subtotal">$0.00</span>
-                    </div>
-                    <div class="totals-light-row">
-                        <span>Tax (<span id="tax-rate-display">0</span>%)</span>
-                        <span id="tax-amount">$0.00</span>
-                    </div>
-                    <div class="totals-light-row total-row">
-                        <span>Total</span>
-                        <span id="grand-total">$0.00</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="form-actions-light">
-                <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-light-secondary">Cancel</a>
-                <button type="submit" class="btn-light-primary">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                        <polyline points="17 21 17 13 7 13 7 21"/>
-                        <polyline points="7 3 7 8 15 8"/>
-                    </svg>
-                    Save Changes
-                </button>
             </div>
         </form>
-        
-        {% include 'components/dashboard-footer.html' %}
     </main>
 </div>
+
+<script nonce="{{ request.csp_nonce }}">
+    function updateTotals() {
+        let subtotal = 0;
+        const currency = document.querySelector('select[name="currency"]').value;
+        document.querySelectorAll('.item-row').forEach(row => {
+            const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+            const price = parseFloat(row.querySelector('.price-input').value) || 0;
+            const total = qty * price;
+            row.querySelector('.item-total').textContent = currency + ' ' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+            subtotal += total;
+        });
+        
+        const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+        const total = subtotal + (subtotal * (taxRate / 100));
+        
+        document.getElementById('displaySubtotal').textContent = currency + ' ' + subtotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('displayTotal').textContent = currency + ' ' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+    }
+
+    function addItem() {
+        const body = document.getElementById('itemsBody');
+        const row = document.createElement('tr');
+        row.className = 'item-row group';
+        row.innerHTML = `
+            <td class="py-4">
+                <input type="text" name="description[]" class="w-full bg-transparent border-none focus:ring-0 font-bold text-slate-900 p-0" required placeholder="Item description">
+            </td>
+            <td class="py-4 text-center">
+                <input type="number" name="quantity[]" class="qty-input w-20 bg-slate-50 border-none rounded-lg text-center font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500" required step="0.01" value="1" oninput="updateTotals()">
+            </td>
+            <td class="py-4 text-right">
+                <input type="number" name="unit_price[]" class="price-input w-32 bg-slate-50 border-none rounded-lg text-right font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500" required step="0.01" value="0" oninput="updateTotals()">
+            </td>
+            <td class="py-4 text-right font-bold text-slate-900 item-total">$ 0.00</td>
+            <td class="py-4 text-right">
+                <button type="button" onclick="this.closest('tr').remove(); updateTotals();" class="text-slate-300 hover:text-rose-500 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </td>
+        `;
+        body.appendChild(row);
+        updateTotals();
+    }
+</script>
+{% endblock %}
 {% endblock %}
 
 {% block extra_js %}
