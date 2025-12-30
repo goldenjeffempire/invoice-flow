@@ -109,6 +109,72 @@
     overflow: hidden;
 }
 
+.table-toolbar {
+    padding: 16px 24px;
+    background: var(--light-bg-tertiary);
+    border-bottom: 1px solid var(--light-border-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.table-toolbar.hidden {
+    display: none;
+}
+
+.selection-info {
+    font-size: 0.9375rem;
+    color: var(--light-text-secondary);
+}
+
+.bulk-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.bulk-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.bulk-btn-primary {
+    background: #6366f1;
+    color: white;
+}
+
+.bulk-btn-primary:hover {
+    background: #4f46e5;
+}
+
+.bulk-btn-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.bulk-btn-danger:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.bulk-btn-secondary {
+    background: var(--light-bg-secondary);
+    color: var(--light-text-primary);
+    border: 1px solid var(--light-border-primary);
+}
+
+.bulk-btn-secondary:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
 .invoices-table {
     width: 100%;
     border-collapse: collapse;
@@ -196,6 +262,17 @@
     background: var(--light-primary);
     border-color: var(--light-primary);
     color: white;
+}
+
+.checkbox-col {
+    width: 40px;
+    text-align: center;
+}
+
+.table-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
 }
 
 .empty-state {
@@ -291,6 +368,11 @@
         width: 100%;
         text-align: center;
     }
+
+    .table-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 </style>
 {% endblock %}
@@ -370,47 +452,76 @@
 
         <!-- Table -->
         {% if invoices %}
-        <div class="invoices-table-card">
-            <table class="invoices-table">
-                <thead>
-                    <tr>
-                        <th>Invoice #</th>
-                        <th>Client</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>Due Date</th>
-                        <th style="text-align: right;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for invoice in invoices %}
-                    <tr>
-                        <td class="invoice-id-cell">{{ invoice.invoice_id }}</td>
-                        <td>{{ invoice.client_name }}</td>
-                        <td class="invoice-amount-cell">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</td>
-                        <td>
-                            {% if invoice.status == 'paid' %}
-                                <span class="status-badge status-paid">Paid</span>
-                            {% elif invoice.due_date < today and invoice.status == 'unpaid' %}
-                                <span class="status-badge status-overdue">Overdue</span>
-                            {% else %}
-                                <span class="status-badge status-unpaid">Pending</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ invoice.invoice_date|date:"M d, Y" }}</td>
-                        <td>{{ invoice.due_date|date:"M d, Y" }}</td>
-                        <td>
-                            <div class="table-actions">
-                                <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="action-link">View</a>
-                                <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="action-link">Edit</a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <form id="bulkActionsForm" method="post" action="{% url 'invoices:bulk_invoice_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="invoice_ids" id="invoiceIds">
+            <input type="hidden" name="action" id="bulkAction">
+
+            <div class="invoices-table-card">
+                <div class="table-toolbar hidden" id="tableToolbar">
+                    <span class="selection-info">
+                        <span id="selectedCount">0</span> invoice(s) selected
+                    </span>
+                    <div class="bulk-actions">
+                        <button type="button" class="bulk-btn bulk-btn-primary" onclick="performBulkAction('mark_paid')">
+                            ✓ Mark as Paid
+                        </button>
+                        <button type="button" class="bulk-btn bulk-btn-secondary" onclick="performBulkAction('mark_unpaid')">
+                            ◉ Mark as Unpaid
+                        </button>
+                        <button type="button" class="bulk-btn bulk-btn-danger" onclick="if(confirm('Delete selected invoices?')) performBulkAction('delete')">
+                            🗑 Delete
+                        </button>
+                    </div>
+                </div>
+
+                <table class="invoices-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col">
+                                <input type="checkbox" id="selectAll" class="table-checkbox">
+                            </th>
+                            <th>Invoice #</th>
+                            <th>Client</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Due Date</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoicesTable">
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td class="checkbox-col">
+                                <input type="checkbox" class="invoice-checkbox table-checkbox" value="{{ invoice.id }}" data-invoice-id="{{ invoice.id }}">
+                            </td>
+                            <td class="invoice-id-cell">{{ invoice.invoice_id }}</td>
+                            <td>{{ invoice.client_name }}</td>
+                            <td class="invoice-amount-cell">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</td>
+                            <td>
+                                {% if invoice.status == 'paid' %}
+                                    <span class="status-badge status-paid">Paid</span>
+                                {% elif invoice.due_date < today and invoice.status == 'unpaid' %}
+                                    <span class="status-badge status-overdue">Overdue</span>
+                                {% else %}
+                                    <span class="status-badge status-unpaid">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ invoice.invoice_date|date:"M d, Y" }}</td>
+                            <td>{{ invoice.due_date|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="table-actions">
+                                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="action-link">View</a>
+                                    <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="action-link">Edit</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
 
         <!-- Pagination -->
         {% if page_obj.has_other_pages %}
@@ -448,4 +559,57 @@
         {% include 'components/dashboard-footer.html' %}
     </main>
 </div>
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const invoiceCheckboxes = document.querySelectorAll('.invoice-checkbox');
+    const tableToolbar = document.getElementById('tableToolbar');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const bulkActionsForm = document.getElementById('bulkActionsForm');
+
+    function updateSelection() {
+        const selectedInvoices = Array.from(invoiceCheckboxes).filter(cb => cb.checked);
+        const selectedCount = selectedInvoices.length;
+        
+        selectedCountSpan.textContent = selectedCount;
+        
+        if (selectedCount > 0) {
+            tableToolbar.classList.remove('hidden');
+            selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < invoiceCheckboxes.length;
+        } else {
+            tableToolbar.classList.add('hidden');
+            selectAllCheckbox.indeterminate = false;
+            selectAllCheckbox.checked = false;
+        }
+    }
+
+    selectAllCheckbox.addEventListener('change', function() {
+        invoiceCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateSelection();
+    });
+
+    invoiceCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelection);
+    });
+
+    window.performBulkAction = function(action) {
+        const selectedInvoices = Array.from(invoiceCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value)
+            .join(',');
+
+        if (!selectedInvoices) {
+            alert('Please select at least one invoice.');
+            return;
+        }
+
+        document.getElementById('invoiceIds').value = selectedInvoices;
+        document.getElementById('bulkAction').value = action;
+        bulkActionsForm.submit();
+    };
+});
+</script>
 {% endblock %}
