@@ -525,22 +525,24 @@
             Add Item
           </button>
 
+          <input type="hidden" id="selected-currency" value="{{ default_currency|default:'USD' }}">
+
           <div class="summary-box">
             <div class="summary-row">
               <span class="summary-row-label">Subtotal:</span>
-              <span class="summary-row-value" id="subtotal">$0.00</span>
+              <span class="summary-row-value"><span id="currency-symbol">USD</span> <span id="subtotal">0.00</span></span>
             </div>
             <div class="summary-row">
               <span class="summary-row-label">Discount:</span>
-              <span class="summary-row-value" id="discount-amount">$0.00</span>
+              <span class="summary-row-value"><span id="currency-symbol-2">USD</span> <span id="discount-amount">0.00</span></span>
             </div>
             <div class="summary-row">
               <span class="summary-row-label">Tax (<span id="tax-rate">0</span>%):</span>
-              <span class="summary-row-value" id="tax-amount">$0.00</span>
+              <span class="summary-row-value"><span id="currency-symbol-3">USD</span> <span id="tax-amount">0.00</span></span>
             </div>
             <div class="summary-total">
               <span>Total Amount:</span>
-              <span id="total-amount">$0.00</span>
+              <span><span id="currency-symbol-4">USD</span> <span id="total-amount">0.00</span></span>
             </div>
           </div>
         </div>
@@ -582,7 +584,42 @@ document.addEventListener('DOMContentLoaded', function() {
   const container = document.getElementById('line-items-container');
   const addBtn = document.getElementById('add-item-btn');
   const lineItemsInput = document.getElementById('line_items');
+  const currencyInput = document.getElementById('selected-currency');
+  const currencySelect = document.getElementById('id_currency');
   let itemCount = 0;
+
+  // Currency code mapping for display
+  const currencySymbols = {
+    'USD': 'USD',
+    'EUR': 'EUR',
+    'GBP': 'GBP',
+    'NGN': 'NGN',
+    'CAD': 'CAD',
+    'AUD': 'AUD',
+    'INR': 'INR',
+    'JPY': 'JPY',
+    'ZAR': 'ZAR',
+    'KES': 'KES',
+    'GHS': 'GHS'
+  };
+
+  function getCurrency() {
+    return currencySelect.value || 'USD';
+  }
+
+  function updateCurrencyDisplay() {
+    const currency = getCurrency();
+    const symbol = currencySymbols[currency] || currency;
+    currencyInput.value = currency;
+    
+    // Update all currency displays
+    document.getElementById('currency-symbol').textContent = symbol;
+    document.getElementById('currency-symbol-2').textContent = symbol;
+    document.getElementById('currency-symbol-3').textContent = symbol;
+    document.getElementById('currency-symbol-4').textContent = symbol;
+    
+    updateSummary();
+  }
 
   function updateSummary() {
     const items = JSON.parse(lineItemsInput.value || '[]');
@@ -604,6 +641,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('tax-amount').textContent = taxAmount.toFixed(2);
     document.getElementById('total-amount').textContent = total.toFixed(2);
     document.getElementById('tax-rate').textContent = taxRate.toFixed(2);
+
+    // Update all line item totals to show currency
+    container.querySelectorAll('.line-item-row').forEach(row => {
+      const qtyInput = row.querySelector('.item-quantity');
+      const priceInput = row.querySelector('.item-price');
+      const qty = parseFloat(qtyInput.value || 0);
+      const price = parseFloat(priceInput.value || 0);
+      const total = (qty * price).toFixed(2);
+      row.querySelector('.item-total').textContent = total;
+    });
   }
 
   function addLineItem() {
@@ -614,7 +661,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <input type="number" class="form-input item-quantity" placeholder="Qty" step="0.01" min="0" value="1" required>
         <input type="number" class="form-input item-price" placeholder="Price" step="0.01" min="0" required>
         <div class="summary-row-value" style="background: #f9fafb; padding: 0.75rem; border-radius: 6px;">
-          <span class="item-total">0.00</span>
+          <span class="item-total-currency">${getCurrency()}</span> <span class="item-total">0.00</span>
         </div>
         <button type="button" class="btn-remove-item" data-item-id="${itemCount}">Remove</button>
       </div>
@@ -659,16 +706,18 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSummary();
   }
 
+  // Event listeners
   document.getElementById('id_tax_rate').addEventListener('change', updateSummary);
   document.getElementById('id_discount').addEventListener('change', updateSummary);
+  currencySelect.addEventListener('change', updateCurrencyDisplay);
 
   addBtn.addEventListener('click', (e) => {
     e.preventDefault();
     addLineItem();
   });
 
-  // Add at least one item by default
-  addLineItem();
+  // Initialize currency display
+  updateCurrencyDisplay();
 });
 </script>
 {% endblock %}
