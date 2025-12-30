@@ -1,0 +1,119 @@
+{% extends "base/layout-authenticated.html" %}
+{% load static %}
+{% block title %}Recurring Invoices{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
+<link rel="stylesheet" href="{% static 'css/invoices-modern.css' %}">
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'components/dashboard-sidebar.html' with active='recurring' %}
+    
+    <main class="dashboard-content">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Recurring Invoices</h1>
+                <p class="text-slate-500 mt-1">Automate your billing with scheduled invoice generation.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div class="xl:col-span-2 space-y-4">
+                {% if recurring_invoices %}
+                    {% for recurring in recurring_invoices %}
+                    <div class="data-card p-6 border-l-4 {% if recurring.is_active %}border-emerald-500{% else %}border-slate-300{% endif %}">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-black text-slate-900">{{ recurring.client_name }}</h3>
+                                <p class="text-sm text-slate-500 flex items-center gap-1 mt-1">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    {{ recurring.get_frequency_display }}
+                                </p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest {% if recurring.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+                                {% if recurring.is_active %}Active{% else %}Paused{% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Amount</p>
+                                <p class="text-sm font-black text-slate-900">{{ recurring.currency }} {{ recurring.amount|floatformat:2 }}</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Next Date</p>
+                                <p class="text-sm font-black text-slate-900">{{ recurring.next_date|date:"M d, Y" }}</p>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Count</p>
+                                <p class="text-sm font-black text-slate-900">{{ recurring.invoices_generated }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            {% if recurring.is_active %}
+                                <a href="{% url 'invoices:pause_recurring' recurring.id %}" class="flex-1 text-center py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Pause</a>
+                            {% else %}
+                                <a href="{% url 'invoices:resume_recurring' recurring.id %}" class="flex-1 text-center py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Resume</a>
+                            {% endif %}
+                            <a href="{% url 'invoices:edit_recurring' recurring.id %}" class="flex-1 text-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Edit</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="data-card p-12 text-center">
+                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">No Recurring Invoices</h3>
+                        <p class="text-slate-500">Set up automated billing for your regular clients.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="xl:col-span-1">
+                <div class="data-card p-8 sticky top-8">
+                    <h2 class="text-xl font-bold text-slate-900 mb-6">Create New Schedule</h2>
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        <div>
+                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Client Name</label>
+                            <input type="text" name="client_name" class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Amount</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 text-slate-400">$</span>
+                                <input type="number" name="amount" step="0.01" class="w-full p-3 pl-8 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Frequency</label>
+                            <select name="frequency" class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500">
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="quarterly">Quarterly</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-200">
+                            Create Schedule
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+    // Legacy mobile toggle logic removed
+});
+</script>
+{% endblock %}

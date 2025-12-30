@@ -1,119 +1,463 @@
-{% extends "base/layout-authenticated.html" %}
+{% extends 'base/layout-authenticated.html' %}
 {% load static %}
-{% block title %}Recurring Invoices{% endblock %}
+
+{% block title %}Recurring Invoices | InvoiceFlow{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
-<link rel="stylesheet" href="{% static 'css/invoices-modern.css' %}">
-{% endblock %}
+<link rel="stylesheet" href="{% static 'css/authenticated-modern.css' %}">
+<style>
+  .recurring-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
 
-{% block footer %}{% endblock %}
+  @media (min-width: 1024px) {
+    .recurring-grid {
+      grid-template-columns: 1fr 350px;
+      gap: 2rem;
+    }
+  }
+
+  .recurring-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .recurring-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .recurring-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .recurring-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 1rem;
+  }
+
+  .recurring-card-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  .recurring-card-status {
+    display: inline-block;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .status-active {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-paused {
+    background: #f3f4f6;
+    color: #374151;
+  }
+
+  .status-cancelled {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .recurring-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+  }
+
+  @media (max-width: 640px) {
+    .recurring-details {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .detail-item {
+    padding: 0.75rem;
+    background: #f9fafb;
+    border-radius: 8px;
+  }
+
+  .detail-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .detail-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+
+  .recurring-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 0.625rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .action-primary {
+    background: #6366f1;
+    color: white;
+  }
+
+  .action-primary:hover {
+    background: #4f46e5;
+  }
+
+  .action-secondary {
+    background: #f3f4f6;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+  }
+
+  .action-secondary:hover {
+    background: #e5e7eb;
+  }
+
+  .action-danger {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  .action-danger:hover {
+    background: #fecaca;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .empty-icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-text {
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+  }
+
+  .sidebar-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 1.5rem;
+    position: sticky;
+    top: 2rem;
+  }
+
+  .sidebar-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .form-input,
+  .form-select {
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+    background: white;
+  }
+
+  .form-input:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+
+  .form-help {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin-top: 0.375rem;
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 0.875rem;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+    margin-top: 1rem;
+  }
+
+  .btn-submit:hover {
+    background: #4f46e5;
+  }
+
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid;
+  }
+
+  .alert-error {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+  }
+
+  .alert-success {
+    background: #dcfce7;
+    border-color: #10b981;
+    color: #166534;
+  }
+
+  @media (max-width: 1024px) {
+    .sidebar-card {
+      position: static;
+    }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="dashboard-layout">
-    {% include 'components/dashboard-sidebar.html' with active='recurring' %}
-    
-    <main class="dashboard-content">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Recurring Invoices</h1>
-                <p class="text-slate-500 mt-1">Automate your billing with scheduled invoice generation.</p>
-            </div>
+  {% include 'components/authenticated-sidebar.html' with active='recurring' %}
+  
+  <main class="dashboard-content">
+    <div class="content-header">
+      <h1>Recurring Invoices</h1>
+      <p>Automate billing for your regular clients</p>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+          {{ message }}
         </div>
+      {% endfor %}
+    {% endif %}
 
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
-            <div class="xl:col-span-2 space-y-4">
-                {% if recurring_invoices %}
-                    {% for recurring in recurring_invoices %}
-                    <div class="data-card p-6 border-l-4 {% if recurring.is_active %}border-emerald-500{% else %}border-slate-300{% endif %}">
-                        <div class="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 class="text-lg font-black text-slate-900">{{ recurring.client_name }}</h3>
-                                <p class="text-sm text-slate-500 flex items-center gap-1 mt-1">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                                    {{ recurring.get_frequency_display }}
-                                </p>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest {% if recurring.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
-                                {% if recurring.is_active %}Active{% else %}Paused{% endif %}
-                            </span>
-                        </div>
-                        
-                        <div class="grid grid-cols-3 gap-4 mb-6">
-                            <div class="p-3 bg-slate-50 rounded-xl">
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Amount</p>
-                                <p class="text-sm font-black text-slate-900">{{ recurring.currency }} {{ recurring.amount|floatformat:2 }}</p>
-                            </div>
-                            <div class="p-3 bg-slate-50 rounded-xl">
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Next Date</p>
-                                <p class="text-sm font-black text-slate-900">{{ recurring.next_date|date:"M d, Y" }}</p>
-                            </div>
-                            <div class="p-3 bg-slate-50 rounded-xl">
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Count</p>
-                                <p class="text-sm font-black text-slate-900">{{ recurring.invoices_generated }}</p>
-                            </div>
-                        </div>
-
-                        <div class="flex gap-3">
-                            {% if recurring.is_active %}
-                                <a href="{% url 'invoices:pause_recurring' recurring.id %}" class="flex-1 text-center py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Pause</a>
-                            {% else %}
-                                <a href="{% url 'invoices:resume_recurring' recurring.id %}" class="flex-1 text-center py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Resume</a>
-                            {% endif %}
-                            <a href="{% url 'invoices:edit_recurring' recurring.id %}" class="flex-1 text-center py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-black uppercase tracking-widest rounded-lg transition-colors">Edit</a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="data-card p-12 text-center">
-                        <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-2">No Recurring Invoices</h3>
-                        <p class="text-slate-500">Set up automated billing for your regular clients.</p>
-                    </div>
-                {% endif %}
+    <div class="recurring-grid">
+      <!-- Recurring Invoices List -->
+      <div class="recurring-list">
+        {% if recurring_invoices %}
+          {% for recurring in recurring_invoices %}
+          <div class="recurring-card">
+            <div class="recurring-card-header">
+              <h3 class="recurring-card-title">{{ recurring.client_name }}</h3>
+              <span class="recurring-card-status status-{{ recurring.status }}">
+                {{ recurring.get_status_display }}
+              </span>
             </div>
 
-            <div class="xl:col-span-1">
-                <div class="data-card p-8 sticky top-8">
-                    <h2 class="text-xl font-bold text-slate-900 mb-6">Create New Schedule</h2>
-                    <form method="post" class="space-y-4">
-                        {% csrf_token %}
-                        <div>
-                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Client Name</label>
-                            <input type="text" name="client_name" class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500" required>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Amount</label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-3 text-slate-400">$</span>
-                                <input type="number" name="amount" step="0.01" class="w-full p-3 pl-8 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500" required>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-black text-slate-900 uppercase tracking-widest mb-1">Frequency</label>
-                            <select name="frequency" class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500">
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly" selected>Monthly</option>
-                                <option value="quarterly">Quarterly</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-indigo-200">
-                            Create Schedule
-                        </button>
-                    </form>
-                </div>
+            <div class="recurring-details">
+              <div class="detail-item">
+                <div class="detail-label">Amount</div>
+                <div class="detail-value">{{ recurring.currency }} {{ recurring.amount|floatformat:2 }}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Frequency</div>
+                <div class="detail-value">{{ recurring.get_frequency_display }}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Next Generation</div>
+                <div class="detail-value">{{ recurring.next_generation|date:"M d, Y"|default:"-" }}</div>
+              </div>
             </div>
-        </div>
-    </main>
+
+            <div class="recurring-actions">
+              {% if recurring.status == 'active' %}
+                <form method="post" action="{% url 'invoices:pause_recurring' recurring.id %}" style="flex: 1;">
+                  {% csrf_token %}
+                  <button type="submit" class="action-btn action-secondary" style="width: 100%;">
+                    ⏸ Pause
+                  </button>
+                </form>
+              {% elif recurring.status == 'paused' %}
+                <form method="post" action="{% url 'invoices:resume_recurring' recurring.id %}" style="flex: 1;">
+                  {% csrf_token %}
+                  <button type="submit" class="action-btn action-primary" style="width: 100%;">
+                    ▶ Resume
+                  </button>
+                </form>
+              {% endif %}
+              
+              <a href="{% url 'invoices:edit_recurring' recurring.id %}" class="action-btn action-secondary" style="flex: 1;">
+                ✎ Edit
+              </a>
+
+              <form method="post" action="{% url 'invoices:delete_recurring' recurring.id %}" 
+                    onsubmit="return confirm('Are you sure? This cannot be undone.');" style="flex: 1;">
+                {% csrf_token %}
+                <button type="submit" class="action-btn action-danger" style="width: 100%;">
+                  🗑 Delete
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <h3 class="empty-title">No Recurring Invoices</h3>
+            <p class="empty-text">Get started by creating your first recurring invoice</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Create New Sidebar -->
+      <aside class="sidebar-card">
+        <h2 class="sidebar-title">Create New Schedule</h2>
+        
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="form-group">
+            <label for="id_client_name" class="form-label">Client Name <span style="color: #ef4444;">*</span></label>
+            <input type="text" id="id_client_name" name="client_name" class="form-input" 
+                   required placeholder="Company or person name">
+            {% if form.client_name.errors %}
+              <div class="form-help" style="color: #ef4444;">{{ form.client_name.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="id_client_email" class="form-label">Client Email <span style="color: #ef4444;">*</span></label>
+            <input type="email" id="id_client_email" name="client_email" class="form-input" 
+                   required placeholder="client@example.com">
+            {% if form.client_email.errors %}
+              <div class="form-help" style="color: #ef4444;">{{ form.client_email.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="id_amount" class="form-label">Amount <span style="color: #ef4444;">*</span></label>
+            <input type="number" id="id_amount" name="amount" class="form-input" 
+                   required step="0.01" min="0" placeholder="0.00">
+            {% if form.amount.errors %}
+              <div class="form-help" style="color: #ef4444;">{{ form.amount.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="id_frequency" class="form-label">Frequency <span style="color: #ef4444;">*</span></label>
+            <select id="id_frequency" name="frequency" class="form-select" required>
+              <option value="">Select frequency</option>
+              <option value="weekly">Weekly</option>
+              <option value="biweekly">Bi-weekly</option>
+              <option value="monthly" selected>Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+            {% if form.frequency.errors %}
+              <div class="form-help" style="color: #ef4444;">{{ form.frequency.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="id_start_date" class="form-label">Start Date <span style="color: #ef4444;">*</span></label>
+            <input type="date" id="id_start_date" name="start_date" class="form-input" required>
+            {% if form.start_date.errors %}
+              <div class="form-help" style="color: #ef4444;">{{ form.start_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="id_end_date" class="form-label">End Date (Optional)</label>
+            <input type="date" id="id_end_date" name="end_date" class="form-input">
+            <div class="form-help">Leave blank for indefinite billing</div>
+            {% if form.end_date.errors %}
+              <div class="form-help" style="color: #ef4444;">{{ form.end_date.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <button type="submit" class="btn-submit">Create Schedule</button>
+        </form>
+      </aside>
+    </div>
+  </main>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script nonce="{{ request.csp_nonce }}">
-document.addEventListener('DOMContentLoaded', function() {
-    // Legacy mobile toggle logic removed
-});
-</script>
 {% endblock %}

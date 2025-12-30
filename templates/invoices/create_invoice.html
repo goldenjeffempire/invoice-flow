@@ -1,0 +1,667 @@
+{% extends 'base/layout-authenticated.html' %}
+{% load static %}
+
+{% block title %}Create Invoice | InvoiceFlow{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/authenticated-modern.css' %}">
+<style>
+  .invoice-form-wrapper {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 900px;
+  }
+
+  .form-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-card-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
+  }
+
+  .form-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+  }
+
+  .form-card-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin: 0.5rem 0 0 0;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-label {
+    font-weight: 600;
+    color: #1f2937;
+    font-size: 0.9375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-required {
+    color: #ef4444;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 0.75rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+    background: white;
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background: #fafafe;
+  }
+
+  .form-input::placeholder {
+    color: #d1d5db;
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  .form-help {
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin-top: 0.375rem;
+  }
+
+  .form-error {
+    color: #ef4444;
+    font-size: 0.8125rem;
+    margin-top: 0.375rem;
+  }
+
+  .line-items-section {
+    margin-top: 1.5rem;
+  }
+
+  .line-item-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 1rem;
+    align-items: end;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 1rem;
+  }
+
+  @media (max-width: 768px) {
+    .line-item-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .btn-remove-item {
+    padding: 0.625rem 1rem;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-remove-item:hover {
+    background: #dc2626;
+  }
+
+  .btn-add-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+    margin-top: 1rem;
+  }
+
+  .btn-add-item:hover {
+    background: #059669;
+  }
+
+  .summary-box {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    font-size: 0.95rem;
+  }
+
+  .summary-row-label {
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  .summary-row-value {
+    color: #1f2937;
+    font-weight: 600;
+  }
+
+  .summary-total {
+    border-top: 2px solid #e5e7eb;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #6366f1;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    flex: 1;
+    min-width: 150px;
+    padding: 0.875rem 1.5rem;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background: #4f46e5;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  }
+
+  .btn-primary:disabled {
+    background: #d1d5db;
+    cursor: not-allowed;
+  }
+
+  .btn-secondary {
+    flex: 1;
+    min-width: 150px;
+    padding: 0.875rem 1.5rem;
+    background: white;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+  }
+
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid;
+  }
+
+  .alert-error {
+    background: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+  }
+
+  .alert-success {
+    background: #dcfce7;
+    border-color: #10b981;
+    color: #166534;
+  }
+
+  .recent-clients {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .client-button {
+    padding: 1rem;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+  }
+
+  .client-button:hover {
+    border-color: #6366f1;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+  }
+
+  .client-name {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+  }
+
+  .client-email {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  @media (max-width: 768px) {
+    .form-card {
+      padding: 1.5rem;
+    }
+
+    .form-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .line-item-row {
+      padding: 0.75rem;
+    }
+
+    .button-group {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      width: 100%;
+      flex: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+  {% include 'components/authenticated-sidebar.html' with active='create_invoice' %}
+  
+  <main class="dashboard-content">
+    <div class="content-header">
+      <h1>Create Invoice</h1>
+      <p>Generate a new invoice for your client in seconds</p>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="invoice-form-wrapper">
+      <form method="post" id="invoice-form" class="invoice-form">
+        {% csrf_token %}
+
+        <!-- Your Business Information -->
+        <div class="form-card">
+          <div class="form-card-header">
+            <h2 class="form-card-title">Your Business Information</h2>
+            <p class="form-card-subtitle">Auto-populated from your profile</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="id_business_name" class="form-label">Business Name <span class="form-required">*</span></label>
+              <input type="text" id="id_business_name" name="business_name" class="form-input" 
+                     required placeholder="Your Company Name" value="{{ invoice_form.business_name.value|default:'' }}">
+              {% if invoice_form.business_name.errors %}
+                <div class="form-error">{{ invoice_form.business_name.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="id_business_email" class="form-label">Business Email <span class="form-required">*</span></label>
+              <input type="email" id="id_business_email" name="business_email" class="form-input" 
+                     required placeholder="business@example.com" value="{{ invoice_form.business_email.value|default:'' }}">
+              {% if invoice_form.business_email.errors %}
+                <div class="form-error">{{ invoice_form.business_email.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="id_business_phone" class="form-label">Business Phone</label>
+              <input type="tel" id="id_business_phone" name="business_phone" class="form-input" 
+                     placeholder="+1 (555) 123-4567" value="{{ invoice_form.business_phone.value|default:'' }}">
+              {% if invoice_form.business_phone.errors %}
+                <div class="form-error">{{ invoice_form.business_phone.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="id_business_address" class="form-label">Business Address</label>
+            <textarea id="id_business_address" name="business_address" class="form-textarea" 
+                      placeholder="123 Business Street, City, State, ZIP">{{ invoice_form.business_address.value|default:'' }}</textarea>
+            {% if invoice_form.business_address.errors %}
+              <div class="form-error">{{ invoice_form.business_address.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Client Information -->
+        <div class="form-card">
+          <div class="form-card-header">
+            <h2 class="form-card-title">Client Information</h2>
+            <p class="form-card-subtitle">Who is this invoice for?</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="id_client_name" class="form-label">Client Name <span class="form-required">*</span></label>
+              <input type="text" id="id_client_name" name="client_name" class="form-input" 
+                     required placeholder="Client Company or Name" value="{{ invoice_form.client_name.value|default:'' }}">
+              {% if invoice_form.client_name.errors %}
+                <div class="form-error">{{ invoice_form.client_name.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="id_client_email" class="form-label">Client Email <span class="form-required">*</span></label>
+              <input type="email" id="id_client_email" name="client_email" class="form-input" 
+                     required placeholder="client@example.com" value="{{ invoice_form.client_email.value|default:'' }}">
+              {% if invoice_form.client_email.errors %}
+                <div class="form-error">{{ invoice_form.client_email.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="id_client_phone" class="form-label">Client Phone</label>
+              <input type="tel" id="id_client_phone" name="client_phone" class="form-input" 
+                     placeholder="+1 (555) 987-6543" value="{{ invoice_form.client_phone.value|default:'' }}">
+              {% if invoice_form.client_phone.errors %}
+                <div class="form-error">{{ invoice_form.client_phone.errors.0 }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="id_client_address" class="form-label">Client Address</label>
+            <textarea id="id_client_address" name="client_address" class="form-textarea" 
+                      placeholder="123 Client Street, City, State, ZIP">{{ invoice_form.client_address.value|default:'' }}</textarea>
+            {% if invoice_form.client_address.errors %}
+              <div class="form-error">{{ invoice_form.client_address.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Invoice Details -->
+        <div class="form-card">
+          <div class="form-card-header">
+            <h2 class="form-card-title">Invoice Details</h2>
+            <p class="form-card-subtitle">Set dates, currency, and tax information</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="id_invoice_date" class="form-label">Invoice Date <span class="form-required">*</span></label>
+              <input type="date" id="id_invoice_date" name="invoice_date" class="form-input" 
+                     required value="{{ today|date:'Y-m-d' }}">
+              {% if invoice_form.invoice_date.errors %}
+                <div class="form-error">{{ invoice_form.invoice_date.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="id_due_date" class="form-label">Due Date</label>
+              <input type="date" id="id_due_date" name="due_date" class="form-input" 
+                     value="{{ default_due_date|date:'Y-m-d' }}">
+              {% if invoice_form.due_date.errors %}
+                <div class="form-error">{{ invoice_form.due_date.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="id_currency" class="form-label">Currency <span class="form-required">*</span></label>
+              <select id="id_currency" name="currency" class="form-select" required>
+                <option value="">Select Currency</option>
+                {% for currency, label in invoice_form.currency.field.choices %}
+                  <option value="{{ currency }}" {% if currency == default_currency %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              {% if invoice_form.currency.errors %}
+                <div class="form-error">{{ invoice_form.currency.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="id_tax_rate" class="form-label">Tax Rate (%) <span class="form-required">*</span></label>
+              <input type="number" id="id_tax_rate" name="tax_rate" class="form-input" 
+                     step="0.01" min="0" max="100" required value="{{ default_tax|default:'0' }}">
+              {% if invoice_form.tax_rate.errors %}
+                <div class="form-error">{{ invoice_form.tax_rate.errors.0 }}</div>
+              {% endif %}
+            </div>
+
+            <div class="form-group">
+              <label for="id_discount" class="form-label">Discount (%)</label>
+              <input type="number" id="id_discount" name="discount" class="form-input" 
+                     step="0.01" min="0" max="100" value="0">
+              <div class="form-help">Applied to subtotal before tax</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoice Items -->
+        <div class="form-card">
+          <div class="form-card-header">
+            <h2 class="form-card-title">Invoice Items</h2>
+            <p class="form-card-subtitle">Add the products or services you're billing for</p>
+          </div>
+
+          <div id="line-items-container" class="line-items-section"></div>
+
+          <button type="button" id="add-item-btn" class="btn-add-item">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm3.5 8h-3v3h-1v-3h-3v-1h3v-3h1v3h3v1z"/>
+            </svg>
+            Add Item
+          </button>
+
+          <div class="summary-box">
+            <div class="summary-row">
+              <span class="summary-row-label">Subtotal:</span>
+              <span class="summary-row-value" id="subtotal">$0.00</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-row-label">Discount:</span>
+              <span class="summary-row-value" id="discount-amount">$0.00</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-row-label">Tax (<span id="tax-rate">0</span>%):</span>
+              <span class="summary-row-value" id="tax-amount">$0.00</span>
+            </div>
+            <div class="summary-total">
+              <span>Total Amount:</span>
+              <span id="total-amount">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-card">
+          <div class="form-card-header">
+            <h2 class="form-card-title">Additional Notes</h2>
+            <p class="form-card-subtitle">Terms, conditions, or payment instructions</p>
+          </div>
+
+          <div class="form-group">
+            <label for="id_notes" class="form-label">Notes</label>
+            <textarea id="id_notes" name="notes" class="form-textarea" 
+                      placeholder="e.g., Payment terms, late fees, or special instructions">{{ invoice_form.notes.value|default:'' }}</textarea>
+            {% if invoice_form.notes.errors %}
+              <div class="form-error">{{ invoice_form.notes.errors.0 }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-card">
+          <div class="button-group">
+            <button type="submit" class="btn-primary">Create Invoice</button>
+            <a href="{% url 'invoice_list' %}" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">Cancel</a>
+          </div>
+        </div>
+
+        <!-- Hidden field for line items -->
+        <input type="hidden" id="line_items" name="line_items" value="[]">
+      </form>
+    </div>
+  </main>
+</div>
+
+<script nonce="{{ request.csp_nonce }}">
+document.addEventListener('DOMContentLoaded', function() {
+  const container = document.getElementById('line-items-container');
+  const addBtn = document.getElementById('add-item-btn');
+  const lineItemsInput = document.getElementById('line_items');
+  let itemCount = 0;
+
+  function updateSummary() {
+    const items = JSON.parse(lineItemsInput.value || '[]');
+    const taxRate = parseFloat(document.getElementById('id_tax_rate').value || 0);
+    const discount = parseFloat(document.getElementById('id_discount').value || 0);
+    
+    let subtotal = 0;
+    items.forEach(item => {
+      subtotal += (parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0));
+    });
+
+    const discountAmount = (subtotal * discount) / 100;
+    const taxableAmount = subtotal - discountAmount;
+    const taxAmount = (taxableAmount * taxRate) / 100;
+    const total = taxableAmount + taxAmount;
+
+    document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+    document.getElementById('discount-amount').textContent = discountAmount.toFixed(2);
+    document.getElementById('tax-amount').textContent = taxAmount.toFixed(2);
+    document.getElementById('total-amount').textContent = total.toFixed(2);
+    document.getElementById('tax-rate').textContent = taxRate.toFixed(2);
+  }
+
+  function addLineItem() {
+    itemCount++;
+    const html = `
+      <div class="line-item-row" data-item-id="${itemCount}">
+        <input type="text" class="form-input item-description" placeholder="Description" required>
+        <input type="number" class="form-input item-quantity" placeholder="Qty" step="0.01" min="0" value="1" required>
+        <input type="number" class="form-input item-price" placeholder="Price" step="0.01" min="0" required>
+        <div class="summary-row-value" style="background: #f9fafb; padding: 0.75rem; border-radius: 6px;">
+          <span class="item-total">0.00</span>
+        </div>
+        <button type="button" class="btn-remove-item" data-item-id="${itemCount}">Remove</button>
+      </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+    
+    const row = container.querySelector(`[data-item-id="${itemCount}"]`);
+    const descInput = row.querySelector('.item-description');
+    const qtyInput = row.querySelector('.item-quantity');
+    const priceInput = row.querySelector('.item-price');
+    const removeBtn = row.querySelector('.btn-remove-item');
+
+    const updateItem = () => {
+      const qty = parseFloat(qtyInput.value || 0);
+      const price = parseFloat(priceInput.value || 0);
+      const total = (qty * price).toFixed(2);
+      row.querySelector('.item-total').textContent = total;
+      saveItems();
+    };
+
+    descInput.addEventListener('input', updateItem);
+    qtyInput.addEventListener('input', updateItem);
+    priceInput.addEventListener('input', updateItem);
+    removeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      row.remove();
+      saveItems();
+    });
+  }
+
+  function saveItems() {
+    const items = [];
+    container.querySelectorAll('.line-item-row').forEach(row => {
+      const desc = row.querySelector('.item-description').value;
+      const qty = row.querySelector('.item-quantity').value;
+      const price = row.querySelector('.item-price').value;
+      if (desc && qty && price) {
+        items.push({ description: desc, quantity: qty, unit_price: price });
+      }
+    });
+    lineItemsInput.value = JSON.stringify(items);
+    updateSummary();
+  }
+
+  document.getElementById('id_tax_rate').addEventListener('change', updateSummary);
+  document.getElementById('id_discount').addEventListener('change', updateSummary);
+
+  addBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    addLineItem();
+  });
+
+  // Add at least one item by default
+  addLineItem();
+});
+</script>
+{% endblock %}
