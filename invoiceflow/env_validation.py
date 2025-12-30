@@ -47,3 +47,27 @@ def validate_env():
         logger.info("Running in Replit environment with relaxed validation")
     
     logger.info("Environment validation passed successfully")
+
+
+def get_env_status() -> dict:
+    """Get environment variable status for health checks."""
+    is_production = os.getenv("PRODUCTION") == "true"
+    
+    required_vars = REQUIRED_PRODUCTION_ENV_VARS if is_production else []
+    optional_vars = OPTIONAL_PRODUCTION_ENV_VARS
+    
+    required_status = {
+        var: {"configured": bool(os.getenv(var)), "value": "***" if os.getenv(var) else "NOT_SET"}
+        for var in required_vars
+    }
+    
+    optional_status = {
+        var: {"configured": bool(os.getenv(var)), "value": "***" if os.getenv(var) else "NOT_SET"}
+        for var in optional_vars
+    }
+    
+    return {
+        "required": required_status,
+        "optional": optional_status,
+        "production": is_production,
+    }
