@@ -65,6 +65,7 @@ _default_hosts: list[str] = (
         "*.onrender.com",
         "*.replit.dev",
         "*.repl.co",
+        "invoiceflow.com.ng",
     ]
     if IS_PRODUCTION
     else ["*"]
