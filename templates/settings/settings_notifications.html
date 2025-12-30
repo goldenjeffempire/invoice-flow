@@ -1,87 +1,20 @@
 {% extends "settings/base_settings.html" %}
-
+{% block title %}Notifications - Settings{% endblock %}
 {% block settings_content %}
-<div class="form-section">
-  <h2>Email Notifications</h2>
-  <p class="form-description">Choose which notifications you want to receive</p>
-
-  <form method="post" class="settings-form">
+<h3 class="text-xl font-bold mb-6">Email Notifications</h3>
+<form method="post" class="space-y-4">
     {% csrf_token %}
-    
-    <div class="checkbox-item">
-      <label>
-        {{ form.notify_invoice_created }}
-        <div>
-          <div style="font-weight: 500;">Invoice Created</div>
-          <small class="help-text">Get notified when you create a new invoice</small>
-        </div>
-      </label>
+    <div class="space-y-3">
+        {% for field in form %}
+        <label class="flex items-start gap-3 p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+            <div class="mt-1">{{ field }}</div>
+            <div>
+                <div class="font-medium text-gray-900">{{ field.label }}</div>
+                <div class="text-xs text-gray-500">{{ field.help_text }}</div>
+            </div>
+        </label>
+        {% endfor %}
     </div>
-
-    <div class="checkbox-item">
-      <label>
-        {{ form.notify_payment_received }}
-        <div>
-          <div style="font-weight: 500;">Payment Received</div>
-          <small class="help-text">Get notified when a client pays an invoice</small>
-        </div>
-      </label>
-    </div>
-
-    <div class="checkbox-item">
-      <label>
-        {{ form.notify_invoice_viewed }}
-        <div>
-          <div style="font-weight: 500;">Invoice Viewed</div>
-          <small class="help-text">Get notified when a client views an invoice</small>
-        </div>
-      </label>
-    </div>
-
-    <div class="checkbox-item">
-      <label>
-        {{ form.notify_invoice_overdue }}
-        <div>
-          <div style="font-weight: 500;">Invoice Overdue</div>
-          <small class="help-text">Get notified when an invoice becomes overdue</small>
-        </div>
-      </label>
-    </div>
-
-    <div class="checkbox-item">
-      <label>
-        {{ form.notify_weekly_summary }}
-        <div>
-          <div style="font-weight: 500;">Weekly Summary</div>
-          <small class="help-text">Receive a weekly summary of your invoicing activity</small>
-        </div>
-      </label>
-    </div>
-
-    <div class="checkbox-item">
-      <label>
-        {{ form.notify_security_alerts }}
-        <div>
-          <div style="font-weight: 500;">Security Alerts</div>
-          <small class="help-text">Get notified about account security events</small>
-        </div>
-      </label>
-    </div>
-
-    <div class="checkbox-item">
-      <label>
-        {{ form.notify_password_changes }}
-        <div>
-          <div style="font-weight: 500;">Password Changes</div>
-          <small class="help-text">Get notified when your password is changed</small>
-        </div>
-      </label>
-    </div>
-
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary">Save Preferences</button>
-      <a href="{% url 'invoices:dashboard' %}" class="btn btn-secondary">Cancel</a>
-    </div>
-  </form>
-</div>
+    <button type="submit" class="btn-light-primary mt-6">Save Preferences</button>
+</form>
 {% endblock %}

@@ -331,8 +331,9 @@ def dashboard(request):
     from invoices.services import AnalyticsService
     from datetime import timedelta
     from django.db.models.functions import TruncMonth
-    from django.db.models import Sum, F, Count, Q, Avg
-    from decimal import Decimal
+    from django.db.models import Sum, F
+    from django.utils import timezone
+    import json
 
     base_queryset = Invoice.objects.filter(user=request.user)
 
@@ -370,7 +371,7 @@ def dashboard(request):
     
     # Calculate totals for recent invoices
     for inv in recent_invoices:
-        inv.calculated_total = sum(item.quantity * item.unit_price for item in inv.line_items.all())
+        inv.calculated_total = inv.total
         # Check if overdue based on today
         inv.is_overdue = inv.status == "unpaid" and inv.due_date < today
     
@@ -413,6 +414,7 @@ def dashboard(request):
         "recent_invoices": recent_invoices,
         "aging_summary": aging_summary,
         "top_clients": list(top_clients),
+        "active": "dashboard",
     }
     return render(request, "dashboard/main.html", context)
 
@@ -500,6 +502,7 @@ def invoice_list(request):
         "unpaid_count": unpaid_count,
         "overdue_count": overdue_count,
         "today": today,
+        "active": "invoices",
     }
     return render(request, "invoices/invoice_list.html", context)
 
@@ -605,8 +608,14 @@ def create_invoice(request):
                 logger.exception("Failed to create invoice")
                 messages.error(request, f"Critical error during invoice creation: {str(e)}")
                 form = InvoiceForm(request.POST)
-    else:
-        form = InvoiceForm(initial=initial_data)
+    # Prepare context
+    context = {
+        "invoice_form": form,
+        "today": timezone.now().date(),
+        "default_due_date": timezone.now().date() + timedelta(days=30),
+        "active": "create_invoice",
+    }
+    return render(request, "invoices/create_invoice.html", context)
 
     context = {
         "invoice_form": form,
@@ -896,7 +905,10 @@ def invoice_templates(request):
     """Manage reusable invoice templates."""
     from .models import InvoiceTemplate
     templates = InvoiceTemplate.objects.filter(user=request.user)
-    return render(request, "invoices/templates.html", {"templates": templates})
+    return render(request, "invoices/templates.html", {
+        "templates": templates,
+        "active": "templates"
+    })
 
 
 def api_access(request):

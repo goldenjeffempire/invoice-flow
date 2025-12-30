@@ -66,6 +66,7 @@ def settings_profile(request):
             'active_tab': 'profile',
             'form': profile_form,
             'profile': user_profile,
+            'active': 'settings',
         }
         return render(request, 'settings/settings_profile.html', context)
     
@@ -104,6 +105,7 @@ def settings_business(request):
             'active_tab': 'business',
             'form': form,
             'profile': user_profile,
+            'active': 'settings',
         }
         return render(request, 'settings/settings_business.html', context)
     
@@ -173,6 +175,7 @@ def settings_security(request):
             'mfa_profile': mfa_profile,
             'sessions': sessions,
             'session_count': sessions.count(),
+            'active': 'settings',
         }
         return render(request, 'settings/settings_security.html', context)
     
@@ -210,6 +213,7 @@ def settings_notifications(request):
         context = {
             'active_tab': 'notifications',
             'form': form,
+            'active': 'settings',
         }
         return render(request, 'settings/settings_notifications.html', context)
     
@@ -248,6 +252,7 @@ def settings_payments(request):
             'active_tab': 'payments',
             'form': form,
             'payment_settings': payment_settings,
+            'active': 'settings',
         }
         return render(request, 'settings/settings_payments.html', context)
     
