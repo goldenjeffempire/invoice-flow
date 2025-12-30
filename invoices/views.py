@@ -359,12 +359,6 @@ def dashboard(request):
     # Recent activity - limit to last 5
     recent_invoices = base_queryset.prefetch_related("line_items").order_by("-created_at")[:5]
     
-    # Calculate totals for recent invoices
-    for inv in recent_invoices:
-        inv.calculated_total = inv.total
-        # Check if overdue based on today
-        inv.is_overdue = inv.status == "unpaid" and inv.due_date < today
-    
     # Invoice aging summary
     aging_summary = {
         "0_30": base_queryset.filter(
