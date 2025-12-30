@@ -1,152 +1,159 @@
-{% extends "base/layout-light.html" %}
+{% extends 'base/layout-authenticated.html' %}
 {% load static %}
 
 {% block title %}Dashboard - InvoiceFlow{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard-pro.css' %}">
-{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Track invoices, revenue, and payment activity{% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
-  <!-- Header Section -->
-  <header class="dashboard-header">
-    <div class="dashboard-header-content">
-      <h1 class="dashboard-title">Dashboard</h1>
-      <p class="dashboard-subtitle">Track invoices, revenue, and payment activity</p>
-    </div>
-    <div class="dashboard-header-actions">
-      <button class="btn-icon" onclick="location.reload()" title="Refresh">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36M20.49 15a9 9 0 01-14.85 3.36"/>
-        </svg>
-      </button>
-      <a href="{% url 'invoices:create_invoice_start' %}" class="btn-primary">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        New Invoice
-      </a>
-    </div>
-  </header>
-
-  <!-- Main Grid -->
-  <div class="dashboard-main">
-    <!-- Metrics Row -->
-    <section class="metrics-grid">
-      <!-- Revenue Card -->
-      <div class="metric-card revenue-card">
+<!-- Metrics Grid -->
+<div class="metrics-grid">
+    <!-- Total Revenue Card -->
+    <div class="metric-card">
         <div class="metric-header">
-          <h3 class="metric-title">Total Revenue</h3>
-          <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <h3 class="metric-title">Total Revenue</h3>
+            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+            </svg>
         </div>
         <div class="metric-value">${{ total_revenue|default:"0"|floatformat:2 }}</div>
-        <div class="metric-detail">{% if total_invoices > 0 %}{{ payment_rate|default:"0"|floatformat:0 }}% collected{% else %}No activity yet{% endif %}</div>
-      </div>
+        <div class="metric-detail">
+            {% if total_invoices > 0 %}
+                {{ payment_rate|default:"0"|floatformat:0 }}% collected
+            {% else %}
+                No activity yet
+            {% endif %}
+        </div>
+    </div>
 
-      <!-- Invoices Card -->
-      <div class="metric-card invoices-card">
+    <!-- Total Invoices Card -->
+    <div class="metric-card">
         <div class="metric-header">
-          <h3 class="metric-title">Total Invoices</h3>
-          <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <h3 class="metric-title">Total Invoices</h3>
+            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+            </svg>
         </div>
         <div class="metric-value">{{ total_invoices|default:"0" }}</div>
         <div class="metric-detail">{{ paid_count|default:"0" }} paid invoices</div>
-      </div>
+    </div>
 
-      <!-- Overdue Card -->
-      <div class="metric-card overdue-card">
+    <!-- Overdue Card -->
+    <div class="metric-card">
         <div class="metric-header">
-          <h3 class="metric-title">Overdue</h3>
-          <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <h3 class="metric-title">Overdue</h3>
+            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+            </svg>
         </div>
-        <div class="metric-value">{{ overdue_invoices|default:"0" }}</div>
+        <div class="metric-value">{{ overdue_count|default:"0" }}</div>
         <div class="metric-detail">Action needed</div>
-      </div>
+    </div>
 
-      <!-- Pending Card -->
-      <div class="metric-card pending-card">
+    <!-- Pending Payment Card -->
+    <div class="metric-card">
         <div class="metric-header">
-          <h3 class="metric-title">Awaiting Payment</h3>
-          <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 015-8.2v3.2m0 0a9 9 0 0115.9 2.6m0 0v-3.2M3 12a9 9 0 0114.85 3.36M21 12a9 9 0 01-8.85 8.64"/></svg>
+            <h3 class="metric-title">Awaiting Payment</h3>
+            <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2" />
+                <path d="M1 10h22" />
+            </svg>
         </div>
         <div class="metric-value">${{ pending_amount|default:"0"|floatformat:2 }}</div>
         <div class="metric-detail">Outstanding invoices</div>
-      </div>
+    </div>
+</div>
+
+<!-- Content Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--spacing-xl);">
+    <!-- Recent Activity Section -->
+    <section class="dashboard-section">
+        <div class="section-header">
+            <h2 class="section-title">Recent Activity</h2>
+            <a href="{% url 'invoices:invoice_list' %}" class="link-secondary">View all →</a>
+        </div>
+        
+        {% if recent_invoices %}
+            <div class="activity-timeline">
+                {% for invoice in recent_invoices %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker {% if invoice.status == 'paid' %}paid{% elif invoice.status == 'overdue' %}overdue{% else %}pending{% endif %}"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-header">
+                                <h4 class="timeline-title">Invoice #{{ invoice.invoice_id }}</h4>
+                                <span class="badge badge-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
+                            </div>
+                            <p class="timeline-meta">{{ invoice.created_at|timesince }} ago • ${{ invoice.total|floatformat:2 }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M9 12h6m-6 4h6m2-13H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2z" />
+                </svg>
+                <p>No invoices yet. Create your first one to get started.</p>
+            </div>
+        {% endif %}
     </section>
 
-    <!-- Content Grid -->
-    <div class="content-grid">
-      <!-- Recent Activity -->
-      <section class="dashboard-section">
+    <!-- Quick Actions Section -->
+    <section class="dashboard-section">
         <div class="section-header">
-          <h2 class="section-title">Recent Activity</h2>
-          <a href="{% url 'invoices:invoice_list' %}" class="link-secondary">View all →</a>
+            <h2 class="section-title">Quick Actions</h2>
         </div>
-        {% if recent_invoices %}
-        <div class="activity-timeline">
-          {% for invoice in recent_invoices %}
-          <div class="timeline-item">
-            <div class="timeline-marker {% if invoice.status == 'paid' %}paid{% elif invoice.status == 'overdue' %}overdue{% else %}pending{% endif %}"></div>
-            <div class="timeline-content">
-              <div class="timeline-header">
-                <h4 class="timeline-title">Invoice #{{ invoice.invoice_id }}</h4>
-                <span class="badge badge-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
-              </div>
-              <p class="timeline-meta">{{ invoice.created_at|timesince }} ago • ${{ invoice.total|floatformat:2 }}</p>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-state">
-          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 12h6m-6 4h6m2-13H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2z"/></svg>
-          <p>No invoices yet. Create your first one to get started.</p>
-        </div>
-        {% endif %}
-      </section>
-
-      <!-- Quick Actions -->
-      <section class="dashboard-section">
-        <div class="section-header">
-          <h2 class="section-title">Quick Actions</h2>
-        </div>
+        
         <div class="action-grid">
-          <a href="{% url 'invoices:create_invoice_start' %}" class="action-card">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-            <h3>Create Invoice</h3>
-            <p>Generate a new invoice</p>
-          </a>
-          <a href="{% url 'invoices:invoice_list' %}" class="action-card">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2H5a2 2 0 00-2 2v4a2 2 0 002 2h4m0 0h4a2 2 0 002-2V4a2 2 0 00-2-2h-4m0 0v4m0-4H9m11 5v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7"/></svg>
-            <h3>Manage Invoices</h3>
-            <p>View and edit invoices</p>
-          </a>
-          <a href="{% url 'invoices:payment_history' %}" class="action-card">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
-            <h3>Payment History</h3>
-            <p>Track all transactions</p>
-          </a>
-          <a href="{% url 'invoices:settings' %}" class="action-card">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24"/></svg>
-            <h3>Settings</h3>
-            <p>Configure your account</p>
-          </a>
+            <a href="{% url 'invoices:create_invoice_start' %}" class="action-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                <h3>Create Invoice</h3>
+                <p>Generate a new invoice</p>
+            </a>
+            <a href="{% url 'invoices:invoice_list' %}" class="action-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+                <h3>Manage Invoices</h3>
+                <p>View and edit invoices</p>
+            </a>
+            <a href="{% url 'invoices:payment_history' %}" class="action-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="1" y="4" width="22" height="16" rx="2" />
+                    <path d="M1 10h22" />
+                </svg>
+                <h3>Payment History</h3>
+                <p>Track all transactions</p>
+            </a>
+            <a href="{% url 'invoices:settings_profile' %}" class="action-card">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6m-17.78 7.78l4.24-4.24m5.08-5.08l4.24-4.24" />
+                </svg>
+                <h3>Settings</h3>
+                <p>Configure your account</p>
+            </a>
         </div>
-      </section>
-    </div>
-  </div>
+    </section>
 </div>
 
 <script>
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-    e.preventDefault();
-    window.location.href = "{% url 'invoices:create_invoice_start' %}";
-  }
-  if ((e.ctrlKey || e.metaKey) && e.key === 'r' && e.shiftKey === false) {
-    e.preventDefault();
-    location.reload();
-  }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = "{% url 'invoices:create_invoice_start' %}";
+    }
 });
 </script>
 {% endblock %}

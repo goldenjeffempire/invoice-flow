@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>{% block title %}InvoiceFlow{% endblock %} | Dashboard</title>
+    <meta name="description" content="{% block meta_description %}InvoiceFlow - Professional invoicing platform for modern businesses.{% endblock %}">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="color-scheme" content="light">
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'apple-touch-icon.png' %}">
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/authenticated-modern.css' %}">
+    {% block extra_css %}{% endblock %}
+    <style>
+        /* Prevent layout shift */
+        html { overflow-y: scroll; }
+        body { overflow: hidden; }
+    </style>
+</head>
+<body class="light-authenticated">
+    <div class="authenticated-layout">
+        <!-- Sidebar Navigation -->
+        {% include 'components/authenticated-sidebar.html' %}
+
+        <!-- Main Content Area -->
+        <div class="authenticated-main">
+            <!-- Header -->
+            <header class="authenticated-header">
+                <div class="header-content">
+                    <h1 class="header-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <p class="header-subtitle">{% block page_subtitle %}Welcome back to InvoiceFlow{% endblock %}</p>
+                </div>
+                <div class="header-actions">
+                    {% block header_actions %}
+                    <button class="btn-header-icon" onclick="location.reload()" title="Refresh page" aria-label="Refresh page">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0114.85-3.36M20.49 15a9 9 0 01-14.85 3.36"></path>
+                        </svg>
+                    </button>
+                    <a href="{% url 'invoices:create_invoice_start' %}" class="btn-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        <span>New Invoice</span>
+                    </a>
+                    {% endblock %}
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="authenticated-content">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile sidebar toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.querySelector('.authenticated-sidebar');
+            const toggleBtn = document.querySelector('.sidebar-toggle-mobile');
+            
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                });
+            }
+
+            // Close sidebar on link click (mobile)
+            if (window.innerWidth <= 768) {
+                const sidebarLinks = sidebar.querySelectorAll('.sidebar-link');
+                sidebarLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        sidebar.classList.add('collapsed');
+                    });
+                });
+            }
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('collapsed');
+                }
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                window.location.href = "{% url 'invoices:create_invoice_start' %}";
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                // Implement search
+            }
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
