@@ -81,8 +81,6 @@ class PaystackService:
         except ValueError:
             return {"status": "error", "message": "Invalid response format from Paystack"}
 
-        data = response.json()
-
         if response.status_code == 200 and data.get("status"):
             return {
                 "status": "success",
