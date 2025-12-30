@@ -87,7 +87,7 @@ def create_invoice_start(request):
         'client_form': client_form,
         'user_profile': user_profile,
     }
-    return render(request, 'invoices/create_invoice/step1_details.html', context)
+    return render(request, 'invoices/create_invoice_start.html', context)
 
 
 @login_required
@@ -142,7 +142,7 @@ def create_invoice_items(request):
         'client_details': client_details,
         'line_items': line_items,
     }
-    return render(request, 'invoices/create_invoice/step2_items.html', context)
+    return render(request, 'invoices/create_invoice_items.html', context)
 
 
 @login_required
@@ -186,7 +186,7 @@ def create_invoice_taxes(request):
         'tax_form': tax_form,
         'invoice_details': invoice_details,
     }
-    return render(request, 'invoices/create_invoice/step3_taxes.html', context)
+    return render(request, 'invoices/create_invoice_taxes.html', context)
 
 
 @login_required
@@ -304,7 +304,7 @@ def create_invoice_review(request):
         'discount_amount': discount_amount,
         'total': total,
     }
-    return render(request, 'invoices/create_invoice/step4_review.html', context)
+    return render(request, 'invoices/create_invoice_review.html', context)
 
 
 @login_required

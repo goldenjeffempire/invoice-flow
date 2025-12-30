@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap as sitemap_view
 from django.urls import include, path
+from django.views.generic.base import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from invoiceflow import cookie_consent, gdpr, mfa
@@ -42,6 +43,8 @@ urlpatterns = [
     path("health/ready/", readiness_check, name="readiness_check"),
     path("health/live/", liveness_check, name="liveness_check"),
     path("health/detailed/", detailed_health, name="detailed_health"),
+    # Favicon
+    path("favicon.ico", RedirectView.as_view(url='/static/favicon.svg'), name="favicon"),
     # Robots.txt (dynamic)
     path("robots.txt", views.robots_txt, name="robots_txt"),
     # Service worker (served from root for proper scope)
