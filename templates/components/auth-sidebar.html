@@ -1,0 +1,231 @@
+{% load static %}
+<aside class="auth-sidebar">
+    <div class="auth-sidebar-header">
+        <h3 class="auth-sidebar-title">Account</h3>
+    </div>
+    
+    <div class="auth-sidebar-content">
+        <!-- User Profile Card -->
+        <div class="auth-user-card">
+            <div class="auth-avatar">
+                {% if user.first_name %}{{ user.first_name.0|upper }}{% else %}{{ user.username.0|upper }}{% endif %}
+            </div>
+            <div class="auth-user-details">
+                <p class="auth-user-name">{{ user.first_name|default:user.username }}</p>
+                <p class="auth-user-email">{{ user.email }}</p>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <nav class="auth-sidebar-nav">
+            <a href="{% url 'invoices:settings' %}" class="auth-sidebar-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                <span>Settings</span>
+            </a>
+            <a href="{% url 'dashboard' %}" class="auth-sidebar-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span>Dashboard</span>
+            </a>
+            <a href="{% url 'invoices:invoice_list' %}" class="auth-sidebar-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <span>My Invoices</span>
+            </a>
+        </nav>
+
+        <!-- Session Info -->
+        <div class="auth-sidebar-info">
+            <p class="auth-info-label">Session Status</p>
+            <p class="auth-info-status">✓ Active</p>
+        </div>
+
+        <!-- Logout -->
+        <a href="{% url 'logout' %}" class="auth-sidebar-logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span>Logout</span>
+        </a>
+    </div>
+</aside>
+
+<style>
+.auth-sidebar {
+    position: sticky;
+    top: 20px;
+    width: 280px;
+    background: var(--light-bg-secondary);
+    border: 1px solid var(--light-border-primary);
+    border-radius: 12px;
+    padding: 20px;
+    height: fit-content;
+}
+
+.auth-sidebar-header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--light-border-primary);
+}
+
+.auth-sidebar-title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--light-text-tertiary);
+    margin: 0;
+}
+
+.auth-user-card {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--light-bg-tertiary);
+    border-radius: 10px;
+}
+
+.auth-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.auth-user-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.auth-user-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--light-text-primary);
+    margin: 0;
+}
+
+.auth-user-email {
+    font-size: 0.75rem;
+    color: var(--light-text-tertiary);
+    margin: 0;
+    word-break: break-all;
+}
+
+.auth-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.auth-sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--light-bg-tertiary);
+    border: 1px solid var(--light-border-primary);
+    border-radius: 8px;
+    color: var(--light-text-primary);
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.auth-sidebar-link:hover {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
+.auth-sidebar-link svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.auth-sidebar-info {
+    background: var(--light-bg-tertiary);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.auth-info-label {
+    font-size: 0.75rem;
+    color: var(--light-text-tertiary);
+    margin: 0 0 4px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.auth-info-status {
+    font-size: 0.9375rem;
+    color: #22c55e;
+    margin: 0;
+    font-weight: 600;
+}
+
+.auth-sidebar-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #ef4444;
+    text-decoration: none;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.auth-sidebar-logout:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: white;
+}
+
+.auth-sidebar-logout svg {
+    width: 18px;
+    height: 18px;
+}
+
+@media (max-width: 1024px) {
+    .auth-sidebar {
+        position: static;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}
+</style>
