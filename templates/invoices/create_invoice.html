@@ -109,21 +109,99 @@
     margin-top: 1.5rem;
   }
 
+  .line-items-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr auto;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: #f3f4f6;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: 0;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
   .line-item-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    grid-template-columns: 2fr 1fr 1fr 1.5fr auto;
     gap: 1rem;
-    align-items: end;
-    padding: 1rem;
-    background: #f9fafb;
-    border-radius: 8px;
+    align-items: center;
+    padding: 1.25rem;
+    background: white;
+    border-radius: 0;
     border: 1px solid #e5e7eb;
+    border-top: none;
+    margin-bottom: 0;
+  }
+
+  .line-item-row:last-of-type {
+    border-radius: 0 0 8px 8px;
     margin-bottom: 1rem;
   }
 
+  .line-item-row:first-of-type {
+    border-radius: 0 0 0 0;
+    margin-top: 0;
+  }
+
+  .line-item-field {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .line-item-input {
+    width: 100%;
+    padding: 0.625rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 0.9375rem;
+    transition: all 0.2s ease;
+  }
+
+  .line-item-input:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+    background: #fafafe;
+  }
+
+  .line-item-total-display {
+    background: #f9fafb;
+    padding: 0.625rem;
+    border-radius: 6px;
+    font-weight: 600;
+    color: #1f2937;
+    text-align: right;
+  }
+
+  .line-item-currency {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-right: 0.25rem;
+  }
+
   @media (max-width: 768px) {
+    .line-items-header {
+      display: none;
+    }
+
     .line-item-row {
       grid-template-columns: 1fr;
+      gap: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .line-item-field::before {
+      content: attr(data-label);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #6b7280;
+      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
   }
 
@@ -513,10 +591,19 @@
         <div class="form-card">
           <div class="form-card-header">
             <h2 class="form-card-title">Invoice Items</h2>
-            <p class="form-card-subtitle">Add the products or services you're billing for</p>
+            <p class="form-card-subtitle">Add the products or services you're billing for <span id="item-count-badge" style="display: none; background: #6366f1; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">0 items</span></p>
           </div>
 
-          <div id="line-items-container" class="line-items-section"></div>
+          <div id="line-items-wrapper" class="line-items-section">
+            <div id="line-items-header" class="line-items-header" style="display: none;">
+              <div>Description</div>
+              <div>Quantity</div>
+              <div>Price</div>
+              <div>Total</div>
+              <div></div>
+            </div>
+            <div id="line-items-container"></div>
+          </div>
 
           <button type="button" id="add-item-btn" class="btn-add-item">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -618,6 +705,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('currency-symbol-3').textContent = symbol;
     document.getElementById('currency-symbol-4').textContent = symbol;
     
+    // Update line item currencies
+    updateLineItemCurrencies();
     updateSummary();
   }
 
@@ -653,17 +742,42 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  function updateItemCount() {
+    const count = container.querySelectorAll('.line-item-row').length;
+    const badge = document.getElementById('item-count-badge');
+    const header = document.getElementById('line-items-header');
+    badge.textContent = `${count} item${count !== 1 ? 's' : ''}`;
+    badge.style.display = count > 0 ? 'inline-block' : 'none';
+    header.style.display = count > 0 ? 'grid' : 'none';
+  }
+
+  function updateLineItemCurrencies() {
+    const currency = getCurrency();
+    container.querySelectorAll('.item-total-currency').forEach(el => {
+      el.textContent = currency;
+    });
+  }
+
   function addLineItem() {
     itemCount++;
+    const currency = getCurrency();
     const html = `
       <div class="line-item-row" data-item-id="${itemCount}">
-        <input type="text" class="form-input item-description" placeholder="Description" required>
-        <input type="number" class="form-input item-quantity" placeholder="Qty" step="0.01" min="0" value="1" required>
-        <input type="number" class="form-input item-price" placeholder="Price" step="0.01" min="0" required>
-        <div class="summary-row-value" style="background: #f9fafb; padding: 0.75rem; border-radius: 6px;">
-          <span class="item-total-currency">${getCurrency()}</span> <span class="item-total">0.00</span>
+        <div class="line-item-field" data-label="Description">
+          <input type="text" class="line-item-input item-description" placeholder="Product or service name" required>
         </div>
-        <button type="button" class="btn-remove-item" data-item-id="${itemCount}">Remove</button>
+        <div class="line-item-field" data-label="Quantity">
+          <input type="number" class="line-item-input item-quantity" placeholder="0" step="0.01" min="0" value="1" required>
+        </div>
+        <div class="line-item-field" data-label="Price">
+          <input type="number" class="line-item-input item-price" placeholder="0.00" step="0.01" min="0" required>
+        </div>
+        <div class="line-item-field" data-label="Total">
+          <div class="line-item-total-display">
+            <span class="item-total-currency">${currency}</span><span class="item-total">0.00</span>
+          </div>
+        </div>
+        <button type="button" class="btn-remove-item" data-item-id="${itemCount}" title="Remove this item">×</button>
       </div>
     `;
     container.insertAdjacentHTML('beforeend', html);
@@ -684,12 +798,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     descInput.addEventListener('input', updateItem);
     qtyInput.addEventListener('input', updateItem);
+    qtyInput.addEventListener('change', updateItem);
     priceInput.addEventListener('input', updateItem);
+    priceInput.addEventListener('change', updateItem);
     removeBtn.addEventListener('click', (e) => {
       e.preventDefault();
       row.remove();
+      updateItemCount();
       saveItems();
     });
+
+    descInput.focus();
+    updateItemCount();
   }
 
   function saveItems() {
@@ -716,8 +836,21 @@ document.addEventListener('DOMContentLoaded', function() {
     addLineItem();
   });
 
-  // Initialize currency display
+  // Initialize
   updateCurrencyDisplay();
+  updateItemCount();
+  
+  // Allow Enter key to add item in description field
+  container.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && e.target.classList.contains('item-description')) {
+      e.preventDefault();
+      const row = e.target.closest('.line-item-row');
+      const nextItem = row.nextElementSibling;
+      if (nextItem && nextItem.classList.contains('line-item-row')) {
+        nextItem.querySelector('.item-description').focus();
+      }
+    }
+  });
 });
 </script>
 {% endblock %}
