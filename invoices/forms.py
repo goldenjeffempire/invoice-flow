@@ -159,6 +159,12 @@ class InvoiceForm(forms.ModelForm):
         validators=[validate_phone_number],
         widget=forms.TextInput(attrs={"class": "input-field"}),
     )
+    currency = forms.ChoiceField(
+        choices=Invoice.CURRENCY_CHOICES,
+        initial="USD",
+        widget=forms.Select(attrs={"class": "input-field"}),
+        help_text="Select the currency for this invoice",
+    )
     tax_rate = forms.DecimalField(
         max_digits=5,
         decimal_places=2,
