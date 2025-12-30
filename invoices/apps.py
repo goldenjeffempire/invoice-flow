@@ -73,16 +73,20 @@ class InvoicesConfig(AppConfig):
 
             lock_fd = _acquire_startup_lock()
             if lock_fd is None:
-                logger.debug("Startup lock held by another worker; skipping startup tasks")
+                # Silent exit - another worker is handling startup tasks (reduces log noise)
                 return
 
             try:
-                # Cache warmup
+                # Cache warmup (only runs once per cluster due to lock)
                 try:
                     from invoices.services import CacheWarmingService
                     CacheWarmingService.bump_cache_version()
                     warmed = CacheWarmingService.warm_active_users_cache()
-                    logger.info(f"Startup cache warmup completed: {warmed} users")
+                    if warmed > 0:
+                        logger.info(f"Startup cache warming completed: {warmed} users")
+                    # If 0 users, silence the log (debug instead)
+                    else:
+                        logger.debug("Startup cache warming completed: no active users")
                 except Exception as exc:
                     logger.warning(f"Startup cache warmup failed: {exc}")
 

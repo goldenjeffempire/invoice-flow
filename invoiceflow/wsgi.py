@@ -31,7 +31,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "invoiceflow.settings")
 try:
     from invoiceflow.env_validation import validate_env
     validate_env()
-    logger.info("✓ Environment validation successful")
+    # Validation logger already outputs; WSGI just notes success
 except Exception as e:
     logger.critical(f"Environment validation failed: {e}")
     sys.exit(1)
@@ -40,7 +40,6 @@ except Exception as e:
 try:
     from django.core.wsgi import get_wsgi_application
     application = get_wsgi_application()
-    logger.info("✓ Django WSGI application initialized")
 except Exception as e:
     logger.critical(f"Failed to initialize Django WSGI: {e}")
     sys.exit(1)

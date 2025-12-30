@@ -17,8 +17,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(DEBUG=(bool, False))  # type: ignore[call-overload]
 
 # Only load .env in development; production uses environment variables exclusively
-if not os.getenv("PRODUCTION") == "true":
-    environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+_env_file = os.path.join(BASE_DIR, ".env")
+if not os.getenv("PRODUCTION") == "true" and os.path.exists(_env_file):
+    environ.Env.read_env(_env_file)
+elif os.getenv("PRODUCTION") == "true":
+    # Log suppression for production: .env not expected in production
+    pass
 
 validate_env()
 

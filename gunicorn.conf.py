@@ -188,10 +188,9 @@ def when_ready(server):
     Signals to orchestration systems (Render, Kubernetes) that app is ready for traffic.
     Health checks should hit /health/ready/ for more robust readiness detection.
     """
-    logger.info("✓ Gunicorn server is READY and accepting connections")
-    logger.info(f"✓ Listening on {server.address} with {workers} workers")
-    logger.info("✓ Health check endpoint: /health/ready/ (includes DB, cache, migrations)")
-    logger.info("✓ Liveness check endpoint: /health/live/ (quick responsiveness check)")
+    logger.info(f"✓ Gunicorn READY at {server.address} with {workers} workers")
+    logger.info("✓ POST requests to /health/ready/ to verify readiness (DB, cache, migrations)")
+    logger.info("✓ GET /health/live/ for quick liveness check (no external dependencies)")
 
 
 # =============================================================================

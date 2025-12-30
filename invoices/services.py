@@ -515,7 +515,7 @@ class CacheWarmingService:
                 
                 # Skip cache warming if no active users exist (new deployment optimization)
                 if not active_user_ids:
-                    logger.info("Startup cache warming skipped: no active users")
+                    logger.debug("Startup cache warming skipped: no active users")
                     return 0
             else:
                 active_user_ids = list(active_users)[: cls.MAX_STARTUP_USERS]
