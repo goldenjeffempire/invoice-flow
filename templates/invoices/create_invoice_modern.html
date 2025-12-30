@@ -1,0 +1,757 @@
+{% extends 'base/layout.html' %}
+{% load static %}
+
+{% block title %}Create Invoice | InvoiceFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --success-color: #10b981;
+        --danger-color: #ef4444;
+        --warning-color: #f59e0b;
+        --border-color: #e5e7eb;
+        --bg-light: #f9fafb;
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        background-color: var(--bg-light);
+        color: var(--text-primary);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    .invoice-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        min-height: 100vh;
+    }
+
+    @media (max-width: 1024px) {
+        .invoice-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .invoice-content {
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+    }
+
+    .invoice-header {
+        margin-bottom: 2rem;
+    }
+
+    .invoice-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .invoice-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+    }
+
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--shadow);
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .form-required {
+        color: var(--danger-color);
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        padding: 0.75rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: all 0.2s;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .form-help {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 0.25rem;
+    }
+
+    .form-error {
+        color: var(--danger-color);
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
+
+    /* Line Items Section */
+    .line-items-container {
+        margin-top: 1.5rem;
+    }
+
+    .line-item {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--bg-light);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 1rem;
+        align-items: end;
+    }
+
+    @media (max-width: 768px) {
+        .line-item {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .line-item-total {
+        display: none;
+        font-weight: 600;
+        color: var(--text-primary);
+        padding: 0.75rem;
+        background: rgba(79, 70, 229, 0.05);
+        border-radius: 6px;
+    }
+
+    .btn-remove-item {
+        padding: 0.5rem 1rem;
+        background: var(--danger-color);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .btn-remove-item:hover {
+        background: #dc2626;
+    }
+
+    .btn-add-item {
+        padding: 0.75rem 1.5rem;
+        background: var(--success-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+        margin-top: 1rem;
+    }
+
+    .btn-add-item:hover {
+        background: #059669;
+    }
+
+    /* Summary Section */
+    .summary-section {
+        background: var(--bg-light);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        margin-top: 2rem;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        font-size: 0.95rem;
+    }
+
+    .summary-total {
+        border-top: 2px solid var(--border-color);
+        padding-top: 1rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    /* Buttons */
+    .button-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .btn-primary {
+        padding: 0.875rem 2rem;
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-hover);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:disabled {
+        background: #d1d5db;
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        padding: 0.875rem 2rem;
+        background: white;
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .btn-secondary:hover {
+        background: var(--bg-light);
+        border-color: var(--text-secondary);
+    }
+
+    /* Alerts */
+    .alert {
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        border-color: var(--danger-color);
+        color: #991b1b;
+    }
+
+    .alert-success {
+        background: #dcfce7;
+        border-color: var(--success-color);
+        color: #166534;
+    }
+
+    .alert-warning {
+        background: #fef3c7;
+        border-color: var(--warning-color);
+        color: #92400e;
+    }
+
+    /* Template Selector */
+    .template-selector {
+        margin-bottom: 1.5rem;
+    }
+
+    .template-options {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .template-option {
+        padding: 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: white;
+    }
+
+    .template-option:hover {
+        border-color: var(--primary-color);
+        box-shadow: var(--shadow);
+    }
+
+    .template-option.active {
+        border-color: var(--primary-color);
+        background: rgba(79, 70, 229, 0.05);
+    }
+
+    /* Loading State */
+    .loading {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .invoice-content {
+            padding: 1rem;
+        }
+
+        .form-section {
+            padding: 1.5rem;
+        }
+
+        .invoice-title {
+            font-size: 1.5rem;
+        }
+
+        .button-group {
+            flex-direction: column;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            flex: none;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block nav %}{% endblock %}
+
+{% block content %}
+<div class="invoice-container">
+    {% include 'components/dashboard-sidebar.html' with active='create_invoice' %}
+
+    <main class="invoice-content">
+        <!-- Header -->
+        <div class="invoice-header">
+            <h1 class="invoice-title">Create Invoice</h1>
+            <p class="invoice-subtitle">Fill in the details below to create a new invoice</p>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Main Form -->
+        <form method="post" id="invoice-form" class="invoice-form">
+            {% csrf_token %}
+
+            <!-- Template Selector -->
+            {% if templates %}
+            <div class="form-section">
+                <div class="section-title">Load Template (Optional)</div>
+                <div class="template-selector">
+                    <div class="template-options">
+                        {% for template in templates %}
+                        <button type="button" class="template-option" data-template-id="{{ template.id }}">
+                            <strong>{{ template.name }}</strong><br>
+                            <small>{{ template.currency }} • Tax: {{ template.tax_rate }}%</small>
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Business Information -->
+            <div class="form-section">
+                <h2 class="section-title">Your Business Information</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="id_business_name" class="form-label">Business Name <span class="form-required">*</span></label>
+                        <input type="text" id="id_business_name" name="business_name" class="form-input" required placeholder="Your Company Name">
+                        {% if form.business_name.errors %}
+                            <div class="form-error">{{ form.business_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_business_email" class="form-label">Business Email <span class="form-required">*</span></label>
+                        <input type="email" id="id_business_email" name="business_email" class="form-input" required placeholder="business@example.com">
+                        {% if form.business_email.errors %}
+                            <div class="form-error">{{ form.business_email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_business_phone" class="form-label">Business Phone</label>
+                        <input type="tel" id="id_business_phone" name="business_phone" class="form-input" placeholder="+1 (555) 123-4567">
+                        {% if form.business_phone.errors %}
+                            <div class="form-error">{{ form.business_phone.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_business_address" class="form-label">Business Address</label>
+                    <textarea id="id_business_address" name="business_address" class="form-textarea" placeholder="123 Business Street, City, State, ZIP"></textarea>
+                    {% if form.business_address.errors %}
+                        <div class="form-error">{{ form.business_address.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Client Information -->
+            <div class="form-section">
+                <h2 class="section-title">Client Information</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="id_client_name" class="form-label">Client Name <span class="form-required">*</span></label>
+                        <input type="text" id="id_client_name" name="client_name" class="form-input" required placeholder="Client Company or Name">
+                        {% if form.client_name.errors %}
+                            <div class="form-error">{{ form.client_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_client_email" class="form-label">Client Email <span class="form-required">*</span></label>
+                        <input type="email" id="id_client_email" name="client_email" class="form-input" required placeholder="client@example.com">
+                        {% if form.client_email.errors %}
+                            <div class="form-error">{{ form.client_email.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_client_phone" class="form-label">Client Phone</label>
+                        <input type="tel" id="id_client_phone" name="client_phone" class="form-input" placeholder="+1 (555) 987-6543">
+                        {% if form.client_phone.errors %}
+                            <div class="form-error">{{ form.client_phone.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="id_client_address" class="form-label">Client Address</label>
+                    <textarea id="id_client_address" name="client_address" class="form-textarea" placeholder="Client's Address"></textarea>
+                    {% if form.client_address.errors %}
+                        <div class="form-error">{{ form.client_address.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Invoice Details -->
+            <div class="form-section">
+                <h2 class="section-title">Invoice Details</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="id_invoice_date" class="form-label">Invoice Date <span class="form-required">*</span></label>
+                        <input type="date" id="id_invoice_date" name="invoice_date" class="form-input" required value="{{ today|date:'Y-m-d' }}">
+                        {% if form.invoice_date.errors %}
+                            <div class="form-error">{{ form.invoice_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_due_date" class="form-label">Due Date</label>
+                        <input type="date" id="id_due_date" name="due_date" class="form-input" value="{{ default_due_date|date:'Y-m-d' }}">
+                        {% if form.due_date.errors %}
+                            <div class="form-error">{{ form.due_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_currency" class="form-label">Currency <span class="form-required">*</span></label>
+                        <select id="id_currency" name="currency" class="form-select" required>
+                            {% for currency, label in form.fields.currency.choices %}
+                                <option value="{{ currency }}" {% if currency == default_currency %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_tax_rate" class="form-label">Tax Rate (%) <span class="form-required">*</span></label>
+                        <input type="number" id="id_tax_rate" name="tax_rate" class="form-input" step="0.01" min="0" max="100" required value="{{ default_tax }}">
+                        {% if form.tax_rate.errors %}
+                            <div class="form-error">{{ form.tax_rate.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Items -->
+            <div class="form-section">
+                <h2 class="section-title">Invoice Items</h2>
+                <div id="line-items-container" class="line-items-container"></div>
+                <button type="button" id="add-item-btn" class="btn-add-item">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Add Item
+                </button>
+            </div>
+
+            <!-- Notes -->
+            <div class="form-section">
+                <h2 class="section-title">Additional Notes</h2>
+                <div class="form-group">
+                    <label for="id_notes" class="form-label">Notes</label>
+                    <textarea id="id_notes" name="notes" class="form-textarea" placeholder="Payment terms, special instructions, etc."></textarea>
+                    {% if form.notes.errors %}
+                        <div class="form-error">{{ form.notes.errors.0 }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary-section">
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">$0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (<span id="tax-rate-display">0</span>%):</span>
+                    <span id="tax-amount">$0.00</span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Total:</span>
+                    <span id="total-amount">$0.00</span>
+                </div>
+            </div>
+
+            <!-- Hidden field for line items JSON -->
+            <input type="hidden" id="line_items_json" name="line_items_json" value="[]">
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button type="submit" id="submit-btn" class="btn-primary">Create Invoice</button>
+                <a href="{% url 'invoices:invoice_list' %}" class="btn-secondary" style="text-decoration: none; text-align: center;">Cancel</a>
+            </div>
+        </form>
+    </main>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+class InvoiceForm {
+    constructor() {
+        this.form = document.getElementById('invoice-form');
+        this.lineItemsContainer = document.getElementById('line-items-container');
+        this.addItemBtn = document.getElementById('add-item-btn');
+        this.lineItems = [];
+        this.itemCounter = 0;
+
+        this.init();
+    }
+
+    init() {
+        this.addItemBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.addLineItem();
+        });
+
+        // Add initial empty item
+        this.addLineItem();
+
+        // Update totals on input change
+        this.form.addEventListener('change', () => this.updateTotals());
+        this.form.addEventListener('input', () => this.updateTotals());
+
+        // Template selector
+        document.querySelectorAll('.template-option').forEach(btn => {
+            btn.addEventListener('click', (e) => this.loadTemplate(e));
+        });
+
+        // Form submission
+        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+    }
+
+    addLineItem() {
+        const itemId = this.itemCounter++;
+        const html = `
+            <div class="line-item" data-item-id="${itemId}">
+                <div class="form-group">
+                    <input type="text" class="form-input item-description" placeholder="Item description" data-item-id="${itemId}">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input item-quantity" placeholder="Qty" step="0.01" min="0" data-item-id="${itemId}">
+                </div>
+                <div class="form-group">
+                    <input type="number" class="form-input item-price" placeholder="Price" step="0.01" min="0" data-item-id="${itemId}">
+                </div>
+                <button type="button" class="btn-remove-item" data-item-id="${itemId}">Remove</button>
+            </div>
+        `;
+
+        const container = document.createElement('div');
+        container.innerHTML = html;
+        this.lineItemsContainer.appendChild(container.firstElementChild);
+
+        // Add event listeners to new inputs
+        const itemElement = this.lineItemsContainer.querySelector(`[data-item-id="${itemId}"]`);
+        itemElement.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => this.updateTotals());
+        });
+
+        itemElement.querySelector('.btn-remove-item').addEventListener('click', (e) => {
+            e.preventDefault();
+            this.removeLineItem(itemId);
+        });
+
+        this.updateTotals();
+    }
+
+    removeLineItem(itemId) {
+        const element = this.lineItemsContainer.querySelector(`[data-item-id="${itemId}"]`);
+        if (element) {
+            element.remove();
+        }
+        if (this.lineItemsContainer.children.length === 0) {
+            this.addLineItem();
+        }
+        this.updateTotals();
+    }
+
+    collectLineItems() {
+        const items = [];
+        document.querySelectorAll('.line-item').forEach(itemEl => {
+            const description = itemEl.querySelector('.item-description').value.trim();
+            const quantity = itemEl.querySelector('.item-quantity').value;
+            const unit_price = itemEl.querySelector('.item-price').value;
+
+            if (description && quantity && unit_price) {
+                items.push({
+                    description,
+                    quantity: parseFloat(quantity),
+                    unit_price: parseFloat(unit_price)
+                });
+            }
+        });
+        return items;
+    }
+
+    updateTotals() {
+        const items = this.collectLineItems();
+        const taxRate = parseFloat(document.getElementById('id_tax_rate').value) || 0;
+
+        let subtotal = 0;
+        items.forEach(item => {
+            subtotal += item.quantity * item.unit_price;
+        });
+
+        const taxAmount = (subtotal * taxRate) / 100;
+        const total = subtotal + taxAmount;
+
+        document.getElementById('subtotal').textContent = this.formatCurrency(subtotal);
+        document.getElementById('tax-amount').textContent = this.formatCurrency(taxAmount);
+        document.getElementById('total-amount').textContent = this.formatCurrency(total);
+        document.getElementById('tax-rate-display').textContent = taxRate.toFixed(2);
+
+        // Update hidden field
+        document.getElementById('line_items_json').value = JSON.stringify(items);
+    }
+
+    formatCurrency(value) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(value);
+    }
+
+    loadTemplate(e) {
+        e.preventDefault();
+        const templateId = e.currentTarget.getAttribute('data-template-id');
+
+        fetch('{% url "invoices:load_template" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `template_id=${templateId}`
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('id_business_name').value = data.business_name;
+                document.getElementById('id_business_email').value = data.business_email;
+                document.getElementById('id_business_phone').value = data.business_phone;
+                document.getElementById('id_business_address').value = data.business_address;
+                document.getElementById('id_currency').value = data.currency;
+                document.getElementById('id_tax_rate').value = data.tax_rate;
+                this.updateTotals();
+            }
+        });
+    }
+
+    handleSubmit(e) {
+        const items = this.collectLineItems();
+
+        if (items.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one item to your invoice.');
+            return;
+        }
+
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('submit-btn').textContent = 'Creating...';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    new InvoiceForm();
+});
+</script>
+{% endblock %}

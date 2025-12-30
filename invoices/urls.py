@@ -5,6 +5,7 @@ from . import settings_views
 from . import payment_settings_views
 from . import admin_views
 from . import paystack_views
+from . import invoice_create_views
 from .settings_views import (
     settings_profile,
     settings_business,
@@ -26,6 +27,13 @@ urlpatterns = [
     path("bulk-action/", views.bulk_invoice_action, name="bulk_invoice_action"),
     path("export-csv/", views.export_invoices_csv, name="export_invoices_csv"),
 
+    # ------------------------------------------------------------------
+    # CREATE INVOICE (Production-grade with comprehensive validation)
+    # ------------------------------------------------------------------
+    path("create/", invoice_create_views.create_invoice_start, name="create_invoice_start"),
+    path("create/load-template/", invoice_create_views.load_template, name="load_template"),
+    path("create/validate/", invoice_create_views.validate_invoice_form, name="validate_invoice_form"),
+    path("create/calculate/", invoice_create_views.calculate_totals, name="calculate_totals"),
 
     path("invoice/<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
     path("invoice/<int:invoice_id>/edit/", views.edit_invoice, name="edit_invoice"),
