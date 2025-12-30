@@ -451,9 +451,10 @@ def invoice_list(request):
         start_date = today.replace(month=1, day=1)
         base_queryset = base_queryset.filter(invoice_date__gte=start_date)
 
-    # Annotate BEFORE sorting to ensure 'total' field exists for sorting
+    # Annotate BEFORE sorting to ensure 'line_items_total' field exists for sorting
+    # Use 'line_items_total' instead of 'total' to avoid conflict with Invoice.total property
     invoices_with_totals = base_queryset.annotate(
-        total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
+        line_items_total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
     )
 
     valid_sorts = {
@@ -463,8 +464,8 @@ def invoice_list(request):
         "invoice_date": "invoice_date",
         "client_name": "client_name",
         "-client_name": "-client_name",
-        "-total": "-total",
-        "total": "total",
+        "-total": "-line_items_total",
+        "total": "line_items_total",
         "status": "status",
         "-status": "-status",
     }
