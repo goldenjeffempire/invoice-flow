@@ -155,7 +155,9 @@ Architecture prioritizes security-by-default with idempotent payment processing 
 ✓ Environment variables managed securely
 
 ## Recent Changes (December 28-30, 2025)
-- **Complete Gunicorn Configuration**: Enterprise-grade gunicorn.conf.py created with:
+
+### Production-Grade Gunicorn Configuration (COMPLETE)
+- **Complete Gunicorn Configuration**: Enterprise-grade gunicorn.conf.py with:
   - Dynamic worker scaling (2-7 workers based on CPU cores)
   - Memory leak prevention (1000-request restart cycles)
   - 120-second request timeout protection
@@ -165,13 +167,27 @@ Architecture prioritizes security-by-default with idempotent payment processing 
   - Structured logging to stdout/stderr
   - Render-optimized thread pool (4 threads per worker)
   - Connection pooling and forwarded header handling
+
+### Logging & Proxy Header Fixes (COMPLETE)
+- **Fixed Gunicorn logging error**: Changed %(p)d to %(p)s in access_log_format
+  - Gunicorn v23 provides worker PID as string, not integer
+  - Changed response_time format from %%D (numeric) to %(D)s (string)
+  - Eliminated "Value is not callable: None" logging exceptions
+- **Fixed contradictory scheme headers**: Removed duplicate X-Forwarded-Proto detection
+  - Set SECURE_PROXY_SSL_HEADER = None (Gunicorn's secure_scheme_headers handles it)
+  - Prevents Django and Gunicorn from conflicting on scheme detection
+  - Only Gunicorn processes X-Forwarded-Proto in production mode
+  - No more "Contradictory scheme headers" warnings
+
+### Other Fixes & Verification
 - Fixed SSL/TLS configuration: Removed `ssl_context = None` causing errors
 - Made cookie security settings conditional on IS_PRODUCTION
-- Removed empty `secure_scheme_headers = {}` in development (eliminates warnings)
+- Removed empty `secure_scheme_headers = {}` in development
 - Render HTTPS termination configured (no SSL needed in Gunicorn)
 - All deployment files verified and production-ready
 - Development server running cleanly (0 errors/warnings)
 - Zero-downtime deployment ready for Render
+- **Status**: Production-ready for custom domain (invoiceflow.com.ng)
 
 ## Files Structure
 ```

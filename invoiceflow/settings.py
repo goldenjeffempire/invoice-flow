@@ -107,7 +107,12 @@ SECURE_HSTS_PRELOAD = IS_PRODUCTION
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if IS_PRODUCTION else None
+
+# Proxy SSL header detection
+# Note: Gunicorn handles X-Forwarded-Proto via secure_scheme_headers in production
+# Do NOT duplicate this in Django to avoid contradictory scheme headers warnings
+# Setting this to None lets Gunicorn's secure_scheme_headers handle the detection
+SECURE_PROXY_SSL_HEADER = None
 
 X_FRAME_OPTIONS = "DENY"
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
