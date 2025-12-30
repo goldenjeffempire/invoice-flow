@@ -107,7 +107,7 @@
     .form-select,
     .form-textarea {
         padding: 0.75rem;
-        border: 1px solid var(--border-color);
+        border: 2px solid var(--border-color);
         border-radius: 8px;
         font-size: 0.95rem;
         font-family: inherit;
@@ -120,6 +120,21 @@
         outline: none;
         border-color: var(--primary-color);
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .form-input.valid {
+        border-color: var(--success-color);
+        background: rgba(16, 185, 129, 0.02);
+    }
+
+    .form-input.invalid {
+        border-color: var(--danger-color);
+        background: rgba(239, 68, 68, 0.02);
+    }
+
+    .form-input::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.7;
     }
 
     .form-textarea {
@@ -360,6 +375,43 @@
         transform: translateY(-2px);
     }
 
+    .recent-client-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Form validation feedback */
+    .field-validation-status {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.9rem;
+    }
+
+    .field-wrapper {
+        position: relative;
+    }
+
+    /* Help text improvements */
+    .form-help {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .help-icon {
+        width: 14px;
+        height: 14px;
+        background: var(--text-secondary);
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.7rem;
+        cursor: help;
+    }
+
     .client-name {
         display: block;
         font-weight: 600;
@@ -387,26 +439,93 @@
 
     /* Responsive */
     @media (max-width: 768px) {
+        .invoice-container {
+            grid-template-columns: 1fr;
+        }
+
         .invoice-content {
             padding: 1rem;
         }
 
         .form-section {
-            padding: 1.5rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
         }
 
         .invoice-title {
             font-size: 1.5rem;
         }
 
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
         .button-group {
             flex-direction: column;
+            gap: 0.75rem;
         }
 
         .btn-primary,
         .btn-secondary {
             flex: none;
             width: 100%;
+            padding: 1rem;
+        }
+
+        .line-item {
+            grid-template-columns: 1fr;
+            padding: 0.75rem;
+        }
+
+        .summary-section {
+            padding: 1rem;
+        }
+
+        .recent-clients-grid {
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .invoice-content {
+            padding: 0.75rem;
+        }
+
+        .form-section {
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .invoice-title {
+            font-size: 1.25rem;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            font-size: 16px; /* Prevents zoom on iOS */
+        }
+
+        .recent-clients-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
         }
     }
 </style>
@@ -512,9 +631,9 @@
             <div class="form-section">
                 <h2 class="section-title">Client Information</h2>
                 <div class="form-grid">
-                    <div class="form-group">
+                    <div class="form-group field-wrapper">
                         <label for="id_client_name" class="form-label">Client Name <span class="form-required">*</span></label>
-                        <input type="text" id="id_client_name" name="client_name" class="form-input" required placeholder="Client Company or Name">
+                        <input type="text" id="id_client_name" name="client_name" class="form-input" required placeholder="Client Company or Name" data-validate="required">
                         {% if form.client_name.errors %}
                             <div class="form-error">{{ form.client_name.errors.0 }}</div>
                         {% endif %}
@@ -640,8 +759,13 @@
 
             <!-- Buttons -->
             <div class="button-group">
-                <button type="submit" id="submit-btn" class="btn-primary">Create Invoice</button>
+                <button type="submit" id="submit-btn" class="btn-primary" title="Create Invoice (Alt+S)">Create Invoice</button>
                 <a href="{% url 'invoices:invoice_list' %}" class="btn-secondary" style="text-decoration: none; text-align: center;">Cancel</a>
+            </div>
+
+            <!-- Keyboard Shortcuts Help -->
+            <div class="form-help" style="margin-top: 1rem; text-align: center; font-size: 0.85rem;">
+                <span style="color: var(--text-secondary);">💡 Tip: Alt+S to submit • Alt+A to add item</span>
             </div>
         </form>
     </main>
@@ -685,6 +809,30 @@ class InvoiceForm {
             btn.addEventListener('click', (e) => this.loadClient(e));
         });
 
+        // Field validation
+        const validateFields = ['id_client_name', 'id_client_email', 'id_business_email'];
+        validateFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('blur', () => this.validateField(field));
+                field.addEventListener('input', () => this.validateField(field));
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Alt+S to submit
+            if (e.altKey && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('submit-btn').click();
+            }
+            // Alt+A to add item
+            if (e.altKey && e.key === 'a') {
+                e.preventDefault();
+                this.addLineItem();
+            }
+        });
+
         // Form submission
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
     }
@@ -696,6 +844,13 @@ class InvoiceForm {
         document.getElementById('id_client_email').value = btn.getAttribute('data-client-email');
         document.getElementById('id_client_phone').value = btn.getAttribute('data-client-phone') || '';
         document.getElementById('id_client_address').value = btn.getAttribute('data-client-address') || '';
+        
+        // Validate fields after loading
+        this.validateField(document.getElementById('id_client_name'));
+        this.validateField(document.getElementById('id_client_email'));
+        
+        // Show success feedback
+        this.showFeedback('Client loaded successfully!', 'success');
     }
 
     addLineItem() {
@@ -830,12 +985,51 @@ class InvoiceForm {
         });
     }
 
+    validateField(field) {
+        if (!field) return;
+        
+        const type = field.getAttribute('data-validate') || field.type;
+        let isValid = true;
+
+        if (type === 'required' && !field.value.trim()) {
+            isValid = false;
+        } else if (type === 'email') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            isValid = emailRegex.test(field.value);
+        }
+
+        if (isValid && field.value.trim()) {
+            field.classList.remove('invalid');
+            field.classList.add('valid');
+        } else if (!isValid && field.value.trim()) {
+            field.classList.remove('valid');
+            field.classList.add('invalid');
+        } else {
+            field.classList.remove('valid', 'invalid');
+        }
+    }
+
+    showFeedback(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.textContent = message;
+        alertDiv.style.position = 'fixed';
+        alertDiv.style.top = '20px';
+        alertDiv.style.right = '20px';
+        alertDiv.style.zIndex = '9999';
+        alertDiv.style.maxWidth = '400px';
+        alertDiv.style.animation = 'slideIn 0.3s ease-out';
+
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 3000);
+    }
+
     handleSubmit(e) {
         const items = this.collectLineItems();
 
         if (items.length === 0) {
             e.preventDefault();
-            alert('Please add at least one item to your invoice.');
+            this.showFeedback('Please add at least one item to your invoice.', 'error');
             return;
         }
 

@@ -279,12 +279,13 @@ def validate_invoice_form(request):
 @ratelimit(key='user', rate='10/m', method='POST', block=True)
 def calculate_totals(request):
     """
-    Calculate invoice totals (subtotal, tax, total) via AJAX.
+    Calculate invoice totals (subtotal, tax, total, discount) via AJAX.
     Returns calculated values based on line items and tax rate.
     """
     try:
         line_items_json = request.POST.get('line_items_json', '[]')
         tax_rate = Decimal(request.POST.get('tax_rate', '0'))
+        discount_rate = Decimal(request.POST.get('discount', '0'))
         
         line_items_data = json.loads(line_items_json)
         
@@ -297,16 +298,23 @@ def calculate_totals(request):
             except (ValueError, TypeError):
                 continue
         
-        # Validate tax rate
+        # Validate rates
         if tax_rate < 0 or tax_rate > 100:
             tax_rate = Decimal('0')
+        if discount_rate < 0 or discount_rate > 100:
+            discount_rate = Decimal('0')
         
-        tax_amount = (subtotal * tax_rate) / Decimal('100')
-        total = subtotal + tax_amount
+        # Calculate with discount applied before tax
+        discount_amount = (subtotal * discount_rate) / Decimal('100')
+        after_discount = subtotal - discount_amount
+        tax_amount = (after_discount * tax_rate) / Decimal('100')
+        total = after_discount + tax_amount
         
         return JsonResponse({
             'success': True,
             'subtotal': float(subtotal),
+            'discount_amount': float(discount_amount),
+            'after_discount': float(after_discount),
             'tax_amount': float(tax_amount),
             'total': float(total),
         })
