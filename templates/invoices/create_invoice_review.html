@@ -1,0 +1,109 @@
+{% extends 'base/layout.html' %}
+{% load static %}
+
+{% block title %}Review Invoice | InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="dashboard-layout">
+    {% include 'components/dashboard-sidebar.html' with active='create_invoice_start' %}
+    
+    <main class="dashboard-content">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Review Invoice</h1>
+                    <p class="text-slate-500 mt-1">Review the details before finalizing.</p>
+                </div>
+                <div class="flex gap-2">
+                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                </div>
+            </div>
+
+            <div class="space-y-8">
+                <div class="data-card p-12 bg-white relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full -mr-32 -mt-32 opacity-50"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="grid grid-cols-2 gap-12 mb-12">
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">From</h3>
+                                <div class="text-slate-900 font-bold text-lg">{{ user.business_profile.business_name|default:user.email }}</div>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Bill To</h3>
+                                <div class="text-slate-900 font-bold text-lg">{{ draft_data.client_name }}</div>
+                                <div class="text-slate-500 mt-1">{{ draft_data.client_email }}</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-2xl p-8 mb-12 flex justify-between">
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-1">Issue Date</h4>
+                                <p class="text-slate-900 font-bold">{{ draft_data.invoice_date }}</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-1">Due Date</h4>
+                                <p class="text-slate-900 font-bold">{{ draft_data.due_date }}</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-1">Total Amount</h4>
+                                <p class="text-2xl font-black text-indigo-600">{{ draft_data.currency }} {{ total|floatformat:2 }}</p>
+                            </div>
+                        </div>
+
+                        <table class="w-full mb-12">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                                    <th class="pb-4 text-left">Description</th>
+                                    <th class="pb-4 text-center">Qty</th>
+                                    <th class="pb-4 text-right">Price</th>
+                                    <th class="pb-4 text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-50">
+                                {% for item in items %}
+                                <tr>
+                                    <td class="py-6 font-bold text-slate-900">{{ item.description }}</td>
+                                    <td class="py-6 text-center text-slate-600">{{ item.quantity }}</td>
+                                    <td class="py-6 text-right text-slate-600">{{ draft_data.currency }} {{ item.unit_price|floatformat:2 }}</td>
+                                    <td class="py-6 text-right font-bold text-slate-900">{{ draft_data.currency }} {{ item.total|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                        <div class="flex justify-end">
+                            <div class="w-full max-w-xs space-y-3">
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Subtotal</span>
+                                    <span class="font-bold text-slate-900">{{ draft_data.currency }} {{ subtotal|floatformat:2 }}</span>
+                                </div>
+                                <div class="flex justify-between text-slate-500">
+                                    <span>Tax ({{ draft_data.tax_rate }}%)</span>
+                                    <span class="font-bold text-slate-900">{{ draft_data.currency }} {{ tax_amount|floatformat:2 }}</span>
+                                </div>
+                                <div class="flex justify-between border-t border-slate-200 pt-3 text-xl font-black text-indigo-600">
+                                    <span>Total</span>
+                                    <span>{{ draft_data.currency }} {{ total|floatformat:2 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="{% url 'invoices:save_invoice_draft' %}">
+                    {% csrf_token %}
+                    <div class="flex justify-end gap-4">
+                        <a href="{% url 'invoices:create_invoice_taxes' %}" class="px-6 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-all">Back to Taxes</a>
+                        <button type="submit" class="px-12 py-4 bg-indigo-600 text-white rounded-xl font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200">
+                            Create Final Invoice
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}
