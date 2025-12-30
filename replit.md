@@ -20,6 +20,13 @@ Key technical implementations include strict API validation using Decimal types 
 ### Feature Specifications
 Core features include a professional "Create Invoice" form with real-time calculations and currency support, an "Invoice List" with bulk actions and advanced filtering, and a unified "Settings" interface. The platform also supports comprehensive API documentation, health check endpoints, structured JSON logging, multi-currency support, recurring invoice automation, an admin interface, hCaptcha form protection, SendGrid email integration, and role-based access control.
 
+### Template System Architecture
+The project maintains dual template systems for flexibility:
+- **Existing system**: Traditional Django templates organized by feature (auth, invoices, payments, etc.)
+- **Unified templates**: Modern component-based templates in `/templates/components/` and `/templates/pages/`
+
+**Decision**: Both systems are kept as-is to provide flexibility for gradual migration and feature-specific optimization. Backend views can route to either system based on requirements.
+
 ### System Design Choices
 The architecture emphasizes security-by-default, with idempotent payment processing and webhook deduplication. Performance is optimized through database indexing and efficient server configurations. The system is designed for scalability and maintainability, ensuring clear separation of concerns.
 
