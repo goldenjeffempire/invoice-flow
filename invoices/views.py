@@ -599,11 +599,23 @@ def create_invoice(request):
                 logger.exception("Failed to create invoice")
                 messages.error(request, f"Critical error during invoice creation: {str(e)}")
                 form = InvoiceForm(request.POST)
+    # Get user profile for default values
+    default_currency = "USD"
+    default_tax = 0
+    try:
+        profile = request.user.profile
+        default_currency = profile.default_currency or "USD"
+        default_tax = float(profile.default_tax_rate or 0)
+    except Exception:
+        pass
+
     # Prepare context
     context = {
         "invoice_form": form,
         "today": timezone.now().date(),
         "default_due_date": timezone.now().date() + timedelta(days=30),
+        "default_currency": default_currency,
+        "default_tax": default_tax,
         "active": "create_invoice",
     }
     return render(request, "invoices/create_invoice.html", context)
