@@ -5,6 +5,7 @@ from . import settings_views
 from . import payment_settings_views
 from . import admin_views
 from . import paystack_views
+from . import invoice_create_views
 from .settings_views import (
     settings_profile,
     settings_business,
@@ -23,9 +24,17 @@ urlpatterns = [
     path("", views.invoice_list, name="invoice_list"),
     path("list/", views.invoice_list, name="invoice_list_alt"),
     path("analytics/", views.analytics, name="analytics"),
-    path("create/", views.create_invoice, name="create_invoice"),
     path("bulk-action/", views.bulk_invoice_action, name="bulk_invoice_action"),
     path("export-csv/", views.export_invoices_csv, name="export_invoices_csv"),
+
+    # ------------------------------------------------------------------
+    # CREATE INVOICE (Production-grade multi-step workflow)
+    # ------------------------------------------------------------------
+    path("create/", invoice_create_views.create_invoice_start, name="create_invoice_start"),
+    path("create/items/", invoice_create_views.create_invoice_items, name="create_invoice_items"),
+    path("create/taxes/", invoice_create_views.create_invoice_taxes, name="create_invoice_taxes"),
+    path("create/review/", invoice_create_views.create_invoice_review, name="create_invoice_review"),
+    path("create/draft/", invoice_create_views.save_invoice_draft, name="save_invoice_draft"),
 
     path("invoice/<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
     path("invoice/<int:invoice_id>/edit/", views.edit_invoice, name="edit_invoice"),

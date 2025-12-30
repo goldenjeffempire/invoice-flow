@@ -1,0 +1,113 @@
+{% extends "base/layout-light.html" %}
+{% load static %}
+{% block title %}Create Invoice - Step 1 - InvoiceFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+.create-container { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+.create-header { margin-bottom: 32px; }
+.create-title { font-size: 2rem; font-weight: 700; color: var(--light-text-primary); margin: 0; }
+.step-indicator { display: flex; gap: 16px; margin: 24px 0; }
+.step { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; color: var(--light-text-secondary); }
+.step-num { width: 32px; height: 32px; border-radius: 50%; background: var(--light-bg-tertiary); display: flex; align-items: center; justify-content: center; font-weight: 600; }
+.step.active .step-num { background: var(--light-primary); color: white; }
+.form-section { background: var(--light-bg-secondary); border-radius: 12px; border: 1px solid var(--light-border-primary); padding: 24px; margin-bottom: 24px; }
+.section-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 20px; color: var(--light-text-primary); }
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
+@media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
+.form-group { display: flex; flex-direction: column; }
+.form-label { font-size: 0.875rem; color: var(--light-text-secondary); font-weight: 500; margin-bottom: 8px; }
+.form-label.required::after { content: " *"; color: var(--light-danger); }
+.form-input, .form-select, .form-textarea { padding: 10px 12px; border: 1px solid var(--light-border-primary); border-radius: 8px; font-size: 0.9375rem; background: var(--light-bg-tertiary); color: var(--light-text-primary); transition: all 0.2s ease; }
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--light-primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-actions { display: flex; justify-content: space-between; gap: 16px; margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--light-border-primary); }
+.btn { padding: 10px 24px; border-radius: 8px; font-size: 0.9375rem; font-weight: 500; cursor: pointer; transition: all 0.2s ease; border: none; }
+.btn-primary { background: var(--light-primary); color: white; }
+.btn-primary:hover { background: var(--light-primary-dark); }
+.btn-secondary { background: var(--light-bg-tertiary); color: var(--light-text-primary); border: 1px solid var(--light-border-primary); }
+.btn-secondary:hover { background: var(--light-bg-secondary); }
+.errors { background: var(--light-danger-light); border: 1px solid var(--light-danger); color: var(--light-danger); padding: 12px; border-radius: 8px; margin-bottom: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <div class="create-header">
+        <h1 class="create-title">Create Invoice</h1>
+        <div class="step-indicator">
+            <div class="step active"><div class="step-num">1</div> Details</div>
+            <div class="step"><div class="step-num">2</div> Items</div>
+            <div class="step"><div class="step-num">3</div> Taxes</div>
+            <div class="step"><div class="step-num">4</div> Review</div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="errors">
+        {% for message in messages %}
+            <div>{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="">
+        {% csrf_token %}
+
+        <!-- Invoice Details -->
+        <div class="form-section">
+            <h2 class="section-title">Invoice Details</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label required">Invoice Date</label>
+                    {{ details_form.invoice_date }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Due Date</label>
+                    {{ details_form.due_date }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Currency</label>
+                    {{ details_form.currency }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Invoice Number</label>
+                    {{ details_form.invoice_number }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                {{ details_form.description }}
+            </div>
+        </div>
+
+        <!-- Client Details -->
+        <div class="form-section">
+            <h2 class="section-title">Client Information</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label required">Client Name</label>
+                    {{ client_form.client_name }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Email</label>
+                    {{ client_form.client_email }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone</label>
+                    {{ client_form.client_phone }}
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Address</label>
+                {{ client_form.client_address }}
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Continue to Items →</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
