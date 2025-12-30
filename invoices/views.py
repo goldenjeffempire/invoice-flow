@@ -617,13 +617,6 @@ def create_invoice(request):
     }
     return render(request, "invoices/create_invoice.html", context)
 
-    context = {
-        "invoice_form": form,
-        "today": date.today(),
-        "default_due_date": date.today() + timedelta(days=30),
-    }
-    return render(request, "invoices/create_invoice.html", context)
-
 
 @login_required
 def invoice_detail(request, invoice_id):
