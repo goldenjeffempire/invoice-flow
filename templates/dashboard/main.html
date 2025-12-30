@@ -4,40 +4,69 @@
 {% block title %}Dashboard - InvoiceFlow{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard-modern.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard-enhanced.css' %}">
 <style>
 :root {
-    --primary: #4f46e5;
-    --primary-light: #6366f1;
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #818cf8;
     --success: #10b981;
     --warning: #f59e0b;
     --danger: #ef4444;
+    --info: #06b6d4;
     --bg: #f9fafb;
     --bg-card: #ffffff;
     --text-primary: #1f2937;
     --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
     --border: #e5e7eb;
+    --border-light: #f3f4f6;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: linear-gradient(135deg, var(--bg) 0%, #f3f4f6 100%); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; }
+html { scroll-behavior: smooth; }
 
-body { background-color: var(--bg); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+/* Scrollbar Styling */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
 
-.dashboard-wrapper { min-height: 100vh; padding: 2rem 1rem; }
+.dashboard-wrapper { 
+    min-height: 100vh; 
+    padding: 2rem 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
 
+/* Header Section */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 2rem;
 }
 
-.dashboard-title {
-    font-size: 2.5rem;
-    font-weight: 700;
+.dashboard-header-left h1 {
+    font-size: 2.75rem;
+    font-weight: 800;
     color: var(--text-primary);
+    margin: 0;
+    letter-spacing: -0.02em;
+}
+
+.dashboard-header-left p {
+    color: var(--text-secondary);
+    margin: 0.5rem 0 0 0;
+    font-size: 1rem;
 }
 
 .dashboard-actions {
@@ -49,35 +78,38 @@ body { background-color: var(--bg); color: var(--text-primary); font-family: -ap
 .btn-action {
     padding: 0.75rem 1.5rem;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition);
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 1rem;
+    text-decoration: none;
 }
 
 .btn-primary-action {
-    background: var(--primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: white;
+    box-shadow: var(--shadow-md);
 }
 
 .btn-primary-action:hover {
-    background: var(--primary-light);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    box-shadow: var(--shadow-lg);
 }
 
 .btn-secondary-action {
     background: var(--bg-card);
     color: var(--text-primary);
-    border: 1px solid var(--border);
+    border: 1.5px solid var(--border);
 }
 
 .btn-secondary-action:hover {
-    background: var(--bg);
     border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(99, 102, 241, 0.02);
 }
 
 /* Stats Grid */
@@ -85,51 +117,75 @@ body { background-color: var(--bg); color: var(--text-primary); font-family: -ap
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
 }
 
 .stat-card {
     background: var(--bg-card);
-    border-radius: 1rem;
-    padding: 1.5rem;
+    border-radius: 1.125rem;
+    padding: 1.75rem;
     border: 1px solid var(--border);
-    transition: all 0.3s;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: var(--transition);
 }
 
 .stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
     border-color: var(--primary);
 }
 
+.stat-card:hover::before {
+    transform: scaleX(1);
+}
+
 .stat-icon {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 0.75rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+    font-size: 1.75rem;
+    font-weight: bold;
 }
 
-.stat-icon-blue { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
-.stat-icon-green { background: rgba(16, 185, 129, 0.1); color: var(--success); }
-.stat-icon-orange { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
-.stat-icon-red { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+.stat-icon-blue { background: rgba(99, 102, 241, 0.12); color: var(--primary); }
+.stat-icon-green { background: rgba(16, 185, 129, 0.12); color: var(--success); }
+.stat-icon-orange { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
+.stat-icon-red { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
 
 .stat-label {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    margin-bottom: 0.5rem;
-    font-weight: 500;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .stat-value {
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 2.25rem;
+    font-weight: 800;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
 }
 
 .stat-change {
@@ -139,40 +195,45 @@ body { background-color: var(--bg); color: var(--text-primary); font-family: -ap
 }
 
 .stat-change.negative { color: var(--danger); }
+.stat-change.neutral { color: var(--text-secondary); }
 
 /* Main Grid */
 .main-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 2rem;
+    margin-bottom: 3rem;
 }
 
 .dashboard-card {
     background: var(--bg-card);
-    border-radius: 1rem;
+    border-radius: 1.125rem;
     border: 1px solid var(--border);
     overflow: hidden;
-    transition: all 0.3s;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
 }
 
 .dashboard-card:hover {
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-    border-color: var(--primary);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(99, 102, 241, 0.3);
 }
 
 .card-header {
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--border);
+    padding: 1.75rem;
+    border-bottom: 1px solid var(--border-light);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .card-title {
-    font-size: 1.25rem;
+    font-size: 1.375rem;
     font-weight: 700;
     color: var(--text-primary);
+    letter-spacing: -0.01em;
 }
 
 .card-link {
@@ -180,44 +241,61 @@ body { background-color: var(--bg); color: var(--text-primary); font-family: -ap
     text-decoration: none;
     font-weight: 600;
     font-size: 0.875rem;
+    transition: var(--transition);
 }
 
-.card-link:hover { text-decoration: underline; }
+.card-link:hover { 
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
 
-.card-body { padding: 1.5rem; }
+.card-body { 
+    padding: 1.75rem; 
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
 
 /* Activity List */
 .activity-list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.25rem;
 }
 
 .activity-item {
     display: flex;
     gap: 1rem;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    background: var(--bg);
-    transition: all 0.2s;
+    padding: 1.25rem;
+    border-radius: 0.875rem;
+    background: var(--border-light);
+    transition: var(--transition);
+    align-items: center;
 }
 
-.activity-item:hover { background: #f3f4f6; }
+.activity-item:hover { 
+    background: rgba(99, 102, 241, 0.08);
+}
 
 .activity-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.875rem;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    font-size: 1.25rem;
 }
 
-.activity-icon-invoice { background: rgba(79, 70, 229, 0.1); color: var(--primary); }
-.activity-icon-payment { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+.activity-icon-invoice { background: rgba(99, 102, 241, 0.12); color: var(--primary); }
+.activity-icon-payment { background: rgba(16, 185, 129, 0.12); color: var(--success); }
+.activity-icon-pending { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
 
-.activity-content { flex: 1; min-width: 0; }
+.activity-content { 
+    flex: 1; 
+    min-width: 0;
+}
 
 .activity-title {
     font-weight: 600;
@@ -226,60 +304,78 @@ body { background-color: var(--bg); color: var(--text-primary); font-family: -ap
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.95rem;
 }
 
 .activity-time {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
 }
 
 .activity-badge {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
-    background: rgba(79, 70, 229, 0.1);
+    padding: 0.375rem 0.875rem;
+    background: rgba(99, 102, 241, 0.12);
     color: var(--primary);
-    border-radius: 0.25rem;
+    border-radius: 0.5rem;
     font-size: 0.75rem;
     font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
+
+.activity-badge.paid { background: rgba(16, 185, 129, 0.12); color: var(--success); }
+.activity-badge.unpaid { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
+.activity-badge.overdue { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
 
 /* Quick Actions */
 .quick-actions-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.875rem;
 }
 
 .quick-action {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.875rem;
-    border-radius: 0.5rem;
-    background: var(--bg);
+    gap: 1rem;
+    padding: 1.125rem;
+    border-radius: 0.875rem;
+    background: var(--border-light);
     text-decoration: none;
     color: var(--text-primary);
-    transition: all 0.2s;
+    transition: var(--transition);
     cursor: pointer;
     border: none;
     text-align: left;
     font-family: inherit;
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .quick-action:hover {
-    background: #f3f4f6;
+    background: rgba(99, 102, 241, 0.1);
     transform: translateX(4px);
+    color: var(--primary);
 }
 
 .quick-action-icon {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 0.375rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     color: var(--primary);
+    font-size: 1.25rem;
+    background: rgba(99, 102, 241, 0.08);
+    transition: var(--transition);
+}
+
+.quick-action:hover .quick-action-icon {
+    background: rgba(99, 102, 241, 0.15);
+    transform: scale(1.1);
 }
 
 .quick-action-text {
@@ -287,119 +383,276 @@ body { background-color: var(--bg); color: var(--text-primary); font-family: -ap
     font-weight: 500;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .dashboard-wrapper { padding: 1rem; }
-    .dashboard-title { font-size: 1.75rem; }
-    .dashboard-header { flex-direction: column; align-items: flex-start; }
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* Loading Animation */
+@keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.loading { animation: shimmer 2s infinite; }
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.stat-card, .dashboard-card {
+    animation: slideUp 0.5s ease-out;
+}
+
+.stat-card:nth-child(2) { animation-delay: 0.1s; }
+.stat-card:nth-child(3) { animation-delay: 0.2s; }
+.stat-card:nth-child(4) { animation-delay: 0.3s; }
+
+/* Responsive Design - Mobile First */
+@media (max-width: 1024px) {
     .main-grid { grid-template-columns: 1fr; }
-    .stats-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .dashboard-wrapper { padding: 1.25rem 0.75rem; }
+    
+    .dashboard-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .dashboard-header-left h1 { font-size: 2rem; }
+    .dashboard-header-left p { font-size: 0.9rem; }
+    
+    .dashboard-actions { 
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .btn-action { width: 100%; justify-content: center; }
+    
+    .stats-grid { 
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .stat-card { padding: 1.5rem; }
+    .stat-value { font-size: 1.875rem; }
+    .stat-icon { width: 3rem; height: 3rem; }
+    
+    .main-grid { gap: 1.5rem; }
+    
+    .card-header { padding: 1.5rem; }
+    .card-body { padding: 1.5rem; }
+    
+    .card-title { font-size: 1.125rem; }
+    
+    .activity-item { padding: 1rem; }
+    .quick-action { padding: 1rem; }
 }
 
 @media (max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr; }
-    .btn-action { width: 100%; justify-content: center; }
-    .dashboard-actions { width: 100%; flex-direction: column; }
+    .dashboard-wrapper { padding: 1rem 0.5rem; }
+    
+    .dashboard-header-left h1 { font-size: 1.75rem; }
+    .dashboard-header-left p { font-size: 0.85rem; }
+    
+    .stats-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+    
+    .stat-card { 
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+    }
+    
+    .stat-value { font-size: 1.625rem; }
+    .stat-icon { width: 2.5rem; height: 2.5rem; font-size: 1.25rem; }
+    .stat-label { font-size: 0.75rem; }
+    
+    .card-header { padding: 1.25rem; }
+    .card-body { padding: 1.25rem; }
+    
+    .card-title { font-size: 1rem; }
+    
+    .activity-item { 
+        padding: 0.875rem;
+        gap: 0.75rem;
+    }
+    
+    .activity-icon { width: 2.375rem; height: 2.375rem; }
+    .activity-title { font-size: 0.875rem; }
+    .activity-time { font-size: 0.75rem; }
+    
+    .quick-action { 
+        padding: 0.875rem;
+        gap: 0.75rem;
+    }
+    
+    .quick-action-icon { width: 2rem; height: 2rem; font-size: 1rem; }
+}
+
+/* Print Styles */
+@media print {
+    body { background: white; }
+    .dashboard-actions { display: none; }
+    .card-link { display: none; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-wrapper">
-    <!-- Header -->
+    <!-- Header Section -->
     <div class="dashboard-header">
-        <div>
-            <h1 class="dashboard-title">Dashboard</h1>
+        <div class="dashboard-header-left">
+            <h1>Dashboard</h1>
+            <p>Welcome back! Here's your business overview.</p>
         </div>
         <div class="dashboard-actions">
-            <button class="btn-action btn-secondary-action" onclick="location.reload()">
+            <button class="btn-action btn-secondary-action" onclick="location.reload()" title="Refresh dashboard data">
                 ↻ Refresh
             </button>
-            <a href="{% url 'admin_invoices' %}" class="btn-action btn-primary-action">
+            <a href="{% url 'admin_invoice_create' %}" class="btn-action btn-primary-action" title="Create a new invoice">
                 + New Invoice
             </a>
         </div>
     </div>
 
-    <!-- Stats Grid -->
+    <!-- Statistics Grid -->
     <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon stat-icon-blue">💰</div>
+        <!-- Revenue Card -->
+        <div class="stat-card stat-card-revenue">
+            <div class="stat-icon stat-icon-green">💰</div>
             <div class="stat-label">Total Revenue</div>
-            <div class="stat-value">${{ total_revenue|default:"0" }}</div>
-            <div class="stat-change">↑ 12.5% this month</div>
+            <div class="stat-value">${{ total_revenue|default:"0"|floatformat:2 }}</div>
+            <div class="stat-change">
+                {% if total_invoices > 0 %}
+                    ↑ {{ payment_rate|default:"0"|floatformat:1 }}% collected
+                {% else %}
+                    No revenue yet
+                {% endif %}
+            </div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon stat-icon-green">📄</div>
+        <!-- Invoices Card -->
+        <div class="stat-card stat-card-invoices">
+            <div class="stat-icon stat-icon-blue">📄</div>
             <div class="stat-label">Total Invoices</div>
             <div class="stat-value">{{ total_invoices|default:"0" }}</div>
-            <div class="stat-change">↑ 8.2% this month</div>
+            <div class="stat-change">
+                {% if total_invoices > 0 %}
+                    {{ paid_invoices|default:"0" }} paid invoices
+                {% else %}
+                    Get started by creating an invoice
+                {% endif %}
+            </div>
         </div>
 
-        <div class="stat-card">
-            <div class="stat-icon stat-icon-orange">⏰</div>
-            <div class="stat-label">Pending Payment</div>
-            <div class="stat-value">${{ pending_amount|default:"0" }}</div>
-            <div class="stat-change negative">{{ overdue_invoices|default:"0" }} overdue</div>
+        <!-- Pending Card -->
+        <div class="stat-card stat-card-unpaid">
+            <div class="stat-icon stat-icon-orange">⏳</div>
+            <div class="stat-label">Awaiting Payment</div>
+            <div class="stat-value">${{ pending_amount|default:"0"|floatformat:2 }}</div>
+            <div class="stat-change {% if overdue_invoices > 0 %}negative{% else %}neutral{% endif %}">
+                {% if overdue_invoices > 0 %}
+                    {{ overdue_invoices|default:"0" }} overdue
+                {% else %}
+                    All payments on track
+                {% endif %}
+            </div>
         </div>
 
-        <div class="stat-card">
+        <!-- Payment Rate Card -->
+        <div class="stat-card stat-card-paid">
             <div class="stat-icon stat-icon-green">✓</div>
-            <div class="stat-label">Paid Invoices</div>
-            <div class="stat-value">{{ paid_invoices|default:"0" }}</div>
-            <div class="stat-change">{{ payment_rate|default:"0" }}% payment rate</div>
+            <div class="stat-label">Payment Rate</div>
+            <div class="stat-value">{{ payment_rate|default:"0"|floatformat:0 }}%</div>
+            <div class="stat-change">
+                {% if total_invoices > 0 %}
+                    {{ paid_invoices|default:"0" }} of {{ total_invoices|default:"0" }} paid
+                {% else %}
+                    No payment data yet
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- Main Content Grid -->
     <div class="main-grid">
-        <!-- Recent Activity -->
+        <!-- Recent Activity Card -->
         <div class="dashboard-card">
             <div class="card-header">
                 <h2 class="card-title">Recent Activity</h2>
                 <a href="{% url 'admin_invoices' %}" class="card-link">View all →</a>
             </div>
             <div class="card-body">
-                <div class="activity-list">
-                    {% if recent_invoices %}
-                        {% for invoice in recent_invoices|slice:":5" %}
+                {% if recent_invoices %}
+                    <div class="activity-list">
+                        {% for invoice in recent_invoices|slice:":6" %}
                         <div class="activity-item">
                             <div class="activity-icon activity-icon-invoice">📋</div>
                             <div class="activity-content">
-                                <div class="activity-title">Invoice {{ invoice.invoice_id }}</div>
+                                <div class="activity-title">Invoice #{{ invoice.invoice_id }}</div>
                                 <div class="activity-time">{{ invoice.created_at|timesince }} ago</div>
                             </div>
-                            <div class="activity-badge">{{ invoice.get_status_display }}</div>
+                            <div class="activity-badge {% if invoice.status == 'paid' %}paid{% elif invoice.status == 'overdue' %}overdue{% else %}unpaid{% endif %}">
+                                {{ invoice.get_status_display|upper }}
+                            </div>
                         </div>
                         {% endfor %}
-                    {% else %}
-                    <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No recent activity</p>
-                    {% endif %}
-                </div>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <h3>No Recent Activity</h3>
+                        <p>Start by creating your first invoice</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Quick Actions -->
+        <!-- Quick Actions Card -->
         <div class="dashboard-card">
             <div class="card-header">
                 <h2 class="card-title">Quick Actions</h2>
             </div>
             <div class="card-body">
                 <div class="quick-actions-list">
-                    <a href="{% url 'admin_invoice_create' %}" class="quick-action">
+                    <a href="{% url 'admin_invoice_create' %}" class="quick-action" title="Create a new invoice">
                         <div class="quick-action-icon">➕</div>
                         <div class="quick-action-text">Create Invoice</div>
                     </a>
-                    <a href="{% url 'admin_invoices' %}" class="quick-action">
+                    <a href="{% url 'admin_invoices' %}" class="quick-action" title="View all invoices">
                         <div class="quick-action-icon">📊</div>
-                        <div class="quick-action-text">View All Invoices</div>
+                        <div class="quick-action-text">View Invoices</div>
                     </a>
-                    <a href="#" class="quick-action">
-                        <div class="quick-action-icon">📧</div>
-                        <div class="quick-action-text">Send Reminder</div>
+                    <a href="{% url 'admin_payments' %}" class="quick-action" title="View payment transactions">
+                        <div class="quick-action-icon">💳</div>
+                        <div class="quick-action-text">Payment Status</div>
                     </a>
-                    <a href="#" class="quick-action">
+                    <a href="#" class="quick-action" title="Access dashboard settings">
                         <div class="quick-action-icon">⚙️</div>
                         <div class="quick-action-text">Settings</div>
                     </a>
@@ -408,4 +661,43 @@ body { background-color: var(--bg); color: var(--text-primary); font-family: -ap
         </div>
     </div>
 </div>
+
+<script>
+// Add smooth scroll for better UX
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#' && document.querySelector(href)) {
+            e.preventDefault();
+            document.querySelector(href).scrollIntoView({ behavior: 'smooth' });
+        }
+    });
+});
+
+// Add loading state feedback
+function showRefreshFeedback() {
+    const btn = event.target.closest('button');
+    if (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '⟳ Refreshing...';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 2000);
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + N: New Invoice
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = "{% url 'admin_invoice_create' %}";
+    }
+    // Ctrl/Cmd + R: Refresh
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        location.reload();
+    }
+});
+</script>
 {% endblock %}
