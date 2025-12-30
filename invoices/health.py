@@ -108,9 +108,11 @@ def health_check(request):
     """
     Basic health check endpoint for load balancers.
     Returns 200 if the application is running.
+    NOTE: This endpoint may redirect (e.g., HTTP->HTTPS).
+    For orchestration: Use /health/ready/ or /health/live/ instead.
     """
     uptime = _get_uptime_formatted()
-    return JsonResponse(
+    response = JsonResponse(
         {
             "status": "healthy",
             "version": APP_VERSION,
@@ -119,6 +121,10 @@ def health_check(request):
             "uptime": uptime,
         }
     )
+    # Prevent caching of health status (stale responses cause false failures)
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    return response
 
 
 def readiness_check(request):
@@ -181,7 +187,7 @@ def readiness_check(request):
     if not checks["cache"]:
         status = 503
 
-    return JsonResponse(
+    response = JsonResponse(
         {
             "status": "ready" if all_ready else "not_ready",
             "checks": checks,
@@ -191,6 +197,10 @@ def readiness_check(request):
         },
         status=status,
     )
+    # Prevent caching of readiness status
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    return response
 
 
 def liveness_check(request):
@@ -210,8 +220,19 @@ def liveness_check(request):
 
     response_data["response_time_ms"] = round((time.perf_counter() - start) * 1000, 2)
 
-    return JsonResponse(response_data)
+    response = JsonResponse(response_data)
+    # Prevent caching of liveness status
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    return response
 
+
+def detailed_health_impl(data):
+    """Build detailed health response with cache control."""
+    response = JsonResponse(data)
+    response["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    return response
 
 def detailed_health(request):
     """
@@ -310,3 +331,4 @@ def detailed_health(request):
             "async_tasks": AsyncTaskService.get_task_stats(),
         }
     )
+    return detailed_health_impl(health_data)
