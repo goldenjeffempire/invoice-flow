@@ -308,25 +308,25 @@ class NotificationPreferencesForm(forms.ModelForm):
         ]
         widgets = {
             "notify_invoice_created": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-purple-600"}
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
             ),
             "notify_payment_received": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-purple-600"}
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
             ),
             "notify_invoice_viewed": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-purple-600"}
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
             ),
             "notify_invoice_overdue": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-purple-600"}
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
             ),
             "notify_weekly_summary": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-purple-600"}
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
             ),
             "notify_security_alerts": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-purple-600"}
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
             ),
             "notify_password_changes": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-purple-600"}
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
             ),
         }
 
