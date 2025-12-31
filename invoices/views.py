@@ -1651,6 +1651,22 @@ def export_invoices_csv(request):
     return response
 
 
+@login_required
+def payment_history(request):
+    """Display payment history for the current user."""
+    from .models import Payment
+    payments = Payment.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, "payments/payment_history.html", {"payments": payments})
+
+
+@login_required
+def payment_detail(request, payment_id):
+    """Display details for a specific payment."""
+    from .models import Payment
+    payment = get_object_or_404(Payment, id=payment_id, user=request.user)
+    return render(request, "payments/payment_detail.html", {"payment": payment})
+
+
 def public_invoice(request, invoice_id: int):
     """Display invoice publicly without authentication for payment."""
     from invoices.paystack_service import get_paystack_service

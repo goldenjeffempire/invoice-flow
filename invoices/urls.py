@@ -64,6 +64,12 @@ urlpatterns = [
     path("settings/notifications/", settings_views.settings_notifications, name="settings_notifications"),
 
     # ------------------------------------------------------------------
+    # PAYMENTS
+    # ------------------------------------------------------------------
+    path("payments/history/", views.payment_history, name="payment_history"),
+    path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
+
+    # ------------------------------------------------------------------
     # DASHBOARD & PROFILE
     # ------------------------------------------------------------------
     path("dashboard/", views.dashboard, name="dashboard"),
