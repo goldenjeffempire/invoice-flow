@@ -1,6 +1,7 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from .forms import UserDetailsForm, UserProfileForm, NotificationPreferencesForm, PasswordChangeForm
 from .models import UserProfile, UserSession
 
@@ -72,7 +73,6 @@ def settings_security(request):
             if user.check_password(form.cleaned_data['current_password']):
                 user.set_password(form.cleaned_data['new_password'])
                 user.save()
-                from django.contrib.auth import update_session_auth_hash
                 update_session_auth_hash(request, user)
                 messages.success(request, "Password changed successfully.")
                 return redirect('invoices:settings_security')
