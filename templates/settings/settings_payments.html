@@ -1,0 +1,64 @@
+{% extends 'layouts/authenticated.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Payment Settings</h1>
+        <p class="text-gray-600">Manage your payment gateways and tax configurations.</p>
+    </div>
+
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+        
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Stripe Configuration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Stripe Account ID</label>
+                    {{ form.stripe_account_id }}
+                </div>
+                <div class="flex items-center mt-6">
+                    {{ form.stripe_enabled }}
+                    <label class="ml-2 block text-sm text-gray-900 font-medium">Enable Stripe Payments</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Paystack Configuration</h2>
+            <div class="flex items-center">
+                {{ form.paystack_enabled }}
+                <label class="ml-2 block text-sm text-gray-900 font-medium">Enable Paystack Payments</label>
+            </div>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Tax & Compliance</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Tax Name</label>
+                    {{ form.tax_name }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Tax ID</label>
+                    {{ form.tax_id }}
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Webhooks</h2>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Webhook Secret</label>
+                {{ form.webhook_secret }}
+                <p class="mt-2 text-xs text-gray-500">Used to verify events from payment providers.</p>
+            </div>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors font-semibold shadow-sm">
+                Save Payment Settings
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

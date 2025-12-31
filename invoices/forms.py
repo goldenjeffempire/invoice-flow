@@ -597,7 +597,20 @@ class UserDetailsForm(forms.ModelForm):
         return email
 
 
-class ContactForm(forms.ModelForm):
+class PaymentSettingsForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = [
+            'stripe_account_id', 'stripe_enabled', 
+            'paystack_enabled', 'tax_id', 'tax_name', 
+            'webhook_secret'
+        ]
+        widgets = {
+            'stripe_account_id': forms.TextInput(attrs={'class': 'form-light-input', 'placeholder': 'acct_...'}),
+            'tax_id': forms.TextInput(attrs={'class': 'form-light-input', 'placeholder': 'Tax ID / VAT Number'}),
+            'tax_name': forms.TextInput(attrs={'class': 'form-light-input', 'placeholder': 'e.g. VAT, GST'}),
+            'webhook_secret': forms.PasswordInput(attrs={'class': 'form-light-input', 'placeholder': 'whsec_...'}),
+        }
     """Form for contact page submissions with validation and honeypot."""
 
     honeypot = forms.CharField(

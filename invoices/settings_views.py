@@ -2,8 +2,21 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
-from .forms import UserDetailsForm, UserProfileForm, NotificationPreferencesForm, PasswordChangeForm
+from .forms import UserDetailsForm, UserProfileForm, NotificationPreferencesForm, PasswordChangeForm, PaymentSettingsForm
 from .models import UserProfile, UserSession
+
+@login_required
+def settings_payments(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    if request.method == 'POST':
+        form = PaymentSettingsForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Payment settings updated successfully.")
+            return redirect('invoices:settings_payments')
+    else:
+        form = PaymentSettingsForm(instance=profile)
+    return render(request, 'settings/settings_payments.html', {'form': form, 'active_tab': 'payments'})
 
 @login_required
 def settings_dashboard(request):
