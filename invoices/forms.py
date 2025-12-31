@@ -764,6 +764,12 @@ class PaymentSettingsForm(forms.ModelForm):
             "send_payment_receipt",
             "send_payout_notification",
             "payment_instructions",
+            "paystack_public_key",
+            "paystack_secret_key",
+            "paystack_webhook_secret",
+            "bank_name",
+            "account_number_encrypted",
+            "account_name",
         ]
         widgets = {
             "enable_card_payments": forms.CheckboxInput(
@@ -781,14 +787,7 @@ class PaymentSettingsForm(forms.ModelForm):
             "preferred_currency": forms.Select(
                 attrs={
                     "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                },
-                choices=[
-                    ("NGN", "Nigerian Naira (NGN)"),
-                    ("USD", "US Dollar (USD)"),
-                    ("GHS", "Ghanaian Cedi (GHS)"),
-                    ("ZAR", "South African Rand (ZAR)"),
-                    ("KES", "Kenyan Shilling (KES)"),
-                ],
+                }
             ),
             "auto_payout": forms.CheckboxInput(
                 attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
@@ -817,6 +816,39 @@ class PaymentSettingsForm(forms.ModelForm):
                     "class": "form-light-textarea w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                     "rows": 4,
                     "placeholder": "Custom payment instructions for your clients (optional)",
+                }
+            ),
+            "paystack_public_key": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "type": "password",
+                }
+            ),
+            "paystack_secret_key": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "type": "password",
+                }
+            ),
+            "paystack_webhook_secret": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "type": "password",
+                }
+            ),
+            "bank_name": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                }
+            ),
+            "account_number_encrypted": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                }
+            ),
+            "account_name": forms.TextInput(
+                attrs={
+                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                 }
             ),
         }

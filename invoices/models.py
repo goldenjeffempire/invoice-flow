@@ -618,6 +618,32 @@ class PaymentSettings(models.Model):
     enable_bank_transfers = models.BooleanField(default=True)  # type: ignore[assignment]
     enable_mobile_money = models.BooleanField(default=False)  # type: ignore[assignment]
     enable_ussd = models.BooleanField(default=False)  # type: ignore[assignment]
+    preferred_currency = models.CharField(max_length=3, default="USD")
+    auto_payout = models.BooleanField(default=True)  # type: ignore[assignment]
+    payout_schedule = models.CharField(
+        max_length=20, choices=PayoutSchedule.choices, default=PayoutSchedule.DAILY
+    )
+    payout_threshold = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0
+    )  # type: ignore[assignment]
+    send_payment_receipt = models.BooleanField(default=True)  # type: ignore[assignment]
+    send_payout_notification = models.BooleanField(default=True)  # type: ignore[assignment]
+    payment_instructions = models.TextField(blank=True)
+
+    paystack_public_key = models.CharField(max_length=255, blank=True)
+    paystack_secret_key = models.CharField(max_length=255, blank=True)
+    paystack_webhook_secret = models.CharField(max_length=255, blank=True)
+    bank_name = models.CharField(max_length=255, blank=True)
+    account_number_encrypted = models.CharField(max_length=255, blank=True)
+    account_name = models.CharField(max_length=255, blank=True)
+
+    webhook_secret = models.CharField(max_length=255, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"Payment Settings for {getattr(self.user, 'username', 'Unknown')}"
 
     minimum_payment_amount = models.DecimalField(
         max_digits=10, decimal_places=2, default=0
