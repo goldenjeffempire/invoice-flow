@@ -116,10 +116,10 @@ class UserProfile(models.Model):
 
     # Payment Gateways (Stripe/Paystack)
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
-    stripe_enabled = models.BooleanField(default=False)
-    paystack_enabled = models.BooleanField(default=False)
+    stripe_enabled = models.BooleanField(default=False)  # type: ignore[assignment]
+    paystack_enabled = models.BooleanField(default=False)  # type: ignore[assignment]
     paystack_subaccount_code = models.CharField(max_length=100, blank=True, null=True)
-    paystack_subaccount_active = models.BooleanField(default=False)
+    paystack_subaccount_active = models.BooleanField(default=False)  # type: ignore[assignment]
 
     # Tax Settings
     tax_id = models.CharField(max_length=100, blank=True, null=True)
@@ -638,34 +638,6 @@ class PaymentSettings(models.Model):
     account_name = models.CharField(max_length=255, blank=True)
 
     webhook_secret = models.CharField(max_length=255, blank=True)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return f"Payment Settings for {getattr(self.user, 'username', 'Unknown')}"
-
-    minimum_payment_amount = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0
-    )
-    auto_reconcile = models.BooleanField(default=True)  # type: ignore[assignment]
-    auto_payout = models.BooleanField(default=False)  # type: ignore[assignment]
-    payout_delay_days = models.PositiveIntegerField(default=7)  # type: ignore[assignment]
-    payout_schedule = models.CharField(
-        max_length=20, choices=PayoutSchedule.choices, default=PayoutSchedule.WEEKLY
-    )
-    payout_threshold = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # type: ignore[assignment]
-
-    default_currency = models.CharField(max_length=3, default="NGN")
-    preferred_currency = models.CharField(max_length=3, default="NGN")
-
-    send_payment_receipt = models.BooleanField(default=True)  # type: ignore[assignment]
-    send_payout_notification = models.BooleanField(default=True)  # type: ignore[assignment]
-    payment_instructions = models.TextField(blank=True)
-
-    webhook_secret = models.CharField(max_length=255, blank=True)
-    paystack_public_key = models.CharField(max_length=255, blank=True)
-    paystack_secret_key = models.CharField(max_length=255, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
