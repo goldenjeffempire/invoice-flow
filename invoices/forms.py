@@ -249,8 +249,9 @@ class UserProfileForm(forms.ModelForm):
             ),
             "company_logo": forms.FileInput(
                 attrs={
-                    "class": "form-light-input",
+                    "class": "hidden",
                     "accept": "image/*",
+                    "id": "id_company_logo"
                 }
             ),
             "business_email": forms.EmailInput(
@@ -334,7 +335,7 @@ class PasswordChangeForm(forms.Form):
     current_password = forms.CharField(
         widget=forms.PasswordInput(
             attrs={
-                "class": "input-field",
+                "class": "form-light-input",
                 "placeholder": "Current Password",
                 "autocomplete": "current-password",
             }
@@ -344,7 +345,7 @@ class PasswordChangeForm(forms.Form):
         min_length=12,
         widget=forms.PasswordInput(
             attrs={
-                "class": "input-field",
+                "class": "form-light-input",
                 "placeholder": "New Password (min 12 characters)",
                 "autocomplete": "new-password",
             }
@@ -354,7 +355,7 @@ class PasswordChangeForm(forms.Form):
     confirm_password = forms.CharField(
         widget=forms.PasswordInput(
             attrs={
-                "class": "input-field",
+                "class": "form-light-input",
                 "placeholder": "Confirm Password",
                 "autocomplete": "new-password",
             }
@@ -566,21 +567,21 @@ class UserDetailsForm(forms.ModelForm):
         widgets = {
             "first_name": forms.TextInput(
                 attrs={
-                    "class": "input-field w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-light-input",
                     "placeholder": "First Name",
                     "autocomplete": "given-name",
                 }
             ),
             "last_name": forms.TextInput(
                 attrs={
-                    "class": "input-field w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-light-input",
                     "placeholder": "Last Name",
                     "autocomplete": "family-name",
                 }
             ),
             "email": forms.EmailInput(
                 attrs={
-                    "class": "input-field w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-light-input",
                     "placeholder": "Email Address",
                     "autocomplete": "email",
                 }

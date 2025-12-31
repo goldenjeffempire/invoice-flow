@@ -1,40 +1,75 @@
 {% extends 'settings/settings_base.html' %}
 
 {% block settings_content %}
-<h2 class="text-xl font-semibold mb-6">Notification Preferences</h2>
-<form method="post" class="space-y-6">
+<div class="mb-10">
+    <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Notification Preferences</h2>
+    <p class="mt-1 text-gray-500">Choose how and when you want to be notified about your invoicing activity.</p>
+</div>
+
+<form method="post" class="space-y-8">
     {% csrf_token %}
+    
     <div class="space-y-4">
-        <div class="flex items-start">
-            <div class="flex items-center h-5">
+        <!-- Notification Item -->
+        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
+            <div class="flex items-center gap-4">
+                <div class="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div>
+                    <label for="{{ form.notify_invoice_created.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Invoice Creation</label>
+                    <p class="text-xs text-gray-500 mt-0.5">Receive an email alert whenever you generate a new invoice.</p>
+                </div>
+            </div>
+            <div class="flex items-center h-6">
                 {{ form.notify_invoice_created }}
             </div>
-            <div class="ml-3 text-sm">
-                <label class="font-medium text-gray-700">Invoice Created</label>
-                <p class="text-gray-500">Get notified when a new invoice is generated.</p>
-            </div>
         </div>
-        <div class="flex items-start">
-            <div class="flex items-center h-5">
+
+        <!-- Notification Item -->
+        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
+            <div class="flex items-center gap-4">
+                <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-all">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <label for="{{ form.notify_payment_received.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Payments Received</label>
+                    <p class="text-xs text-gray-500 mt-0.5">Get notified instantly when a client pays an invoice online.</p>
+                </div>
+            </div>
+            <div class="flex items-center h-6">
                 {{ form.notify_payment_received }}
             </div>
-            <div class="ml-3 text-sm">
-                <label class="font-medium text-gray-700">Payment Received</label>
-                <p class="text-gray-500">Receive alerts when a client pays an invoice.</p>
-            </div>
         </div>
-        <div class="flex items-start">
-            <div class="flex items-center h-5">
+
+        <!-- Notification Item -->
+        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
+            <div class="flex items-center gap-4">
+                <div class="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                    <label for="{{ form.notify_invoice_overdue.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Overdue Alerts</label>
+                    <p class="text-xs text-gray-500 mt-0.5">Stay on top of collections with automatic overdue notifications.</p>
+                </div>
+            </div>
+            <div class="flex items-center h-6">
                 {{ form.notify_invoice_overdue }}
             </div>
-            <div class="ml-3 text-sm">
-                <label class="font-medium text-gray-700">Invoice Overdue</label>
-                <p class="text-gray-500">Get notified when an invoice passes its due date.</p>
-            </div>
         </div>
     </div>
-    <div class="pt-4 border-t border-gray-100">
-        <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors">Save Preferences</button>
+
+    <div class="pt-8 border-t border-gray-100 flex justify-end">
+        <button type="submit" class="inline-flex items-center px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/20 transition-all duration-200">
+            Save Preferences
+        </button>
     </div>
 </form>
+
+<style>
+    /* Styling for checkboxes to look like modern toggles if possible, or just clean checkboxes */
+    input[type="checkbox"] {
+        @apply h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-md cursor-pointer;
+    }
+</style>
 {% endblock %}
