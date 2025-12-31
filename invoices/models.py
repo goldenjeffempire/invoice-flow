@@ -114,22 +114,23 @@ class UserProfile(models.Model):
 
     email_verified = models.BooleanField(default=False)  # type: ignore[assignment]
 
-    # Paystack
-    paystack_subaccount_code = models.CharField(max_length=100, blank=True, null=True)
-    paystack_percentage_charge = models.DecimalField(
-        max_digits=5, decimal_places=2, default=0
-    )
-    paystack_subaccount_active = models.BooleanField(default=False)  # type: ignore[assignment]
-    paystack_bank_code = models.CharField(max_length=20, blank=True, null=True)
-    paystack_account_number = models.CharField(max_length=30, blank=True, null=True)
-    paystack_account_name = models.CharField(max_length=200, blank=True, null=True)
-    paystack_settlement_bank = models.CharField(max_length=200, blank=True, null=True)
+    # Payment Gateways (Stripe/Paystack)
+    stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
+    stripe_enabled = models.BooleanField(default=False)
+    paystack_enabled = models.BooleanField(default=False)
+
+    # Tax Settings
+    tax_id = models.CharField(max_length=100, blank=True, null=True)
+    tax_name = models.CharField(max_length=50, default="VAT")
+    
+    # Webhook Secrets (Encrypted or just stored)
+    webhook_secret = models.CharField(max_length=255, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def has_payment_setup(self) -> bool:
-        return bool(self.paystack_subaccount_code and self.paystack_subaccount_active)
+        return bool((self.paystack_subaccount_code and self.paystack_subaccount_active) or (self.stripe_account_id and self.stripe_enabled))
 
     def __str__(self) -> str:
         return f"{self.user} Profile"

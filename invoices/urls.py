@@ -62,6 +62,7 @@ urlpatterns = [
     path("settings/business/", settings_views.settings_business, name="settings_business"),
     path("settings/security/", settings_views.settings_security, name="settings_security"),
     path("settings/notifications/", settings_views.settings_notifications, name="settings_notifications"),
+    path("settings/payments/", settings_views.settings_payments, name="settings_payments"),
 
     # ------------------------------------------------------------------
     # PAYMENTS
