@@ -1,18 +1,9 @@
 from django.urls import path
 
 from . import views
-from . import settings_views
-from . import payment_settings_views
 from . import admin_views
 from . import paystack_views
 from . import invoice_create_views
-from .settings_views import (
-    settings_profile,
-    settings_business,
-    settings_security,
-    settings_notifications,
-    settings_payments,
-)
 
 
 app_name = "invoices"
@@ -62,43 +53,6 @@ urlpatterns = [
     # ------------------------------------------------------------------
     path("waitlist/", views.waitlist_subscribe, name="waitlist_subscribe"),
 
-    # ------------------------------------------------------------------
-    # USER SETTINGS (Production-grade)
-    # ------------------------------------------------------------------
-    path("settings/", settings_views.settings_dashboard, name="settings"),
-    path("settings/profile/", settings_profile, name="settings_profile"),
-    path("settings/business/", settings_business, name="settings_business"),
-    # Fixed paths: ensure they end with / for proper matching
-    path("settings/security/", settings_security, name="settings_security"),
-    path("settings/notifications/", settings_notifications, name="settings_notifications"),
-    path("settings/payments/", settings_payments, name="settings_payments"),
-    path("settings/sessions/<int:session_id>/revoke/", settings_views.revoke_session, name="revoke_session"),
-    # Tab redirect should be at the end to avoid catching specific paths
-    path("settings/<str:tab>/", settings_views.settings_unified, name="settings_tab"),
-    
-    # ------------------------------------------------------------------
-    # PAYMENT SETTINGS & HISTORY
-    # ------------------------------------------------------------------
-    path("api/verify-bank-account/", payment_settings_views.verify_bank_account, name="verify_bank_account"),
-    path("api/list-banks/", payment_settings_views.list_banks, name="list_banks"),
-
-    path("payments/settings/", payment_settings_views.payment_settings_dashboard, name="payment_settings"),
-    path("payments/preferences/", payment_settings_views.payment_preferences, name="payment_preferences"),
-    path("payments/setup-subaccount/", payment_settings_views.setup_subaccount, name="setup_subaccount"),
-    path("payments/toggle-subaccount/", payment_settings_views.toggle_subaccount, name="toggle_subaccount"),
-
-    path("payments/recipients/", payment_settings_views.manage_recipients, name="manage_recipients"),
-    path("payments/recipients/<int:recipient_id>/delete/", payment_settings_views.delete_recipient, name="delete_recipient"),
-    path("payments/recipients/<int:recipient_id>/primary/", payment_settings_views.set_primary_recipient, name="set_primary_recipient"),
-
-    path("payments/cards/", payment_settings_views.saved_cards, name="saved_cards"),
-    path("payments/cards/<int:card_id>/delete/", payment_settings_views.delete_card, name="delete_card"),
-    path("payments/cards/<int:card_id>/primary/", payment_settings_views.set_primary_card, name="set_primary_card"),
-
-    path("payments/history/", payment_settings_views.payment_history, name="payment_history"),
-    path("payments/payouts/", payment_settings_views.payout_history, name="payout_history"),
-    path("payments/<int:payment_id>/", payment_settings_views.payment_detail, name="payment_detail"),
-    
     # ------------------------------------------------------------------
     # DASHBOARD & PROFILE
     # ------------------------------------------------------------------

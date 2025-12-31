@@ -8,7 +8,7 @@ from django.views.generic.base import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from invoiceflow import cookie_consent, gdpr, mfa
-from invoices import paystack_views, views, admin_views, settings_views
+from invoices import paystack_views, views, admin_views
 from invoices.health import detailed_health, health_check, liveness_check, readiness_check
 from invoices.sitemap import sitemaps
 
@@ -103,7 +103,6 @@ urlpatterns = [
     path("admin-invoices/", admin_views.admin_invoices, name="admin_invoices"),
     path("admin-contacts/", admin_views.admin_contacts, name="admin_contacts"),
     path("admin-contacts/<int:submission_id>/update/", admin_views.update_contact_status, name="update_contact_status"),
-    path("admin-settings/", admin_views.admin_settings, name="admin_settings"),
     # Payment routes (Paystack)
     path("payments/invoice/<int:invoice_id>/pay/", paystack_views.initiate_invoice_payment, name="initiate_payment"),
     path("payments/callback/<int:invoice_id>/", paystack_views.payment_callback, name="payment_callback"),
