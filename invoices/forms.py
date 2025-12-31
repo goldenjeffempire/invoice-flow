@@ -606,11 +606,42 @@ class PaymentSettingsForm(forms.ModelForm):
             'webhook_secret'
         ]
         widgets = {
-            'stripe_account_id': forms.TextInput(attrs={'class': 'form-light-input', 'placeholder': 'acct_...'}),
-            'tax_id': forms.TextInput(attrs={'class': 'form-light-input', 'placeholder': 'Tax ID / VAT Number'}),
-            'tax_name': forms.TextInput(attrs={'class': 'form-light-input', 'placeholder': 'e.g. VAT, GST'}),
-            'webhook_secret': forms.PasswordInput(attrs={'class': 'form-light-input', 'placeholder': 'whsec_...'}),
+            'stripe_account_id': forms.TextInput(attrs={
+                'class': 'form-light-input', 
+                'placeholder': 'acct_1...',
+                'data-lpignore': 'true'
+            }),
+            'stripe_enabled': forms.CheckboxInput(attrs={'class': 'sr-only peer'}),
+            'paystack_enabled': forms.CheckboxInput(attrs={'class': 'sr-only peer'}),
+            'tax_id': forms.TextInput(attrs={
+                'class': 'form-light-input', 
+                'placeholder': 'e.g. US123456789'
+            }),
+            'tax_name': forms.TextInput(attrs={
+                'class': 'form-light-input', 
+                'placeholder': 'e.g. VAT'
+            }),
+            'webhook_secret': forms.PasswordInput(attrs={
+                'class': 'form-light-input', 
+                'placeholder': 'whsec_...',
+                'autocomplete': 'new-password'
+            }),
         }
+
+    def clean_stripe_account_id(self):
+        stripe_id = self.cleaned_data.get('stripe_account_id')
+        enabled = self.cleaned_data.get('stripe_enabled')
+        if enabled and not stripe_id:
+            raise forms.ValidationError("Stripe Account ID is required when Stripe is enabled.")
+        if stripe_id and not stripe_id.startswith('acct_'):
+            raise forms.ValidationError("Invalid Stripe Account ID format. Should start with 'acct_'.")
+        return stripe_id
+
+    def clean_webhook_secret(self):
+        secret = self.cleaned_data.get('webhook_secret')
+        if secret and len(secret) < 16:
+            raise forms.ValidationError("Webhook secret is too short. Use a robust secret from your provider.")
+        return secret
     """Form for contact page submissions with validation and honeypot."""
 
     honeypot = forms.CharField(

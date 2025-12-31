@@ -1,64 +1,171 @@
-{% extends 'layouts/authenticated.html' %}
-{% block content %}
-<div class="max-w-4xl mx-auto py-8 px-4">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Payment Settings</h1>
-        <p class="text-gray-600">Manage your payment gateways and tax configurations.</p>
-    </div>
+{% extends 'base/layout-authenticated.html' %}
 
-    <form method="post" class="space-y-8">
+{% block header_title %}Payment Settings{% endblock %}
+{% block header_subtitle %}Manage your payment gateways, tax configurations, and transaction preferences.{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <form method="post" class="space-y-8" novalidate>
         {% csrf_token %}
         
-        <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Stripe Configuration</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Stripe Account ID</label>
-                    {{ form.stripe_account_id }}
-                </div>
-                <div class="flex items-center mt-6">
-                    {{ form.stripe_enabled }}
-                    <label class="ml-2 block text-sm text-gray-900 font-medium">Enable Stripe Payments</label>
+        <!-- Payment Gateways Section -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Payment Gateways
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Stripe -->
+                    <div class="p-6 border rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-indigo-600" fill="currentColor" viewBox="0 0 24 24"><path d="M13.962 8.885l-3.736 1.741-.831 3.945 3.736-1.741.831-3.945zM12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.187 14.135l-7.792 3.633.829-3.938-2.618 1.22 1.733-8.225 7.792-3.633-.829 3.938 2.618-1.22-1.733 8.225z"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900">Stripe</h3>
+                                    <p class="text-xs text-gray-500">Global credit card payments</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                {{ form.stripe_enabled }}
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="block text-sm font-semibold text-gray-700">Account ID</label>
+                            {{ form.stripe_account_id }}
+                            {% if form.stripe_account_id.errors %}
+                                <p class="text-xs text-danger">{{ form.stripe_account_id.errors.0 }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Paystack -->
+                    <div class="p-6 border rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-cyan-100 flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-cyan-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900">Paystack</h3>
+                                    <p class="text-xs text-gray-500">Fast payments for Africa</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                {{ form.paystack_enabled }}
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-cyan-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+                            </label>
+                        </div>
+                        <p class="text-sm text-gray-600">Configuration managed via existing subaccount settings.</p>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Paystack Configuration</h2>
-            <div class="flex items-center">
-                {{ form.paystack_enabled }}
-                <label class="ml-2 block text-sm text-gray-900 font-medium">Enable Paystack Payments</label>
+        <!-- Tax & Compliance Section -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    Tax & Compliance
+                </h2>
             </div>
-        </div>
-
-        <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Tax & Compliance</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Tax Name</label>
-                    {{ form.tax_name }}
+            <div class="card-body">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="form-label">Tax Display Name</label>
+                        {{ form.tax_name }}
+                        <p class="text-xs text-gray-500">e.g., VAT, GST, Sales Tax</p>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="form-label">Tax ID Number</label>
+                        {{ form.tax_id }}
+                        <p class="text-xs text-gray-500">Your registered tax identification number</p>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Tax ID</label>
-                    {{ form.tax_id }}
+            </div>
+        </section>
+
+        <!-- Security & Webhooks Section -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    Security & Webhooks
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="form-label">Webhook Verification Secret</label>
+                        <div class="relative">
+                            {{ form.webhook_secret }}
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500">Required to securely verify incoming payment notifications from Stripe/Paystack.</p>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="bg-white shadow rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Webhooks</h2>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Webhook Secret</label>
-                {{ form.webhook_secret }}
-                <p class="mt-2 text-xs text-gray-500">Used to verify events from payment providers.</p>
+        <!-- Form Actions -->
+        <div class="flex items-center justify-between pt-6 border-t">
+            <div class="text-sm text-gray-500">
+                <p>Last updated: {{ user.profile.updated_at|date:"M d, Y H:i" }}</p>
             </div>
-        </div>
-
-        <div class="flex justify-end">
-            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors font-semibold shadow-sm">
-                Save Payment Settings
-            </button>
+            <div class="flex gap-4">
+                <button type="reset" class="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-all">
+                    Discard Changes
+                </button>
+                <button type="submit" class="btn-header">
+                    Save Changes
+                </button>
+            </div>
         </div>
     </form>
 </div>
+
+<style>
+    /* Custom styles for modern form elements if not fully covered by global CSS */
+    .form-light-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        background: var(--white);
+        transition: var(--transition-fast);
+    }
+    .form-light-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-light);
+        outline: none;
+    }
+    /* Hidden checkbox but styled toggle wrapper */
+    input[type="checkbox"].sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border-width: 0;
+    }
+</style>
 {% endblock %}
