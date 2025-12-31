@@ -624,9 +624,11 @@
       <!-- Sidebar Form -->
       <aside class="sidebar-section">
         <div class="sidebar-card">
-          <h2 class="sidebar-title">Create New Schedule</h2>
+          <h2 class="sidebar-title">
+            {% if recurring %}Edit Schedule{% else %}Create New Schedule{% endif %}
+          </h2>
           
-          <form method="post" action="{% url 'invoices:create_recurring' %}">
+          <form method="post" action="{% if recurring %}{% url 'invoices:edit_recurring' recurring.id %}{% else %}{% url 'invoices:create_recurring' %}{% endif %}">
             {% csrf_token %}
 
             <!-- Client Information -->
@@ -635,7 +637,7 @@
                 Client Name <span class="form-required">*</span>
               </label>
               <input type="text" id="id_client_name" name="client_name" class="form-input" 
-                     required placeholder="Company or individual name">
+                     required placeholder="Company or individual name" value="{{ recurring.client_name|default:'' }}">
               {% if form.client_name.errors %}
                 <div class="form-error">{{ form.client_name.errors.0 }}</div>
               {% endif %}
@@ -646,7 +648,7 @@
                 Client Email <span class="form-required">*</span>
               </label>
               <input type="email" id="id_client_email" name="client_email" class="form-input" 
-                     required placeholder="client@example.com">
+                     required placeholder="client@example.com" value="{{ recurring.client_email|default:'' }}">
               {% if form.client_email.errors %}
                 <div class="form-error">{{ form.client_email.errors.0 }}</div>
               {% endif %}
@@ -655,7 +657,7 @@
             <div class="form-group">
               <label for="id_client_phone" class="form-label">Client Phone</label>
               <input type="tel" id="id_client_phone" name="client_phone" class="form-input" 
-                     placeholder="Optional">
+                     placeholder="Optional" value="{{ recurring.client_phone|default:'' }}">
               {% if form.client_phone.errors %}
                 <div class="form-error">{{ form.client_phone.errors.0 }}</div>
               {% endif %}
@@ -664,7 +666,7 @@
             <div class="form-group">
               <label for="id_client_address" class="form-label">Client Address</label>
               <textarea id="id_client_address" name="client_address" class="form-textarea" 
-                        placeholder="Street, City, Country (Optional)"></textarea>
+                        placeholder="Street, City, Country (Optional)">{{ recurring.client_address|default:'' }}</textarea>
               {% if form.client_address.errors %}
                 <div class="form-error">{{ form.client_address.errors.0 }}</div>
               {% endif %}
@@ -676,7 +678,7 @@
                 Business Name <span class="form-required">*</span>
               </label>
               <input type="text" id="id_business_name" name="business_name" class="form-input" 
-                     required placeholder="Your business name">
+                     required placeholder="Your business name" value="{{ recurring.business_name|default:'' }}">
               {% if form.business_name.errors %}
                 <div class="form-error">{{ form.business_name.errors.0 }}</div>
               {% endif %}
@@ -687,7 +689,7 @@
                 Business Email <span class="form-required">*</span>
               </label>
               <input type="email" id="id_business_email" name="business_email" class="form-input" 
-                     required placeholder="business@yourcompany.com">
+                     required placeholder="business@yourcompany.com" value="{{ recurring.business_email|default:'' }}">
               {% if form.business_email.errors %}
                 <div class="form-error">{{ form.business_email.errors.0 }}</div>
               {% endif %}
@@ -700,11 +702,11 @@
               </label>
               <select id="id_frequency" name="frequency" class="form-select" required>
                 <option value="">Select frequency</option>
-                <option value="weekly">Weekly</option>
-                <option value="biweekly">Bi-weekly</option>
-                <option value="monthly" selected>Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
+                <option value="weekly" {% if recurring.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                <option value="biweekly" {% if recurring.frequency == 'biweekly' %}selected{% endif %}>Bi-weekly</option>
+                <option value="monthly" {% if recurring.frequency == 'monthly' or not recurring %}selected{% endif %}>Monthly</option>
+                <option value="quarterly" {% if recurring.frequency == 'quarterly' %}selected{% endif %}>Quarterly</option>
+                <option value="yearly" {% if recurring.frequency == 'yearly' %}selected{% endif %}>Yearly</option>
               </select>
               {% if form.frequency.errors %}
                 <div class="form-error">{{ form.frequency.errors.0 }}</div>
@@ -715,7 +717,7 @@
               <label for="id_start_date" class="form-label">
                 Start Date <span class="form-required">*</span>
               </label>
-              <input type="date" id="id_start_date" name="start_date" class="form-input" required>
+              <input type="date" id="id_start_date" name="start_date" class="form-input" required value="{{ recurring.start_date|date:'Y-m-d'|default:'' }}">
               {% if form.start_date.errors %}
                 <div class="form-error">{{ form.start_date.errors.0 }}</div>
               {% endif %}
@@ -723,7 +725,7 @@
 
             <div class="form-group">
               <label for="id_end_date" class="form-label">End Date</label>
-              <input type="date" id="id_end_date" name="end_date" class="form-input">
+              <input type="date" id="id_end_date" name="end_date" class="form-input" value="{{ recurring.end_date|date:'Y-m-d'|default:'' }}">
               <div class="form-help">Leave blank for indefinite billing</div>
               {% if form.end_date.errors %}
                 <div class="form-error">{{ form.end_date.errors.0 }}</div>
@@ -735,24 +737,24 @@
                 Currency <span class="form-required">*</span>
               </label>
               <select id="id_currency" name="currency" class="form-select" required>
-                <option value="USD">USD - US Dollar</option>
-                <option value="EUR">EUR - Euro</option>
-                <option value="GBP">GBP - British Pound</option>
-                <option value="NGN">NGN - Nigerian Naira</option>
-                <option value="CAD">CAD - Canadian Dollar</option>
-                <option value="AUD">AUD - Australian Dollar</option>
-                <option value="INR">INR - Indian Rupee</option>
-                <option value="JPY">JPY - Japanese Yen</option>
-                <option value="ZAR">ZAR - South African Rand</option>
-                <option value="KES">KES - Kenyan Shilling</option>
-                <option value="GHS">GHS - Ghanaian Cedi</option>
+                <option value="USD" {% if recurring.currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
+                <option value="EUR" {% if recurring.currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+                <option value="GBP" {% if recurring.currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
+                <option value="NGN" {% if recurring.currency == 'NGN' %}selected{% endif %}>NGN - Nigerian Naira</option>
+                <option value="CAD" {% if recurring.currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
+                <option value="AUD" {% if recurring.currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
+                <option value="INR" {% if recurring.currency == 'INR' %}selected{% endif %}>INR - Indian Rupee</option>
+                <option value="JPY" {% if recurring.currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
+                <option value="ZAR" {% if recurring.currency == 'ZAR' %}selected{% endif %}>ZAR - South African Rand</option>
+                <option value="KES" {% if recurring.currency == 'KES' %}selected{% endif %}>KES - Kenyan Shilling</option>
+                <option value="GHS" {% if recurring.currency == 'GHS' %}selected{% endif %}>GHS - Ghanaian Cedi</option>
               </select>
             </div>
 
             <div class="form-group">
               <label for="id_tax_rate" class="form-label">Tax Rate (%)</label>
               <input type="number" id="id_tax_rate" name="tax_rate" class="form-input" 
-                     step="0.01" min="0" max="100" value="0">
+                     step="0.01" min="0" max="100" value="{{ recurring.tax_rate|default:'0' }}">
               <div class="form-help">Applied to invoice total</div>
               {% if form.tax_rate.errors %}
                 <div class="form-error">{{ form.tax_rate.errors.0 }}</div>
@@ -761,7 +763,7 @@
 
             <div class="form-group">
               <label for="id_next_generation" class="form-label">Next Generation Date</label>
-              <input type="date" id="id_next_generation" name="next_generation" class="form-input">
+              <input type="date" id="id_next_generation" name="next_generation" class="form-input" value="{{ recurring.next_generation|date:'Y-m-d'|default:'' }}">
               <div class="form-help">Auto-calculated based on frequency if left blank</div>
               {% if form.next_generation.errors %}
                 <div class="form-error">{{ form.next_generation.errors.0 }}</div>
@@ -769,10 +771,11 @@
             </div>
 
             <div class="form-group">
-              <label for="id_status" class="form-label">Initial Status</label>
+              <label for="id_status" class="form-label">Status</label>
               <select id="id_status" name="status" class="form-select">
-                <option value="active" selected>Active (Generate invoices)</option>
-                <option value="paused">Paused (Don't generate)</option>
+                <option value="active" {% if recurring.status == 'active' or not recurring %}selected{% endif %}>Active (Generate invoices)</option>
+                <option value="paused" {% if recurring.status == 'paused' %}selected{% endif %}>Paused (Don't generate)</option>
+                <option value="cancelled" {% if recurring.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
               </select>
               <div class="form-help">You can change this anytime</div>
               {% if form.status.errors %}
@@ -783,13 +786,19 @@
             <div class="form-group">
               <label for="id_notes" class="form-label">Notes</label>
               <textarea id="id_notes" name="notes" class="form-textarea" 
-                        placeholder="Payment terms, special instructions, etc."></textarea>
+                        placeholder="Payment terms, special instructions, etc.">{{ recurring.notes|default:'' }}</textarea>
               {% if form.notes.errors %}
                 <div class="form-error">{{ form.notes.errors.0 }}</div>
               {% endif %}
             </div>
 
-            <button type="submit" class="form-submit">Create Recurring Invoice</button>
+            <button type="submit" class="form-submit">
+              {% if recurring %}Update Recurring Invoice{% else %}Create Recurring Invoice{% endif %}
+            </button>
+            
+            {% if recurring %}
+            <a href="{% url 'invoices:recurring_invoices' %}" class="form-submit" style="background: #9ca3af; text-align: center; display: block; text-decoration: none; color: white;">Cancel</a>
+            {% endif %}
           </form>
         </div>
       </aside>
