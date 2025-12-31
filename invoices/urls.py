@@ -69,13 +69,10 @@ urlpatterns = [
     path("settings/security/", views.security_update_ajax, name="settings_security_update"),
     path("settings/payments/", views.payment_settings_update_ajax, name="settings_payments_update"),
     
-    # ------------------------------------------------------------------
-    # DASHBOARD & PROFILE (Legacy - Redirects to new settings)
-    # ------------------------------------------------------------------
-    path("dashboard/", views.dashboard, name="dashboard"),
-    path("profile/", views.settings_page, name="profile"),
-    path("profile/update/", views.settings_page, name="profile_update"),
-    path("paystack-setup/", views.settings_page, name="paystack_setup"),
+    # Redirects for backward compatibility
+    path("profile/", views.settings_page, name="settings_profile_redirect"),
+    path("profile/update/", views.settings_page, name="settings_profile_update_redirect"),
+    path("paystack-setup/", views.settings_page, name="settings_paystack_redirect"),
     
     # ------------------------------------------------------------------
     # MFA

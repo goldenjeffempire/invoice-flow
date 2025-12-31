@@ -112,10 +112,10 @@ urlpatterns = [
     path("pay/<int:invoice_id>/", paystack_views.public_invoice_view, name="public_invoice"),
     path("pay/<int:invoice_id>/checkout/", paystack_views.public_initiate_payment, name="public_payment"),
     path("pay/<int:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
-    # User Profile - redirect to settings
-    path("profile/", views.profile_page, name="profile"),
     # Invoices (all invoice routes including settings, payments)
     path("invoices/", include("invoices.urls")),
+    # Root level profile redirect
+    path("profile/", RedirectView.as_view(pattern_name='invoices:settings', permanent=True), name="profile"),
 ]
 
 if settings.DEBUG:

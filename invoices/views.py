@@ -188,8 +188,11 @@ def forgot_password(request):
 def settings_page(request):
     """Modern Settings page covering Profile, Security, and Payments."""
     from .forms import UserDetailsForm, UserProfileForm, PasswordChangeForm, NotificationPreferencesForm, PaymentSettingsForm
-    from .models import MFAProfile, PaymentSettings
+    from .models import MFAProfile, PaymentSettings, UserProfile
     from django.shortcuts import render
+    
+    # Ensure UserProfile exists
+    UserProfile.objects.get_or_create(user=request.user)
     
     # Ensure PaymentSettings exist
     payment_settings, _ = PaymentSettings.objects.get_or_create(user=request.user)

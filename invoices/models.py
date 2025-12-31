@@ -118,6 +118,8 @@ class UserProfile(models.Model):
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
     stripe_enabled = models.BooleanField(default=False)
     paystack_enabled = models.BooleanField(default=False)
+    paystack_subaccount_code = models.CharField(max_length=100, blank=True, null=True)
+    paystack_subaccount_active = models.BooleanField(default=False)
 
     # Tax Settings
     tax_id = models.CharField(max_length=100, blank=True, null=True)
@@ -612,8 +614,6 @@ class PaymentSettings(models.Model):
         related_name="payment_settings",
     )
 
-    accept_cards = models.BooleanField(default=True)  # type: ignore[assignment]
-    accept_bank_transfers = models.BooleanField(default=True)  # type: ignore[assignment]
     enable_card_payments = models.BooleanField(default=True)  # type: ignore[assignment]
     enable_bank_transfers = models.BooleanField(default=True)  # type: ignore[assignment]
     enable_mobile_money = models.BooleanField(default=False)  # type: ignore[assignment]
