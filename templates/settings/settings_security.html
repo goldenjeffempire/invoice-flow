@@ -44,6 +44,17 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {{ session.last_seen|timesince }} ago
                     </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {% if session.session_key != request.session.session_key %}
+                        <form method="post" action="{% url 'invoices:settings_security' %}" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="revoke_session" value="{{ session.id }}">
+                            <button type="submit" class="text-red-600 hover:text-red-900 font-medium">Revoke</button>
+                        </form>
+                        {% else %}
+                        <span class="text-indigo-600 font-semibold">Current Session</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>

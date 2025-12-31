@@ -60,6 +60,12 @@ def settings_notifications(request):
 @login_required
 def settings_security(request):
     if request.method == 'POST':
+        if 'revoke_session' in request.POST:
+            session_id = request.POST.get('revoke_session')
+            UserSession.objects.filter(user=request.user, id=session_id).update(is_revoked=True)
+            messages.success(request, "Session revoked successfully.")
+            return redirect('invoices:settings_security')
+        
         form = PasswordChangeForm(request.POST)
         if form.is_valid():
             user = request.user
