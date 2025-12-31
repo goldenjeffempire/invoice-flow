@@ -1,81 +1,236 @@
 {% extends 'base/layout-authenticated.html' %}
+{% load static %}
 
 {% block content %}
-<div class="settings-page py-6 md:py-10">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="mb-10">
-            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Account Settings</h1>
-            <p class="mt-2 text-lg text-gray-600">Manage your personal information, business profile, and security preferences.</p>
-        </div>
+<div class="settings-page">
+    <div class="settings-container">
+        <!-- Settings Sidebar -->
+        <aside class="settings-nav-sidebar">
+            <nav class="settings-nav">
+                <a href="{% url 'invoices:settings_profile' %}" 
+                   class="settings-nav-link {% if active_tab == 'profile' %}active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>Personal Profile</span>
+                </a>
+                
+                <a href="{% url 'invoices:settings_business' %}" 
+                   class="settings-nav-link {% if active_tab == 'business' %}active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                    <span>Business Profile</span>
+                </a>
 
-        <div class="flex flex-col lg:flex-row gap-10">
-            <!-- Settings Sidebar -->
-            <aside class="lg:w-72 flex-shrink-0">
-                <nav class="space-y-1 sticky top-6">
-                    <a href="{% url 'invoices:settings_profile' %}" 
-                       class="group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 {% if active_tab == 'profile' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-gray-600 hover:bg-white hover:text-indigo-600 hover:shadow-sm{% endif %}">
-                        <svg class="mr-3 h-5 w-5 flex-shrink-0 {% if active_tab == 'profile' %}text-white{% else %}text-gray-400 group-hover:text-indigo-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        <span>Personal Profile</span>
-                    </a>
+                <a href="{% url 'invoices:settings_notifications' %}" 
+                   class="settings-nav-link {% if active_tab == 'notifications' %}active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                    <span>Notifications</span>
+                </a>
+
+                <a href="{% url 'invoices:settings_security' %}" 
+                   class="settings-nav-link {% if active_tab == 'security' %}active{% endif %}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    <span>Security & Privacy</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Settings Content -->
+        <main class="settings-content-area">
+            <div class="settings-card">
+                <div class="settings-card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
                     
-                    <a href="{% url 'invoices:settings_business' %}" 
-                       class="group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 {% if active_tab == 'business' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-gray-600 hover:bg-white hover:text-indigo-600 hover:shadow-sm{% endif %}">
-                        <svg class="mr-3 h-5 w-5 flex-shrink-0 {% if active_tab == 'business' %}text-white{% else %}text-gray-400 group-hover:text-indigo-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                        <span>Business Profile</span>
-                    </a>
-
-                    <a href="{% url 'invoices:settings_notifications' %}" 
-                       class="group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 {% if active_tab == 'notifications' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-gray-600 hover:bg-white hover:text-indigo-600 hover:shadow-sm{% endif %}">
-                        <svg class="mr-3 h-5 w-5 flex-shrink-0 {% if active_tab == 'notifications' %}text-white{% else %}text-gray-400 group-hover:text-indigo-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <span>Notifications</span>
-                    </a>
-
-                    <a href="{% url 'invoices:settings_security' %}" 
-                       class="group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 {% if active_tab == 'security' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-gray-600 hover:bg-white hover:text-indigo-600 hover:shadow-sm{% endif %}">
-                        <svg class="mr-3 h-5 w-5 flex-shrink-0 {% if active_tab == 'security' %}text-white{% else %}text-gray-400 group-hover:text-indigo-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        <span>Security & Privacy</span>
-                    </a>
-                </nav>
-            </aside>
-
-            <!-- Settings Content -->
-            <main class="flex-1 min-w-0">
-                <div class="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden transition-all duration-300">
-                    <div class="p-6 md:p-10">
-                        {% block settings_content %}{% endblock %}
-                    </div>
+                    {% block settings_content %}{% endblock %}
                 </div>
-            </main>
-        </div>
+            </div>
+        </main>
     </div>
 </div>
 
 <style>
-    /* Advanced Form Styling for Settings */
-    .settings-page .form-light-input,
-    .settings-page .form-light-select,
-    .settings-page .form-light-textarea {
-        @apply w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 focus:bg-white transition-all duration-200 outline-none text-gray-900 placeholder-gray-400;
+    .settings-page {
+        padding: var(--spacing-xl) 0;
     }
     
-    .settings-page label {
-        @apply block text-sm font-bold text-gray-700 mb-2 tracking-tight;
+    .settings-container {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 32px;
+        align-items: flex-start;
     }
 
-    .settings-page .help-text {
-        @apply mt-2 text-xs text-gray-500 leading-relaxed;
+    .settings-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        background: white;
+        padding: 12px;
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--gray-200);
+        position: sticky;
+        top: 24px;
     }
 
-    .settings-page .errorlist {
-        @apply mt-2 text-sm text-red-600 font-medium list-none p-0;
+    .settings-nav-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        color: var(--gray-600);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-radius: var(--radius-lg);
+        transition: var(--transition-fast);
+    }
+
+    .settings-nav-link:hover {
+        background: var(--gray-50);
+        color: var(--primary);
+    }
+
+    .settings-nav-link.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: var(--shadow-md);
+    }
+
+    .settings-nav-link svg {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+
+    .settings-card {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .settings-card-body {
+        padding: 40px;
+    }
+
+    .settings-header {
+        margin-bottom: 32px;
+    }
+
+    .settings-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--gray-900);
+        margin-bottom: 8px;
+    }
+
+    .settings-subtitle {
+        font-size: 0.95rem;
+        color: var(--gray-500);
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .form-group.full-width {
+        grid-column: span 2;
+    }
+
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--gray-700);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-lg);
+        font-size: 0.95rem;
+        transition: var(--transition-fast);
+        background: var(--gray-50);
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: white;
+        box-shadow: 0 0 0 4px var(--primary-light);
+    }
+
+    .btn-save {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 14px 32px;
+        background: var(--gray-900);
+        color: white;
+        border: none;
+        border-radius: var(--radius-xl);
+        font-weight: 700;
+        cursor: pointer;
+        transition: var(--transition-fast);
+    }
+
+    .btn-save:hover {
+        background: black;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .alert {
+        padding: 16px;
+        border-radius: var(--radius-lg);
+        margin-bottom: 24px;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .alert-success { background: var(--success-light); color: var(--success); border: 1px solid #d1fae5; }
+    .alert-error { background: var(--danger-light); color: var(--danger); border: 1px solid #fee2e2; }
+
+    @media (max-width: 1024px) {
+        .settings-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .settings-nav {
+            flex-direction: row;
+            overflow-x: auto;
+            position: static;
+        }
+        
+        .settings-nav-link {
+            white-space: nowrap;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-group.full-width {
+            grid-column: span 1;
+        }
+        
+        .settings-card-body {
+            padding: 24px;
+        }
     }
 </style>
 {% endblock %}

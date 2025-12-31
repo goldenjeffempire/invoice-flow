@@ -1,123 +1,119 @@
 {% extends 'settings/settings_base.html' %}
+{% load static %}
 
 {% block settings_content %}
-<div class="mb-10">
-    <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Notification Preferences</h2>
-    <p class="mt-1 text-gray-500">Choose how and when you want to be notified about your invoicing activity.</p>
+<div class="settings-header">
+    <h2 class="settings-title">Notification Preferences</h2>
+    <p class="settings-subtitle">Manage how you receive alerts and business updates.</p>
 </div>
 
-<form method="post" class="space-y-8">
+<form method="post" class="space-y-6">
     {% csrf_token %}
     
-    <div class="space-y-4">
-        <!-- Notification Item -->
-        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Notification Toggle -->
+        <label class="notification-item">
+            <div class="notification-info">
+                <div class="icon-box" style="background: var(--primary-light); color: var(--primary);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                 </div>
                 <div>
-                    <label for="{{ form.notify_invoice_created.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Invoice Creation</label>
-                    <p class="text-xs text-gray-500 mt-0.5">Receive an email alert whenever you generate a new invoice.</p>
+                    <span class="label">Invoice Activity</span>
+                    <p class="desc">Notify me when an invoice is created, viewed or paid.</p>
                 </div>
             </div>
-            <div class="flex items-center h-6">
-                {{ form.notify_invoice_created }}
-            </div>
-        </div>
+            {{ form.notify_invoice_created }}
+        </label>
 
-        <!-- Notification Item -->
-        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-xl bg-green-100 flex items-center justify-center text-green-600 group-hover:bg-green-600 group-hover:text-white transition-all">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <label class="notification-item">
+            <div class="notification-info">
+                <div class="icon-box" style="background: var(--success-light); color: var(--success);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <div>
-                    <label for="{{ form.notify_payment_received.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Payments Received</label>
-                    <p class="text-xs text-gray-500 mt-0.5">Get notified instantly when a client pays an invoice online.</p>
+                    <span class="label">Security Alerts</span>
+                    <p class="desc">Get notified about new logins and password changes.</p>
                 </div>
             </div>
-            <div class="flex items-center h-6">
-                {{ form.notify_payment_received }}
-            </div>
-        </div>
+            {{ form.notify_security_alerts }}
+        </label>
 
-        <!-- Notification Item -->
-        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+        <label class="notification-item">
+            <div class="notification-info">
+                <div class="icon-box" style="background: var(--warning-light); color: var(--warning);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 </div>
                 <div>
-                    <label for="{{ form.notify_invoice_viewed.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Invoice Views</label>
-                    <p class="text-xs text-gray-500 mt-0.5">Know exactly when your clients open and view your invoices.</p>
+                    <span class="label">Weekly Business Insights</span>
+                    <p class="desc">Summary of your revenue, pending payments, and trends.</p>
                 </div>
             </div>
-            <div class="flex items-center h-6">
-                {{ form.notify_invoice_viewed }}
-            </div>
-        </div>
-
-        <!-- Notification Item -->
-        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 group-hover:bg-red-600 group-hover:text-white transition-all">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-                <div>
-                    <label for="{{ form.notify_invoice_overdue.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Overdue Alerts</label>
-                    <p class="text-xs text-gray-500 mt-0.5">Stay on top of collections with automatic overdue notifications.</p>
-                </div>
-            </div>
-            <div class="flex items-center h-6">
-                {{ form.notify_invoice_overdue }}
-            </div>
-        </div>
-
-        <!-- Notification Item -->
-        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-                </div>
-                <div>
-                    <label for="{{ form.notify_weekly_summary.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Weekly Summary</label>
-                    <p class="text-xs text-gray-500 mt-0.5">Get a high-level overview of your business performance every week.</p>
-                </div>
-            </div>
-            <div class="flex items-center h-6">
-                {{ form.notify_weekly_summary }}
-            </div>
-        </div>
-
-        <!-- Notification Item -->
-        <div class="flex items-center justify-between p-5 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-md group">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-all">
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                </div>
-                <div>
-                    <label for="{{ form.notify_security_alerts.id_for_label }}" class="block text-sm font-bold text-gray-900 !mb-0 cursor-pointer">Security Alerts</label>
-                    <p class="text-xs text-gray-500 mt-0.5">Critical notifications about account access from new devices or locations.</p>
-                </div>
-            </div>
-            <div class="flex items-center h-6">
-                {{ form.notify_security_alerts }}
-            </div>
-        </div>
+            {{ form.notify_weekly_summary }}
+        </label>
     </div>
 
-    <div class="pt-8 border-t border-gray-100 flex justify-end">
-        <button type="submit" class="inline-flex items-center px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/20 transition-all duration-200">
-            Save Preferences
-        </button>
+    <div style="margin-top: 40px; padding-top: 32px; border-top: 1px solid var(--gray-100); display: flex; justify-content: flex-end;">
+        <button type="submit" class="btn-save">Save Preferences</button>
     </div>
 </form>
 
 <style>
-    /* Styling for checkboxes to look like modern toggles if possible, or just clean checkboxes */
+    .notification-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px;
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-xl);
+        cursor: pointer;
+        transition: var(--transition-fast);
+    }
+
+    .notification-item:hover {
+        background: white;
+        border-color: var(--primary);
+        box-shadow: var(--shadow-md);
+    }
+
+    .notification-info {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .icon-box svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .label {
+        display: block;
+        font-weight: 700;
+        color: var(--gray-900);
+        font-size: 1rem;
+        margin-bottom: 4px;
+    }
+
+    .desc {
+        font-size: 0.85rem;
+        color: var(--gray-500);
+    }
+
     input[type="checkbox"] {
-        @apply h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded-md cursor-pointer;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        cursor: pointer;
     }
 </style>
 {% endblock %}
