@@ -2021,15 +2021,15 @@ def recurring_invoices_list(request):
 def create_recurring_invoice(request):
     """Create a new recurring invoice."""
     if request.method == "POST":
-        form = RecurringInvoiceForm(request.POST, user=request.user)
+        form = RecurringInvoiceForm(request.POST)
         if form.is_valid():
             recurring = form.save(commit=False)
             recurring.user = request.user
             recurring.save()
             messages.success(request, "Recurring invoice created!")
-            return redirect("recurring_invoices")
+            return redirect("invoices:recurring_invoices")
     else:
-        form = RecurringInvoiceForm(user=request.user)
+        form = RecurringInvoiceForm()
     
     return render(request, "invoices/recurring.html", {"form": form})
 
@@ -2040,13 +2040,13 @@ def edit_recurring_invoice(request, recurring_id):
     recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
     
     if request.method == "POST":
-        form = RecurringInvoiceForm(request.POST, instance=recurring, user=request.user)
+        form = RecurringInvoiceForm(request.POST, instance=recurring)
         if form.is_valid():
             form.save()
             messages.success(request, "Recurring invoice updated!")
-            return redirect("recurring_invoices")
+            return redirect("invoices:recurring_invoices")
     else:
-        form = RecurringInvoiceForm(instance=recurring, user=request.user)
+        form = RecurringInvoiceForm(instance=recurring)
     
     return render(request, "invoices/recurring.html", {"form": form, "recurring": recurring})
 
@@ -2060,7 +2060,7 @@ def delete_recurring_invoice(request, recurring_id):
         recurring.delete()
         messages.success(request, "Recurring invoice deleted!")
     
-    return redirect("recurring_invoices")
+    return redirect("invoices:recurring_invoices")
 
 
 @login_required
@@ -2074,7 +2074,7 @@ def pause_recurring_invoice(request, recurring_id):
     status = "paused" if not recurring.is_active else "resumed"
     messages.success(request, f"Recurring invoice {status}!")
     
-    return redirect("recurring_invoices")
+    return redirect("invoices:recurring_invoices")
 
 
 @login_required
@@ -2084,4 +2084,4 @@ def resume_recurring_invoice(request, recurring_id):
     recurring.is_active = True
     recurring.save()
     messages.success(request, f"Recurring invoice for {recurring.client_name} resumed.")
-    return redirect("recurring_invoices")
+    return redirect("invoices:recurring_invoices")
