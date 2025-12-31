@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from . import settings_views
 from . import admin_views
 from . import paystack_views
 from . import invoice_create_views
@@ -52,6 +53,15 @@ urlpatterns = [
     # WAITLIST
     # ------------------------------------------------------------------
     path("waitlist/", views.waitlist_subscribe, name="waitlist_subscribe"),
+
+    # ------------------------------------------------------------------
+    # USER SETTINGS
+    # ------------------------------------------------------------------
+    path("settings/", settings_views.settings_dashboard, name="settings"),
+    path("settings/profile/", settings_views.settings_profile, name="settings_profile"),
+    path("settings/business/", settings_views.settings_business, name="settings_business"),
+    path("settings/security/", settings_views.settings_security, name="settings_security"),
+    path("settings/notifications/", settings_views.settings_notifications, name="settings_notifications"),
 
     # ------------------------------------------------------------------
     # DASHBOARD & PROFILE
