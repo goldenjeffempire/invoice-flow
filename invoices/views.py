@@ -2006,9 +2006,9 @@ def recurring_invoices_list(request):
         )
     
     if status == "active":
-        recurring = recurring.filter(is_active=True)
+        recurring = recurring.filter(status="active")
     elif status == "paused":
-        recurring = recurring.filter(is_active=False)
+        recurring = recurring.filter(status="paused")
         
     recurring = recurring.order_by("-created_at")
     
@@ -2068,11 +2068,15 @@ def pause_recurring_invoice(request, recurring_id):
     """Pause or resume a recurring invoice."""
     recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
     
-    recurring.is_active = not recurring.is_active
+    if recurring.status == "active":
+        recurring.status = "paused"
+        status_msg = "paused"
+    else:
+        recurring.status = "active"
+        status_msg = "resumed"
     recurring.save()
     
-    status = "paused" if not recurring.is_active else "resumed"
-    messages.success(request, f"Recurring invoice {status}!")
+    messages.success(request, f"Recurring invoice {status_msg}!")
     
     return redirect("invoices:recurring_invoices")
 
@@ -2081,7 +2085,7 @@ def pause_recurring_invoice(request, recurring_id):
 def resume_recurring_invoice(request, recurring_id):
     """Resume a paused recurring invoice schedule."""
     recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
-    recurring.is_active = True
+    recurring.status = "active"
     recurring.save()
     messages.success(request, f"Recurring invoice for {recurring.client_name} resumed.")
     return redirect("invoices:recurring_invoices")
