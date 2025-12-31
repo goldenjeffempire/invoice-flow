@@ -184,9 +184,78 @@ def forgot_password(request):
     return render(request, "auth/forgot_password.html")
 
 
+@login_required
+def settings_page(request):
+    """Modern Settings page covering Profile, Security, and Payments."""
+    from .forms import UserDetailsForm, UserProfileForm, PasswordChangeForm, NotificationPreferencesForm, PaymentSettingsForm
+    from .models import MFAProfile, PaymentSettings
+    from django.shortcuts import render
+    
+    # Ensure PaymentSettings exist
+    payment_settings, _ = PaymentSettings.objects.get_or_create(user=request.user)
+    
+    context = {
+        "user_form": UserDetailsForm(instance=request.user),
+        "profile_form": UserProfileForm(instance=request.user.profile),
+        "password_form": PasswordChangeForm(),
+        "notification_form": NotificationPreferencesForm(instance=request.user.profile),
+        "payment_form": PaymentSettingsForm(instance=payment_settings),
+        "mfa_enabled": MFAProfile.objects.filter(user=request.user, is_enabled=True).exists(),
+        "active": "settings",
+        "page_title": "Settings",
+        "page_subtitle": "Manage your account, security, and payment preferences"
+    }
+    return render(request, "invoices/settings.html", context)
+
 def forgot_password_sent(request):
     """Display page confirming password reset email was sent."""
     return render(request, "auth/forgot_password_sent.html")
+
+@login_required
+def profile_update_ajax(request):
+    if request.method == "POST":
+        from .forms import UserDetailsForm, UserProfileForm
+        user_form = UserDetailsForm(request.POST, instance=request.user)
+        profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user.profile)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            return HttpResponse(json.dumps({"success": True, "message": "Profile updated successfully"}), content_type="application/json")
+        
+        errors = {**user_form.errors, **profile_form.errors}
+        return HttpResponse(json.dumps({"success": False, "errors": errors}), content_type="application/json", status=400)
+    return HttpResponse(status=405)
+
+@login_required
+def security_update_ajax(request):
+    if request.method == "POST":
+        from .forms import PasswordChangeForm
+        form = PasswordChangeForm(request.POST)
+        if form.is_valid():
+            user = request.user
+            if user.check_password(form.cleaned_data["current_password"]):
+                user.set_password(form.cleaned_data["new_password"])
+                user.save()
+                login(request, user) # Re-login to keep session
+                return HttpResponse(json.dumps({"success": True, "message": "Password updated successfully"}), content_type="application/json")
+            else:
+                return HttpResponse(json.dumps({"success": False, "errors": {"current_password": ["Incorrect current password"]}}), content_type="application/json", status=400)
+        return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
+    return HttpResponse(status=405)
+
+@login_required
+def payment_settings_update_ajax(request):
+    if request.method == "POST":
+        from .forms import PaymentSettingsForm
+        from .models import PaymentSettings
+        payment_settings, _ = PaymentSettings.objects.get_or_create(user=request.user)
+        form = PaymentSettingsForm(request.POST, instance=payment_settings)
+        if form.is_valid():
+            form.save()
+            return HttpResponse(json.dumps({"success": True, "message": "Payment settings updated"}), content_type="application/json")
+        return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
+    return HttpResponse(status=405)
 
 
 def reset_password(request, token):
