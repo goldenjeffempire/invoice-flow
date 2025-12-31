@@ -1,0 +1,67 @@
+{% extends "settings/settings_base.html" %}
+{% block settings_title %}Security Settings{% endblock %}
+{% block settings_content %}
+<div class="space-y-10">
+    <section>
+        <h3 class="text-lg font-bold mb-6 text-gray-900">Change Password</h3>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="change_password">
+            <div class="form-light-group">
+                <label class="form-light-label">Current Password</label>
+                {{ password_form.current_password }}
+                {% if password_form.current_password.errors %}<p class="text-red-500 text-xs mt-1">{{ password_form.current_password.errors.0 }}</p>{% endif %}
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="form-light-group">
+                    <label class="form-light-label">New Password</label>
+                    {{ password_form.new_password }}
+                    {% if password_form.new_password.errors %}<p class="text-red-500 text-xs mt-1">{{ password_form.new_password.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-light-group">
+                    <label class="form-light-label">Confirm Password</label>
+                    {{ password_form.confirm_password }}
+                    {% if password_form.confirm_password.errors %}<p class="text-red-500 text-xs mt-1">{{ password_form.confirm_password.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+            <button type="submit" class="btn-light-primary">Update Password</button>
+        </form>
+    </section>
+
+    <hr class="border-gray-100">
+
+    <section>
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-gray-900">Active Sessions</h3>
+            <form method="post" onsubmit="return confirm('Are you sure you want to log out of all other devices?')">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="revoke_all">
+                <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-700">Log out of all other devices</button>
+            </form>
+        </div>
+        <div class="space-y-3">
+            {% for session in sessions %}
+            <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-gray-200 transition-all">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white rounded-lg shadow-sm">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-400"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-gray-900">
+                            {% if session.is_current %}This device (Current session){% else %}Other device{% endif %}
+                        </div>
+                        <div class="text-xs text-gray-500">{{ session.ip_address }} • {{ session.last_seen|timesince }} ago</div>
+                    </div>
+                </div>
+                {% if not session.is_current %}
+                <form method="post" action="{% url 'invoices:revoke_session' session.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-red-500 text-sm font-bold hover:text-red-700 p-2">Revoke</button>
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}
