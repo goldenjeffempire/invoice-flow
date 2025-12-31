@@ -360,7 +360,7 @@ class PasswordChangeForm(forms.Form):
     current_password = forms.CharField(
         widget=forms.PasswordInput(
             attrs={
-                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "class": "form-input",
                 "placeholder": "Current Password",
                 "autocomplete": "current-password",
             }
@@ -370,7 +370,7 @@ class PasswordChangeForm(forms.Form):
         min_length=12,
         widget=forms.PasswordInput(
             attrs={
-                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "class": "form-input",
                 "placeholder": "New Password (min 12 characters)",
                 "autocomplete": "new-password",
             }
@@ -380,7 +380,7 @@ class PasswordChangeForm(forms.Form):
     confirm_password = forms.CharField(
         widget=forms.PasswordInput(
             attrs={
-                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "class": "form-input",
                 "placeholder": "Confirm Password",
                 "autocomplete": "new-password",
             }
@@ -592,21 +592,21 @@ class UserDetailsForm(forms.ModelForm):
         widgets = {
             "first_name": forms.TextInput(
                 attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "First Name",
                     "autocomplete": "given-name",
                 }
             ),
             "last_name": forms.TextInput(
                 attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "Last Name",
                     "autocomplete": "family-name",
                 }
             ),
             "email": forms.EmailInput(
                 attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "Email Address",
                     "autocomplete": "email",
                 }
@@ -772,99 +772,29 @@ class PaymentSettingsForm(forms.ModelForm):
             "enable_mobile_money",
             "enable_ussd",
             "preferred_currency",
-            "auto_payout",
             "payout_schedule",
-            "payout_threshold",
-            "send_payment_receipt",
-            "send_payout_notification",
-            "payment_instructions",
             "paystack_public_key",
             "paystack_secret_key",
             "paystack_webhook_secret",
             "bank_name",
             "account_number_encrypted",
             "account_name",
+            "payment_instructions",
         ]
         widgets = {
-            "enable_card_payments": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
-            ),
-            "enable_bank_transfers": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
-            ),
-            "enable_mobile_money": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
-            ),
-            "enable_ussd": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
-            ),
-            "preferred_currency": forms.Select(
-                attrs={
-                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                }
-            ),
-            "auto_payout": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
-            ),
-            "payout_schedule": forms.Select(
-                attrs={
-                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                }
-            ),
-            "payout_threshold": forms.NumberInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "step": "0.01",
-                    "min": "0",
-                    "placeholder": "0.00",
-                }
-            ),
-            "send_payment_receipt": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
-            ),
-            "send_payout_notification": forms.CheckboxInput(
-                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500"}
-            ),
-            "payment_instructions": forms.Textarea(
-                attrs={
-                    "class": "form-light-textarea w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "rows": 4,
-                    "placeholder": "Custom payment instructions for your clients (optional)",
-                }
-            ),
-            "paystack_public_key": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "type": "password",
-                }
-            ),
-            "paystack_secret_key": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "type": "password",
-                }
-            ),
-            "paystack_webhook_secret": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "type": "password",
-                }
-            ),
-            "bank_name": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                }
-            ),
-            "account_number_encrypted": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                }
-            ),
-            "account_name": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                }
-            ),
+            "enable_card_payments": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}),
+            "enable_bank_transfers": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}),
+            "enable_mobile_money": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}),
+            "enable_ussd": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}),
+            "preferred_currency": forms.Select(attrs={"class": "form-input"}),
+            "payout_schedule": forms.Select(attrs={"class": "form-input"}),
+            "paystack_public_key": forms.TextInput(attrs={"class": "form-input", "placeholder": "pk_test_..."}),
+            "paystack_secret_key": forms.PasswordInput(render_value=True, attrs={"class": "form-input", "placeholder": "sk_test_..."}),
+            "paystack_webhook_secret": forms.PasswordInput(render_value=True, attrs={"class": "form-input"}),
+            "bank_name": forms.TextInput(attrs={"class": "form-input", "placeholder": "e.g. GTBank"}),
+            "account_number_encrypted": forms.TextInput(attrs={"class": "form-input", "placeholder": "0123456789"}),
+            "account_name": forms.TextInput(attrs={"class": "form-input", "placeholder": "John Doe"}),
+            "payment_instructions": forms.Textarea(attrs={"class": "form-input", "rows": 3}),
         }
 
 
