@@ -1,7 +1,6 @@
 from django.urls import path
 
 from . import views
-from . import settings_views
 from . import admin_views
 from . import paystack_views
 from . import invoice_create_views
