@@ -66,16 +66,16 @@ urlpatterns = [
     # USER SETTINGS (Production-grade)
     # ------------------------------------------------------------------
     path("settings/", settings_views.settings_dashboard, name="settings"),
-    path("settings/<str:tab>/", settings_views.settings_unified, name="settings_tab"),
-    
     path("settings/profile/", settings_profile, name="settings_profile"),
     path("settings/business/", settings_business, name="settings_business"),
+    # Fixed paths: ensure they end with / for proper matching
     path("settings/security/", settings_security, name="settings_security"),
     path("settings/notifications/", settings_notifications, name="settings_notifications"),
     path("settings/payments/", settings_payments, name="settings_payments"),
-    
     path("settings/sessions/<int:session_id>/revoke/", settings_views.revoke_session, name="revoke_session"),
-
+    # Tab redirect should be at the end to avoid catching specific paths
+    path("settings/<str:tab>/", settings_views.settings_unified, name="settings_tab"),
+    
     # ------------------------------------------------------------------
     # PAYMENT SETTINGS & HISTORY
     # ------------------------------------------------------------------
