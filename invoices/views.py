@@ -222,12 +222,25 @@ def profile_update_ajax(request):
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user.profile)
         
         if user_form.is_valid() and profile_form.is_valid():
-            user_form.save()
-            profile_form.save()
-            return HttpResponse(json.dumps({"success": True, "message": "Profile updated successfully"}), content_type="application/json")
+            with transaction.atomic():
+                user_form.save()
+                profile_form.save()
+            return HttpResponse(json.dumps({
+                "success": True, 
+                "message": "Settings updated successfully! Your changes are now live."
+            }), content_type="application/json")
         
-        errors = {**user_form.errors, **profile_form.errors}
-        return HttpResponse(json.dumps({"success": False, "errors": errors}), content_type="application/json", status=400)
+        errors = {}
+        for field, error_list in user_form.errors.items():
+            errors[field] = error_list
+        for field, error_list in profile_form.errors.items():
+            errors[field] = error_list
+            
+        return HttpResponse(json.dumps({
+            "success": False, 
+            "errors": errors,
+            "message": "Please correct the errors below."
+        }), content_type="application/json", status=400)
     return HttpResponse(status=405)
 
 @login_required

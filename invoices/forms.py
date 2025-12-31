@@ -222,7 +222,7 @@ class UserProfileForm(forms.ModelForm):
         choices=TIMEZONE_CHOICES,
         widget=forms.Select(
             attrs={
-                "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
             }
         ),
     )
@@ -239,11 +239,13 @@ class UserProfileForm(forms.ModelForm):
             "default_tax_rate",
             "invoice_prefix",
             "timezone",
+            "tax_id",
+            "tax_name",
         ]
         widgets = {
             "company_name": forms.TextInput(
                 attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                     "placeholder": "Your Company Name",
                 }
             ),
@@ -256,39 +258,51 @@ class UserProfileForm(forms.ModelForm):
             ),
             "business_email": forms.EmailInput(
                 attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                     "placeholder": "business@example.com",
                 }
             ),
             "business_phone": forms.TextInput(
                 attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                     "placeholder": "+1 (555) 123-4567",
                 }
             ),
             "business_address": forms.Textarea(
                 attrs={
-                    "class": "form-light-textarea w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                     "rows": 3,
                     "placeholder": "123 Business Street, City, State, ZIP",
                 }
             ),
             "default_currency": forms.Select(
                 attrs={
-                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                 }
             ),
             "default_tax_rate": forms.NumberInput(
                 attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                     "step": "0.01",
                     "placeholder": "0.00",
                 }
             ),
             "invoice_prefix": forms.TextInput(
                 attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
                     "placeholder": "INV-",
+                }
+            ),
+            "tax_id": forms.TextInput(
+                attrs={
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "placeholder": "Tax ID / VAT Number",
+                }
+            ),
+            "tax_name": forms.TextInput(
+                attrs={
+                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "placeholder": "e.g. VAT, GST",
                 }
             ),
         }
