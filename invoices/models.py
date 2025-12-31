@@ -637,7 +637,7 @@ class PaymentSettings(models.Model):
     account_number_encrypted = models.CharField(max_length=255, blank=True)
     account_name = models.CharField(max_length=255, blank=True)
 
-    webhook_secret = models.CharField(max_length=255, blank=True)
+    webhook_secret = models.CharField(max_length=255, blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
