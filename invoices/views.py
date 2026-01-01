@@ -255,7 +255,7 @@ def profile_update_ajax(request):
     response_data = {
         "success": False, 
         "errors": errors,
-        "message": "Please correct the errors below."
+        "message": f"Form Error: {list(errors.values())[0][0]}" if errors else "Please correct the errors below."
     }
     return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
