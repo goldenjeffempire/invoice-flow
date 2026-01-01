@@ -814,6 +814,13 @@ class PaymentSettingsForm(forms.ModelForm):
             "payment_instructions": forms.Textarea(attrs={"class": "form-input", "rows": 3}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ensure we don't accidentally require fields that aren't strictly necessary for the form to save
+        for field in self.fields:
+            if field in ['paystack_public_key', 'paystack_secret_key', 'paystack_webhook_secret', 'account_number_encrypted', 'account_name', 'bank_name']:
+                self.fields[field].required = False
+
 
 class SubaccountSetupForm(forms.Form):
     """Form for setting up Paystack subaccount to receive payments directly."""

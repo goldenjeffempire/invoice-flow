@@ -276,7 +276,15 @@ def notifications_update_ajax(request):
             response_data = {"success": False, "message": "Failed to save preferences."}
             return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
             
-    response_data = {"success": False, "errors": form.errors}
+    errors = {}
+    for field, error_list in form.errors.items():
+        errors[field] = [str(e) for e in error_list]
+        
+    response_data = {
+        "success": False, 
+        "errors": errors,
+        "message": f"Form Error: {list(errors.values())[0][0]}" if errors else "Failed to save preferences."
+    }
     return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 @login_required
@@ -304,7 +312,15 @@ def security_update_ajax(request):
             response_data = {"success": False, "errors": {"current_password": ["Incorrect current password"]}}
             return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
     
-    response_data = {"success": False, "errors": form.errors}
+    errors = {}
+    for field, error_list in form.errors.items():
+        errors[field] = [str(e) for e in error_list]
+        
+    response_data = {
+        "success": False, 
+        "errors": errors,
+        "message": f"Form Error: {list(errors.values())[0][0]}" if errors else "Failed to update password."
+    }
     return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 @login_required
@@ -327,7 +343,15 @@ def payment_settings_update_ajax(request):
             }
             return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
     
-    response_data = {"success": False, "errors": form.errors}
+    errors = {}
+    for field, error_list in form.errors.items():
+        errors[field] = [str(e) for e in error_list]
+        
+    response_data = {
+        "success": False, 
+        "errors": errors,
+        "message": f"Form Error: {list(errors.values())[0][0]}" if errors else "Failed to save payment settings."
+    }
     return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 
