@@ -261,6 +261,26 @@ def profile_update_ajax(request):
 
 @login_required
 @require_POST
+def notifications_update_ajax(request):
+    from .forms import NotificationPreferencesForm
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    form = NotificationPreferencesForm(request.POST, instance=profile)
+    
+    if form.is_valid():
+        try:
+            form.save()
+            response_data = {"success": True, "message": "Notification preferences updated successfully"}
+            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json")
+        except Exception as e:
+            logger.error(f"Error updating notifications for user {request.user.id}: {e}")
+            response_data = {"success": False, "message": "Failed to save preferences."}
+            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
+            
+    response_data = {"success": False, "errors": form.errors}
+    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
+
+@login_required
+@require_POST
 def security_update_ajax(request):
     from .forms import PasswordChangeForm
     form = PasswordChangeForm(request.POST)

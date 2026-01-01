@@ -346,10 +346,14 @@ def public_invoice_view(request, invoice_id):
     # If platform integrated, we use the master public key
     paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', 'pk_test_placeholder')
     
+    # Check for payment preferences
+    payment_settings = getattr(invoice.user, 'payment_settings', None)
+    
     context = {
         "invoice": invoice,
         "paystack_configured": True,
         "paystack_public_key": paystack_public_key,
+        "payment_settings": payment_settings,
     }
     
     return render(request, "payments/public_invoice.html", context)
