@@ -716,7 +716,7 @@ class ContactForm(forms.ModelForm):
         return message
 
 
-class PaymentRecipientForm(models.Model):
+class PaymentRecipientForm(forms.Form):
     # This is a placeholder as the real PaymentRecipient model is used
     pass
 
