@@ -565,19 +565,41 @@
                         </svg>
                         This invoice has been paid
                     </div>
-                {% elif payment_enabled %}
+                {% elif paystack_configured %}
                     <h3>Ready to pay?</h3>
                     <p>Click below to securely pay this invoice online.</p>
-                    <form method="post" action="{% url 'public_payment' invoice_id=invoice.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="pay-button">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                                <line x1="1" y1="10" x2="23" y2="10"/>
-                            </svg>
-                            Pay {% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% endif %}{{ invoice.total|floatformat:2 }} Now
-                        </button>
-                    </form>
+                    <button type="button" id="paystack-button" class="pay-button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        Pay {% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'NGN' %}₦{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% endif %}{{ invoice.total|floatformat:2 }} Now
+                    </button>
+                    
+                    <script src="https://js.paystack.co/v1/inline.js"></script>
+                    <script>
+                        const paystackButton = document.getElementById('paystack-button');
+                        if (paystackButton) {
+                            paystackButton.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                
+                                const handler = PaystackPop.setup({
+                                    key: '{{ paystack_public_key }}',
+                                    email: '{{ invoice.client_email }}',
+                                    amount: {{ invoice.total }} * 100,
+                                    currency: '{{ invoice.currency }}',
+                                    ref: 'pub_' + {{ invoice.id }} + '_' + Math.floor((Math.random() * 1000000000) + 1),
+                                    callback: function(response) {
+                                        window.location.href = "{% url 'public_payment_callback' invoice_id=invoice.id %}?reference=" + response.reference;
+                                    },
+                                    onClose: function() {
+                                        console.log('Window closed');
+                                    }
+                                });
+                                handler.openIframe();
+                            });
+                        }
+                    </script>
                 {% else %}
                     <div class="payment-disabled">
                         <p style="margin: 0;">Online payment is not available for this invoice. Please use the bank transfer details above or contact the invoice sender.</p>

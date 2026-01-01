@@ -231,28 +231,33 @@ def profile_update_ajax(request):
             from .services import AnalyticsService
             AnalyticsService.invalidate_user_cache(request.user.id)
             
-            return HttpResponse(json.dumps({
+            response_data = {
                 "success": True, 
                 "message": "Profile updated successfully! Your changes are now live."
-            }), content_type="application/json")
+            }
+            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json")
         except Exception as e:
             logger.error(f"Error updating profile for user {request.user.id}: {e}")
-            return HttpResponse(json.dumps({
+            response_data = {
                 "success": False,
                 "message": "A database error occurred. Please try again later."
-            }), content_type="application/json", status=500)
+            }
+            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
     
     errors = {}
-    for field, error_list in user_form.errors.items():
-        errors[field] = error_list
-    for field, error_list in profile_form.errors.items():
-        errors[field] = error_list
+    if user_form.errors:
+        for field, error_list in user_form.errors.items():
+            errors[field] = error_list
+    if profile_form.errors:
+        for field, error_list in profile_form.errors.items():
+            errors[field] = error_list
         
-    return HttpResponse(json.dumps({
+    response_data = {
         "success": False, 
         "errors": errors,
         "message": "Please correct the errors below."
-    }), content_type="application/json", status=400)
+    }
+    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
 
 @login_required
 @require_POST
@@ -266,16 +271,21 @@ def security_update_ajax(request):
                 user.set_password(form.cleaned_data["new_password"])
                 user.save()
                 login(request, user) # Re-login to keep session
-                return HttpResponse(json.dumps({"success": True, "message": "Password updated successfully"}), content_type="application/json")
+                response_data = {"success": True, "message": "Password updated successfully"}
+                return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json")
             except Exception as e:
                 logger.error(f"Error updating password for user {request.user.id}: {e}")
-                return HttpResponse(json.dumps({
+                response_data = {
                     "success": False,
                     "message": "Failed to update password. Please try again."
-                }), content_type="application/json", status=500)
+                }
+                return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
         else:
-            return HttpResponse(json.dumps({"success": False, "errors": {"current_password": ["Incorrect current password"]}}), content_type="application/json", status=400)
-    return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
+            response_data = {"success": False, "errors": {"current_password": ["Incorrect current password"]}}
+            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
+    
+    response_data = {"success": False, "errors": form.errors}
+    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
 
 @login_required
 @require_POST
@@ -287,14 +297,18 @@ def payment_settings_update_ajax(request):
     if form.is_valid():
         try:
             form.save()
-            return HttpResponse(json.dumps({"success": True, "message": "Payment settings updated successfully"}), content_type="application/json")
+            response_data = {"success": True, "message": "Payment settings updated successfully"}
+            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json")
         except Exception as e:
             logger.error(f"Error updating payment settings for user {request.user.id}: {e}")
-            return HttpResponse(json.dumps({
+            response_data = {
                 "success": False,
                 "message": "Failed to save payment settings."
-            }), content_type="application/json", status=500)
-    return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
+            }
+            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
+    
+    response_data = {"success": False, "errors": form.errors}
+    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
 
 
 def reset_password(request, token):
