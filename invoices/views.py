@@ -1856,6 +1856,11 @@ def public_payment(request, invoice_id: int):
         amount=invoice.total,
         currency=invoice.currency,
         status="pending",
+        customer_email=invoice.client_email,
+        customer_name=invoice.client_name,
+        gateway="paystack",
+        subaccount_code=profile.paystack_subaccount_code,
+        metadata=metadata,
     )
     
     # Redirect to Paystack checkout
