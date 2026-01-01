@@ -28,7 +28,8 @@ from .forms import (
     SignUpForm,
     UserProfileForm,
 )
-from .models import Invoice, InvoiceTemplate, LineItem, RecurringInvoice, UserProfile
+from .models import Invoice, InvoiceTemplate, LineItem, RecurringInvoice, UserProfile, MFAProfile
+from .mfa_service import MFAService
 from .search_filters import InvoiceExport
 
 logger = logging.getLogger(__name__)
