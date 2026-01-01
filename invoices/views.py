@@ -2289,6 +2289,10 @@ def delete_recurring_invoice(request, recurring_id):
         with transaction.atomic():
             recurring.delete()
         
+        # Invalidate cache
+        from .services import AnalyticsService
+        AnalyticsService.invalidate_user_cache(request.user.id)
+        
         message = f"Recurring schedule for {client_name} has been deleted."
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
             return HttpResponse(json.dumps({

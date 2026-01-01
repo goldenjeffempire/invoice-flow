@@ -113,6 +113,12 @@
     .btn-pause { background: var(--warning-light); color: var(--warning); }
     .btn-resume { background: var(--success-light); color: var(--success); }
 
+    .btn-danger-outline {
+        background: var(--danger-light);
+        color: var(--danger);
+        border: 1px solid var(--danger);
+    }
+
     .btn-action:hover {
         opacity: 0.8;
     }
@@ -176,20 +182,18 @@
 
 <!-- Delete Recurring Modal -->
 <div id="deleteRecurringModal" class="modal-backdrop" style="display: none;">
-    <div class="modal-container">
+    <div class="modal-content">
         <div class="modal-header">
             <h3 class="modal-title">Delete Recurring Schedule</h3>
             <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="warning-box">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                <p>This will permanently stop and delete the recurring schedule for <strong id="deleteClientName"></strong>. This action cannot be undone.</p>
-            </div>
+            <p>This will permanently stop and delete the recurring schedule for <strong id="deleteClientName"></strong>.</p>
+            <p style="color: var(--danger); font-size: 0.875rem; margin-top: 0.5rem;">This action cannot be undone and no future invoices will be generated for this schedule.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-modal btn-cancel" onclick="closeDeleteModal()">Cancel, Keep It</button>
-            <button type="button" class="btn-modal btn-confirm-delete" id="confirmDeleteBtn">Yes, Delete Schedule</button>
+            <button type="button" class="btn-pagination" onclick="closeDeleteModal()">Cancel</button>
+            <button type="button" class="btn-header" style="background: var(--danger);" id="confirmDeleteBtn">Delete Schedule</button>
         </div>
     </div>
 </div>
@@ -214,7 +218,7 @@
         const btn = this;
         const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Deleting...';
+        btn.innerHTML = '<span class="loading-spinner"></span> Deleting...';
         
         fetch(`/recurring/${recurringToDelete}/delete/`, {
             method: 'POST',
@@ -224,23 +228,46 @@
                 'Content-Type': 'application/json'
             }
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
-                window.location.reload();
+                const card = document.querySelector(`button[onclick*="'${recurringToDelete}'"]`).closest('.recurring-card');
+                card.style.opacity = '0.5';
+                card.style.pointerEvents = 'none';
+                
+                closeDeleteModal();
+                showToast('Success', data.message, 'success');
+                
+                setTimeout(() => {
+                    card.remove();
+                    if (document.querySelectorAll('.recurring-card').length === 0) {
+                        window.location.reload();
+                    }
+                }, 500);
             } else {
-                alert(data.message || 'Failed to delete recurring schedule.');
+                showToast('Error', data.message || 'Failed to delete recurring schedule.', 'error');
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+            showToast('Error', 'An error occurred. Please try again.', 'error');
             btn.disabled = false;
             btn.textContent = originalText;
         });
     });
+
+    function showToast(title, message, type) {
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            alert(message);
+        }
+    }
 
     // Close on backdrop click
     window.onclick = function(event) {
