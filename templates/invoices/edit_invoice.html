@@ -1,318 +1,388 @@
 {% extends "base/layout-authenticated.html" %}
 {% load static %}
 
-{% block title %}Edit Invoice {{ invoice.invoice_id }} - InvoiceFlow{% endblock %}
+{% block title %}Edit Invoice {{ invoice.invoice_id }} | InvoiceFlow{% endblock %}
+
+{% block page_title %}Edit Invoice{% endblock %}
+{% block page_subtitle %}Invoice #{{ invoice.invoice_id }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    .edit-invoice-container {
-        max-width: 1000px;
+    :root {
+        --invoice-primary: #6366f1;
+        --invoice-primary-hover: #4f46e5;
+        --invoice-bg: #f8fafc;
+        --invoice-card-bg: #ffffff;
+        --invoice-border: #e2e8f0;
+        --invoice-text: #1e293b;
+        --invoice-text-muted: #64748b;
+    }
+
+    .edit-container {
+        max-width: 1100px;
         margin: 0 auto;
+        padding-bottom: 5rem;
     }
 
-    .form-section {
-        background: var(--white);
-        border: 1px solid var(--gray-200);
-        border-radius: var(--radius-lg);
-        padding: var(--spacing-lg);
-        margin-bottom: var(--spacing-lg);
-        box-shadow: var(--shadow-sm);
+    .glass-card {
+        background: var(--invoice-card-bg);
+        border: 1px solid var(--invoice-border);
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        overflow: hidden;
+        margin-bottom: 2rem;
     }
 
-    .form-section-header {
+    .card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--invoice-border);
         display: flex;
         align-items: center;
-        gap: var(--spacing-sm);
-        margin-bottom: var(--spacing-lg);
-        padding-bottom: var(--spacing-sm);
-        border-bottom: 1px solid var(--gray-100);
+        gap: 0.75rem;
+        background: #fcfdfe;
     }
 
-    .form-section-title {
+    .card-header h2 {
         font-size: 1.125rem;
-        font-weight: 700;
-        color: var(--gray-900);
+        font-weight: 600;
+        color: var(--invoice-text);
+        margin: 0;
+    }
+
+    .card-body {
+        padding: 1.5rem;
     }
 
     .form-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: var(--spacing-md);
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .input-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .input-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--invoice-text-muted);
+        margin-bottom: 0.5rem;
+    }
+
+    .modern-input {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        border: 1px solid var(--invoice-border);
+        border-radius: 0.5rem;
+        font-size: 0.9375rem;
+        color: var(--invoice-text);
+        transition: all 0.2s;
+        background: #ffffff;
+    }
+
+    .modern-input:focus {
+        outline: none;
+        border-color: var(--invoice-primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    /* Line Items Table */
+    .items-table-container {
+        overflow-x: auto;
+        margin: -1.5rem;
+        padding: 1.5rem;
+    }
+
+    .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+    }
+
+    .items-table th {
+        text-align: left;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--invoice-text-muted);
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--invoice-border);
+    }
+
+    .items-table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--invoice-border);
+        vertical-align: top;
+    }
+
+    .item-desc-cell { width: 45%; }
+    .item-qty-cell { width: 15%; }
+    .item-price-cell { width: 20%; }
+    .item-total-cell { width: 15%; text-align: right; }
+    .item-action-cell { width: 5%; text-align: right; }
+
+    .btn-delete {
+        color: #ef4444;
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-delete:hover {
+        background: #fee2e2;
+    }
+
+    /* Summary Section */
+    .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+        margin-top: 1.5rem;
     }
 
     @media (max-width: 768px) {
-        .form-grid {
+        .summary-grid {
             grid-template-columns: 1fr;
         }
     }
 
-    .line-items-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .line-items-table th {
-        text-align: left;
-        padding: var(--spacing-sm);
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        color: var(--gray-500);
-        border-bottom: 2px solid var(--gray-100);
-    }
-
-    .line-items-table td {
-        padding: var(--spacing-sm) 0;
-        border-bottom: 1px solid var(--gray-50);
-    }
-
-    .item-row input {
-        width: 100%;
-        padding: 0.5rem;
-        border: 1px solid var(--gray-200);
-        border-radius: var(--radius-md);
-        font-size: 0.95rem;
-    }
-
-    .item-row input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 2px var(--primary-light);
-    }
-
-    .btn-remove {
-        color: var(--danger);
-        padding: 0.5rem;
-        border-radius: var(--radius-md);
-        transition: var(--transition-fast);
-    }
-
-    .btn-remove:hover {
-        background: var(--danger-light);
-    }
-
-    .invoice-summary {
-        margin-left: auto;
-        width: 100%;
-        max-width: 350px;
-        background: var(--gray-50);
-        padding: var(--spacing-lg);
-        border-radius: var(--radius-lg);
+    .summary-card {
+        background: #f8fafc;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
     }
 
     .summary-row {
         display: flex;
         justify-content: space-between;
-        padding: var(--spacing-xs) 0;
-        color: var(--gray-600);
+        margin-bottom: 0.75rem;
+        font-size: 0.9375rem;
     }
 
     .summary-row.total {
-        margin-top: var(--spacing-sm);
-        padding-top: var(--spacing-sm);
-        border-top: 2px solid var(--gray-200);
-        color: var(--gray-900);
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--invoice-border);
         font-weight: 700;
-        font-size: 1.25rem;
+        font-size: 1.125rem;
+        color: var(--invoice-text);
     }
 
-    .sticky-actions {
-        position: sticky;
+    /* Floating Actions */
+    .actions-bar {
+        position: fixed;
         bottom: 0;
-        background: var(--white);
-        padding: var(--spacing-md);
-        border-top: 1px solid var(--gray-200);
-        margin: 0 calc(-1 * var(--spacing-xl));
+        left: 0;
+        right: 0;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(8px);
+        border-top: 1px solid var(--invoice-border);
+        padding: 1rem 2rem;
         display: flex;
         justify-content: flex-end;
-        gap: var(--spacing-md);
-        z-index: 10;
+        gap: 1rem;
+        z-index: 50;
     }
 
-    .btn-save {
-        background: var(--primary);
-        color: var(--white);
-        padding: 0.75rem 2rem;
-        border-radius: var(--radius-md);
+    .btn-modern {
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.5rem;
         font-weight: 600;
-        transition: var(--transition-fast);
+        font-size: 0.9375rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
     }
 
-    .btn-save:hover {
-        background: var(--primary-dark);
+    .btn-primary {
+        background: var(--invoice-primary);
+        color: white;
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: var(--invoice-primary-hover);
         transform: translateY(-1px);
-        box-shadow: var(--shadow-md);
     }
 
-    .btn-cancel {
-        color: var(--gray-600);
-        padding: 0.75rem 1.5rem;
+    .btn-secondary {
+        background: white;
+        color: var(--invoice-text);
+        border: 1px solid var(--invoice-border);
+    }
+
+    .btn-secondary:hover {
+        background: #f1f5f9;
+    }
+
+    .add-row-btn {
+        margin-top: 1rem;
+        color: var(--invoice-primary);
         font-weight: 600;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        cursor: pointer;
+    }
+
+    .add-row-btn:hover {
+        text-decoration: underline;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="edit-invoice-container">
-    <div class="section-header">
-        <div>
-            <h1 class="header-title">Edit Invoice</h1>
-            <p class="header-subtitle">Invoice #{{ invoice.invoice_id }} • Created on {{ invoice.created_at|date:"M d, Y" }}</p>
-        </div>
-        <div class="header-actions">
-            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-pagination">View Invoice</a>
-        </div>
-    </div>
-
+<div class="edit-container">
     <form method="POST" id="edit-invoice-form">
         {% csrf_token %}
         <input type="hidden" name="line_items" id="line-items-json">
 
+        <!-- Parties Section -->
         <div class="form-grid">
-            <!-- Business Info -->
-            <div class="form-section">
-                <div class="form-section-header">
-                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                    </svg>
-                    <h2 class="form-section-title">Business Information</h2>
+            <div class="glass-card">
+                <div class="card-header">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <h2>Sender Information</h2>
                 </div>
-                <div class="space-y-4">
-                    <div class="form-group">
-                        <label class="form-label">Business Name</label>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label class="input-label">Business Name</label>
                         {{ invoice_form.business_name }}
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
+                    <div class="input-group">
+                        <label class="input-label">Business Email</label>
                         {{ invoice_form.business_email }}
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Phone</label>
-                        {{ invoice_form.business_phone }}
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Address</label>
+                    <div class="input-group">
+                        <label class="input-label">Address</label>
                         {{ invoice_form.business_address }}
                     </div>
                 </div>
             </div>
 
-            <!-- Client Info -->
-            <div class="form-section">
-                <div class="form-section-header">
-                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                    </svg>
-                    <h2 class="form-section-title">Client Information</h2>
+            <div class="glass-card">
+                <div class="card-header">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                    <h2>Client Information</h2>
                 </div>
-                <div class="space-y-4">
-                    <div class="form-group">
-                        <label class="form-label">Client Name</label>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label class="input-label">Client Name</label>
                         {{ invoice_form.client_name }}
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Email</label>
+                    <div class="input-group">
+                        <label class="input-label">Client Email</label>
                         {{ invoice_form.client_email }}
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Phone</label>
-                        {{ invoice_form.client_phone }}
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Address</label>
+                    <div class="input-group">
+                        <label class="input-label">Client Address</label>
                         {{ invoice_form.client_address }}
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Invoice Details -->
-        <div class="form-section">
-            <div class="form-section-header">
-                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <h2 class="form-section-title">Invoice Details</h2>
+        <!-- Dates & Settings -->
+        <div class="glass-card">
+            <div class="card-header">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <h2>Invoice Details</h2>
             </div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label class="form-label">Invoice Date</label>
-                    {{ invoice_form.invoice_date }}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Due Date</label>
-                    {{ invoice_form.due_date }}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Currency</label>
-                    {{ invoice_form.currency }}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Tax Rate (%)</label>
-                    {{ invoice_form.tax_rate }}
+            <div class="card-body">
+                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="input-group">
+                        <label class="input-label">Invoice Date</label>
+                        {{ invoice_form.invoice_date }}
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Due Date</label>
+                        {{ invoice_form.due_date }}
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Currency</label>
+                        {{ invoice_form.currency }}
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Tax Rate (%)</label>
+                        {{ invoice_form.tax_rate }}
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Line Items -->
-        <div class="form-section">
-            <div class="flex justify-between items-center mb-4">
-                <div class="form-section-header mb-0 border-0">
-                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                    </svg>
-                    <h2 class="form-section-title">Line Items</h2>
+        <div class="glass-card">
+            <div class="card-header" style="justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                    <h2>Line Items</h2>
                 </div>
-                <button type="button" id="add-item-btn" class="btn-pagination">
-                    + Add Item
+                <button type="button" class="add-row-btn" id="add-item-btn">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="3" x2="8" y2="13"></line><line x1="3" y1="8" x2="13" y2="8"></line></svg>
+                    Add Item
                 </button>
             </div>
-            
-            <div class="overflow-x-auto">
-                <table class="line-items-table">
-                    <thead>
-                        <tr>
-                            <th>Description</th>
-                            <th style="width: 100px;">Qty</th>
-                            <th style="width: 150px;">Unit Price</th>
-                            <th style="width: 150px; text-align: right;">Total</th>
-                            <th style="width: 50px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="line-items-body">
-                        <!-- Items populated via JS -->
-                    </tbody>
-                </table>
-            </div>
+            <div class="card-body">
+                <div class="items-table-container">
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th class="item-desc-cell">Description</th>
+                                <th class="item-qty-cell">Quantity</th>
+                                <th class="item-price-cell">Unit Price</th>
+                                <th class="item-total-cell">Total</th>
+                                <th class="item-action-cell"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="line-items-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
 
-            <div class="invoice-summary mt-8">
-                <div class="summary-row">
-                    <span>Subtotal</span>
-                    <span id="subtotal-display">0.00</span>
-                </div>
-                <div class="summary-row">
-                    <span>Tax</span>
-                    <span id="tax-display">0.00</span>
-                </div>
-                <div class="summary-row total">
-                    <span>Total</span>
-                    <span id="total-display">0.00</span>
+                <div class="summary-grid">
+                    <div>
+                        <div class="input-group">
+                            <label class="input-label">Additional Notes</label>
+                            {{ invoice_form.notes }}
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-row">
+                            <span style="color: var(--invoice-text-muted);">Subtotal</span>
+                            <span id="subtotal-display" style="font-weight: 600;">0.00</span>
+                        </div>
+                        <div class="summary-row">
+                            <span style="color: var(--invoice-text-muted);">Tax Amount</span>
+                            <span id="tax-display" style="font-weight: 600;">0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Grand Total</span>
+                            <span id="total-display">0.00</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="form-section">
-            <div class="form-section-header">
-                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-                <h2 class="form-section-title">Notes</h2>
-            </div>
-            {{ invoice_form.notes }}
-        </div>
-
-        <div class="sticky-actions">
-            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-cancel">Cancel</a>
-            <button type="submit" class="btn-save">Save Changes</button>
+        <!-- Sticky Footer Actions -->
+        <div class="actions-bar">
+            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-modern btn-secondary">
+                Cancel
+            </a>
+            <button type="submit" class="btn-modern btn-primary">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"></path></svg>
+                Save Changes
+            </button>
         </div>
     </form>
 </div>
@@ -326,23 +396,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const currencySelect = document.querySelector('select[name="currency"]');
     const taxRateInput = document.querySelector('input[name="tax_rate"]');
     
+    // Initial items from server
     let items = JSON.parse('{{ line_items_json|safe }}');
 
     function renderItems() {
         itemsBody.innerHTML = '';
         items.forEach((item, index) => {
             const row = document.createElement('tr');
-            row.className = 'item-row';
             row.innerHTML = `
-                <td><input type="text" class="item-desc" value="${item.description}" required></td>
-                <td><input type="number" class="item-qty" value="${item.quantity}" min="1" step="any" required></td>
-                <td><input type="number" class="item-price" value="${item.unit_price}" min="0" step="0.01" required></td>
-                <td style="text-align: right; font-weight: 600;" class="item-total-display">0.00</td>
-                <td style="text-align: right;">
-                    <button type="button" class="btn-remove" data-index="${index}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
+                <td class="item-desc-cell">
+                    <input type="text" class="modern-input item-desc" value="${item.description}" placeholder="Service or product description..." required>
+                </td>
+                <td class="item-qty-cell">
+                    <input type="number" class="modern-input item-qty" value="${item.quantity}" min="0.01" step="any" required>
+                </td>
+                <td class="item-price-cell">
+                    <input type="number" class="modern-input item-price" value="${item.unit_price}" min="0" step="0.01" required>
+                </td>
+                <td class="item-total-cell">
+                    <span class="item-total-display" style="font-weight: 600; color: var(--invoice-text);">0.00</span>
+                </td>
+                <td class="item-action-cell">
+                    <button type="button" class="btn-delete" onclick="removeItem(${index})">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
             `;
@@ -351,19 +427,29 @@ document.addEventListener('DOMContentLoaded', function() {
         calculateTotals();
     }
 
+    window.removeItem = function(index) {
+        if (items.length > 1) {
+            items.splice(index, 1);
+            renderItems();
+        } else {
+            alert("An invoice must have at least one item.");
+        }
+    };
+
     function calculateTotals() {
         let subtotal = 0;
-        const currency = currencySelect.value;
         const taxRate = parseFloat(taxRateInput.value) || 0;
 
-        document.querySelectorAll('.item-row').forEach((row, index) => {
+        const rows = itemsBody.querySelectorAll('tr');
+        rows.forEach((row, index) => {
             const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
             const price = parseFloat(row.querySelector('.item-price').value) || 0;
             const total = qty * price;
             subtotal += total;
-            row.querySelector('.item-total-display').textContent = total.toFixed(2);
             
-            // Sync back to items array
+            row.querySelector('.item-total-display').textContent = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            // Sync data
             items[index].description = row.querySelector('.item-desc').value;
             items[index].quantity = qty;
             items[index].unit_price = price;
@@ -372,9 +458,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const taxAmount = subtotal * (taxRate / 100);
         const total = subtotal + taxAmount;
 
-        document.getElementById('subtotal-display').textContent = subtotal.toFixed(2);
-        document.getElementById('tax-display').textContent = taxAmount.toFixed(2);
-        document.getElementById('total-display').textContent = total.toFixed(2);
+        document.getElementById('subtotal-display').textContent = subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('tax-display').textContent = taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('total-display').textContent = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         
         lineItemsInput.value = JSON.stringify(items);
     }
@@ -384,26 +470,17 @@ document.addEventListener('DOMContentLoaded', function() {
         renderItems();
     });
 
-    itemsBody.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-remove');
-        if (btn) {
-            const index = parseInt(btn.dataset.index);
-            items.splice(index, 1);
-            renderItems();
-        }
-    });
-
     itemsBody.addEventListener('input', calculateTotals);
     taxRateInput.addEventListener('input', calculateTotals);
     currencySelect.addEventListener('change', calculateTotals);
 
-    form.addEventListener('submit', function(e) {
-        if (items.length === 0) {
-            e.preventDefault();
-            alert('Please add at least one line item.');
-            return;
+    // Apply modern classes to Django form widgets
+    const inputs = document.querySelectorAll('#edit-invoice-form input:not([type="hidden"]), #edit-invoice-form select, #edit-invoice-form textarea');
+    inputs.forEach(input => {
+        input.classList.add('modern-input');
+        if (input.tagName === 'TEXTAREA') {
+            input.style.minHeight = '100px';
         }
-        calculateTotals(); // Ensure input is up to date
     });
 
     renderItems();
