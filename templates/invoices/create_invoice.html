@@ -1,893 +1,425 @@
-{% extends 'base/layout-authenticated.html' %}
+{% extends "base/layout-authenticated.html" %}
 {% load static %}
 
-{% block title %}Create Invoice | InvoiceFlow{% endblock %}
+{% block title %}Create Invoice - InvoiceFlow{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/authenticated-modern.css' %}">
 <style>
-  .invoice-form-wrapper {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    max-width: 900px;
-  }
-
-  .form-card {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    padding: 2rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  .form-card-header {
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #f3f4f6;
-  }
-
-  .form-card-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-  }
-
-  .form-card-subtitle {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin: 0.5rem 0 0 0;
-  }
-
-  .form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .form-label {
-    font-weight: 600;
-    color: #1f2937;
-    font-size: 0.9375rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .form-required {
-    color: #ef4444;
-  }
-
-  .form-input,
-  .form-select,
-  .form-textarea {
-    padding: 0.75rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    font-family: inherit;
-    font-size: 0.9375rem;
-    transition: all 0.2s ease;
-    background: white;
-  }
-
-  .form-input:focus,
-  .form-select:focus,
-  .form-textarea:focus {
-    outline: none;
-    border-color: #6366f1;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    background: #fafafe;
-  }
-
-  .form-input::placeholder {
-    color: #d1d5db;
-  }
-
-  .form-textarea {
-    resize: vertical;
-    min-height: 120px;
-  }
-
-  .form-help {
-    font-size: 0.8125rem;
-    color: #6b7280;
-    margin-top: 0.375rem;
-  }
-
-  .form-error {
-    color: #ef4444;
-    font-size: 0.8125rem;
-    margin-top: 0.375rem;
-  }
-
-  .line-items-section {
-    margin-top: 1.5rem;
-  }
-
-  .line-items-header {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1.5fr auto;
-    gap: 1rem;
-    padding: 0.75rem 1rem;
-    background: #f3f4f6;
-    border-radius: 8px 8px 0 0;
-    margin-bottom: 0;
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
-  .line-item-row {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1.5fr auto;
-    gap: 1rem;
-    align-items: center;
-    padding: 1.25rem;
-    background: white;
-    border-radius: 0;
-    border: 1px solid #e5e7eb;
-    border-top: none;
-    margin-bottom: 0;
-  }
-
-  .line-item-row:last-of-type {
-    border-radius: 0 0 8px 8px;
-    margin-bottom: 1rem;
-  }
-
-  .line-item-row:first-of-type {
-    border-radius: 0 0 0 0;
-    margin-top: 0;
-  }
-
-  .line-item-field {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .line-item-input {
-    width: 100%;
-    padding: 0.625rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    font-size: 0.9375rem;
-    transition: all 0.2s ease;
-  }
-
-  .line-item-input:focus {
-    outline: none;
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
-    background: #fafafe;
-  }
-
-  .line-item-total-display {
-    background: #f9fafb;
-    padding: 0.625rem;
-    border-radius: 6px;
-    font-weight: 600;
-    color: #1f2937;
-    text-align: right;
-  }
-
-  .line-item-currency {
-    font-size: 0.75rem;
-    color: #6b7280;
-    margin-right: 0.25rem;
-  }
-
-  @media (max-width: 768px) {
-    .line-items-header {
-      display: none;
+    .create-invoice-container {
+        max-width: 1000px;
+        margin: 0 auto;
     }
 
-    .line-item-row {
-      grid-template-columns: 1fr;
-      gap: 0.75rem;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      margin-bottom: 1rem;
+    .form-section {
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        box-shadow: var(--shadow-sm);
     }
 
-    .line-item-field::before {
-      content: attr(data-label);
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #6b7280;
-      margin-bottom: 0.25rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    .form-section-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--gray-100);
     }
-  }
 
-  .btn-remove-item {
-    padding: 0.625rem 1rem;
-    background: #ef4444;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-  }
-
-  .btn-remove-item:hover {
-    background: #dc2626;
-  }
-
-  .btn-add-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    background: #10b981;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.9375rem;
-    transition: all 0.2s ease;
-    margin-top: 1rem;
-  }
-
-  .btn-add-item:hover {
-    background: #059669;
-  }
-
-  .summary-box {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-  }
-
-  .summary-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 0;
-    font-size: 0.95rem;
-  }
-
-  .summary-row-label {
-    color: #6b7280;
-    font-weight: 500;
-  }
-
-  .summary-row-value {
-    color: #1f2937;
-    font-weight: 600;
-  }
-
-  .summary-total {
-    border-top: 2px solid #e5e7eb;
-    padding-top: 1rem;
-    margin-top: 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: #6366f1;
-  }
-
-  .button-group {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-    flex-wrap: wrap;
-  }
-
-  .btn-primary {
-    flex: 1;
-    min-width: 150px;
-    padding: 0.875rem 1.5rem;
-    background: #6366f1;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-  }
-
-  .btn-primary:hover {
-    background: #4f46e5;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-  }
-
-  .btn-primary:disabled {
-    background: #d1d5db;
-    cursor: not-allowed;
-  }
-
-  .btn-secondary {
-    flex: 1;
-    min-width: 150px;
-    padding: 0.875rem 1.5rem;
-    background: white;
-    color: #1f2937;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-  }
-
-  .btn-secondary:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
-  }
-
-  .alert {
-    padding: 1rem 1.25rem;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    border-left: 4px solid;
-  }
-
-  .alert-error {
-    background: #fee2e2;
-    border-color: #ef4444;
-    color: #991b1b;
-  }
-
-  .alert-success {
-    background: #dcfce7;
-    border-color: #10b981;
-    color: #166534;
-  }
-
-  .recent-clients {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-
-  .client-button {
-    padding: 1rem;
-    background: white;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    cursor: pointer;
-    text-align: left;
-    transition: all 0.2s ease;
-  }
-
-  .client-button:hover {
-    border-color: #6366f1;
-    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
-  }
-
-  .client-name {
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 0.25rem;
-  }
-
-  .client-email {
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-
-  @media (max-width: 768px) {
-    .form-card {
-      padding: 1.5rem;
+    .form-section-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--gray-900);
     }
 
     .form-grid {
-      grid-template-columns: 1fr;
-      gap: 1rem;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
     }
 
-    .line-item-row {
-      padding: 0.75rem;
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
-    .button-group {
-      flex-direction: column;
-      gap: 0.75rem;
+    .line-items-table {
+        width: 100%;
+        border-collapse: collapse;
     }
 
-    .btn-primary,
-    .btn-secondary {
-      width: 100%;
-      flex: none;
+    .line-items-table th {
+        text-align: left;
+        padding: var(--spacing-sm);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        border-bottom: 2px solid var(--gray-100);
     }
-  }
+
+    .line-items-table td {
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid var(--gray-50);
+    }
+
+    .item-row input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        font-size: 0.95rem;
+    }
+
+    .item-row input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .btn-remove {
+        color: var(--danger);
+        padding: 0.5rem;
+        border-radius: var(--radius-md);
+        transition: var(--transition-fast);
+    }
+
+    .btn-remove:hover {
+        background: var(--danger-light);
+    }
+
+    .invoice-summary {
+        margin-left: auto;
+        width: 100%;
+        max-width: 350px;
+        background: var(--gray-50);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--spacing-xs) 0;
+        color: var(--gray-600);
+    }
+
+    .summary-row.total {
+        margin-top: var(--spacing-sm);
+        padding-top: var(--spacing-sm);
+        border-top: 2px solid var(--gray-200);
+        color: var(--gray-900);
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
+
+    .sticky-actions {
+        position: sticky;
+        bottom: 0;
+        background: var(--white);
+        padding: var(--spacing-md);
+        border-top: 1px solid var(--gray-200);
+        margin: 0 calc(-1 * var(--spacing-xl));
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-md);
+        z-index: 10;
+    }
+
+    .btn-save {
+        background: var(--primary);
+        color: var(--white);
+        padding: 0.75rem 2rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        transition: var(--transition-fast);
+    }
+
+    .btn-save:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-cancel {
+        color: var(--gray-600);
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-layout">
-  {% include 'components/authenticated-sidebar.html' with active='create_invoice' %}
-  
-  <main class="dashboard-content">
-    <div class="content-header">
-      <h1>Create Invoice</h1>
-      <p>Generate a new invoice for your client in seconds</p>
+<div class="create-invoice-container">
+    <div class="section-header">
+        <div>
+            <h1 class="header-title">Create Invoice</h1>
+            <p class="header-subtitle">Generate a new invoice for your client</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'invoices:invoice_list' %}" class="btn-pagination">Cancel</a>
+        </div>
     </div>
 
     {% if messages %}
-      {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-          {{ message }}
-        </div>
-      {% endfor %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mb-6 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
     {% endif %}
 
-    <div class="invoice-form-wrapper">
-      <form method="post" id="invoice-form" class="invoice-form">
+    <form method="POST" id="create-invoice-form">
         {% csrf_token %}
+        <input type="hidden" name="line_items" id="line-items-json">
 
-        <!-- Your Business Information -->
-        <div class="form-card">
-          <div class="form-card-header">
-            <h2 class="form-card-title">Your Business Information</h2>
-            <p class="form-card-subtitle">Auto-populated from your profile</p>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="id_business_name" class="form-label">Business Name <span class="form-required">*</span></label>
-              <input type="text" id="id_business_name" name="business_name" class="form-input" 
-                     required placeholder="Your Company Name" value="{{ invoice_form.business_name.value|default:'' }}">
-              {% if invoice_form.business_name.errors %}
-                <div class="form-error">{{ invoice_form.business_name.errors.0 }}</div>
-              {% endif %}
+        <div class="form-grid">
+            <!-- Business Info -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    <h2 class="form-section-title">Business Information</h2>
+                </div>
+                <div class="space-y-4">
+                    <div class="form-group">
+                        <label class="form-label">Business Name</label>
+                        {{ invoice_form.business_name }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        {{ invoice_form.business_email }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        {{ invoice_form.business_phone }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        {{ invoice_form.business_address }}
+                    </div>
+                </div>
             </div>
 
-            <div class="form-group">
-              <label for="id_business_email" class="form-label">Business Email <span class="form-required">*</span></label>
-              <input type="email" id="id_business_email" name="business_email" class="form-input" 
-                     required placeholder="business@example.com" value="{{ invoice_form.business_email.value|default:'' }}">
-              {% if invoice_form.business_email.errors %}
-                <div class="form-error">{{ invoice_form.business_email.errors.0 }}</div>
-              {% endif %}
+            <!-- Client Info -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <h2 class="form-section-title">Client Information</h2>
+                </div>
+                <div class="space-y-4">
+                    <div class="form-group">
+                        <label class="form-label">Client Name</label>
+                        {{ invoice_form.client_name }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        {{ invoice_form.client_email }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        {{ invoice_form.client_phone }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        {{ invoice_form.client_address }}
+                    </div>
+                </div>
             </div>
-
-            <div class="form-group">
-              <label for="id_business_phone" class="form-label">Business Phone</label>
-              <input type="tel" id="id_business_phone" name="business_phone" class="form-input" 
-                     placeholder="+1 (555) 123-4567" value="{{ invoice_form.business_phone.value|default:'' }}">
-              {% if invoice_form.business_phone.errors %}
-                <div class="form-error">{{ invoice_form.business_phone.errors.0 }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="id_business_address" class="form-label">Business Address</label>
-            <textarea id="id_business_address" name="business_address" class="form-textarea" 
-                      placeholder="123 Business Street, City, State, ZIP">{{ invoice_form.business_address.value|default:'' }}</textarea>
-            {% if invoice_form.business_address.errors %}
-              <div class="form-error">{{ invoice_form.business_address.errors.0 }}</div>
-            {% endif %}
-          </div>
-        </div>
-
-        <!-- Client Information -->
-        <div class="form-card">
-          <div class="form-card-header">
-            <h2 class="form-card-title">Client Information</h2>
-            <p class="form-card-subtitle">Who is this invoice for?</p>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="id_client_name" class="form-label">Client Name <span class="form-required">*</span></label>
-              <input type="text" id="id_client_name" name="client_name" class="form-input" 
-                     required placeholder="Client Company or Name" value="{{ invoice_form.client_name.value|default:'' }}">
-              {% if invoice_form.client_name.errors %}
-                <div class="form-error">{{ invoice_form.client_name.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="form-group">
-              <label for="id_client_email" class="form-label">Client Email <span class="form-required">*</span></label>
-              <input type="email" id="id_client_email" name="client_email" class="form-input" 
-                     required placeholder="client@example.com" value="{{ invoice_form.client_email.value|default:'' }}">
-              {% if invoice_form.client_email.errors %}
-                <div class="form-error">{{ invoice_form.client_email.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="form-group">
-              <label for="id_client_phone" class="form-label">Client Phone</label>
-              <input type="tel" id="id_client_phone" name="client_phone" class="form-input" 
-                     placeholder="+1 (555) 987-6543" value="{{ invoice_form.client_phone.value|default:'' }}">
-              {% if invoice_form.client_phone.errors %}
-                <div class="form-error">{{ invoice_form.client_phone.errors.0 }}</div>
-              {% endif %}
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="id_client_address" class="form-label">Client Address</label>
-            <textarea id="id_client_address" name="client_address" class="form-textarea" 
-                      placeholder="123 Client Street, City, State, ZIP">{{ invoice_form.client_address.value|default:'' }}</textarea>
-            {% if invoice_form.client_address.errors %}
-              <div class="form-error">{{ invoice_form.client_address.errors.0 }}</div>
-            {% endif %}
-          </div>
         </div>
 
         <!-- Invoice Details -->
-        <div class="form-card">
-          <div class="form-card-header">
-            <h2 class="form-card-title">Invoice Details</h2>
-            <p class="form-card-subtitle">Set dates, currency, and tax information</p>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label for="id_invoice_date" class="form-label">Invoice Date <span class="form-required">*</span></label>
-              <input type="date" id="id_invoice_date" name="invoice_date" class="form-input" 
-                     required value="{{ today|date:'Y-m-d' }}">
-              {% if invoice_form.invoice_date.errors %}
-                <div class="form-error">{{ invoice_form.invoice_date.errors.0 }}</div>
-              {% endif %}
+        <div class="form-section">
+            <div class="form-section-header">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h2 class="form-section-title">Invoice Details</h2>
             </div>
-
-            <div class="form-group">
-              <label for="id_due_date" class="form-label">Due Date</label>
-              <input type="date" id="id_due_date" name="due_date" class="form-input" 
-                     value="{{ default_due_date|date:'Y-m-d' }}">
-              {% if invoice_form.due_date.errors %}
-                <div class="form-error">{{ invoice_form.due_date.errors.0 }}</div>
-              {% endif %}
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Invoice Date</label>
+                    {{ invoice_form.invoice_date }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Due Date</label>
+                    {{ invoice_form.due_date }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Currency</label>
+                    {{ invoice_form.currency }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tax Rate (%)</label>
+                    {{ invoice_form.tax_rate }}
+                </div>
             </div>
-
-            <div class="form-group">
-              <label for="id_currency" class="form-label">Currency <span class="form-required">*</span></label>
-              <select id="id_currency" name="currency" class="form-select" required>
-                <option value="USD" {% if default_currency == 'USD' %}selected{% endif %}>USD - US Dollar</option>
-                <option value="EUR" {% if default_currency == 'EUR' %}selected{% endif %}>EUR - Euro</option>
-                <option value="GBP" {% if default_currency == 'GBP' %}selected{% endif %}>GBP - British Pound</option>
-                <option value="NGN" {% if default_currency == 'NGN' %}selected{% endif %}>NGN - Nigerian Naira</option>
-                <option value="CAD" {% if default_currency == 'CAD' %}selected{% endif %}>CAD - Canadian Dollar</option>
-                <option value="AUD" {% if default_currency == 'AUD' %}selected{% endif %}>AUD - Australian Dollar</option>
-                <option value="INR" {% if default_currency == 'INR' %}selected{% endif %}>INR - Indian Rupee</option>
-                <option value="JPY" {% if default_currency == 'JPY' %}selected{% endif %}>JPY - Japanese Yen</option>
-                <option value="ZAR" {% if default_currency == 'ZAR' %}selected{% endif %}>ZAR - South African Rand</option>
-                <option value="KES" {% if default_currency == 'KES' %}selected{% endif %}>KES - Kenyan Shilling</option>
-                <option value="GHS" {% if default_currency == 'GHS' %}selected{% endif %}>GHS - Ghanaian Cedi</option>
-              </select>
-              {% if invoice_form.currency.errors %}
-                <div class="form-error">{{ invoice_form.currency.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="form-group">
-              <label for="id_tax_rate" class="form-label">Tax Rate (%) <span class="form-required">*</span></label>
-              <input type="number" id="id_tax_rate" name="tax_rate" class="form-input" 
-                     step="0.01" min="0" max="100" required value="{{ default_tax|default:'0' }}">
-              {% if invoice_form.tax_rate.errors %}
-                <div class="form-error">{{ invoice_form.tax_rate.errors.0 }}</div>
-              {% endif %}
-            </div>
-
-            <div class="form-group">
-              <label for="id_discount" class="form-label">Discount (%)</label>
-              <input type="number" id="id_discount" name="discount" class="form-input" 
-                     step="0.01" min="0" max="100" value="0">
-              <div class="form-help">Applied to subtotal before tax</div>
-            </div>
-          </div>
         </div>
 
-        <!-- Invoice Items -->
-        <div class="form-card">
-          <div class="form-card-header">
-            <h2 class="form-card-title">Invoice Items</h2>
-            <p class="form-card-subtitle">Add the products or services you're billing for <span id="item-count-badge" style="display: none; background: #6366f1; color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">0 items</span></p>
-          </div>
+        <!-- Line Items -->
+        <div class="form-section">
+            <div class="flex justify-between items-center mb-4">
+                <div class="form-section-header mb-0 border-0">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                    </svg>
+                    <h2 class="form-section-title">Line Items</h2>
+                </div>
+                <button type="button" id="add-item-btn" class="btn-pagination">
+                    + Add Item
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="line-items-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th style="width: 100px;">Qty</th>
+                            <th style="width: 150px;">Unit Price</th>
+                            <th style="width: 150px; text-align: right;">Total</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="line-items-body">
+                        <!-- Items populated via JS -->
+                    </tbody>
+                </table>
+            </div>
 
-          <div id="line-items-wrapper" class="line-items-section">
-            <div id="line-items-header" class="line-items-header" style="display: none;">
-              <div>Description</div>
-              <div>Quantity</div>
-              <div>Price</div>
-              <div>Total</div>
-              <div></div>
+            <div class="invoice-summary mt-8">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="subtotal-display">0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax</span>
+                    <span id="tax-display">0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="total-display">0.00</span>
+                </div>
             </div>
-            <div id="line-items-container"></div>
-          </div>
-
-          <button type="button" id="add-item-btn" class="btn-add-item">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm3.5 8h-3v3h-1v-3h-3v-1h3v-3h1v3h3v1z"/>
-            </svg>
-            Add Item
-          </button>
-
-          <input type="hidden" id="selected-currency" value="{{ default_currency|default:'USD' }}">
-
-          <div class="summary-box">
-            <div class="summary-row">
-              <span class="summary-row-label">Subtotal:</span>
-              <span class="summary-row-value"><span id="currency-symbol">USD</span> <span id="subtotal">0.00</span></span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row-label">Discount:</span>
-              <span class="summary-row-value"><span id="currency-symbol-2">USD</span> <span id="discount-amount">0.00</span></span>
-            </div>
-            <div class="summary-row">
-              <span class="summary-row-label">Tax (<span id="tax-rate">0</span>%):</span>
-              <span class="summary-row-value"><span id="currency-symbol-3">USD</span> <span id="tax-amount">0.00</span></span>
-            </div>
-            <div class="summary-total">
-              <span>Total Amount:</span>
-              <span><span id="currency-symbol-4">USD</span> <span id="total-amount">0.00</span></span>
-            </div>
-          </div>
         </div>
 
-        <!-- Notes -->
-        <div class="form-card">
-          <div class="form-card-header">
-            <h2 class="form-card-title">Additional Notes</h2>
-            <p class="form-card-subtitle">Terms, conditions, or payment instructions</p>
-          </div>
-
-          <div class="form-group">
-            <label for="id_notes" class="form-label">Notes</label>
-            <textarea id="id_notes" name="notes" class="form-textarea" 
-                      placeholder="e.g., Payment terms, late fees, or special instructions">{{ invoice_form.notes.value|default:'' }}</textarea>
-            {% if invoice_form.notes.errors %}
-              <div class="form-error">{{ invoice_form.notes.errors.0 }}</div>
-            {% endif %}
-          </div>
+        <div class="form-section">
+            <div class="form-section-header">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <h2 class="form-section-title">Notes</h2>
+            </div>
+            {{ invoice_form.notes }}
         </div>
 
-        <!-- Form Actions -->
-        <div class="form-card">
-          <div class="button-group">
-            <button type="submit" class="btn-primary">Create Invoice</button>
-            <a href="{% url 'invoices:invoice_list' %}" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">Cancel</a>
-          </div>
+        <div class="sticky-actions">
+            <a href="{% url 'invoices:invoice_list' %}" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-save">Create Invoice</button>
         </div>
-
-        <!-- Hidden field for line items -->
-        <input type="hidden" id="line_items" name="line_items" value="[]">
-      </form>
-    </div>
-  </main>
+    </form>
 </div>
 
 <script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
-  const container = document.getElementById('line-items-container');
-  const addBtn = document.getElementById('add-item-btn');
-  const lineItemsInput = document.getElementById('line_items');
-  const currencyInput = document.getElementById('selected-currency');
-  const currencySelect = document.getElementById('id_currency');
-  let itemCount = 0;
-
-  // Currency code mapping for display
-  const currencySymbols = {
-    'USD': 'USD',
-    'EUR': 'EUR',
-    'GBP': 'GBP',
-    'NGN': 'NGN',
-    'CAD': 'CAD',
-    'AUD': 'AUD',
-    'INR': 'INR',
-    'JPY': 'JPY',
-    'ZAR': 'ZAR',
-    'KES': 'KES',
-    'GHS': 'GHS'
-  };
-
-  function getCurrency() {
-    return currencySelect.value || 'USD';
-  }
-
-  function updateCurrencyDisplay() {
-    const currency = getCurrency();
-    const symbol = currencySymbols[currency] || currency;
-    currencyInput.value = currency;
+    const form = document.getElementById('create-invoice-form');
+    const itemsBody = document.getElementById('line-items-body');
+    const addItemBtn = document.getElementById('add-item-btn');
+    const lineItemsInput = document.getElementById('line-items-json');
+    const currencySelect = document.querySelector('select[name="currency"]');
+    const taxRateInput = document.querySelector('input[name="tax_rate"]');
     
-    // Update all currency displays
-    document.getElementById('currency-symbol').textContent = symbol;
-    document.getElementById('currency-symbol-2').textContent = symbol;
-    document.getElementById('currency-symbol-3').textContent = symbol;
-    document.getElementById('currency-symbol-4').textContent = symbol;
-    
-    // Update line item currencies
-    updateLineItemCurrencies();
-    updateSummary();
-  }
+    let items = [{ description: '', quantity: 1, unit_price: 0 }];
 
-  function updateSummary() {
-    const items = JSON.parse(lineItemsInput.value || '[]');
-    const taxRate = parseFloat(document.getElementById('id_tax_rate').value || 0);
-    const discount = parseFloat(document.getElementById('id_discount').value || 0);
-    
-    let subtotal = 0;
-    items.forEach(item => {
-      subtotal += (parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0));
-    });
-
-    const discountAmount = (subtotal * discount) / 100;
-    const taxableAmount = subtotal - discountAmount;
-    const taxAmount = (taxableAmount * taxRate) / 100;
-    const total = taxableAmount + taxAmount;
-
-    document.getElementById('subtotal').textContent = subtotal.toFixed(2);
-    document.getElementById('discount-amount').textContent = discountAmount.toFixed(2);
-    document.getElementById('tax-amount').textContent = taxAmount.toFixed(2);
-    document.getElementById('total-amount').textContent = total.toFixed(2);
-    document.getElementById('tax-rate').textContent = taxRate.toFixed(2);
-
-    // Update all line item totals to show currency
-    container.querySelectorAll('.line-item-row').forEach(row => {
-      const qtyInput = row.querySelector('.item-quantity');
-      const priceInput = row.querySelector('.item-price');
-      const qty = parseFloat(qtyInput.value || 0);
-      const price = parseFloat(priceInput.value || 0);
-      const total = (qty * price).toFixed(2);
-      row.querySelector('.item-total').textContent = total;
-    });
-  }
-
-  function updateItemCount() {
-    const count = container.querySelectorAll('.line-item-row').length;
-    const badge = document.getElementById('item-count-badge');
-    const header = document.getElementById('line-items-header');
-    badge.textContent = `${count} item${count !== 1 ? 's' : ''}`;
-    badge.style.display = count > 0 ? 'inline-block' : 'none';
-    header.style.display = count > 0 ? 'grid' : 'none';
-  }
-
-  function updateLineItemCurrencies() {
-    const currency = getCurrency();
-    container.querySelectorAll('.item-total-currency').forEach(el => {
-      el.textContent = currency;
-    });
-  }
-
-  function addLineItem() {
-    itemCount++;
-    const currency = getCurrency();
-    const html = `
-      <div class="line-item-row" data-item-id="${itemCount}">
-        <div class="line-item-field" data-label="Description">
-          <input type="text" class="line-item-input item-description" placeholder="Product or service name" required>
-        </div>
-        <div class="line-item-field" data-label="Quantity">
-          <input type="number" class="line-item-input item-quantity" placeholder="0" step="0.01" min="0" value="1" required>
-        </div>
-        <div class="line-item-field" data-label="Price">
-          <input type="number" class="line-item-input item-price" placeholder="0.00" step="0.01" min="0" required>
-        </div>
-        <div class="line-item-field" data-label="Total">
-          <div class="line-item-total-display">
-            <span class="item-total-currency">${currency}</span><span class="item-total">0.00</span>
-          </div>
-        </div>
-        <button type="button" class="btn-remove-item" data-item-id="${itemCount}" title="Remove this item">×</button>
-      </div>
-    `;
-    container.insertAdjacentHTML('beforeend', html);
-    
-    const row = container.querySelector(`[data-item-id="${itemCount}"]`);
-    const descInput = row.querySelector('.item-description');
-    const qtyInput = row.querySelector('.item-quantity');
-    const priceInput = row.querySelector('.item-price');
-    const removeBtn = row.querySelector('.btn-remove-item');
-
-    const updateItem = () => {
-      const qty = parseFloat(qtyInput.value || 0);
-      const price = parseFloat(priceInput.value || 0);
-      const total = (qty * price).toFixed(2);
-      row.querySelector('.item-total').textContent = total;
-      saveItems();
-    };
-
-    descInput.addEventListener('input', updateItem);
-    qtyInput.addEventListener('input', updateItem);
-    qtyInput.addEventListener('change', updateItem);
-    priceInput.addEventListener('input', updateItem);
-    priceInput.addEventListener('change', updateItem);
-    removeBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      row.remove();
-      updateItemCount();
-      saveItems();
-    });
-
-    descInput.focus();
-    updateItemCount();
-  }
-
-  function saveItems() {
-    const items = [];
-    container.querySelectorAll('.line-item-row').forEach(row => {
-      const desc = row.querySelector('.item-description').value;
-      const qty = row.querySelector('.item-quantity').value;
-      const price = row.querySelector('.item-price').value;
-      if (desc && qty && price) {
-        items.push({ description: desc, quantity: qty, unit_price: price });
-      }
-    });
-    lineItemsInput.value = JSON.stringify(items);
-    updateSummary();
-  }
-
-  // Event listeners
-  document.getElementById('id_tax_rate').addEventListener('change', updateSummary);
-  document.getElementById('id_discount').addEventListener('change', updateSummary);
-  currencySelect.addEventListener('change', updateCurrencyDisplay);
-
-  addBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    addLineItem();
-  });
-
-  // Form submission handler - ensure items are saved before submitting
-  const form = document.querySelector('form');
-  form.addEventListener('submit', (e) => {
-    saveItems();
-    const items = JSON.parse(lineItemsInput.value || '[]');
-    
-    if (items.length === 0) {
-      e.preventDefault();
-      // Show error message
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'alert alert-error';
-      errorDiv.textContent = '❌ Please add at least one item to your invoice.';
-      form.insertBefore(errorDiv, form.firstChild);
-      
-      // Remove error after 5 seconds
-      setTimeout(() => {
-        errorDiv.remove();
-      }, 5000);
-      
-      // Scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    function renderItems() {
+        itemsBody.innerHTML = '';
+        items.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <td><input type="text" class="item-desc" value="${item.description}" placeholder="Item description" required></td>
+                <td><input type="number" class="item-qty" value="${item.quantity}" min="1" step="any" required></td>
+                <td><input type="number" class="item-price" value="${item.unit_price}" min="0" step="0.01" required></td>
+                <td style="text-align: right; font-weight: 600;" class="item-total-display">0.00</td>
+                <td style="text-align: right;">
+                    <button type="button" class="btn-remove" data-index="${index}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </td>
+            `;
+            itemsBody.appendChild(row);
+        });
+        calculateTotals();
     }
-  });
 
-  // Initialize
-  updateCurrencyDisplay();
-  updateItemCount();
-  
-  // Allow Enter key to add item in description field and move to next field
-  container.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && e.target.classList.contains('item-description')) {
-      e.preventDefault();
-      const row = e.target.closest('.line-item-row');
-      const qtyInput = row.querySelector('.item-quantity');
-      qtyInput.focus();
+    function calculateTotals() {
+        let subtotal = 0;
+        const taxRate = parseFloat(taxRateInput.value) || 0;
+
+        document.querySelectorAll('.item-row').forEach((row, index) => {
+            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const total = qty * price;
+            subtotal += total;
+            row.querySelector('.item-total-display').textContent = total.toFixed(2);
+            
+            // Sync back to items array
+            if (items[index]) {
+                items[index].description = row.querySelector('.item-desc').value;
+                items[index].quantity = qty;
+                items[index].unit_price = price;
+            }
+        });
+
+        const taxAmount = subtotal * (taxRate / 100);
+        const total = subtotal + taxAmount;
+
+        document.getElementById('subtotal-display').textContent = subtotal.toFixed(2);
+        document.getElementById('tax-display').textContent = taxAmount.toFixed(2);
+        document.getElementById('total-display').textContent = total.toFixed(2);
+        
+        lineItemsInput.value = JSON.stringify(items);
     }
-  });
-  
-  // Allow Tab to move through quantity -> price -> next description
-  container.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') {
-      const input = e.target;
-      if (input.classList.contains('item-price')) {
-        const row = input.closest('.line-item-row');
-        const nextRow = row.nextElementSibling;
-        if (nextRow && nextRow.classList.contains('line-item-row')) {
-          e.preventDefault();
-          nextRow.querySelector('.item-description').focus();
+
+    addItemBtn.addEventListener('click', () => {
+        items.push({ description: '', quantity: 1, unit_price: 0 });
+        renderItems();
+    });
+
+    itemsBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-remove');
+        if (btn) {
+            const index = parseInt(btn.dataset.index);
+            if (items.length > 1) {
+                items.splice(index, 1);
+                renderItems();
+            } else {
+                alert('At least one item is required.');
+            }
         }
-      }
-    }
-  });
+    });
+
+    itemsBody.addEventListener('input', calculateTotals);
+    taxRateInput.addEventListener('input', calculateTotals);
+    currencySelect.addEventListener('change', calculateTotals);
+
+    form.addEventListener('submit', function(e) {
+        if (items.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one line item.');
+            return;
+        }
+        calculateTotals(); // Ensure input is up to date
+    });
+
+    renderItems();
 });
 </script>
 {% endblock %}
