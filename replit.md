@@ -56,6 +56,7 @@ Comprehensive hardening of the settings and payments infrastructure to ensure st
 - **Unified Interface**: Consolidated Profile, Security, Notifications, and Payments into a modern AJAX-powered `settings.html`.
 - **Real-time Notifications**: Implemented granular notification preference management with immediate persistence.
 - **Security Hardening**: Standardized password change complexity (12-char min) and added MFA status indicators.
+- **CSRF & AJAX Stability**: Fixed CSRF token handling for multi-form settings pages and improved error reporting via localized toasts.
 
 #### Production-Ready Payments (Paystack)
 - **Dynamic Payment Channels**: Updated public invoice checkout to dynamically offer Card or Bank Transfer based on user preferences.
@@ -66,18 +67,18 @@ Comprehensive hardening of the settings and payments infrastructure to ensure st
 #### Optimized UX & Performance
 - **Loading States**: Integrated smooth SVG spinners and button states for all form submissions.
 - **Standardized Feedback**: Implemented a global toast system for success/error messaging.
-- **Clean Architecture**: Refactored payment models to remove unused fields (`verified`, `verified_at`) in favor of status-based verification.
+- **Clean Architecture**: Refactored payment models to remove unused fields (`verified`, `verified_at`) and added missing database columns (`user_id`).
 
 ### ✅ Modernization Status (HARDENED & STABLE)
 - ✅ All settings endpoints secured and validated.
 - ✅ Payment flow optimized with multi-channel support.
 - ✅ Webhook reconciliation verified and idempotent.
-- ✅ Design system fully enforced across all sub-sections.
+- ✅ Database schema synced and verified.
 - ✅ Mobile-first responsiveness verified.
 
 ---
 
-**Last Updated**: January 1, 2026 21:10 UTC  
+**Last Updated**: January 1, 2026 21:50 UTC  
 **Status**: ✅ SETTINGS & PAYMENTS HARDENING COMPLETE  
 **Production Ready**: YES ✅  
 **Security Verified**: YES ✅  

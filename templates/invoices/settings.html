@@ -392,11 +392,15 @@
 
         try {
             const formData = new FormData(form);
+            // Get the CSRF token from the specific form being submitted
+            const csrfInput = form.querySelector('[name=csrfmiddlewaretoken]');
+            const csrfToken = csrfInput ? csrfInput.value : document.querySelector('[name=csrfmiddlewaretoken]').value;
+            
             const response = await fetch(url, {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-CSRFToken': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
