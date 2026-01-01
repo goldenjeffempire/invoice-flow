@@ -981,7 +981,15 @@ def send_invoice_email(request, invoice_id: int):
         )
         return redirect("invoices:invoice_detail", invoice_id=invoice.id)
 
-    return render(request, "invoices/send_email.html", {"invoice": invoice})
+    # Fetch next/prev for navigation
+    prev_invoice = Invoice.objects.filter(user=request.user, created_at__lt=invoice.created_at).order_by("-created_at").first()
+    next_invoice = Invoice.objects.filter(user=request.user, created_at__gt=invoice.created_at).order_by("created_at").first()
+
+    return render(request, "invoices/send_email.html", {
+        "invoice": invoice,
+        "prev_invoice": prev_invoice,
+        "next_invoice": next_invoice
+    })
 
 
 @login_required
