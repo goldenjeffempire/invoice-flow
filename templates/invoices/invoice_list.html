@@ -309,6 +309,12 @@
 
     document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
         if (!invoiceToDelete) return;
+        
+        const btn = this;
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Deleting...';
+        
         fetch(`/invoices/invoice/${invoiceToDelete}/delete/`, {
             method: 'POST',
             headers: {
@@ -316,9 +322,22 @@
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/json'
             }
-        }).then(response => {
-            if (response.ok) window.location.reload();
-            else alert('Failed to delete invoice.');
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to delete invoice.');
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            btn.disabled = false;
+            btn.textContent = originalText;
         });
     });
 
