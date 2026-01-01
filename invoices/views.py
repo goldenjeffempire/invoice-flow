@@ -2078,8 +2078,8 @@ def mfa_setup(request):
         totp_code = request.POST.get("totp_code", "").strip()
         if totp_code:
             import pyotp
-            if mfa_profile.secret:
-                totp = pyotp.TOTP(mfa_profile.secret)
+            if mfa_profile.secret_key:
+                totp = pyotp.TOTP(mfa_profile.secret_key)
                 if totp.verify(totp_code):
                     mfa_profile.is_enabled = True
                     mfa_profile.save()
@@ -2089,13 +2089,13 @@ def mfa_setup(request):
                     messages.error(request, "Invalid authentication code. Please try again.")
     
     # Generate QR code if not already done
-    if not mfa_profile.secret:
+    if not mfa_profile.secret_key:
         import pyotp
-        mfa_profile.secret = pyotp.random_base32()
+        mfa_profile.secret_key = pyotp.random_base32()
         mfa_profile.save()
     
     import pyotp
-    totp = pyotp.TOTP(mfa_profile.secret)
+    totp = pyotp.TOTP(mfa_profile.secret_key)
     qr_code_url = totp.provisioning_uri(name=request.user.email, issuer_name="InvoiceFlow")
     
     return render(request, "auth/mfa_setup.html", {
@@ -2116,7 +2116,7 @@ def mfa_verify(request):
     if request.method == "POST":
         totp_code = request.POST.get("totp_code", "").strip()
         import pyotp
-        totp = pyotp.TOTP(mfa_profile.secret)
+        totp = pyotp.TOTP(mfa_profile.secret_key)
         
         if totp.verify(totp_code):
             request.session["mfa_verified"] = True
@@ -2137,7 +2137,7 @@ def mfa_disable(request):
             try:
                 mfa_profile = MFAProfile.objects.get(user=request.user)
                 mfa_profile.is_enabled = False
-                mfa_profile.secret = ""
+                mfa_profile.secret_key = ""
                 mfa_profile.save()
                 messages.success(request, "Two-factor authentication disabled.")
             except MFAProfile.DoesNotExist:
