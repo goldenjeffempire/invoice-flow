@@ -3,21 +3,20 @@ MFA (Multi-Factor Authentication) Views and Utilities for InvoiceFlow.
 Provides TOTP-based two-factor authentication.
 """
 
+from invoices.models import MFAProfile
+import pyotp
+import qrcode
 import base64
 import io
 import secrets
 import logging
-
-import pyotp
-import qrcode
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_GET, require_POST
-
-from invoices.models import MFAProfile
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ def generate_qr_code(user, secret):
     totp = pyotp.TOTP(secret)
     provisioning_uri = totp.provisioning_uri(
         name=user.email,
-        issuer_name="InvoiceFlow"
+        issuer_name=getattr(settings, "MFA_ISSUER_NAME", "InvoiceFlow")
     )
     
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -67,6 +66,8 @@ def generate_recovery_codes(count=10):
 
 def verify_totp(secret, code):
     """Verify a TOTP code against the secret."""
+    if not secret or not code:
+        return False
     totp = pyotp.TOTP(secret)
     return totp.verify(code, valid_window=1)
 

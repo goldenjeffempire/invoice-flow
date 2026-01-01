@@ -66,18 +66,18 @@ class MFAService:
         """Verify and consume a backup code (removes used code)"""
         try:
             mfa_profile = user.mfa_profile
-        except AttributeError:
+        except (AttributeError, MFAProfile.DoesNotExist):
             return False
         
-        if not mfa_profile.backup_codes:
+        if not mfa_profile.recovery_codes:
             return False
         
-        codes = mfa_profile.backup_codes
+        codes = mfa_profile.recovery_codes
         code_upper = code.upper().strip()
         
         if code_upper in codes:
             codes.remove(code_upper)
-            mfa_profile.backup_codes = codes
+            mfa_profile.recovery_codes = codes
             mfa_profile.save()
             MFAService.update_last_used(user)
             return True
@@ -89,8 +89,8 @@ class MFAService:
     def enable_mfa(user, secret: str, backup_codes: List[str]) -> MFAProfile:
         """Enable MFA for user with TOTP secret and backup codes"""
         mfa_profile, _ = MFAProfile.objects.get_or_create(user=user)
-        mfa_profile.secret = secret
-        mfa_profile.backup_codes = backup_codes
+        mfa_profile.secret_key = secret
+        mfa_profile.recovery_codes = backup_codes
         mfa_profile.is_enabled = True
         mfa_profile.save()
         return mfa_profile
@@ -102,8 +102,8 @@ class MFAService:
         try:
             mfa_profile = user.mfa_profile
             mfa_profile.is_enabled = False
-            mfa_profile.secret = ""
-            mfa_profile.backup_codes = []
+            mfa_profile.secret_key = ""
+            mfa_profile.recovery_codes = []
             mfa_profile.save()
             return True
         except (AttributeError, Exception) as e:
@@ -116,7 +116,7 @@ class MFAService:
         """Check if MFA is enabled for user"""
         try:
             return user.mfa_profile.is_enabled
-        except AttributeError:
+        except (AttributeError, MFAProfile.DoesNotExist):
             return False
     
     @staticmethod
@@ -124,8 +124,8 @@ class MFAService:
         """Get count of remaining backup codes"""
         try:
             mfa_profile = user.mfa_profile
-            return len(mfa_profile.backup_codes or [])
-        except AttributeError:
+            return len(mfa_profile.recovery_codes or [])
+        except (AttributeError, MFAProfile.DoesNotExist):
             return 0
     
     @staticmethod
@@ -135,7 +135,7 @@ class MFAService:
             mfa_profile = user.mfa_profile
             mfa_profile.last_used = timezone.now()
             mfa_profile.save(update_fields=['last_used'])
-        except AttributeError:
+        except (AttributeError, MFAProfile.DoesNotExist):
             pass
     
     @staticmethod
@@ -151,7 +151,7 @@ class MFAService:
             mfa_profile = user.mfa_profile
             
             # Try TOTP first
-            if MFAService.verify_totp(mfa_profile.secret, token):
+            if MFAService.verify_totp(mfa_profile.secret_key, token):
                 MFAService.update_last_used(user)
                 return True, "TOTP verified"
             
