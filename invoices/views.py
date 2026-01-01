@@ -1849,17 +1849,13 @@ def public_payment(request, invoice_id: int):
     
     # Create Payment record
     Payment.objects.create(
+        id=str(uuid.uuid4()),  # Ensure ID is provided
         invoice=invoice,
         user=invoice.user,
         reference=reference,
         amount=invoice.total,
         currency=invoice.currency,
-        customer_email=invoice.client_email,
-        customer_name=invoice.client_name,
         status="pending",
-        gateway="paystack",
-        subaccount_code=profile.paystack_subaccount_code,
-        metadata=metadata,
     )
     
     # Redirect to Paystack checkout
