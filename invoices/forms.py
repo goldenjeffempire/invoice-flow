@@ -258,6 +258,7 @@ class UserDetailsForm(forms.ModelForm):
             raise forms.ValidationError("This email is already in use by another account.")
         return email
 
+
 class UserProfileForm(forms.ModelForm):
     timezone = forms.ChoiceField(
         choices=TIMEZONE_CHOICES,
@@ -373,6 +374,286 @@ class UserProfileForm(forms.ModelForm):
         return rate
 
 
+class NotificationPreferencesForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = [
+            "notify_invoice_created",
+            "notify_payment_received",
+            "notify_invoice_viewed",
+            "notify_invoice_overdue",
+            "notify_weekly_summary",
+            "notify_security_alerts",
+            "notify_password_changes",
+        ]
+        widgets = {
+            "notify_invoice_created": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
+            ),
+            "notify_payment_received": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
+            ),
+            "notify_invoice_viewed": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
+            ),
+            "notify_invoice_overdue": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
+            ),
+            "notify_weekly_summary": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
+            ),
+            "notify_security_alerts": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
+            ),
+            "notify_password_changes": forms.CheckboxInput(
+                attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['notify_invoice_created'].label = "Invoice Created"
+        self.fields['notify_payment_received'].label = "Payment Received"
+        self.fields['notify_invoice_viewed'].label = "Invoice Viewed"
+        self.fields['notify_invoice_overdue'].label = "Invoice Overdue"
+        self.fields['notify_weekly_summary'].label = "Weekly Summary"
+        self.fields['notify_security_alerts'].label = "Security Alerts"
+        self.fields['notify_password_changes'].label = "Password Changes"
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if commit:
+            instance.save()
+        return instance
+
+
+class PasswordChangeForm(forms.Form):
+    current_password = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-input",
+                "placeholder": "Current Password",
+                "autocomplete": "current-password",
+            }
+        )
+    )
+    new_password = forms.CharField(
+        min_length=12,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-input",
+                "placeholder": "New Password (min 12 characters)",
+                "autocomplete": "new-password",
+            }
+        ),
+        help_text="Password must be at least 12 characters and include a mix of letters and numbers.",
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "form-input",
+                "placeholder": "Confirm Password",
+                "autocomplete": "new-password",
+            }
+        )
+    )
+
+    def clean_new_password(self) -> str:
+        password = self.cleaned_data.get("new_password")
+        if password:
+            if len(password) < 12:
+                raise forms.ValidationError("Password must be at least 12 characters long.")
+            if password.isalpha():
+                raise forms.ValidationError("Password must contain at least one number.")
+            if password.isdigit():
+                raise forms.ValidationError("Password must contain at least one letter.")
+        return password or ""
+
+    def clean(self) -> Dict[str, Any]:
+        cleaned_data = super().clean()
+        if cleaned_data.get("new_password") != cleaned_data.get("confirm_password"):
+            raise forms.ValidationError("Passwords do not match.")
+        return cleaned_data
+
+
+class InvoiceTemplateForm(forms.ModelForm):
+    class Meta:
+        model = InvoiceTemplate
+        fields = [
+            "name",
+            "description",
+            "business_name",
+            "business_email",
+            "business_phone",
+            "business_address",
+            "currency",
+            "tax_rate",
+            "bank_name",
+            "account_name",
+            "is_default",
+        ]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "input-field"}),
+            "description": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
+            "business_name": forms.TextInput(attrs={"class": "input-field"}),
+            "business_email": forms.EmailInput(attrs={"class": "input-field"}),
+            "business_phone": forms.TextInput(attrs={"class": "input-field"}),
+            "business_address": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
+            "currency": forms.Select(attrs={"class": "input-field"}),
+            "tax_rate": forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
+            "bank_name": forms.TextInput(attrs={"class": "input-field"}),
+            "account_name": forms.TextInput(attrs={"class": "input-field"}),
+        }
+
+
+class RecurringInvoiceForm(forms.ModelForm):
+    class Meta:
+        model = RecurringInvoice
+        fields = [
+            "client_name",
+            "client_email",
+            "client_phone",
+            "client_address",
+            "frequency",
+            "start_date",
+            "end_date",
+            "business_name",
+            "business_email",
+            "currency",
+            "tax_rate",
+            "status",
+            "next_generation",
+            "notes",
+        ]
+        widgets = {
+            "client_name": forms.TextInput(attrs={"class": "input-field"}),
+            "client_email": forms.EmailInput(attrs={"class": "input-field"}),
+            "client_phone": forms.TextInput(attrs={"class": "input-field"}),
+            "client_address": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
+            "frequency": forms.Select(attrs={"class": "input-field"}),
+            "start_date": forms.DateInput(attrs={"class": "input-field", "type": "date"}),
+            "end_date": forms.DateInput(attrs={"class": "input-field", "type": "date"}),
+            "business_name": forms.TextInput(attrs={"class": "input-field"}),
+            "business_email": forms.EmailInput(attrs={"class": "input-field"}),
+            "currency": forms.Select(attrs={"class": "input-field"}),
+            "tax_rate": forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
+            "status": forms.Select(attrs={"class": "input-field"}),
+            "next_generation": forms.DateInput(attrs={"class": "input-field", "type": "date"}),
+            "notes": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
+        }
+
+
+class InvoiceSearchForm(forms.Form):
+    """Advanced search and filter form for invoices."""
+
+    query = forms.CharField(
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "input-field",
+                "placeholder": "Search by invoice ID, client, or business name...",
+                "aria-label": "Search invoices",
+            }
+        ),
+    )
+    status = forms.ChoiceField(
+        required=False,
+        choices=[("", "-- All Statuses --"), ("paid", "Paid"), ("unpaid", "Unpaid")],
+        widget=forms.Select(attrs={"class": "input-field", "aria-label": "Filter by status"}),
+    )
+    currency = forms.ChoiceField(
+        required=False,
+        choices=[("", "-- All Currencies --")] + list(Invoice.CURRENCY_CHOICES),
+        widget=forms.Select(attrs={"class": "input-field", "aria-label": "Filter by currency"}),
+    )
+    date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(
+            attrs={"class": "input-field", "type": "date", "aria-label": "Invoice date from"}
+        ),
+    )
+    date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(
+            attrs={"class": "input-field", "type": "date", "aria-label": "Invoice date to"}
+        ),
+    )
+    min_amount = forms.DecimalField(
+        required=False,
+        min_value=0,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "input-field",
+                "placeholder": "Min Amount",
+                "step": "0.01",
+                "min": "0",
+                "aria-label": "Minimum amount",
+            }
+        ),
+    )
+    max_amount = forms.DecimalField(
+        required=False,
+        min_value=0,
+        widget=forms.NumberInput(
+            attrs={
+                "class": "input-field",
+                "placeholder": "Max Amount",
+                "step": "0.01",
+                "min": "0",
+                "aria-label": "Maximum amount",
+            }
+        ),
+    )
+
+    def clean(self) -> Dict[str, Any]:
+        """Validate date range and amount range."""
+        cleaned_data = super().clean()
+        date_from = cleaned_data.get("date_from")
+        date_to = cleaned_data.get("date_to")
+        min_amount = cleaned_data.get("min_amount")
+        max_amount = cleaned_data.get("max_amount")
+
+        if date_from and date_to and date_from > date_to:
+            raise forms.ValidationError("Start date must be before or equal to end date.")
+
+        if min_amount is not None and max_amount is not None and min_amount > max_amount:
+            raise forms.ValidationError(
+                "Minimum amount must be less than or equal to maximum amount."
+            )
+
+        return cleaned_data
+
+
+class WaitlistForm(forms.ModelForm):
+    """Form for email capture from landing page and Coming Soon pages."""
+
+    class Meta:
+        model = Waitlist
+        fields = ["email", "feature"]
+        widgets = {
+            "email": forms.EmailInput(
+                attrs={
+                    "class": "w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "placeholder": "your.email@example.com",
+                    "required": True,
+                }
+            ),
+            "feature": forms.Select(
+                attrs={
+                    "class": "w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                }
+            ),
+        }
+
+    def clean_email(self) -> str:
+        email: Optional[str] = self.cleaned_data.get("email")
+        if email is None:
+            raise forms.ValidationError("Email is required.")
+        if Waitlist.objects.filter(email=email).exists():  # type: ignore[attr-defined]
+            raise forms.ValidationError("This email is already on our waitlist!")
+        return email
+
+
 class ContactForm(forms.ModelForm):
     """Form for contact page submissions with validation and honeypot."""
 
@@ -435,82 +716,9 @@ class ContactForm(forms.ModelForm):
         return message
 
 
-class PaymentRecipientForm(forms.ModelForm):
-    """Form for adding/editing bank account recipients for receiving payments."""
-
-    class Meta:
-        model = PaymentRecipient
-        fields = [
-            "name",
-            "account_type",
-            "bank_code",
-            "bank_name",
-            "account_number",
-            "account_name",
-            "currency",
-            "is_primary",
-        ]
-        widgets = {
-            "name": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "placeholder": "e.g., My Business Account",
-                }
-            ),
-            "account_type": forms.Select(
-                attrs={
-                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                }
-            ),
-            "bank_code": forms.Select(
-                attrs={
-                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "id": "bank-code-select",
-                }
-            ),
-            "bank_name": forms.HiddenInput(),
-            "account_number": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "placeholder": "Enter 10-digit account number",
-                    "maxlength": "10",
-                    "pattern": "[0-9]{10}",
-                }
-            ),
-            "account_name": forms.TextInput(
-                attrs={
-                    "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                    "readonly": "readonly",
-                    "placeholder": "Account name will be verified",
-                }
-            ),
-            "currency": forms.Select(
-                attrs={
-                    "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                },
-                choices=[
-                    ("NGN", "Nigerian Naira (NGN)"),
-                    ("USD", "US Dollar (USD)"),
-                    ("GHS", "Ghanaian Cedi (GHS)"),
-                    ("ZAR", "South African Rand (ZAR)"),
-                    ("KES", "Kenyan Shilling (KES)"),
-                ],
-            ),
-            "is_primary": forms.CheckboxInput(
-                attrs={
-                    "class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500",
-                }
-            ),
-        }
-
-    def clean_account_number(self) -> str:
-        account_number = self.cleaned_data.get("account_number", "")
-        if not account_number.isdigit():
-            raise forms.ValidationError("Account number must contain only digits.")
-        if len(account_number) < 10:
-            raise forms.ValidationError("Account number must be at least 10 digits.")
-        return account_number
-
+class PaymentRecipientForm(models.Model):
+    # This is a placeholder as the real PaymentRecipient model is used
+    pass
 
 class PaymentSettingsForm(forms.ModelForm):
     """Form for configuring payment preferences and payout settings."""
@@ -547,74 +755,3 @@ class PaymentSettingsForm(forms.ModelForm):
         # Ensure we don't accidentally require fields that aren't strictly necessary for the form to save
         for field_name in self.fields:
             self.fields[field_name].required = False
-
-
-class SubaccountSetupForm(forms.Form):
-    """Form for setting up Paystack subaccount to receive payments directly."""
-
-    business_name = forms.CharField(
-        max_length=200,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                "placeholder": "Your Business Name",
-            }
-        ),
-    )
-    bank_code = forms.CharField(
-        max_length=20,
-        widget=forms.Select(
-            attrs={
-                "class": "form-light-select w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                "id": "subaccount-bank-select",
-            }
-        ),
-    )
-    account_number = forms.CharField(
-        max_length=20,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                "placeholder": "10-digit account number",
-                "maxlength": "10",
-                "pattern": "[0-9]{10}",
-            }
-        ),
-    )
-    account_name = forms.CharField(
-        max_length=200,
-        required=False,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                "readonly": "readonly",
-                "placeholder": "Account name will be verified",
-            }
-        ),
-    )
-    contact_email = forms.EmailField(
-        widget=forms.EmailInput(
-            attrs={
-                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                "placeholder": "business@example.com",
-            }
-        ),
-    )
-    contact_phone = forms.CharField(
-        max_length=20,
-        required=False,
-        widget=forms.TextInput(
-            attrs={
-                "class": "form-light-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
-                "placeholder": "+234 xxx xxx xxxx",
-            }
-        ),
-    )
-
-    def clean_account_number(self) -> str:
-        account_number = self.cleaned_data.get("account_number", "")
-        if not account_number.isdigit():
-            raise forms.ValidationError("Account number must contain only digits.")
-        if len(account_number) != 10:
-            raise forms.ValidationError("Account number must be exactly 10 digits.")
-        return account_number
