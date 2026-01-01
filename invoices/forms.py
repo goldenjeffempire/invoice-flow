@@ -346,7 +346,6 @@ class NotificationPreferencesForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Add labels to fields manually if needed, though Meta.fields handles it
         self.fields['notify_invoice_created'].label = "Invoice Created"
         self.fields['notify_payment_received'].label = "Payment Received"
         self.fields['notify_invoice_viewed'].label = "Invoice Viewed"
@@ -354,6 +353,12 @@ class NotificationPreferencesForm(forms.ModelForm):
         self.fields['notify_weekly_summary'].label = "Weekly Summary"
         self.fields['notify_security_alerts'].label = "Security Alerts"
         self.fields['notify_password_changes'].label = "Password Changes"
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if commit:
+            instance.save()
+        return instance
 
 
 class PasswordChangeForm(forms.Form):

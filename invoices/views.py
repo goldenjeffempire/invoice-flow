@@ -186,27 +186,25 @@ def forgot_password(request):
 
 @login_required
 def settings_page(request):
-    """Modern Settings page covering Profile, Security, and Payments."""
+    """Unified settings dashboard hub for all account, security, and payment configurations."""
     from .forms import UserDetailsForm, UserProfileForm, PasswordChangeForm, NotificationPreferencesForm, PaymentSettingsForm
-    from .models import MFAProfile, PaymentSettings, UserProfile
+    from .models import UserProfile, PaymentSettings, MFAProfile
     from django.shortcuts import render
     
-    # Ensure UserProfile exists
-    UserProfile.objects.get_or_create(user=request.user)
-    
-    # Ensure PaymentSettings exist
+    # Ensure profile and payment settings exist
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
     payment_settings, _ = PaymentSettings.objects.get_or_create(user=request.user)
     
     context = {
         "user_form": UserDetailsForm(instance=request.user),
-        "profile_form": UserProfileForm(instance=request.user.profile),
+        "profile_form": UserProfileForm(instance=profile),
         "password_form": PasswordChangeForm(),
-        "notification_form": NotificationPreferencesForm(instance=request.user.profile),
+        "notification_form": NotificationPreferencesForm(instance=profile),
         "payment_form": PaymentSettingsForm(instance=payment_settings),
         "mfa_enabled": MFAProfile.objects.filter(user=request.user, is_enabled=True).exists(),
         "active": "settings",
         "page_title": "Settings",
-        "page_subtitle": "Manage your account, security, and payment preferences"
+        "page_subtitle": "Manage your business account and preferences"
     }
     return render(request, "invoices/settings.html", context)
 
@@ -222,13 +220,20 @@ def profile_update_ajax(request):
         profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user.profile)
         
         if user_form.is_valid() and profile_form.is_valid():
-            with transaction.atomic():
-                user_form.save()
-                profile_form.save()
-            return HttpResponse(json.dumps({
-                "success": True, 
-                "message": "Settings updated successfully! Your changes are now live."
-            }), content_type="application/json")
+            try:
+                with transaction.atomic():
+                    user_form.save()
+                    profile_form.save()
+                return HttpResponse(json.dumps({
+                    "success": True, 
+                    "message": "Profile updated successfully! Your changes are now live."
+                }), content_type="application/json")
+            except Exception as e:
+                logger.error(f"Error updating profile: {e}")
+                return HttpResponse(json.dumps({
+                    "success": False,
+                    "message": "A database error occurred. Please try again later."
+                }), content_type="application/json", status=500)
         
         errors = {}
         for field, error_list in user_form.errors.items():
@@ -251,10 +256,17 @@ def security_update_ajax(request):
         if form.is_valid():
             user = request.user
             if user.check_password(form.cleaned_data["current_password"]):
-                user.set_password(form.cleaned_data["new_password"])
-                user.save()
-                login(request, user) # Re-login to keep session
-                return HttpResponse(json.dumps({"success": True, "message": "Password updated successfully"}), content_type="application/json")
+                try:
+                    user.set_password(form.cleaned_data["new_password"])
+                    user.save()
+                    login(request, user) # Re-login to keep session
+                    return HttpResponse(json.dumps({"success": True, "message": "Password updated successfully"}), content_type="application/json")
+                except Exception as e:
+                    logger.error(f"Error updating password: {e}")
+                    return HttpResponse(json.dumps({
+                        "success": False,
+                        "message": "Failed to update password. Please try again."
+                    }), content_type="application/json", status=500)
             else:
                 return HttpResponse(json.dumps({"success": False, "errors": {"current_password": ["Incorrect current password"]}}), content_type="application/json", status=400)
         return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
@@ -268,8 +280,15 @@ def payment_settings_update_ajax(request):
         payment_settings, _ = PaymentSettings.objects.get_or_create(user=request.user)
         form = PaymentSettingsForm(request.POST, instance=payment_settings)
         if form.is_valid():
-            form.save()
-            return HttpResponse(json.dumps({"success": True, "message": "Payment settings updated"}), content_type="application/json")
+            try:
+                form.save()
+                return HttpResponse(json.dumps({"success": True, "message": "Payment settings updated successfully"}), content_type="application/json")
+            except Exception as e:
+                logger.error(f"Error updating payment settings: {e}")
+                return HttpResponse(json.dumps({
+                    "success": False,
+                    "message": "Failed to save payment settings."
+                }), content_type="application/json", status=500)
         return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
     return HttpResponse(status=405)
 
