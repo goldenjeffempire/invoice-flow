@@ -1,561 +1,434 @@
 {% extends "base/layout-authenticated.html" %}
 {% load static %}
+
 {% block title %}Send Invoice - InvoiceFlow{% endblock %}
-{% block footer %}{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
-<link rel="stylesheet" href="{% static 'css/invoices-modern.css' %}">
 <style>
-.send-email-page-light {
-    min-height: 100vh;
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    padding: 40px 20px;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
-}
-
-.send-email-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    max-width: 1200px;
-    width: 100%;
-}
-
-@media (max-width: 1024px) {
+    /* Scope within .authenticated-main to avoid side effects */
     .send-email-container {
-        grid-template-columns: 1fr;
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: var(--spacing-xl);
+        padding: var(--spacing-xl);
+        max-width: 1400px;
+        margin: 0 auto;
+        animation: fadeIn 0.4s ease-out;
     }
-}
 
-.send-email-card-light {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-2xl);
-    border: 1px solid var(--light-border-primary);
-    padding: 40px;
-    box-shadow: var(--light-shadow-xl);
-}
-
-.send-email-header-light {
-    margin-bottom: 32px;
-}
-
-.back-link-light {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.875rem;
-    color: var(--light-text-secondary);
-    text-decoration: none;
-    margin-bottom: 16px;
-}
-
-.back-link-light:hover {
-    color: var(--light-primary);
-}
-
-.back-link-light svg {
-    width: 16px;
-    height: 16px;
-}
-
-.send-email-title-light {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--light-text-primary);
-    margin-bottom: 8px;
-}
-
-.send-email-subtitle-light {
-    color: var(--light-text-secondary);
-    font-size: 1rem;
-}
-
-.invoice-summary-light {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-lg);
-    padding: 20px;
-    margin-bottom: 28px;
-}
-
-@media (max-width: 640px) {
-    .invoice-summary-light {
-        grid-template-columns: 1fr;
-        gap: 12px;
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
-}
 
-.summary-item-light {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.summary-label-light {
-    font-size: 0.75rem;
-    color: var(--light-text-tertiary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.summary-value-light {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-}
-
-.form-group-light {
-    margin-bottom: 20px;
-}
-
-.form-label-light {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--light-text-secondary);
-    margin-bottom: 8px;
-}
-
-.form-input-light {
-    width: 100%;
-    padding: 14px 16px;
-    font-size: 1rem;
-    color: var(--light-text-primary);
-    background: var(--light-bg-secondary);
-    border: 2px solid var(--light-border-primary);
-    border-radius: var(--light-radius-lg);
-    transition: all 0.2s ease;
-}
-
-.form-input-light:focus {
-    outline: none;
-    border-color: var(--light-primary);
-    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-}
-
-.form-input-light::placeholder {
-    color: var(--light-text-muted);
-}
-
-textarea.form-input-light {
-    resize: vertical;
-    min-height: 120px;
-}
-
-.checkbox-group-light {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 28px;
-}
-
-.checkbox-light {
-    width: 20px;
-    height: 20px;
-    accent-color: var(--light-primary);
-    cursor: pointer;
-}
-
-.checkbox-label-light {
-    font-size: 0.9375rem;
-    color: var(--light-text-secondary);
-    cursor: pointer;
-}
-
-.form-actions-light {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding-top: 16px;
-    border-top: 1px solid var(--light-border-primary);
-}
-
-.btn-cancel-email-light {
-    padding: 14px 24px;
-    background: var(--light-bg-tertiary);
-    color: var(--light-text-secondary);
-    font-size: 1rem;
-    font-weight: 500;
-    border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-lg);
-    text-decoration: none;
-    transition: all 0.2s ease;
-}
-
-.btn-cancel-email-light:hover {
-    background: var(--light-bg-hover);
-    color: var(--light-text-primary);
-}
-
-.btn-preview-light {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 24px;
-    background: var(--light-bg-tertiary);
-    color: var(--light-text-secondary);
-    font-size: 1rem;
-    font-weight: 500;
-    border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-lg);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-preview-light:hover {
-    background: var(--light-bg-hover);
-    color: var(--light-text-primary);
-}
-
-.btn-preview-light svg {
-    width: 18px;
-    height: 18px;
-}
-
-.btn-send-light {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 14px 28px;
-    background: var(--light-primary);
-    color: white;
-    font-size: 1rem;
-    font-weight: 600;
-    border: none;
-    border-radius: var(--light-radius-lg);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-send-light:hover {
-    background: var(--light-primary-hover);
-    transform: translateY(-1px);
-}
-
-.btn-send-light svg {
-    width: 20px;
-    height: 20px;
-}
-
-.email-preview-card {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-2xl);
-    border: 1px solid var(--light-border-primary);
-    box-shadow: var(--light-shadow-xl);
-    overflow: hidden;
-}
-
-.preview-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 24px;
-    background: var(--light-bg-tertiary);
-    border-bottom: 1px solid var(--light-border-primary);
-}
-
-.preview-header-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: var(--light-primary-light);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.preview-header-icon svg {
-    width: 18px;
-    height: 18px;
-    stroke: var(--light-primary);
-}
-
-.preview-header-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-}
-
-.preview-meta {
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--light-border-primary);
-    font-size: 0.875rem;
-}
-
-.preview-meta-row {
-    display: flex;
-    gap: 8px;
-    padding: 6px 0;
-}
-
-.preview-meta-label {
-    color: var(--light-text-tertiary);
-    min-width: 60px;
-}
-
-.preview-meta-value {
-    color: var(--light-text-primary);
-    font-weight: 500;
-}
-
-.preview-body {
-    padding: 24px;
-}
-
-.preview-email-content {
-    background: #ffffff;
-    border-radius: var(--light-radius-lg);
-    border: 1px solid var(--light-border-primary);
-    padding: 32px;
-}
-
-.preview-email-logo {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--light-primary);
-    margin-bottom: 24px;
-}
-
-.preview-email-greeting {
-    font-size: 1.125rem;
-    color: var(--light-text-primary);
-    margin-bottom: 16px;
-}
-
-.preview-email-message {
-    color: var(--light-text-secondary);
-    line-height: 1.6;
-    margin-bottom: 24px;
-}
-
-.preview-invoice-box {
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-lg);
-    padding: 20px;
-    margin-bottom: 24px;
-}
-
-.preview-invoice-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 0.9375rem;
-}
-
-.preview-invoice-row.total {
-    border-top: 2px solid var(--light-border-primary);
-    margin-top: 8px;
-    padding-top: 12px;
-    font-weight: 700;
-    font-size: 1.125rem;
-}
-
-.preview-cta-btn {
-    display: inline-block;
-    padding: 14px 32px;
-    background: var(--light-primary);
-    color: white;
-    text-decoration: none;
-    border-radius: var(--light-radius-lg);
-    font-weight: 600;
-    font-size: 1rem;
-}
-
-.preview-email-footer {
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--light-border-primary);
-    color: var(--light-text-tertiary);
-    font-size: 0.8125rem;
-    text-align: center;
-}
-
-.attachment-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    background: var(--light-danger-light);
-    color: var(--light-danger);
-    border-radius: var(--light-radius-md);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    margin-top: 16px;
-}
-
-.attachment-badge svg {
-    width: 16px;
-    height: 16px;
-}
-
-.attachment-badge.active {
-    background: var(--light-success-light);
-    color: var(--light-success);
-}
-
-@media (max-width: 640px) {
-    .send-email-card-light {
-        padding: 28px 20px;
+    /* Form Section */
+    .email-config-card {
+        background: var(--white);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--gray-200);
+        padding: var(--spacing-xl);
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+        height: fit-content;
     }
-    
-    .form-actions-light {
-        flex-direction: column-reverse;
+
+    .config-header {
+        border-bottom: 1px solid var(--gray-100);
+        padding-bottom: var(--spacing-lg);
+        margin-bottom: var(--spacing-sm);
     }
-    
-    .btn-cancel-email-light,
-    .btn-preview-light,
-    .btn-send-light {
-        width: 100%;
+
+    .config-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: var(--spacing-xs);
+    }
+
+    .config-subtitle {
+        color: var(--gray-500);
+        font-size: 0.95rem;
+    }
+
+    /* Preview Section */
+    .email-preview-container {
+        position: sticky;
+        top: var(--spacing-xl);
+        height: fit-content;
+    }
+
+    .preview-browser-frame {
+        background: var(--white);
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--gray-200);
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .browser-toolbar {
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        padding: var(--spacing-md) var(--spacing-lg);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-md);
+    }
+
+    .browser-dots {
+        display: flex;
+        gap: 6px;
+    }
+
+    .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .dot.red { background: #ff5f56; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green { background: #27c93f; }
+
+    .browser-address {
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        padding: 4px var(--spacing-md);
+        flex: 1;
+        font-size: 0.8rem;
+        color: var(--gray-400);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .preview-scroll-area {
+        max-height: 700px;
+        overflow-y: auto;
+        background: #f1f5f9;
+        padding: var(--spacing-xl);
+    }
+
+    /* Actual Email Template Style */
+    .email-mockup {
+        background: var(--white);
+        max-width: 600px;
+        margin: 0 auto;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+    }
+
+    .email-header {
+        background: var(--primary);
+        padding: var(--spacing-xl);
+        text-align: center;
+    }
+
+    .email-logo-text {
+        color: var(--white);
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+    }
+
+    .email-body {
+        padding: var(--spacing-2xl);
+    }
+
+    .email-greeting {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gray-900);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .email-text {
+        color: var(--gray-600);
+        line-height: 1.6;
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .email-invoice-card {
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .invoice-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: var(--spacing-sm);
+        font-size: 0.95rem;
+    }
+
+    .invoice-row.total {
+        margin-top: var(--spacing-md);
+        padding-top: var(--spacing-md);
+        border-top: 2px solid var(--gray-200);
+        font-weight: 800;
+        font-size: 1.15rem;
+        color: var(--gray-900);
+    }
+
+    .email-cta {
+        display: block;
+        background: var(--primary);
+        color: var(--white);
+        text-align: center;
+        padding: var(--spacing-md) var(--spacing-xl);
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: var(--spacing-xl);
+        transition: background 0.2s;
+    }
+
+    .email-footer {
+        text-align: center;
+        font-size: 0.8rem;
+        color: var(--gray-400);
+        border-top: 1px solid var(--gray-100);
+        padding-top: var(--spacing-xl);
+    }
+
+    /* Form Fields Styling */
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+    }
+
+    .field-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--gray-700);
+    }
+
+    .field-input {
+        padding: var(--spacing-md);
+        border: 1px solid var(--gray-300);
+        border-radius: var(--radius-md);
+        font-size: 1rem;
+        transition: var(--transition-fast);
+    }
+
+    .field-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .field-textarea {
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    /* Actions */
+    .action-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--spacing-md);
+        margin-top: var(--spacing-md);
+    }
+
+    .btn-secondary {
+        background: var(--gray-100);
+        color: var(--gray-700);
+        border: 1px solid var(--gray-200);
+    }
+
+    .btn-secondary:hover {
+        background: var(--gray-200);
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: var(--white);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+    }
+
+    .btn-base {
+        padding: var(--spacing-md) var(--spacing-xl);
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
         justify-content: center;
+        gap: var(--spacing-sm);
+        transition: var(--transition-fast);
+        text-decoration: none;
     }
-    
-    .preview-email-content {
-        padding: 20px;
+
+    /* Badge */
+    .attachment-box {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--success-light);
+        border: 1px solid #bdf0e0;
+        color: var(--success);
+        border-radius: var(--radius-md);
+        font-size: 0.85rem;
+        width: fit-content;
     }
-}
+
+    @media (max-width: 1024px) {
+        .send-email-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .email-preview-container {
+            position: static;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .send-email-container {
+            padding: var(--spacing-md);
+        }
+        
+        .action-group {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="send-email-page-light">
-    <div class="send-email-container">
-        <div class="send-email-card-light">
-            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="back-link-light">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="19" y1="12" x2="5" y2="12"/>
-                    <polyline points="12 19 5 12 12 5"/>
-                </svg>
-                Back to Invoice
-            </a>
-            
-            <div class="send-email-header-light">
-                <h1 class="send-email-title-light">Send Invoice</h1>
-                <p class="send-email-subtitle-light">Send invoice #{{ invoice.invoice_number|default:invoice.invoice_id }} to your client</p>
-            </div>
-            
-            <div class="invoice-summary-light">
-                <div class="summary-item-light">
-                    <span class="summary-label-light">Invoice</span>
-                    <span class="summary-value-light">#{{ invoice.invoice_number|default:invoice.invoice_id }}</span>
-                </div>
-                <div class="summary-item-light">
-                    <span class="summary-label-light">Client</span>
-                    <span class="summary-value-light">{{ invoice.client_name }}</span>
-                </div>
-                <div class="summary-item-light">
-                    <span class="summary-label-light">Amount</span>
-                    <span class="summary-value-light">
-                        {% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% elif invoice.currency == 'NGN' %}₦{% else %}${% endif %}{{ invoice.total_amount|default:invoice.total|floatformat:2 }}
-                    </span>
-                </div>
-            </div>
-            
-            <form method="post" id="send-email-form">
-                {% csrf_token %}
-                <div class="form-group-light">
-                    <label for="recipient" class="form-label-light">Recipient Email *</label>
-                    <input type="email" id="recipient" name="recipient" value="{{ invoice.client_email }}" class="form-input-light" required>
-                </div>
-                
-                <div class="form-group-light">
-                    <label for="subject" class="form-label-light">Email Subject *</label>
-                    <input type="text" id="subject" name="subject" value="Invoice #{{ invoice.invoice_number|default:invoice.invoice_id }} from {{ invoice.business_name }}" class="form-input-light" required>
-                </div>
-                
-                <div class="form-group-light">
-                    <label for="message" class="form-label-light">Personal Message (Optional)</label>
-                    <textarea id="message" name="message" rows="4" placeholder="Add a personal note to your client..." class="form-input-light">Thank you for your business! Please find the invoice attached. If you have any questions, feel free to reach out.</textarea>
-                </div>
-                
-                <div class="checkbox-group-light">
-                    <input type="checkbox" id="attach_pdf" name="attach_pdf" checked class="checkbox-light">
-                    <label for="attach_pdf" class="checkbox-label-light">Attach PDF invoice</label>
-                </div>
-                
-                <div class="form-actions-light">
-                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-cancel-email-light">Cancel</a>
-                    <button type="submit" class="btn-send-light">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 2L11 13"/>
-                            <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
-                        </svg>
-                        Send Invoice
-                    </button>
-                </div>
-            </form>
+<div class="send-email-container">
+    <!-- Configuration Column -->
+    <div class="email-config-card">
+        <div class="config-header">
+            <h1 class="config-title">Send Invoice</h1>
+            <p class="config-subtitle">Ready to send Invoice #{{ invoice.invoice_id }} to your client.</p>
         </div>
-        
-        <div class="email-preview-card">
-            <div class="preview-header">
-                <div class="preview-header-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
+
+        <form method="post" id="send-email-form" class="flex flex-col gap-6">
+            {% csrf_token %}
+            
+            <div class="field-group">
+                <label for="recipient" class="field-label">Recipient Email</label>
+                <input type="email" id="recipient" name="recipient" 
+                       value="{{ invoice.client_email }}" 
+                       class="field-input" 
+                       placeholder="client@example.com" required>
+            </div>
+
+            <div class="field-group">
+                <label for="subject" class="field-label">Email Subject</label>
+                <input type="text" id="subject" name="subject" 
+                       value="Invoice #{{ invoice.invoice_id }} from {{ invoice.business_name }}" 
+                       class="field-input" 
+                       placeholder="Invoice Subject" required>
+            </div>
+
+            <div class="field-group">
+                <label for="message" class="field-label">Personal Message</label>
+                <textarea id="message" name="message" 
+                          class="field-input field-textarea" 
+                          placeholder="Add a friendly note...">Hello {{ invoice.client_name }},
+
+Thank you for your business! Please find your invoice details below. 
+
+If you have any questions, feel free to reach out.</textarea>
+            </div>
+
+            <div class="flex items-center gap-3 py-2">
+                <input type="checkbox" id="attach_pdf" name="attach_pdf" checked 
+                       class="w-5 h-5 rounded text-primary border-gray-300 focus:ring-primary">
+                <label for="attach_pdf" class="text-sm font-medium text-gray-700 cursor-pointer">
+                    Include PDF version as attachment
+                </label>
+            </div>
+
+            <div class="action-group">
+                <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-base btn-secondary">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
+                    Cancel
+                </a>
+                <button type="submit" class="btn-base btn-primary" id="send-button">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                    </svg>
+                    <span id="button-text">Send Invoice</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Preview Column -->
+    <div class="email-preview-container">
+        <div class="preview-browser-frame">
+            <div class="browser-toolbar">
+                <div class="browser-dots">
+                    <div class="dot red"></div>
+                    <div class="dot yellow"></div>
+                    <div class="dot green"></div>
                 </div>
-                <span class="preview-header-title">Email Preview</span>
+                <div class="browser-address">https://mail.google.com/u/0/#inbox/preview</div>
             </div>
             
-            <div class="preview-meta">
-                <div class="preview-meta-row">
-                    <span class="preview-meta-label">To:</span>
-                    <span class="preview-meta-value" id="preview-to">{{ invoice.client_email }}</span>
-                </div>
-                <div class="preview-meta-row">
-                    <span class="preview-meta-label">Subject:</span>
-                    <span class="preview-meta-value" id="preview-subject">Invoice #{{ invoice.invoice_number|default:invoice.invoice_id }} from {{ invoice.business_name }}</span>
-                </div>
-                <div class="preview-meta-row">
-                    <span class="preview-meta-label">From:</span>
-                    <span class="preview-meta-value">{{ invoice.business_email|default:"noreply@invoiceflow.com" }}</span>
-                </div>
-            </div>
-            
-            <div class="preview-body">
-                <div class="preview-email-content">
-                    <div class="preview-email-logo">{{ invoice.business_name }}</div>
-                    
-                    <div class="preview-email-greeting">Hello {{ invoice.client_name }},</div>
-                    
-                    <div class="preview-email-message" id="preview-message">Thank you for your business! Please find the invoice attached. If you have any questions, feel free to reach out.</div>
-                    
-                    <div class="preview-invoice-box">
-                        <div class="preview-invoice-row">
-                            <span>Invoice Number</span>
-                            <span>#{{ invoice.invoice_number|default:invoice.invoice_id }}</span>
-                        </div>
-                        <div class="preview-invoice-row">
-                            <span>Invoice Date</span>
-                            <span>{{ invoice.invoice_date|date:"M d, Y" }}</span>
-                        </div>
-                        <div class="preview-invoice-row">
-                            <span>Due Date</span>
-                            <span>{{ invoice.due_date|date:"M d, Y" }}</span>
-                        </div>
-                        <div class="preview-invoice-row total">
-                            <span>Total Amount</span>
-                            <span>{% if invoice.currency == 'USD' %}${% elif invoice.currency == 'EUR' %}€{% elif invoice.currency == 'GBP' %}£{% elif invoice.currency == 'CAD' %}C${% elif invoice.currency == 'AUD' %}A${% elif invoice.currency == 'NGN' %}₦{% else %}${% endif %}{{ invoice.total_amount|default:invoice.total|floatformat:2 }}</span>
-                        </div>
+            <div class="preview-scroll-area">
+                <div class="email-mockup">
+                    <div class="email-header">
+                        <span class="email-logo-text">{{ invoice.business_name }}</span>
                     </div>
                     
-                    <a href="#" class="preview-cta-btn">View Invoice</a>
-                    
-                    <div class="preview-email-footer">
-                        <p>This email was sent by {{ invoice.business_name }}</p>
-                        {% if invoice.business_address %}<p>{{ invoice.business_address }}</p>{% endif %}
+                    <div class="email-body">
+                        <div class="email-greeting" id="preview-greeting">Hello {{ invoice.client_name }},</div>
+                        <div class="email-text" id="preview-text">Thank you for your business! Please find your invoice details below. If you have any questions, feel free to reach out.</div>
+                        
+                        <div class="email-invoice-card">
+                            <div class="invoice-row">
+                                <span class="text-gray-500">Invoice Number</span>
+                                <span class="font-bold text-gray-900">#{{ invoice.invoice_id }}</span>
+                            </div>
+                            <div class="invoice-row">
+                                <span class="text-gray-500">Issue Date</span>
+                                <span class="text-gray-900">{{ invoice.invoice_date|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="invoice-row">
+                                <span class="text-gray-500">Due Date</span>
+                                <span class="text-gray-900">{{ invoice.due_date|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="invoice-row total">
+                                <span>Total Amount</span>
+                                <span>{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</span>
+                            </div>
+                        </div>
+
+                        <a href="#" class="email-cta">View & Pay Invoice</a>
+
+                        <div id="attachment-badge" class="attachment-box">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                            </svg>
+                            <span id="attachment-name">Invoice_{{ invoice.invoice_id }}.pdf</span>
+                        </div>
+
+                        <div class="email-footer">
+                            <p>Sent by {{ invoice.business_name }} via InvoiceFlow</p>
+                            {% if invoice.business_address %}
+                            <p class="mt-1">{{ invoice.business_address }}</p>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-                
-                <div class="attachment-badge active" id="attachment-badge">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                    </svg>
-                    <span id="attachment-text">invoice_{{ invoice.invoice_number|default:invoice.invoice_id }}.pdf attached</span>
                 </div>
             </div>
         </div>
@@ -567,64 +440,30 @@ textarea.form-input-light {
 <script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     const recipientInput = document.getElementById('recipient');
-    const subjectInput = document.getElementById('subject');
     const messageInput = document.getElementById('message');
-    const attachPdfCheckbox = document.getElementById('attach_pdf');
+    const attachCheckbox = document.getElementById('attach_pdf');
+    const sendForm = document.getElementById('send-email-form');
+    const sendBtn = document.getElementById('send-button');
+    const btnText = document.getElementById('button-text');
     
-    const previewTo = document.getElementById('preview-to');
-    const previewSubject = document.getElementById('preview-subject');
-    const previewMessage = document.getElementById('preview-message');
+    const previewText = document.getElementById('preview-text');
     const attachmentBadge = document.getElementById('attachment-badge');
-    
-    recipientInput.addEventListener('input', function() {
-        previewTo.textContent = this.value || 'recipient@example.com';
-    });
-    
-    subjectInput.addEventListener('input', function() {
-        previewSubject.textContent = this.value || 'No subject';
-    });
-    
+
+    // Real-time preview update
     messageInput.addEventListener('input', function() {
-        previewMessage.textContent = this.value || 'No message provided.';
+        const text = this.value.trim() || 'No message provided.';
+        previewText.innerHTML = text.replace(/\n/g, '<br>');
     });
-    
-    attachPdfCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            attachmentBadge.classList.add('active');
-            attachmentBadge.classList.remove('inactive');
-            document.getElementById('attachment-text').textContent = 'invoice_{{ invoice.invoice_number|default:invoice.invoice_id }}.pdf attached';
-        } else {
-            attachmentBadge.classList.remove('active');
-            attachmentBadge.classList.add('inactive');
-            document.getElementById('attachment-text').textContent = 'No attachment';
-        }
+
+    attachCheckbox.addEventListener('change', function() {
+        attachmentBadge.style.display = this.checked ? 'flex' : 'none';
     });
-    
-    document.getElementById('send-email-form').addEventListener('submit', function(e) {
-        const recipient = recipientInput.value.trim();
-        const subject = subjectInput.value.trim();
-        
-        if (!recipient) {
-            e.preventDefault();
-            alert('Please enter a recipient email address.');
-            recipientInput.focus();
-            return false;
-        }
-        
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(recipient)) {
-            e.preventDefault();
-            alert('Please enter a valid email address.');
-            recipientInput.focus();
-            return false;
-        }
-        
-        if (!subject) {
-            e.preventDefault();
-            alert('Please enter an email subject.');
-            subjectInput.focus();
-            return false;
-        }
+
+    // Form submission handling
+    sendForm.addEventListener('submit', function() {
+        sendBtn.disabled = true;
+        sendBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        btnText.textContent = 'Sending...';
     });
 });
 </script>
