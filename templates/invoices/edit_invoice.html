@@ -1,695 +1,412 @@
 {% extends "base/layout-authenticated.html" %}
 {% load static %}
+
 {% block title %}Edit Invoice {{ invoice.invoice_id }} - InvoiceFlow{% endblock %}
-{% block page_title %}Edit Invoice {{ invoice.invoice_id }}{% endblock %}
-{% block page_subtitle %}Update invoice information and details{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
-<link rel="stylesheet" href="{% static 'css/invoice-create-modern.css' %}"}
 <style>
-.form-light-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-}
-
-.form-light-grid-3 {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-@media (max-width: 768px) {
-    .form-light-grid,
-    .form-light-grid-3 {
-        grid-template-columns: 1fr;
+    .edit-invoice-container {
+        max-width: 1000px;
+        margin: 0 auto;
     }
-}
 
-.form-light-group.full-width {
-    grid-column: 1 / -1;
-}
-
-.section-light {
-    background: var(--light-bg-secondary);
-    border-radius: var(--light-radius-xl);
-    border: 1px solid var(--light-border-primary);
-    padding: 24px;
-    margin-bottom: 24px;
-}
-
-.section-light-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid var(--light-border-primary);
-}
-
-.section-light-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: var(--light-radius-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.section-light-icon svg {
-    width: 24px;
-    height: 24px;
-}
-
-.section-light-icon.icon-business {
-    background: var(--light-primary-light);
-}
-
-.section-light-icon.icon-business svg {
-    stroke: var(--light-primary);
-}
-
-.section-light-icon.icon-client {
-    background: var(--light-success-light);
-}
-
-.section-light-icon.icon-client svg {
-    stroke: var(--light-success);
-}
-
-.section-light-icon.icon-invoice {
-    background: var(--light-accent-light);
-}
-
-.section-light-icon.icon-invoice svg {
-    stroke: var(--light-accent);
-}
-
-.section-light-icon.icon-items {
-    background: var(--light-warning-light);
-}
-
-.section-light-icon.icon-items svg {
-    stroke: var(--light-warning);
-}
-
-.section-light-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--light-text-primary);
-    margin: 0;
-}
-
-.form-light-sections {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-    margin-bottom: 24px;
-}
-
-@media (max-width: 1024px) {
-    .form-light-sections {
-        grid-template-columns: 1fr;
+    .form-section {
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        box-shadow: var(--shadow-sm);
     }
-}
 
-.line-items-light {
-    margin-top: 16px;
-}
-
-.line-items-light-header {
-    display: grid;
-    grid-template-columns: 2fr 80px 120px 120px 48px;
-    gap: 12px;
-    padding: 12px 16px;
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-lg) var(--light-radius-lg) 0 0;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--light-text-tertiary);
-}
-
-@media (max-width: 768px) {
-    .line-items-light-header {
-        display: none;
+    .form-section-header {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-sm);
+        border-bottom: 1px solid var(--gray-100);
     }
-}
 
-.line-item-light {
-    display: grid;
-    grid-template-columns: 2fr 80px 120px 120px 48px;
-    gap: 12px;
-    padding: 16px;
-    background: var(--light-bg-secondary);
-    border: 1px solid var(--light-border-primary);
-    border-top: none;
-    align-items: center;
-}
-
-@media (max-width: 768px) {
-    .line-item-light {
-        grid-template-columns: 1fr;
-        gap: 16px;
+    .form-section-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: var(--gray-900);
     }
-}
 
-.line-item-light:last-child {
-    border-radius: 0 0 var(--light-radius-lg) var(--light-radius-lg);
-}
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
 
-.line-item-light input {
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 0.875rem;
-    border: 1px solid var(--light-border-primary);
-    border-radius: var(--light-radius-md);
-    background: var(--light-bg-tertiary);
-}
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 
-.line-item-light input:focus {
-    outline: none;
-    border-color: var(--light-primary);
-    background: var(--light-bg-secondary);
-}
+    .line-items-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-.line-item-light .item-total {
-    font-weight: 600;
-    color: var(--light-text-primary);
-    text-align: right;
-}
+    .line-items-table th {
+        text-align: left;
+        padding: var(--spacing-sm);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        border-bottom: 2px solid var(--gray-100);
+    }
 
-.remove-item-btn {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--light-danger-light);
-    border: none;
-    border-radius: var(--light-radius-md);
-    color: var(--light-danger);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
+    .line-items-table td {
+        padding: var(--spacing-sm) 0;
+        border-bottom: 1px solid var(--gray-50);
+    }
 
-.remove-item-btn:hover {
-    background: var(--light-danger);
-    color: white;
-}
+    .item-row input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius-md);
+        font-size: 0.95rem;
+    }
 
-.remove-item-btn svg {
-    width: 18px;
-    height: 18px;
-}
+    .item-row input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-light);
+    }
 
-.add-item-light-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    padding: 16px;
-    background: var(--light-bg-tertiary);
-    border: 2px dashed var(--light-border-secondary);
-    border-radius: var(--light-radius-lg);
-    color: var(--light-text-secondary);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-top: 16px;
-}
+    .btn-remove {
+        color: var(--danger);
+        padding: 0.5rem;
+        border-radius: var(--radius-md);
+        transition: var(--transition-fast);
+    }
 
-.add-item-light-btn:hover {
-    background: var(--light-primary-light);
-    border-color: var(--light-primary);
-    color: var(--light-primary);
-}
+    .btn-remove:hover {
+        background: var(--danger-light);
+    }
 
-.add-item-light-btn svg {
-    width: 20px;
-    height: 20px;
-}
+    .invoice-summary {
+        margin-left: auto;
+        width: 100%;
+        max-width: 350px;
+        background: var(--gray-50);
+        padding: var(--spacing-lg);
+        border-radius: var(--radius-lg);
+    }
 
-.invoice-totals-light {
-    margin-top: 24px;
-    padding: 24px;
-    background: var(--light-bg-tertiary);
-    border-radius: var(--light-radius-lg);
-    max-width: 320px;
-    margin-left: auto;
-}
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: var(--spacing-xs) 0;
+        color: var(--gray-600);
+    }
 
-.totals-light-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    font-size: 0.9375rem;
-}
+    .summary-row.total {
+        margin-top: var(--spacing-sm);
+        padding-top: var(--spacing-sm);
+        border-top: 2px solid var(--gray-200);
+        color: var(--gray-900);
+        font-weight: 700;
+        font-size: 1.25rem;
+    }
 
-.totals-light-row.total-row {
-    border-top: 2px solid var(--light-border-primary);
-    margin-top: 8px;
-    padding-top: 16px;
-    font-size: 1.125rem;
-    font-weight: 700;
-}
+    .sticky-actions {
+        position: sticky;
+        bottom: 0;
+        background: var(--white);
+        padding: var(--spacing-md);
+        border-top: 1px solid var(--gray-200);
+        margin: 0 calc(-1 * var(--spacing-xl));
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--spacing-md);
+        z-index: 10;
+    }
 
-.form-actions-light {
-    display: flex;
-    justify-content: flex-end;
-    gap: 16px;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--light-border-primary);
-}
+    .btn-save {
+        background: var(--primary);
+        color: var(--white);
+        padding: 0.75rem 2rem;
+        border-radius: var(--radius-md);
+        font-weight: 600;
+        transition: var(--transition-fast);
+    }
 
-.back-light-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 0.875rem;
-    color: var(--light-text-secondary);
-    text-decoration: none;
-    margin-bottom: 16px;
-}
+    .btn-save:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
 
-.back-light-link:hover {
-    color: var(--light-primary);
-}
-
-.back-light-link svg {
-    width: 16px;
-    height: 16px;
-}
+    .btn-cancel {
+        color: var(--gray-600);
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+    }
 </style>
 {% endblock %}
 
-{% block nav %}{% endblock %}
-{% block footer %}{% endblock %}
-
 {% block content %}
-<div class="dashboard-layout">
-    {% include 'components/dashboard-sidebar.html' with active='invoices' %}
-    
-    <main class="dashboard-content">
-        <div class="flex items-center justify-between mb-8">
-            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                <span class="font-semibold">Back to Detail</span>
-            </a>
-            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Edit Invoice #{{ invoice.invoice_id }}</h1>
+<div class="edit-invoice-container">
+    <div class="section-header">
+        <div>
+            <h1 class="header-title">Edit Invoice</h1>
+            <p class="header-subtitle">Invoice #{{ invoice.invoice_id }} • Created on {{ invoice.created_at|date:"M d, Y" }}</p>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-pagination">View Invoice</a>
+        </div>
+    </div>
+
+    <form method="POST" id="edit-invoice-form">
+        {% csrf_token %}
+        <input type="hidden" name="line_items" id="line-items-json">
+
+        <div class="form-grid">
+            <!-- Business Info -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    <h2 class="form-section-title">Business Information</h2>
+                </div>
+                <div class="space-y-4">
+                    <div class="form-group">
+                        <label class="form-label">Business Name</label>
+                        {{ invoice_form.business_name }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        {{ invoice_form.business_email }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        {{ invoice_form.business_phone }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        {{ invoice_form.business_address }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Info -->
+            <div class="form-section">
+                <div class="form-section-header">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <h2 class="form-section-title">Client Information</h2>
+                </div>
+                <div class="space-y-4">
+                    <div class="form-group">
+                        <label class="form-label">Client Name</label>
+                        {{ invoice_form.client_name }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        {{ invoice_form.client_email }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone</label>
+                        {{ invoice_form.client_phone }}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Address</label>
+                        {{ invoice_form.client_address }}
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <form method="POST" id="editForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {% csrf_token %}
-            <input type="hidden" name="line_items" id="lineItemsInput">
-
-            <div class="lg:col-span-2 space-y-8">
-                <!-- Client Details -->
-                <div class="data-card p-8">
-                    <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        Client Information
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="md:col-span-2 space-y-1">
-                            <label class="text-sm font-bold text-slate-700">Client Name</label>
-                            <input type="text" name="client_name" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all" required value="{{ invoice.client_name }}">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-sm font-bold text-slate-700">Client Email</label>
-                            <input type="email" name="client_email" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all" required value="{{ invoice.client_email }}">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-sm font-bold text-slate-700">Client Phone (Optional)</label>
-                            <input type="tel" name="client_phone" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all" value="{{ invoice.client_phone }}">
-                        </div>
-                        <div class="md:col-span-2 space-y-1">
-                            <label class="text-sm font-bold text-slate-700">Client Address</label>
-                            <textarea name="client_address" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 transition-all" rows="3">{{ invoice.client_address }}</textarea>
-                        </div>
-                    </div>
+        <!-- Invoice Details -->
+        <div class="form-section">
+            <div class="form-section-header">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <h2 class="form-section-title">Invoice Details</h2>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Invoice Date</label>
+                    {{ invoice_form.invoice_date }}
                 </div>
-
-                <!-- Line Items -->
-                <div class="data-card p-8">
-                    <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                            <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                            Invoice Items
-                        </h2>
-                        <button type="button" onclick="addItem()" class="text-sm font-bold text-indigo-600 hover:text-indigo-700">+ Add Item</button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-100">
-                                    <th class="pb-4 w-1/2">Description</th>
-                                    <th class="pb-4 text-center">Qty</th>
-                                    <th class="pb-4 text-right">Price</th>
-                                    <th class="pb-4 text-right">Total</th>
-                                    <th class="pb-4"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="itemsBody" class="divide-y divide-slate-50">
-                                {% for item in invoice.line_items.all %}
-                                <tr class="item-row group">
-                                    <td class="py-4">
-                                        <input type="text" name="description[]" class="w-full bg-transparent border-none focus:ring-0 font-bold text-slate-900 p-0" required value="{{ item.description }}">
-                                    </td>
-                                    <td class="py-4 text-center">
-                                        <input type="number" name="quantity[]" class="qty-input w-20 bg-slate-50 border-none rounded-lg text-center font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500" required step="0.01" value="{{ item.quantity }}" oninput="updateTotals()">
-                                    </td>
-                                    <td class="py-4 text-right">
-                                        <input type="number" name="unit_price[]" class="price-input w-32 bg-slate-50 border-none rounded-lg text-right font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500" required step="0.01" value="{{ item.unit_price }}" oninput="updateTotals()">
-                                    </td>
-                                    <td class="py-4 text-right font-bold text-slate-900 item-total">
-                                        {{ invoice.currency }} {{ item.total|floatformat:2 }}
-                                    </td>
-                                    <td class="py-4 text-right">
-                                        <button type="button" onclick="this.closest('tr').remove(); updateTotals();" class="text-slate-300 hover:text-rose-500 transition-colors">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">Due Date</label>
+                    {{ invoice_form.due_date }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Currency</label>
+                    {{ invoice_form.currency }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tax Rate (%)</label>
+                    {{ invoice_form.tax_rate }}
                 </div>
             </div>
+        </div>
 
-            <div class="space-y-8">
-                <!-- Settings -->
-                <div class="data-card p-8">
-                    <h2 class="text-lg font-bold text-slate-900 mb-6">Settings</h2>
-                    <div class="space-y-4">
-                        <div class="space-y-1">
-                            <label class="text-sm font-bold text-slate-700">Invoice Date</label>
-                            <input type="date" name="invoice_date" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg" required value="{{ invoice.invoice_date|date:'Y-m-d' }}">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-sm font-bold text-slate-700">Due Date</label>
-                            <input type="date" name="due_date" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg" required value="{{ invoice.due_date|date:'Y-m-d' }}">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-sm font-bold text-slate-700">Currency</label>
-                            <select name="currency" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg" required>
-                                <option value="USD" {% if invoice.currency == 'USD' %}selected{% endif %}>USD</option>
-                                <option value="EUR" {% if invoice.currency == 'EUR' %}selected{% endif %}>EUR</option>
-                                <option value="GBP" {% if invoice.currency == 'GBP' %}selected{% endif %}>GBP</option>
-                            </select>
-                        </div>
-                    </div>
+        <!-- Line Items -->
+        <div class="form-section">
+            <div class="flex justify-between items-center mb-4">
+                <div class="form-section-header mb-0 border-0">
+                    <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                    </svg>
+                    <h2 class="form-section-title">Line Items</h2>
                 </div>
+                <button type="button" id="add-item-btn" class="btn-pagination">
+                    + Add Item
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="line-items-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th style="width: 100px;">Qty</th>
+                            <th style="width: 150px;">Unit Price</th>
+                            <th style="width: 150px; text-align: right;">Total</th>
+                            <th style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="line-items-body">
+                        <!-- Items populated via JS -->
+                    </tbody>
+                </table>
+            </div>
 
-                <!-- Totals -->
-                <div class="data-card p-8 bg-slate-900 text-white">
-                    <div class="space-y-4">
-                        <div class="flex justify-between text-slate-400">
-                            <span>Subtotal</span>
-                            <span id="displaySubtotal" class="text-white font-bold">{{ invoice.currency }} {{ invoice.subtotal|floatformat:2 }}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-400">Tax (%)</span>
-                            <input type="number" name="tax_rate" id="taxRate" value="{{ invoice.tax_rate }}" class="w-16 bg-slate-800 border-none rounded px-2 py-1 text-right text-white font-bold focus:ring-2 focus:ring-indigo-500" oninput="updateTotals()">
-                        </div>
-                        <div class="flex justify-between border-t border-slate-800 pt-4 text-2xl font-black text-indigo-400">
-                            <span>Total</span>
-                            <span id="displayTotal">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</span>
-                        </div>
-                    </div>
-                    <button type="submit" class="w-full mt-8 py-4 bg-indigo-500 text-white rounded-xl font-bold text-lg hover:bg-indigo-600 transition-all shadow-lg shadow-indigo-500/20">
-                        Save Changes
-                    </button>
+            <div class="invoice-summary mt-8">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="subtotal-display">0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax</span>
+                    <span id="tax-display">0.00</span>
+                </div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="total-display">0.00</span>
                 </div>
             </div>
-        </form>
-    </main>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-header">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <h2 class="form-section-title">Notes</h2>
+            </div>
+            {{ invoice_form.notes }}
+        </div>
+
+        <div class="sticky-actions">
+            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-cancel">Cancel</a>
+            <button type="submit" class="btn-save">Save Changes</button>
+        </div>
+    </form>
 </div>
 
 <script nonce="{{ request.csp_nonce }}">
-    function updateTotals() {
-        let subtotal = 0;
-        const currency = document.querySelector('select[name="currency"]').value;
-        document.querySelectorAll('.item-row').forEach(row => {
-            const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
-            const price = parseFloat(row.querySelector('.price-input').value) || 0;
-            const total = qty * price;
-            row.querySelector('.item-total').textContent = currency + ' ' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
-            subtotal += total;
-        });
-        
-        const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-        const total = subtotal + (subtotal * (taxRate / 100));
-        
-        document.getElementById('displaySubtotal').textContent = currency + ' ' + subtotal.toLocaleString(undefined, {minimumFractionDigits: 2});
-        document.getElementById('displayTotal').textContent = currency + ' ' + total.toLocaleString(undefined, {minimumFractionDigits: 2});
-    }
-
-    function addItem() {
-        const body = document.getElementById('itemsBody');
-        const row = document.createElement('tr');
-        row.className = 'item-row group';
-        row.innerHTML = `
-            <td class="py-4">
-                <input type="text" name="description[]" class="w-full bg-transparent border-none focus:ring-0 font-bold text-slate-900 p-0" required placeholder="Item description">
-            </td>
-            <td class="py-4 text-center">
-                <input type="number" name="quantity[]" class="qty-input w-20 bg-slate-50 border-none rounded-lg text-center font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500" required step="0.01" value="1" oninput="updateTotals()">
-            </td>
-            <td class="py-4 text-right">
-                <input type="number" name="unit_price[]" class="price-input w-32 bg-slate-50 border-none rounded-lg text-right font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500" required step="0.01" value="0" oninput="updateTotals()">
-            </td>
-            <td class="py-4 text-right font-bold text-slate-900 item-total">$ 0.00</td>
-            <td class="py-4 text-right">
-                <button type="button" onclick="this.closest('tr').remove(); updateTotals();" class="text-slate-300 hover:text-rose-500 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </button>
-            </td>
-        `;
-        body.appendChild(row);
-        updateTotals();
-    }
-</script>
-{% endblock %}
-
-{% block extra_js %}
-<script nonce="{{ request.csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
-    const mobileToggle = document.getElementById('mobile-toggle');
-    const sidebar = document.getElementById('dashboard-sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
+    const form = document.getElementById('edit-invoice-form');
+    const itemsBody = document.getElementById('line-items-body');
+    const addItemBtn = document.getElementById('add-item-btn');
+    const lineItemsInput = document.getElementById('line-items-json');
+    const currencySelect = document.querySelector('select[name="currency"]');
+    const taxRateInput = document.querySelector('input[name="tax_rate"]');
     
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
+    let items = JSON.parse('{{ line_items_json|safe }}');
+
+    function renderItems() {
+        itemsBody.innerHTML = '';
+        items.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <td><input type="text" class="item-desc" value="${item.description}" required></td>
+                <td><input type="number" class="item-qty" value="${item.quantity}" min="1" step="any" required></td>
+                <td><input type="number" class="item-price" value="${item.unit_price}" min="0" step="0.01" required></td>
+                <td style="text-align: right; font-weight: 600;" class="item-total-display">0.00</td>
+                <td style="text-align: right;">
+                    <button type="button" class="btn-remove" data-index="${index}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </td>
+            `;
+            itemsBody.appendChild(row);
         });
+        calculateTotals();
     }
-    
-    if (overlay) {
-        overlay.addEventListener('click', function() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        });
-    }
-    
-    let lineItems = [];
-    let itemId = 0;
-    
-    const lineItemsList = document.getElementById('line-items-list');
-    const addItemBtn = document.getElementById('add-line-item');
-    const lineItemsData = document.getElementById('line_items_data');
-    const taxRateInput = document.getElementById('tax_rate');
-    const currencySelect = document.getElementById('currency-select');
-    const invoiceForm = document.getElementById('invoice-form');
-    
-    const currencySymbols = {
-        'USD': '$',
-        'EUR': '€',
-        'GBP': '£',
-        'CAD': 'C$',
-        'AUD': 'A$',
-        'NGN': '₦'
-    };
-    
-    function getCurrentCurrencySymbol() {
-        const selected = currencySelect.options[currencySelect.selectedIndex];
-        return selected.dataset.symbol || '$';
-    }
-    
-    function formatCurrency(amount) {
-        const symbol = getCurrentCurrencySymbol();
-        return symbol + parseFloat(amount || 0).toFixed(2);
-    }
-    
-    function createLineItem(id, data = {}) {
-        const div = document.createElement('div');
-        div.className = 'line-item-light';
-        div.dataset.id = id;
-        const symbol = getCurrentCurrencySymbol();
-        div.innerHTML = `
-            <input type="text" placeholder="Item description" class="item-description" value="${data.description || ''}" required>
-            <input type="number" placeholder="1" value="${data.quantity || 1}" min="1" class="item-quantity">
-            <input type="number" placeholder="0.00" step="0.01" min="0" value="${data.unit_price || ''}" class="item-price">
-            <span class="item-total">${symbol}0.00</span>
-            <button type="button" class="remove-item-btn" data-item-id="${id}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            </button>
-        `;
-        
-        const inputs = div.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.addEventListener('input', () => {
-                updateItemTotal(div);
-                updateTotals();
-            });
-        });
-        
-        return div;
-    }
-    
-    function updateItemTotal(itemDiv) {
-        const qty = parseFloat(itemDiv.querySelector('.item-quantity').value) || 0;
-        const price = parseFloat(itemDiv.querySelector('.item-price').value) || 0;
-        const total = qty * price;
-        itemDiv.querySelector('.item-total').textContent = formatCurrency(total);
-    }
-    
-    function updateTotals() {
+
+    function calculateTotals() {
         let subtotal = 0;
-        const items = lineItemsList.querySelectorAll('.line-item-light');
-        
-        items.forEach(item => {
-            const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
-            const price = parseFloat(item.querySelector('.item-price').value) || 0;
-            subtotal += qty * price;
-        });
-        
+        const currency = currencySelect.value;
         const taxRate = parseFloat(taxRateInput.value) || 0;
+
+        document.querySelectorAll('.item-row').forEach((row, index) => {
+            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const total = qty * price;
+            subtotal += total;
+            row.querySelector('.item-total-display').textContent = total.toFixed(2);
+            
+            // Sync back to items array
+            items[index].description = row.querySelector('.item-desc').value;
+            items[index].quantity = qty;
+            items[index].unit_price = price;
+        });
+
         const taxAmount = subtotal * (taxRate / 100);
         const total = subtotal + taxAmount;
+
+        document.getElementById('subtotal-display').textContent = subtotal.toFixed(2);
+        document.getElementById('tax-display').textContent = taxAmount.toFixed(2);
+        document.getElementById('total-display').textContent = total.toFixed(2);
         
-        document.getElementById('subtotal').textContent = formatCurrency(subtotal);
-        document.getElementById('tax-rate-display').textContent = taxRate;
-        document.getElementById('tax-amount').textContent = formatCurrency(taxAmount);
-        document.getElementById('grand-total').textContent = formatCurrency(total);
-        
-        saveLineItems();
+        lineItemsInput.value = JSON.stringify(items);
     }
-    
-    function saveLineItems() {
-        const items = [];
-        const itemDivs = lineItemsList.querySelectorAll('.line-item-light');
-        
-        itemDivs.forEach(div => {
-            const description = div.querySelector('.item-description').value;
-            const quantity = parseFloat(div.querySelector('.item-quantity').value) || 0;
-            const price = parseFloat(div.querySelector('.item-price').value) || 0;
-            
-            if (description && quantity > 0) {
-                items.push({ description, quantity, unit_price: price });
-            }
-        });
-        
-        lineItemsData.value = JSON.stringify(items);
-    }
-    
-    window.removeItem = function(id) {
-        const item = lineItemsList.querySelector(`[data-id="${id}"]`);
-        if (item) {
-            item.remove();
-            updateTotals();
-        }
-    };
-    
-    addItemBtn.addEventListener('click', function() {
-        const item = createLineItem(itemId++);
-        lineItemsList.appendChild(item);
+
+    addItemBtn.addEventListener('click', () => {
+        items.push({ description: '', quantity: 1, unit_price: 0 });
+        renderItems();
     });
-    
-    taxRateInput.addEventListener('input', updateTotals);
-    
-    currencySelect.addEventListener('change', function() {
-        const items = lineItemsList.querySelectorAll('.line-item-light');
-        items.forEach(item => updateItemTotal(item));
-        updateTotals();
+
+    itemsBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('.btn-remove');
+        if (btn) {
+            const index = parseInt(btn.dataset.index);
+            items.splice(index, 1);
+            renderItems();
+        }
     });
-    
-    invoiceForm.addEventListener('submit', function(e) {
-        const businessName = document.querySelector('input[name="business_name"]').value.trim();
-        const clientName = document.querySelector('input[name="client_name"]').value.trim();
-        const invoiceDate = document.querySelector('input[name="invoice_date"]').value;
-        const dueDate = document.querySelector('input[name="due_date"]').value;
-        
-        let errors = [];
-        
-        if (!businessName) {
-            errors.push('Business name is required');
-        }
-        if (!clientName) {
-            errors.push('Client name is required');
-        }
-        if (!invoiceDate) {
-            errors.push('Invoice date is required');
-        }
-        if (!dueDate) {
-            errors.push('Due date is required');
-        }
-        if (invoiceDate && dueDate && new Date(dueDate) < new Date(invoiceDate)) {
-            errors.push('Due date cannot be before invoice date');
-        }
-        
-        const lineItemDivs = lineItemsList.querySelectorAll('.line-item-light');
-        let hasValidItem = false;
-        lineItemDivs.forEach(div => {
-            const desc = div.querySelector('.item-description').value.trim();
-            const qty = parseFloat(div.querySelector('.item-quantity').value) || 0;
-            const price = parseFloat(div.querySelector('.item-price').value) || 0;
-            if (desc && qty > 0 && price > 0) {
-                hasValidItem = true;
-            }
-        });
-        
-        if (!hasValidItem) {
-            errors.push('At least one line item with description, quantity, and price is required');
-        }
-        
-        if (errors.length > 0) {
+
+    itemsBody.addEventListener('input', calculateTotals);
+    taxRateInput.addEventListener('input', calculateTotals);
+    currencySelect.addEventListener('change', calculateTotals);
+
+    form.addEventListener('submit', function(e) {
+        if (items.length === 0) {
             e.preventDefault();
-            alert('Please fix the following errors:\n\n' + errors.join('\n'));
-            return false;
+            alert('Please add at least one line item.');
+            return;
         }
-        
-        saveLineItems();
+        calculateTotals(); // Ensure input is up to date
     });
-    
-    const existingItems = document.getElementById('existing-line-items');
-    if (existingItems) {
-        try {
-            const items = JSON.parse(existingItems.textContent);
-            if (items && items.length > 0) {
-                items.forEach(itemData => {
-                    const item = createLineItem(itemId++, itemData);
-                    lineItemsList.appendChild(item);
-                    updateItemTotal(item);
-                });
-                updateTotals();
-            } else {
-                addItemBtn.click();
-            }
-        } catch (e) {
-            addItemBtn.click();
-        }
-    } else {
-        addItemBtn.click();
-    }
+
+    renderItems();
 });
 </script>
 {% endblock %}

@@ -798,14 +798,23 @@ def invoice_detail(request, invoice_id):
 
 @login_required
 def edit_invoice(request, invoice_id):
-    from invoices.services import InvoiceService
+    from invoices.services import InvoiceService, AnalyticsService
 
     invoice = get_object_or_404(
         Invoice.objects.prefetch_related("line_items"), id=invoice_id, user=request.user
     )
+    
+    # Permission check: cannot edit paid invoices
+    if invoice.status == 'paid':
+        messages.error(request, "Paid invoices cannot be edited.")
+        return redirect("invoices:invoice_detail", invoice_id=invoice.id)
 
     if request.method == "POST":
-        line_items_data = json.loads(request.POST.get("line_items", "[]"))
+        try:
+            line_items_data = json.loads(request.POST.get("line_items", "[]"))
+        except json.JSONDecodeError:
+            messages.error(request, "Invalid line items data.")
+            line_items_data = []
 
         if not line_items_data:
             messages.error(request, "Please add at least one line item.")
@@ -827,6 +836,8 @@ def edit_invoice(request, invoice_id):
         )
 
         if updated_invoice:
+            # Invalidate cache
+            AnalyticsService.invalidate_user_cache(request.user.id)
             messages.success(request, f"Invoice {updated_invoice.invoice_id} updated successfully!")
             return redirect("invoices:invoice_detail", invoice_id=updated_invoice.id)
         else:
