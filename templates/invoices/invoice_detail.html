@@ -431,7 +431,7 @@
         const btn = this;
         const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Deleting...';
+        btn.innerHTML = '<span class="loading-spinner"></span> Deleting...';
         
         fetch(`/invoices/invoice/${invoiceToDelete}/delete/`, {
             method: 'POST',
@@ -441,28 +441,36 @@
             }
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+            if (!response.ok) throw new Error('Network response was not ok');
             return response.json();
         })
         .then(data => {
             if (data.success) {
-                // For detail page, we actually NEED to redirect because the object is gone
-                window.location.href = data.redirect_url || '/invoices/list/';
+                showToast('Success', data.message, 'success');
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '/invoices/list/';
+                }, 1000);
             } else {
-                alert(data.message || 'Failed to delete invoice.');
+                showToast('Error', data.message || 'Failed to delete invoice.', 'error');
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+            showToast('Error', 'An error occurred. Please try again.', 'error');
             btn.disabled = false;
             btn.textContent = originalText;
         });
     });
+
+    function showToast(title, message, type) {
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            alert(message);
+        }
+    }
 
     // Close on backdrop click
     window.onclick = function(event) {

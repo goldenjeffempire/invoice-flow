@@ -313,7 +313,7 @@
         const btn = this;
         const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Deleting...';
+        btn.innerHTML = '<span class="loading-spinner"></span> Deleting...';
         
         fetch(`/invoices/invoice/${invoiceToDelete}/delete/`, {
             method: 'POST',
@@ -323,27 +323,46 @@
             }
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+            if (!response.ok) throw new Error('Network response was not ok');
             return response.json();
         })
         .then(data => {
             if (data.success) {
-                window.location.reload();
+                const row = document.querySelector(`button[onclick*="'${invoiceToDelete}'"]`).closest('tr');
+                row.style.opacity = '0.5';
+                row.style.pointerEvents = 'none';
+                
+                closeDeleteModal();
+                showToast('Success', data.message, 'success');
+                
+                setTimeout(() => {
+                    row.remove();
+                    if (document.querySelectorAll('.data-table tbody tr').length === 0) {
+                        window.location.reload();
+                    }
+                }, 500);
             } else {
-                alert(data.message || 'Failed to delete invoice.');
+                showToast('Error', data.message || 'Failed to delete invoice.', 'error');
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+            showToast('Error', 'An error occurred. Please try again.', 'error');
             btn.disabled = false;
             btn.textContent = originalText;
         });
     });
+
+    function showToast(title, message, type) {
+        // Assume global toast function exists as per replit.md hardening
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            alert(message);
+        }
+    }
 
     // Close on backdrop click
     window.onclick = function(event) {
