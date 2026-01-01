@@ -224,6 +224,11 @@ def profile_update_ajax(request):
                 with transaction.atomic():
                     user_form.save()
                     profile_form.save()
+                
+                # Invalidate cache to reflect changes in dashboard/header
+                from .services import AnalyticsService
+                AnalyticsService.invalidate_user_cache(request.user.id)
+                
                 return HttpResponse(json.dumps({
                     "success": True, 
                     "message": "Profile updated successfully! Your changes are now live."
