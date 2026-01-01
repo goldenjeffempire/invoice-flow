@@ -284,22 +284,19 @@
         </div>
         <div class="modal-footer">
             <button type="button" class="btn-pagination" onclick="closeDeleteModal()">Cancel</button>
-            <form id="delete-form" method="post" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn-header" style="background: var(--danger);">Delete Invoice</button>
-            </form>
+            <button type="button" class="btn-header" style="background: var(--danger);" id="confirmDeleteBtn">Delete Invoice</button>
         </div>
     </div>
 </div>
 
 <script>
+    let invoiceToDelete = null;
     function confirmDelete(id, displayId) {
+        invoiceToDelete = id;
         const modal = document.getElementById('delete-modal');
-        const form = document.getElementById('delete-form');
         const display = document.getElementById('delete-invoice-id');
         
         display.textContent = '#' + displayId;
-        form.action = `/invoices/invoice/${id}/delete/`;
         modal.style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
@@ -309,6 +306,21 @@
         modal.style.display = 'none';
         document.body.style.overflow = '';
     }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (!invoiceToDelete) return;
+        fetch(`/invoices/invoice/${invoiceToDelete}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) window.location.reload();
+            else alert('Failed to delete invoice.');
+        });
+    });
 
     // Close on backdrop click
     window.onclick = function(event) {

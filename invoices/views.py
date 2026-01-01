@@ -855,16 +855,41 @@ def edit_invoice(request, invoice_id):
 
 
 @login_required
-@require_POST
 def delete_invoice(request, invoice_id):
+    """Delete an existing invoice and its line items with AJAX support."""
     invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
-    user_id = request.user.id
-    invoice.delete()
-    from invoices.services import AnalyticsService
+    invoice_display_id = invoice.invoice_id
+    
+    if request.method == "POST":
+        try:
+            with transaction.atomic():
+                invoice.delete()
+            
+            # Invalidate cache
+            from .services import AnalyticsService
+            AnalyticsService.invalidate_user_cache(request.user.id)
+            
+            message = f"Invoice #{invoice_display_id} has been deleted."
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                return HttpResponse(json.dumps({
+                    "success": True, 
+                    "message": message,
+                    "redirect_url": "/invoices/list/"
+                }).encode('utf-8'), content_type="application/json")
+                
+            messages.success(request, message)
+            return redirect("invoices:invoice_list")
+        except Exception as e:
+            logger.error(f"Error deleting invoice {invoice_id}: {e}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+                return HttpResponse(json.dumps({
+                    "success": False, 
+                    "message": "A database error occurred while deleting the invoice."
+                }).encode('utf-8'), content_type="application/json", status=500)
+            messages.error(request, "Failed to delete invoice.")
+            return redirect("invoices:invoice_detail", invoice_id=invoice_id)
 
-    AnalyticsService.invalidate_user_cache(user_id)
-    messages.success(request, "Invoice deleted successfully!")
-    return redirect("invoices:invoice_list")
+    return render(request, "invoices/delete_invoice.html", {"invoice": invoice})
 
 
 @login_required
@@ -2245,10 +2270,31 @@ def edit_recurring_invoice(request, recurring_id):
 @login_required
 @require_POST
 def delete_recurring_invoice(request, recurring_id):
-    """Delete a recurring invoice."""
+    """Stop and delete a recurring invoice schedule via AJAX."""
     recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
-    recurring.delete()
-    messages.success(request, "Recurring invoice deleted successfully!")
+    client_name = recurring.client_name
+    
+    try:
+        with transaction.atomic():
+            recurring.delete()
+        
+        message = f"Recurring schedule for {client_name} has been deleted."
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return HttpResponse(json.dumps({
+                "success": True, 
+                "message": message
+            }).encode('utf-8'), content_type="application/json")
+            
+        messages.success(request, message)
+    except Exception as e:
+        logger.error(f"Error deleting recurring invoice {recurring_id}: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return HttpResponse(json.dumps({
+                "success": False, 
+                "message": "Failed to delete recurring schedule."
+            }).encode('utf-8'), content_type="application/json", status=500)
+        messages.error(request, "Failed to delete recurring schedule.")
+        
     return redirect("invoices:recurring_invoices")
 
 
