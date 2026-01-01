@@ -585,10 +585,10 @@
                                 
                                 const handler = PaystackPop.setup({
                                     key: '{{ paystack_public_key }}',
-                                    email: '{{ invoice.client_email }}',
-                                    amount: {{ invoice.total }} * 100,
-                                    currency: '{{ invoice.currency }}',
-                                    ref: 'pub_' + {{ invoice.id }} + '_' + Math.floor((Math.random() * 1000000000) + 1),
+                                    email: '{{ invoice.client_email|default:"client@example.com" }}',
+                                    amount: Math.round(parseFloat('{{ invoice.total }}') * 100),
+                                    currency: '{{ invoice.currency|default:"NGN" }}',
+                                    ref: 'pub_' + '{{ invoice.id }}' + '_' + Math.floor((Math.random() * 1000000000) + 1),
                                     callback: function(response) {
                                         window.location.href = "{% url 'public_payment_callback' invoice_id=invoice.id %}?reference=" + response.reference;
                                     },

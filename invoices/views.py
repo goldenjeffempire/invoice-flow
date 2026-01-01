@@ -247,10 +247,10 @@ def profile_update_ajax(request):
     errors = {}
     if user_form.errors:
         for field, error_list in user_form.errors.items():
-            errors[field] = error_list
+            errors[field] = [str(e) for e in error_list]
     if profile_form.errors:
         for field, error_list in profile_form.errors.items():
-            errors[field] = error_list
+            errors[field] = [str(e) for e in error_list]
         
     response_data = {
         "success": False, 
