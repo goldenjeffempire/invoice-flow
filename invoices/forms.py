@@ -222,7 +222,7 @@ class UserProfileForm(forms.ModelForm):
         choices=TIMEZONE_CHOICES,
         widget=forms.Select(
             attrs={
-                "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                "class": "form-input",
             }
         ),
     )
@@ -245,7 +245,7 @@ class UserProfileForm(forms.ModelForm):
         widgets = {
             "company_name": forms.TextInput(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "Your Company Name",
                 }
             ),
@@ -258,54 +258,72 @@ class UserProfileForm(forms.ModelForm):
             ),
             "business_email": forms.EmailInput(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "business@example.com",
                 }
             ),
             "business_phone": forms.TextInput(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "+1 (555) 123-4567",
                 }
             ),
             "business_address": forms.Textarea(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "rows": 3,
                     "placeholder": "123 Business Street, City, State, ZIP",
                 }
             ),
             "default_currency": forms.Select(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                 }
             ),
             "default_tax_rate": forms.NumberInput(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "step": "0.01",
                     "placeholder": "0.00",
                 }
             ),
             "invoice_prefix": forms.TextInput(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "INV-",
                 }
             ),
             "tax_id": forms.TextInput(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "Tax ID / VAT Number",
                 }
             ),
             "tax_name": forms.TextInput(
                 attrs={
-                    "class": "form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-indigo-600/20 focus:border-indigo-600 transition-all",
+                    "class": "form-input",
                     "placeholder": "e.g. VAT, GST",
                 }
             ),
         }
+
+    def clean_business_email(self):
+        email = self.cleaned_data.get('business_email')
+        if email:
+            validate_email_domain(email)
+        return email
+
+    def clean_business_phone(self):
+        phone = self.cleaned_data.get('business_phone')
+        if phone:
+            validate_phone_number(phone)
+        return phone
+
+    def clean_default_tax_rate(self):
+        rate = self.cleaned_data.get('default_tax_rate')
+        if rate is not None:
+            validate_tax_rate(rate)
+        return rate
 
 
 class NotificationPreferencesForm(forms.ModelForm):
