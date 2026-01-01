@@ -5,16 +5,188 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/settings-pages.css' %}">
+<style>
+    /* Modern, light-theme only overrides */
+    :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --primary-light: #e0e7ff;
+        --success: #10b981;
+        --danger: #ef4444;
+        --slate-50: #f8fafc;
+        --slate-100: #f1f5f9;
+        --slate-200: #e2e8f0;
+        --slate-900: #0f172a;
+    }
+
+    .settings-page-wrapper {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    @media (max-width: 1024px) {
+        .settings-page-wrapper {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .settings-sidebar {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--slate-200);
+        height: fit-content;
+        position: sticky;
+        top: 1rem;
+    }
+
+    .settings-nav-item {
+        display: flex;
+        items-center: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        width: 100%;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        color: #64748b;
+        transition: all 0.2s;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .settings-nav-item:hover {
+        background: var(--slate-50);
+        color: var(--slate-900);
+    }
+
+    .settings-nav-item.active {
+        background: var(--primary-light);
+        color: var(--primary);
+    }
+
+    .settings-nav-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    .settings-main {
+        background: white;
+        border-radius: 1rem;
+        padding: 2rem;
+        border: 1px solid var(--slate-200);
+    }
+
+    .settings-section-header {
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--slate-100);
+    }
+
+    .settings-section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--slate-900);
+    }
+
+    .settings-section-description {
+        color: #64748b;
+        margin-top: 0.5rem;
+    }
+
+    .settings-field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .settings-field-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--slate-900);
+    }
+
+    .settings-field-input, select, textarea, input[type="text"], input[type="email"], input[type="password"] {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--slate-200);
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        width: 100%;
+    }
+
+    .settings-field-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .settings-btn-primary {
+        background: var(--primary);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .settings-btn-primary:hover {
+        background: var(--primary-dark);
+    }
+
+    .settings-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem;
+        background: var(--slate-50);
+        border-radius: 1rem;
+        border: 1px solid var(--slate-200);
+    }
+
+    .settings-card-content h4 {
+        font-weight: 700;
+        color: var(--slate-900);
+        margin-bottom: 0.25rem;
+    }
+
+    .settings-card-content p {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .settings-card-action {
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-decoration: none;
+    }
+</style>
 {% endblock %}
+
+{% block page_title %}Settings{% endblock %}
+{% block page_subtitle %}Manage your account and payment preferences{% endblock %}
 
 {% block content %}
 <div class="settings-page-wrapper">
-    <!-- Sidebar Navigation -->
+    <!-- Settings Navigation -->
     <aside class="settings-sidebar">
-        <nav class="settings-nav" aria-label="Settings Navigation">
+        <nav class="settings-nav">
             <button onclick="switchTab('profile')" id="tab-profile" class="settings-nav-item active">
                 <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                 <span>Profile & Business</span>
+            </button>
+            <button onclick="switchTab('payments')" id="tab-payments" class="settings-nav-item">
+                <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span>Payments</span>
             </button>
             <button onclick="switchTab('security')" id="tab-security" class="settings-nav-item">
                 <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
@@ -24,316 +196,187 @@
                 <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                 <span>Notifications</span>
             </button>
-            <button onclick="switchTab('payments')" id="tab-payments" class="settings-nav-item">
-                <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <span>Payments</span>
-            </button>
-            <button onclick="switchTab('integrations')" id="tab-integrations" class="settings-nav-item">
-                <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
-                <span>Integrations</span>
-            </button>
         </nav>
     </aside>
 
     <!-- Main Content Area -->
     <main class="settings-main">
-        <!-- Profile Section -->
-        <section id="section-profile" class="settings-section animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <!-- Profile & Business Section -->
+        <section id="section-profile" class="settings-section">
             <div class="settings-section-header">
                 <h2 class="settings-section-title">Business Profile</h2>
                 <p class="settings-section-description">How your business appears on invoices and communications.</p>
             </div>
-            <form id="profile-form" class="space-y-6" onsubmit="handleFormSubmit(event, '{% url 'invoices:profile_update_ajax' %}')">
+            <form id="profile-form" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_profile_update' %}')">
                 {% csrf_token %}
-                <div class="settings-field-row">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="settings-field-group">
                         <label class="settings-field-label">First Name</label>
                         {{ user_form.first_name }}
-                        <div class="field-error text-red-500 text-xs font-medium" data-field="first_name"></div>
                     </div>
                     <div class="settings-field-group">
                         <label class="settings-field-label">Last Name</label>
                         {{ user_form.last_name }}
-                        <div class="field-error text-red-500 text-xs font-medium" data-field="last_name"></div>
                     </div>
                 </div>
                 <div class="settings-field-group">
                     <label class="settings-field-label">Email Address</label>
                     {{ user_form.email }}
-                    <div class="field-error text-red-500 text-xs font-medium" data-field="email"></div>
-                    <p class="settings-field-description">Used for account login and system notifications.</p>
                 </div>
                 <div class="settings-field-group">
                     <label class="settings-field-label">Company Name</label>
                     {{ profile_form.company_name }}
-                    <div class="field-error text-red-500 text-xs font-medium" data-field="company_name"></div>
                 </div>
                 <div class="settings-field-group">
                     <label class="settings-field-label">Business Address</label>
                     {{ profile_form.business_address }}
-                    <div class="field-error text-red-500 text-xs font-medium" data-field="business_address"></div>
                 </div>
-                <div class="settings-field-row">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="settings-field-group">
                         <label class="settings-field-label">Invoice Prefix</label>
                         {{ profile_form.invoice_prefix }}
-                        <div class="field-error text-red-500 text-xs font-medium" data-field="invoice_prefix"></div>
                     </div>
                     <div class="settings-field-group">
                         <label class="settings-field-label">Default Currency</label>
                         {{ profile_form.default_currency }}
                     </div>
                 </div>
-                <div class="settings-button-group">
-                    <button type="submit" class="settings-btn settings-btn-primary">
-                        Save Changes
-                    </button>
+                <button type="submit" class="settings-btn-primary">Save Business Profile</button>
+            </form>
+        </section>
+
+        <!-- Payments Section -->
+        <section id="section-payments" class="settings-section" style="display: none;">
+            <div class="settings-section-header">
+                <h2 class="settings-section-title">Payment Settings</h2>
+                <p class="settings-section-description">Configure how you accept payments via Paystack.</p>
+            </div>
+            
+            <div class="settings-card" style="margin-bottom: 2rem; background: #f0fdf4; border-color: #bbf7d0;">
+                <div class="settings-card-content">
+                    <h4 style="color: #166534;">Paystack Integrated</h4>
+                    <p style="color: #166534;">Your account is ready to receive payments directly. No additional setup required.</p>
                 </div>
+                <div style="color: #166534; display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                    Active
+                </div>
+            </div>
+
+            <form id="payments-form" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_payments_update' %}')">
+                {% csrf_token %}
+                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--slate-900); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">Payout Destination</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="settings-field-group">
+                        <label class="settings-field-label">Bank Name</label>
+                        {{ payment_form.bank_name }}
+                    </div>
+                    <div class="settings-field-group">
+                        <label class="settings-field-label">Account Number</label>
+                        {{ payment_form.account_number_encrypted }}
+                    </div>
+                </div>
+                <div class="settings-field-group">
+                    <label class="settings-field-label">Account Holder Name</label>
+                    {{ payment_form.account_name }}
+                </div>
+                
+                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--slate-900); text-transform: uppercase; letter-spacing: 0.05em; margin: 2rem 0 1rem;">Accepted Payment Methods</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border: 1px solid var(--slate-200); border-radius: 0.5rem; cursor: pointer;">
+                        <span style="font-size: 0.875rem; font-weight: 600;">Card Payments</span>
+                        {{ payment_form.enable_card_payments }}
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border: 1px solid var(--slate-200); border-radius: 0.5rem; cursor: pointer;">
+                        <span style="font-size: 0.875rem; font-weight: 600;">Bank Transfers</span>
+                        {{ payment_form.enable_bank_transfers }}
+                    </label>
+                </div>
+                
+                <button type="submit" class="settings-btn-primary">Update Payment Settings</button>
             </form>
         </section>
 
         <!-- Security Section -->
-        <section id="section-security" class="settings-section hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <section id="section-security" class="settings-section" style="display: none;">
             <div class="settings-section-header">
-                <h2 class="settings-section-title">Security Settings</h2>
-                <p class="settings-section-description">Protect your account with a strong password and multi-factor authentication.</p>
+                <h2 class="settings-section-title">Security</h2>
+                <p class="settings-section-description">Manage your password and account protection.</p>
             </div>
-            
-            <form id="security-form" class="space-y-6" onsubmit="handleFormSubmit(event, '{% url 'invoices:security_update_ajax' %}')">
+            <form id="security-form" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_security_update' %}')">
                 {% csrf_token %}
-                <div class="max-w-md space-y-6">
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Current Password</label>
-                        {{ password_form.current_password }}
-                        <div class="field-error text-red-500 text-xs font-medium" data-field="current_password"></div>
-                    </div>
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">New Password</label>
-                        {{ password_form.new_password }}
-                        <div class="field-error text-red-500 text-xs font-medium" data-field="new_password"></div>
-                        <p class="settings-field-description">Must be at least 12 characters with letters and numbers.</p>
-                    </div>
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Confirm New Password</label>
-                        {{ password_form.confirm_password }}
-                        <div class="field-error text-red-500 text-xs font-medium" data-field="confirm_password"></div>
-                    </div>
+                <div class="settings-field-group">
+                    <label class="settings-field-label">Current Password</label>
+                    {{ password_form.current_password }}
                 </div>
-                <div class="settings-button-group">
-                    <button type="submit" class="settings-btn settings-btn-primary">
-                        Update Password
-                    </button>
+                <div class="settings-field-group">
+                    <label class="settings-field-label">New Password</label>
+                    {{ password_form.new_password }}
                 </div>
+                <div class="settings-field-group">
+                    <label class="settings-field-label">Confirm New Password</label>
+                    {{ password_form.confirm_password }}
+                </div>
+                <button type="submit" class="settings-btn-primary">Update Password</button>
             </form>
 
-            <div class="mt-12 pt-8 border-t border-gray-100">
+            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
                 <div class="settings-card">
                     <div class="settings-card-content">
-                        <h4>Two-Factor Authentication (2FA)</h4>
-                        <p>Adds an extra layer of security to your account.</p>
+                        <h4>Two-Factor Authentication</h4>
+                        <p>Secure your account with an extra verification layer.</p>
                     </div>
                     {% if mfa_enabled %}
-                    <span class="flex items-center text-green-600 font-bold bg-green-50 px-4 py-2 rounded-lg border border-green-100">
-                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-                        Active
-                    </span>
+                    <span style="color: var(--success); font-weight: 700; background: #ecfdf5; padding: 0.5rem 1rem; border-radius: 0.5rem;">Enabled</span>
                     {% else %}
-                    <a href="{% url 'invoices:mfa_setup' %}" class="settings-card-action">
-                        Enable 2FA
-                    </a>
+                    <a href="{% url 'invoices:mfa_setup' %}" class="settings-card-action">Enable 2FA</a>
                     {% endif %}
                 </div>
             </div>
         </section>
 
         <!-- Notifications Section -->
-        <section id="section-notifications" class="settings-section hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <section id="section-notifications" class="settings-section" style="display: none;">
             <div class="settings-section-header">
                 <h2 class="settings-section-title">Notifications</h2>
-                <p class="settings-section-description">Stay updated on your invoicing activity and account security.</p>
+                <p class="settings-section-description">Choose how you want to be notified of activity.</p>
             </div>
-            <form id="notifications-form" class="space-y-4" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_profile_update' %}')">
+            <form id="notifications-form" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_profile_update' %}')">
                 {% csrf_token %}
-                <div class="grid grid-cols-1 gap-3">
+                <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
                     {% for field in notification_form %}
-                    <label class="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:border-primary-light hover:bg-primary-light/30 transition-all cursor-pointer group">
-                        <div class="flex flex-col">
-                            <span class="text-sm font-bold text-gray-900">{{ field.label }}</span>
-                            {% if field.help_text %}<span class="text-xs text-gray-500 mt-0.5">{{ field.help_text }}</span>{% endif %}
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem; border: 1px solid var(--slate-200); border-radius: 0.75rem; cursor: pointer;">
+                        <div>
+                            <span style="display: block; font-weight: 600; color: var(--slate-900);">{{ field.label }}</span>
+                            {% if field.help_text %}<span style="font-size: 0.75rem; color: #64748b;">{{ field.help_text }}</span>{% endif %}
                         </div>
-                        <div class="relative inline-flex items-center cursor-pointer">
-                            {{ field }}
-                        </div>
+                        {{ field }}
                     </label>
                     {% endfor %}
                 </div>
-                <div class="settings-button-group">
-                    <button type="submit" class="settings-btn settings-btn-primary">
-                        Save Preferences
-                    </button>
-                </div>
+                <button type="submit" class="settings-btn-primary">Save Notification Preferences</button>
             </form>
-        </section>
-
-        <!-- Payments Section -->
-        <section id="section-payments" class="settings-section hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div class="settings-section-header">
-                <h2 class="settings-section-title">Payment Preferences</h2>
-                <p class="settings-section-description">Manage how you accept payments and handle payouts.</p>
-            </div>
-            <form id="payments-form" class="space-y-8" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_payments_update' %}')">
-                {% csrf_token %}
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Preferred Currency</label>
-                        {{ payment_form.preferred_currency }}
-                        <p class="settings-field-description">The main currency used for your transactions.</p>
-                    </div>
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Payout Schedule</label>
-                        {{ payment_form.payout_schedule }}
-                        <p class="settings-field-description">How often you receive funds to your bank account.</p>
-                    </div>
-                </div>
-
-                <div class="space-y-4 pt-6 border-t border-gray-100">
-                    <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest">Accepted Methods</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <label class="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-slate-50 transition-all cursor-pointer group">
-                            <span class="text-sm font-bold text-gray-700">Card Payments</span>
-                            {{ payment_form.enable_card_payments }}
-                        </label>
-                        <label class="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-slate-50 transition-all cursor-pointer group">
-                            <span class="text-sm font-bold text-gray-700">Bank Transfers</span>
-                            {{ payment_form.enable_bank_transfers }}
-                        </label>
-                        <label class="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-slate-50 transition-all cursor-pointer group">
-                            <span class="text-sm font-bold text-gray-700">Mobile Money</span>
-                            {{ payment_form.enable_mobile_money }}
-                        </label>
-                        <label class="flex items-center justify-between p-4 rounded-xl border border-gray-100 hover:bg-slate-50 transition-all cursor-pointer group">
-                            <span class="text-sm font-bold text-gray-700">USSD</span>
-                            {{ payment_form.enable_ussd }}
-                        </label>
-                    </div>
-                </div>
-
-                <div class="space-y-6 pt-6 border-t border-gray-100">
-                    <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest">Withdrawal Account</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="settings-field-group">
-                            <label class="settings-field-label">Bank Name</label>
-                            {{ payment_form.bank_name }}
-                        </div>
-                        <div class="settings-field-group">
-                            <label class="settings-field-label">Account Number</label>
-                            {{ payment_form.account_number_encrypted }}
-                        </div>
-                        <div class="settings-field-group md:col-span-2">
-                            <label class="settings-field-label">Account Name</label>
-                            {{ payment_form.account_name }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="settings-button-group">
-                    <button type="submit" class="settings-btn settings-btn-primary">
-                        Save Preferences
-                    </button>
-                </div>
-            </form>
-        </section>
-
-        <!-- Integrations Section -->
-        <section id="section-integrations" class="settings-section hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div class="settings-section-header">
-                <h2 class="settings-section-title">Integrations</h2>
-                <p class="settings-section-description">Connect third-party services to automate your workflow.</p>
-            </div>
-            
-            <div class="space-y-8">
-                <!-- Paystack Integration Card -->
-                <div class="p-6 rounded-2xl border border-gray-100 bg-slate-50/50">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100">
-                                <img src="https://paystack.com/favicon.ico" class="h-6 w-6" alt="Paystack">
-                            </div>
-                            <div>
-                                <h3 class="text-base font-bold text-gray-900">Paystack</h3>
-                                <p class="text-xs text-gray-500">Process online payments securely.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-wider border border-emerald-100">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                Connected
-                            </span>
-                        </div>
-                    </div>
-
-                    <form onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_payments_update' %}')" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {% csrf_token %}
-                        <div class="settings-field-group">
-                            <label class="settings-field-label">Public Key</label>
-                            {{ payment_form.paystack_public_key }}
-                        </div>
-                        <div class="settings-field-group">
-                            <label class="settings-field-label">Secret Key</label>
-                            {{ payment_form.paystack_secret_key }}
-                        </div>
-                        <div class="md:col-span-2 flex justify-end">
-                            <button type="submit" class="settings-btn h-10 px-6 py-0">Save Keys</button>
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Google Calendar Placeholder -->
-                <div class="p-6 rounded-2xl border border-gray-100 bg-white opacity-60 grayscale cursor-not-allowed">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center border border-gray-100">
-                                <svg class="w-6 h-6 text-blue-500" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
-                            </div>
-                            <div>
-                                <h3 class="text-base font-bold text-gray-900">Google Calendar</h3>
-                                <p class="text-xs text-gray-500">Coming soon: Sync due dates with your calendar.</p>
-                            </div>
-                        </div>
-                        <button disabled class="settings-card-action">Connect</button>
-                    </div>
-                </div>
-            </div>
         </section>
     </main>
 </div>
 
-<!-- Toast Notification -->
-<div id="toast-container" class="fixed bottom-8 right-8 z-[100] space-y-3 pointer-events-none"></div>
+<!-- Toast Container -->
+<div id="toast-container" style="position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; display: flex; flex-direction: column; gap: 0.5rem;"></div>
 
 <script>
     function switchTab(tabId) {
-        // Update Sections
-        document.querySelectorAll('.settings-section').forEach(s => s.classList.add('hidden'));
-        document.getElementById('section-' + tabId).classList.remove('hidden');
+        document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
+        document.getElementById('section-' + tabId).style.display = 'block';
 
-        // Update Buttons
         document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
         document.getElementById('tab-' + tabId).classList.add('active');
         
-        // Update URL hash
         history.replaceState(null, null, '#' + tabId);
-        
-        // Mobile scroll to top of section
-        if (window.innerWidth < 1024) {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash.substring(1);
-        if (hash && ['profile', 'security', 'notifications', 'payments', 'integrations'].includes(hash)) {
+        if (hash && ['profile', 'security', 'notifications', 'payments'].includes(hash)) {
             switchTab(hash);
         }
     });
@@ -341,22 +384,11 @@
     async function handleFormSubmit(event, url) {
         event.preventDefault();
         const form = event.target;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalContent = submitBtn.innerHTML;
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerText;
         
-        // Clear errors
-        form.querySelectorAll('.field-error').forEach(el => el.innerText = '');
-        form.querySelectorAll('.form-input, input, textarea, select').forEach(el => {
-            el.classList.remove('border-danger', 'ring-danger-light');
-        });
-
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `
-            <svg class="animate-spin h-5 w-5 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-        `;
+        btn.disabled = true;
+        btn.innerText = 'Saving...';
 
         try {
             const formData = new FormData(form);
@@ -364,73 +396,39 @@
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             });
             
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                showToast(result.message, 'success');
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showToast(data.message || 'Settings updated successfully!', 'success');
             } else {
-                if (result.errors) {
-                    Object.keys(result.errors).forEach(field => {
-                        const errorEl = form.querySelector(`.field-error[data-field="${field}"]`);
-                        if (errorEl) {
-                            errorEl.innerText = Array.isArray(result.errors[field]) ? result.errors[field].join(', ') : result.errors[field];
-                        }
-                        const inputEl = form.querySelector(`[name="${field}"]`);
-                        if (inputEl) {
-                            inputEl.classList.add('border-danger', 'ring-danger-light');
-                        }
-                    });
-                }
-                showToast(result.message || 'Please fix the errors and try again.', 'error');
+                showToast(data.message || 'Error updating settings. Please check the form.', 'error');
             }
-        } catch (err) {
-            console.error('Submission error:', err);
-            showToast('A connection error occurred. Please try again.', 'error');
+        } catch (e) {
+            showToast('Connection error. Please try again.', 'error');
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalContent;
+            btn.disabled = false;
+            btn.innerText = originalText;
         }
     }
 
-    function showToast(message, type) {
+    function showToast(msg, type) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
+        toast.style.padding = '1rem 1.5rem';
+        toast.style.borderRadius = '0.5rem';
+        toast.style.background = 'white';
+        toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+        toast.style.border = `1px solid ${type === 'success' ? '#bbf7d0' : '#fecaca'}`;
+        toast.style.color = type === 'success' ? '#166534' : '#991b1b';
+        toast.style.fontWeight = '600';
+        toast.innerText = msg;
         
-        toast.className = `min-w-[320px] pointer-events-auto flex items-center p-4 rounded-xl shadow-xl border transition-all duration-500 transform translate-y-20 opacity-0 ${
-            type === 'success' ? 'bg-white border-success-light text-success' : 'bg-white border-danger-light text-danger'
-        }`;
-        
-        toast.innerHTML = `
-            <div class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-lg ${type === 'success' ? 'bg-success-light' : 'bg-danger-light'} mr-4">
-                ${type === 'success' 
-                    ? '<svg class="h-6 w-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>' 
-                    : '<svg class="h-6 w-6 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>'}
-            </div>
-            <div class="flex-1">
-                <p class="font-bold text-sm leading-tight">${message}</p>
-            </div>
-            <button onclick="this.parentElement.remove()" class="ml-4 text-gray-400 hover:text-gray-600">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-        `;
-
         container.appendChild(toast);
-        
-        // Trigger entry animation
-        requestAnimationFrame(() => {
-            toast.classList.remove('translate-y-20', 'opacity-0');
-        });
-
-        // Auto remove
-        setTimeout(() => {
-            toast.classList.add('translate-y-20', 'opacity-0');
-            setTimeout(() => toast.remove(), 500);
-        }, 5000);
+        setTimeout(() => toast.remove(), 5000);
     }
 </script>
 {% endblock %}

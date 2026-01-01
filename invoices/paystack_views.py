@@ -343,12 +343,13 @@ def public_invoice_view(request, invoice_id):
     if invoice.status == "paid":
         return render(request, "payments/invoice_paid.html", {"invoice": invoice})
     
-    paystack = get_paystack_service()
+    # If platform integrated, we use the master public key
+    paystack_public_key = settings.PAYSTACK_PUBLIC_KEY
     
     context = {
         "invoice": invoice,
-        "paystack_configured": paystack.is_configured,
-        "paystack_public_key": paystack.public_key if paystack.is_configured else None,
+        "paystack_configured": True,
+        "paystack_public_key": paystack_public_key,
     }
     
     return render(request, "payments/public_invoice.html", context)
