@@ -166,10 +166,159 @@
             {% else %}
             <a href="{% url 'invoices:resume_recurring' recurring.id %}" class="btn-action btn-resume">Resume</a>
             {% endif %}
+            <button type="button" class="btn-action btn-danger-outline" onclick="confirmDeleteRecurring('{{ recurring.id }}', '{{ recurring.client_name }}')">
+                Delete
+            </button>
         </div>
     </div>
     {% endfor %}
 </div>
+
+<!-- Delete Recurring Modal -->
+<div id="deleteRecurringModal" class="modal-backdrop" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title">Delete Recurring Schedule</h3>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="warning-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                <p>This will permanently stop and delete the recurring schedule for <strong id="deleteClientName"></strong>. This action cannot be undone.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-modal btn-cancel" onclick="closeDeleteModal()">Cancel, Keep It</button>
+            <form id="deleteRecurringForm" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="btn-modal btn-confirm-delete">Yes, Delete Schedule</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-danger-outline {
+        background: transparent;
+        border: 1px solid var(--danger);
+        color: var(--danger);
+    }
+    .btn-danger-outline:hover {
+        background: var(--danger-light);
+    }
+    
+    /* Modal Styles (Shared with Invoice List) */
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 20px;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    .modal-container {
+        background: white;
+        width: 100%;
+        max-width: 480px;
+        border-radius: var(--radius-2xl);
+        box-shadow: var(--shadow-2xl);
+        animation: slideUp 0.3s ease-out;
+    }
+
+    .modal-header {
+        padding: 24px 24px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--gray-400);
+        cursor: pointer;
+        padding: 4px;
+        line-height: 1;
+    }
+
+    .modal-body { padding: 0 24px 24px; }
+
+    .warning-box {
+        background: var(--danger-light);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        color: var(--danger);
+    }
+
+    .warning-box svg { width: 24px; height: 24px; flex-shrink: 0; }
+    .warning-box p { font-size: 0.95rem; line-height: 1.5; margin: 0; }
+
+    .modal-footer {
+        padding: 20px 24px 24px;
+        background: var(--gray-50);
+        border-bottom-left-radius: var(--radius-2xl);
+        border-bottom-right-radius: var(--radius-2xl);
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+    }
+
+    .btn-modal {
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: var(--transition-fast);
+        border: none;
+    }
+
+    .btn-cancel { background: white; color: var(--gray-600); border: 1px solid var(--gray-200); }
+    .btn-cancel:hover { background: var(--gray-50); color: var(--gray-900); }
+
+    .btn-confirm-delete { background: var(--danger); color: white; }
+    .btn-confirm-delete:hover { background: #dc2626; transform: translateY(-1px); }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<script>
+    function confirmDeleteRecurring(id, clientName) {
+        const modal = document.getElementById('deleteRecurringModal');
+        const form = document.getElementById('deleteRecurringForm');
+        const nameSpan = document.getElementById('deleteClientName');
+        
+        nameSpan.textContent = clientName;
+        form.action = `/recurring/${id}/delete/`;
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDeleteModal() {
+        const modal = document.getElementById('deleteRecurringModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close on backdrop click
+    window.onclick = function(event) {
+        const modal = document.getElementById('deleteRecurringModal');
+        if (event.target == modal) {
+            closeDeleteModal();
+        }
+    }
+</script>
 {% else %}
 <div class="empty-state">
     <div class="empty-icon">
