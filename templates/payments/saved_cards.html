@@ -1,117 +1,81 @@
 {% extends "base/layout-authenticated.html" %}
 {% load static %}
-{% block title %}Saved Cards{% endblock %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/dashboard-light.css' %}">
-<style>
-.cards-container { max-width: 800px; margin: 0 auto; padding: 24px; }
-.card-item { background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 24px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
-.card-info { display: flex; align-items: center; gap: 16px; }
-.card-icon { width: 56px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); display: flex; align-items: center; justify-content: center; }
-.card-icon svg { width: 28px; height: 28px; color: white; }
-.card-details h3 { font-size: 1rem; font-weight: 600; color: #0f172a; margin: 0; }
-.card-details p { font-size: 0.875rem; color: #64748b; margin: 4px 0 0; }
-.card-actions { display: flex; gap: 8px; align-items: center; }
-.primary-badge { background: #d1fae5; color: #059669; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-.expired-badge { background: #fee2e2; color: #dc2626; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
-.btn-icon { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748b; }
-.btn-icon:hover { background: #f8fafc; }
-.btn-icon.danger:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
-.back-link { display: inline-flex; align-items: center; gap: 8px; color: #6366f1; text-decoration: none; font-size: 0.875rem; margin-bottom: 16px; }
-.empty-state { text-align: center; padding: 64px 24px; background: white; border-radius: 16px; border: 1px solid #e2e8f0; }
-.empty-state svg { width: 64px; height: 64px; color: #cbd5e1; margin-bottom: 16px; }
-</style>
-{% endblock %}
-
-{% block footer %}{% endblock %}
+{% block title %}Saved Cards - InvoiceFlow{% endblock %}
 
 {% block content %}
-<div class="dashboard-layout">
-    
-    <main class="dashboard-main">
-        <header class="dashboard-light-header">
-            <div class="dashboard-light-header-content">
-                <h1>Saved Cards</h1>
-                <p>Manage your saved payment cards</p>
-            </div>
-        </header>
-        
-        <div class="cards-container">
-            <a href="{% url 'invoices:settings' %}" class="back-link">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="15 18 9 12 15 6"/>
-                </svg>
-                Back to Payment Settings
-            </a>
-            
-            {% if messages %}
-            {% for message in messages %}
-            <div style="margin-bottom: 16px; padding: 16px; border-radius: 12px; {% if 'success' in message.tags %}background: #ecfdf5; color: #065f46;{% else %}background: #fef2f2; color: #991b1b;{% endif %}">
-                {{ message }}
-            </div>
-            {% endfor %}
-            {% endif %}
-            
-            {% if cards %}
-            {% for card in cards %}
-            <div class="card-item">
-                <div class="card-info">
-                    <div class="card-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="1" y="4" width="22" height="16" rx="2"/>
-                            <line x1="1" y1="10" x2="23" y2="10"/>
-                        </svg>
-                    </div>
-                    <div class="card-details">
-                        <h3>{{ card.display_name }}</h3>
-                        <p>Expires {{ card.exp_month }}/{{ card.exp_year }} {% if card.bank %}- {{ card.bank }}{% endif %}</p>
-                    </div>
+<div class="section-header">
+    <div class="header-content">
+        <h2 class="section-title">Saved Cards</h2>
+        <p class="header-subtitle">Manage your saved payment cards</p>
+    </div>
+</div>
+
+<div style="max-width: 800px; margin: 0 auto;">
+    <a href="{% url 'invoices:settings' %}" class="link-secondary" style="display: flex; align-items: center; gap: 8px; margin-bottom: 24px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back to Payment Settings
+    </a>
+
+    {% if cards %}
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        {% for card in cards %}
+        <div class="card" style="padding: 24px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 56px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #1e3a8a, #3b82f6); display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; color: white;">
+                        <rect x="1" y="4" width="22" height="16" rx="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
                 </div>
-                <div class="card-actions">
-                    {% if card.is_expired %}
-                    <span class="expired-badge">Expired</span>
-                    {% elif card.is_primary %}
-                    <span class="primary-badge">Primary</span>
-                    {% else %}
-                    <form method="post" action="{% url 'set_primary_card' card.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn-icon" title="Set as Primary">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                            </svg>
-                        </button>
-                    </form>
-                    {% endif %}
-                    <button type="button" 
-                            class="btn-icon danger delete-card-btn" 
-                            title="Remove Card"
-                            onclick="confirmDeleteCard('{{ card.id }}', '{{ card.display_name }}')">
+                <div>
+                    <h3 style="font-size: 1rem; font-weight: 600; color: var(--gray-900); margin: 0;">{{ card.display_name }}</h3>
+                    <p style="font-size: 0.875rem; color: var(--gray-500); margin: 4px 0 0;">Expires {{ card.exp_month }}/{{ card.exp_year }} {% if card.bank %}- {{ card.bank }}{% endif %}</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                {% if card.is_expired %}
+                <span class="badge badge-overdue">Expired</span>
+                {% elif card.is_primary %}
+                <span class="badge badge-paid">Primary</span>
+                {% else %}
+                <form method="post" action="{% url 'set_primary_card' card.id %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-header-icon" title="Set as Primary">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                         </svg>
                     </button>
-                </div>
+                </form>
+                {% endif %}
+                <button type="button" class="btn-header-icon" style="color: var(--danger);" title="Remove Card" onclick="confirmDeleteCard('{{ card.id }}', '{{ card.display_name }}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                    </svg>
+                </button>
             </div>
-            {% endfor %}
-            {% else %}
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="1" y="4" width="22" height="16" rx="2"/>
-                    <line x1="1" y1="10" x2="23" y2="10"/>
-                </svg>
-                <h3 style="color: #374151; margin: 0 0 8px;">No saved cards</h3>
-                <p style="color: #64748b; margin: 0; max-width: 400px; margin: 0 auto;">Cards are automatically saved when you make a payment. Your saved cards will appear here.</p>
-            </div>
-            {% endif %}
         </div>
-    </main>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="1" y="4" width="22" height="16" rx="2"/>
+                <line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+        </div>
+        <h3>No saved cards</h3>
+        <p>Cards are automatically saved when you make a payment. Your saved cards will appear here.</p>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Delete Card Modal -->
 <div id="deleteCardModal" class="modal-backdrop" style="display: none;">
-    <div class="modal-container">
+    <div class="modal-content">
         <div class="modal-header">
             <h3 class="modal-title">Remove Card</h3>
             <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
@@ -121,44 +85,11 @@
             <p style="color: var(--danger); font-size: 0.875rem; margin-top: 0.5rem;">This action cannot be undone.</p>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn-modal btn-cancel" onclick="closeDeleteModal()">Cancel</button>
-            <button type="button" class="btn-modal btn-confirm-delete" id="confirmDeleteBtn">Yes, Remove Card</button>
+            <button type="button" class="btn-pagination" onclick="closeDeleteModal()">Cancel</button>
+            <button type="button" class="btn-header" style="background: var(--danger);" id="confirmDeleteBtn">Remove Card</button>
         </div>
     </div>
 </div>
-
-<style>
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.5);
-        backdrop-filter: blur(4px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        padding: 20px;
-        animation: fadeIn 0.2s ease-out;
-    }
-    .modal-container {
-        background: white;
-        width: 100%;
-        max-width: 440px;
-        border-radius: 20px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        animation: slideUp 0.3s ease-out;
-    }
-    .modal-header { padding: 24px; display: flex; justify-content: space-between; align-items: center; }
-    .modal-title { font-size: 1.25rem; font-weight: 700; color: #0f172a; }
-    .modal-close { background: none; border: none; font-size: 1.5rem; color: #94a3b8; cursor: pointer; }
-    .modal-body { padding: 0 24px 24px; color: #475569; }
-    .modal-footer { padding: 20px 24px; background: #f8fafc; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; display: flex; gap: 12px; justify-content: flex-end; }
-    .btn-modal { padding: 10px 20px; border-radius: 10px; font-weight: 600; font-size: 0.95rem; cursor: pointer; border: none; }
-    .btn-cancel { background: white; color: #64748b; border: 1px solid #e2e8f0; }
-    .btn-confirm-delete { background: #ef4444; color: white; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-</style>
 
 <script>
     let cardToDelete = null;
@@ -178,7 +109,7 @@
         const btn = this;
         const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Removing...';
+        btn.innerHTML = '<span class="loading-spinner"></span> Removing...';
         
         fetch(`/payments/cards/${cardToDelete}/delete/`, {
             method: 'POST',
@@ -191,19 +122,34 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                window.location.reload();
+                closeDeleteModal();
+                showToast('Success', 'Card removed successfully', 'success');
+                setTimeout(() => window.location.reload(), 500);
             } else {
-                alert(data.message || 'Failed to delete card.');
+                showToast('Error', data.message || 'Failed to delete card.', 'error');
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred. Please try again.');
+            showToast('Error', 'An error occurred. Please try again.', 'error');
             btn.disabled = false;
             btn.textContent = originalText;
         });
     });
+
+    function showToast(title, message, type) {
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            alert(message);
+        }
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('deleteCardModal');
+        if (event.target == modal) closeDeleteModal();
+    }
 </script>
 {% endblock %}
