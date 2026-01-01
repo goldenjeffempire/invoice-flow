@@ -405,7 +405,12 @@
             if (response.ok && data.success) {
                 showToast(data.message || 'Settings updated successfully!', 'success');
             } else {
-                showToast(data.message || 'Error updating settings. Please check the form.', 'error');
+                let errorMsg = data.message || 'Error updating settings.';
+                if (data.errors) {
+                    const firstError = Object.values(data.errors)[0];
+                    if (Array.isArray(firstError)) errorMsg = firstError[0];
+                }
+                showToast(errorMsg, 'error');
             }
         } catch (e) {
             showToast('Connection error. Please try again.', 'error');

@@ -257,7 +257,7 @@ def profile_update_ajax(request):
         "errors": errors,
         "message": "Please correct the errors below."
     }
-    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
+    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 @login_required
 @require_POST
@@ -277,7 +277,7 @@ def notifications_update_ajax(request):
             return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
             
     response_data = {"success": False, "errors": form.errors}
-    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
+    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 @login_required
 @require_POST
@@ -302,10 +302,10 @@ def security_update_ajax(request):
                 return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
         else:
             response_data = {"success": False, "errors": {"current_password": ["Incorrect current password"]}}
-            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
+            return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
     
     response_data = {"success": False, "errors": form.errors}
-    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
+    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 @login_required
 @require_POST
@@ -328,7 +328,7 @@ def payment_settings_update_ajax(request):
             return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=500)
     
     response_data = {"success": False, "errors": form.errors}
-    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=400)
+    return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 
 def reset_password(request, token):
