@@ -817,9 +817,8 @@ class PaymentSettingsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Ensure we don't accidentally require fields that aren't strictly necessary for the form to save
-        for field in self.fields:
-            if field in ['paystack_public_key', 'paystack_secret_key', 'paystack_webhook_secret', 'account_number_encrypted', 'account_name', 'bank_name']:
-                self.fields[field].required = False
+        for field_name in self.fields:
+            self.fields[field_name].required = False
 
 
 class SubaccountSetupForm(forms.Form):
