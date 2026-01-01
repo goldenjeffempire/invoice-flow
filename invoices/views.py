@@ -855,17 +855,16 @@ def edit_invoice(request, invoice_id):
 
 
 @login_required
+@require_POST
 def delete_invoice(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
-    if request.method == "POST":
-        user_id = request.user.id
-        invoice.delete()
-        from invoices.services import AnalyticsService
+    user_id = request.user.id
+    invoice.delete()
+    from invoices.services import AnalyticsService
 
-        AnalyticsService.invalidate_user_cache(user_id)
-        messages.success(request, "Invoice deleted successfully!")
-        return redirect("dashboard")
-    return render(request, "invoices/delete_invoice.html", {"invoice": invoice})
+    AnalyticsService.invalidate_user_cache(user_id)
+    messages.success(request, "Invoice deleted successfully!")
+    return redirect("invoices:invoice_list")
 
 
 @login_required
@@ -2244,14 +2243,12 @@ def edit_recurring_invoice(request, recurring_id):
 
 
 @login_required
+@require_POST
 def delete_recurring_invoice(request, recurring_id):
     """Delete a recurring invoice."""
     recurring = get_object_or_404(RecurringInvoice, id=recurring_id, user=request.user)
-    
-    if request.method == "POST":
-        recurring.delete()
-        messages.success(request, "Recurring invoice deleted!")
-    
+    recurring.delete()
+    messages.success(request, "Recurring invoice deleted successfully!")
     return redirect("invoices:recurring_invoices")
 
 
