@@ -347,7 +347,8 @@ def public_invoice_view(request, invoice_id):
     paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', 'pk_test_placeholder')
     
     # Check for payment preferences
-    payment_settings = getattr(invoice.user, 'payment_settings', None)
+    from .models import PaymentSettings
+    payment_settings, _ = PaymentSettings.objects.get_or_create(user=invoice.user)
     
     context = {
         "invoice": invoice,
