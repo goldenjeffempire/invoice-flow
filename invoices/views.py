@@ -3,32 +3,7 @@ import hashlib
 import json
 import logging
 import os
-import urllib.parse
-from datetime import datetime, date, timedelta
-from decimal import Decimal
-from functools import wraps
-
-from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator
-from django.db import transaction, models
-from django.db.models import Count, Q, Sum, F, Avg
-from django.db.models.functions import TruncMonth
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.utils import timezone
-
-from .forms import (
-    InvoiceForm,
-    InvoiceTemplateForm,
-    RecurringInvoiceForm,
-    SignUpForm,
-    UserProfileForm,
-)
-from .models import Invoice, InvoiceTemplate, LineItem, RecurringInvoice, UserProfile
-from .search_filters import InvoiceExport
+from django.views.decorators.http import require_POST
 
 logger = logging.getLogger(__name__)
 
@@ -213,89 +188,87 @@ def forgot_password_sent(request):
     return render(request, "auth/forgot_password_sent.html")
 
 @login_required
+@require_POST
 def profile_update_ajax(request):
-    if request.method == "POST":
-        from .forms import UserDetailsForm, UserProfileForm
-        user_form = UserDetailsForm(request.POST, instance=request.user)
-        profile_form = UserProfileForm(request.POST, request.FILES, instance=request.user.profile)
-        
-        if user_form.is_valid() and profile_form.is_valid():
-            try:
-                with transaction.atomic():
-                    user_form.save()
-                    profile_form.save()
-                
-                # Invalidate cache to reflect changes in dashboard/header
-                from .services import AnalyticsService
-                AnalyticsService.invalidate_user_cache(request.user.id)
-                
-                return HttpResponse(json.dumps({
-                    "success": True, 
-                    "message": "Profile updated successfully! Your changes are now live."
-                }), content_type="application/json")
-            except Exception as e:
-                logger.error(f"Error updating profile: {e}")
-                return HttpResponse(json.dumps({
-                    "success": False,
-                    "message": "A database error occurred. Please try again later."
-                }), content_type="application/json", status=500)
-        
-        errors = {}
-        for field, error_list in user_form.errors.items():
-            errors[field] = error_list
-        for field, error_list in profile_form.errors.items():
-            errors[field] = error_list
+    from .forms import UserDetailsForm, UserProfileForm
+    user_form = UserDetailsForm(request.POST, instance=request.user)
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    profile_form = UserProfileForm(request.POST, request.FILES, instance=profile)
+    
+    if user_form.is_valid() and profile_form.is_valid():
+        try:
+            with transaction.atomic():
+                user_form.save()
+                profile_form.save()
             
-        return HttpResponse(json.dumps({
-            "success": False, 
-            "errors": errors,
-            "message": "Please correct the errors below."
-        }), content_type="application/json", status=400)
-    return HttpResponse(status=405)
+            # Invalidate cache to reflect changes in dashboard/header
+            from .services import AnalyticsService
+            AnalyticsService.invalidate_user_cache(request.user.id)
+            
+            return HttpResponse(json.dumps({
+                "success": True, 
+                "message": "Profile updated successfully! Your changes are now live."
+            }), content_type="application/json")
+        except Exception as e:
+            logger.error(f"Error updating profile for user {request.user.id}: {e}")
+            return HttpResponse(json.dumps({
+                "success": False,
+                "message": "A database error occurred. Please try again later."
+            }), content_type="application/json", status=500)
+    
+    errors = {}
+    for field, error_list in user_form.errors.items():
+        errors[field] = error_list
+    for field, error_list in profile_form.errors.items():
+        errors[field] = error_list
+        
+    return HttpResponse(json.dumps({
+        "success": False, 
+        "errors": errors,
+        "message": "Please correct the errors below."
+    }), content_type="application/json", status=400)
 
 @login_required
+@require_POST
 def security_update_ajax(request):
-    if request.method == "POST":
-        from .forms import PasswordChangeForm
-        form = PasswordChangeForm(request.POST)
-        if form.is_valid():
-            user = request.user
-            if user.check_password(form.cleaned_data["current_password"]):
-                try:
-                    user.set_password(form.cleaned_data["new_password"])
-                    user.save()
-                    login(request, user) # Re-login to keep session
-                    return HttpResponse(json.dumps({"success": True, "message": "Password updated successfully"}), content_type="application/json")
-                except Exception as e:
-                    logger.error(f"Error updating password: {e}")
-                    return HttpResponse(json.dumps({
-                        "success": False,
-                        "message": "Failed to update password. Please try again."
-                    }), content_type="application/json", status=500)
-            else:
-                return HttpResponse(json.dumps({"success": False, "errors": {"current_password": ["Incorrect current password"]}}), content_type="application/json", status=400)
-        return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
-    return HttpResponse(status=405)
-
-@login_required
-def payment_settings_update_ajax(request):
-    if request.method == "POST":
-        from .forms import PaymentSettingsForm
-        from .models import PaymentSettings
-        payment_settings, _ = PaymentSettings.objects.get_or_create(user=request.user)
-        form = PaymentSettingsForm(request.POST, instance=payment_settings)
-        if form.is_valid():
+    from .forms import PasswordChangeForm
+    form = PasswordChangeForm(request.POST)
+    if form.is_valid():
+        user = request.user
+        if user.check_password(form.cleaned_data["current_password"]):
             try:
-                form.save()
-                return HttpResponse(json.dumps({"success": True, "message": "Payment settings updated successfully"}), content_type="application/json")
+                user.set_password(form.cleaned_data["new_password"])
+                user.save()
+                login(request, user) # Re-login to keep session
+                return HttpResponse(json.dumps({"success": True, "message": "Password updated successfully"}), content_type="application/json")
             except Exception as e:
-                logger.error(f"Error updating payment settings: {e}")
+                logger.error(f"Error updating password for user {request.user.id}: {e}")
                 return HttpResponse(json.dumps({
                     "success": False,
-                    "message": "Failed to save payment settings."
+                    "message": "Failed to update password. Please try again."
                 }), content_type="application/json", status=500)
-        return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
-    return HttpResponse(status=405)
+        else:
+            return HttpResponse(json.dumps({"success": False, "errors": {"current_password": ["Incorrect current password"]}}), content_type="application/json", status=400)
+    return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
+
+@login_required
+@require_POST
+def payment_settings_update_ajax(request):
+    from .forms import PaymentSettingsForm
+    from .models import PaymentSettings
+    payment_settings, _ = PaymentSettings.objects.get_or_create(user=request.user)
+    form = PaymentSettingsForm(request.POST, instance=payment_settings)
+    if form.is_valid():
+        try:
+            form.save()
+            return HttpResponse(json.dumps({"success": True, "message": "Payment settings updated successfully"}), content_type="application/json")
+        except Exception as e:
+            logger.error(f"Error updating payment settings for user {request.user.id}: {e}")
+            return HttpResponse(json.dumps({
+                "success": False,
+                "message": "Failed to save payment settings."
+            }), content_type="application/json", status=500)
+    return HttpResponse(json.dumps({"success": False, "errors": form.errors}), content_type="application/json", status=400)
 
 
 def reset_password(request, token):
