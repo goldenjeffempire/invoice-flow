@@ -184,7 +184,7 @@ def paystack_webhook(request):
             return HttpResponse(status=404)
 
         # Skip already verified payments
-        if payment.verified:
+        if payment.status == Payment.Status.SUCCESS:
             logger.debug(f"Payment {reference} already verified")
             return HttpResponse(status=200)
 
@@ -292,7 +292,7 @@ def payment_callback(request, invoice_id):
     except Payment.DoesNotExist:
         return redirect("dashboard")
     
-    if payment.verified:
+    if payment.status == Payment.Status.SUCCESS:
         return redirect("invoices:invoice_detail", invoice_id=invoice_id)
     
     service = get_paystack_service()
@@ -323,7 +323,7 @@ def payment_status(request, invoice_id):
         payment = Payment.objects.filter(invoice=invoice).latest("created_at")
         return JsonResponse({
             "status": payment.status,
-            "verified": payment.verified,
+            "verified": payment.status == Payment.Status.SUCCESS,
             "amount": str(payment.amount),
             "paid_at": payment.paid_at.isoformat() if payment.paid_at else None,
         })
@@ -430,7 +430,7 @@ def public_payment_callback(request, invoice_id):
     except Payment.DoesNotExist:
         return redirect("public_invoice", invoice_id=invoice_id)
     
-    if payment.verified:
+    if payment.status == Payment.Status.SUCCESS:
         return render(request, "payments/payment_success.html", {"invoice": payment.invoice})
     
     service = get_paystack_service()

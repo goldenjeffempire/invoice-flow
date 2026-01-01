@@ -356,17 +356,15 @@ def finalize_payment_from_verification(
 
     if verification.get("verified"):
         payment.status = Payment.Status.SUCCESS
-        payment.verified = True
+        # payment.verified = True  # Verified is not in model, status=success implies verification
         payment.paid_at = timezone.now()
-        payment.verified_at = timezone.now()
+        # payment.verified_at = timezone.now() # Verified_at is not in model
     else:
         payment.status = Payment.Status.FAILED
 
     payment.save(update_fields=[
         "status",
-        "verified",
         "paid_at",
-        "verified_at",
     ])
 
     return payment
