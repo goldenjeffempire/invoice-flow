@@ -968,20 +968,13 @@ def duplicate_invoice(request, invoice_id):
         "due_date": due_date.strftime("%Y-%m-%d"),
         "currency": original.currency,
         "tax_rate": str(original.tax_rate),
+        "discount": str(original.discount or 0),
         "notes": original.notes or "",
     }
     
-    class DictWrapper:
-        def __init__(self, data):
-            self._data = data
-        def get(self, key, default=None):
-            return self._data.get(key, default)
-        def __getitem__(self, key):
-            return self._data[key]
-    
     new_invoice, _ = InvoiceService.create_invoice(
         user=request.user,
-        invoice_data=DictWrapper(invoice_data),
+        invoice_data=invoice_data,
         files_data={},
         line_items_data=line_items_data,
     )
