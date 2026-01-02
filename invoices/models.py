@@ -240,6 +240,7 @@ class Invoice(models.Model):
 
     currency = models.CharField(max_length=3, default="USD", db_index=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
 
     status = models.CharField(
         max_length=10, choices=Status.choices, default=Status.UNPAID, db_index=True
@@ -273,11 +274,13 @@ class Invoice(models.Model):
 
     @property
     def tax_amount(self) -> Decimal:
-        return (self.subtotal * Decimal(str(self.tax_rate))) / Decimal("100")
+        discount_amount = (self.subtotal * Decimal(str(self.discount))) / Decimal("100")
+        return ((self.subtotal - discount_amount) * Decimal(str(self.tax_rate))) / Decimal("100")
 
     @property
     def total(self) -> Decimal:
-        return self.subtotal + self.tax_amount
+        discount_amount = (self.subtotal * Decimal(str(self.discount))) / Decimal("100")
+        return self.subtotal - discount_amount + self.tax_amount
 
     def __str__(self) -> str:
         return f"{self.invoice_id} - {self.client_name}"

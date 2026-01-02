@@ -51,6 +51,7 @@ class InvoiceService:
 
         invoice = invoice_form.save(commit=False)
         invoice.user = user
+        invoice.discount = Decimal(str(invoice_data.get("discount", 0)))
         invoice.save()
 
         for item_data in line_items_data:
@@ -84,7 +85,9 @@ class InvoiceService:
             return None, invoice_form
 
         user_id = invoice.user_id  # type: ignore[attr-defined]
-        invoice = invoice_form.save()
+        invoice = invoice_form.save(commit=False)
+        invoice.discount = Decimal(str(invoice_data.get("discount", 0)))
+        invoice.save()
         invoice.line_items.all().delete()  # type: ignore[attr-defined]
 
         for item_data in line_items_data:

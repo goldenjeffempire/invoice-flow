@@ -192,6 +192,7 @@ class InvoiceForm(forms.ModelForm):
             "due_date",
             "currency",
             "tax_rate",
+            "discount",
             "notes",
         ]
         widgets = {
@@ -203,6 +204,8 @@ class InvoiceForm(forms.ModelForm):
             "client_address": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
             "due_date": forms.DateInput(attrs={"class": "input-field", "type": "date"}),
             "currency": forms.Select(attrs={"class": "input-field"}),
+            "tax_rate": forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
+            "discount": forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
             "notes": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
         }
 
