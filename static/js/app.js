@@ -17,7 +17,6 @@
       this.initCounterAnimations();
       this.initEnhancedForms();
       this.initModalSystem();
-      console.log('InvoiceFlow v8.6 - Premium Edition initialized');
     },
 
     initPageTransitions() {

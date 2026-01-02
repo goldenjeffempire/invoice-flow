@@ -192,7 +192,7 @@ async function syncInvoices() {
         await cache.delete(request);
       }
     } catch (error) {
-      console.log('Sync failed, will retry:', error);
+      // Sync failed
     }
   }
 }
