@@ -3,288 +3,251 @@
 
 {% block title %}Recurring Invoices - InvoiceFlow{% endblock %}
 {% block page_title %}Recurring Invoices{% endblock %}
-{% block page_subtitle %}Manage your subscription billing and automated invoice generation{% endblock %}
+{% block page_subtitle %}Automate your billing with professional recurring schedules{% endblock %}
 
 {% block extra_css %}
 <style>
-    .recurring-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 24px;
-        margin-top: 32px;
+    :root {
+        --recurring-accent: #6366f1;
+        --recurring-accent-soft: rgba(99, 102, 241, 0.08);
+        --recurring-border: #e2e8f0;
+        --recurring-text-primary: #0f172a;
+        --recurring-text-secondary: #64748b;
+        --recurring-radius: 20px;
     }
 
+    .recurring-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Modern Grid Layout */
+    .recurring-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    /* Production-Grade Card */
     .recurring-card {
         background: white;
-        border: 1px solid var(--gray-200);
-        border-radius: var(--radius-xl);
-        padding: 24px;
-        transition: var(--transition-fast);
+        border: 1px solid var(--recurring-border);
+        border-radius: var(--recurring-radius);
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     .recurring-card:hover {
         transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--primary-light);
+        box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
+        border-color: var(--recurring-accent);
     }
 
-    .recurring-card-header {
+    .card-header {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
+        align-items: center;
+        margin-bottom: 1.25rem;
     }
 
-    .client-avatar {
-        width: 48px;
-        height: 48px;
-        background: var(--primary-light);
-        color: var(--primary);
+    .client-profile {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .client-initials {
+        width: 44px;
+        height: 44px;
+        background: var(--recurring-accent-soft);
+        color: var(--recurring-accent);
         border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 1.25rem;
+        font-size: 1rem;
     }
 
-    .recurring-status {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
+    .status-pill {
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.7rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
 
-    .status-active { background: var(--success-light); color: var(--success); }
-    .status-paused { background: var(--warning-light); color: var(--warning); }
+    .status-active { background: #dcfce7; color: #15803d; }
+    .status-paused { background: #fef2f2; color: #b91c1c; }
 
-    .recurring-info h3 {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: var(--gray-900);
-        margin-bottom: 4px;
+    .billing-details {
+        background: #f8fafc;
+        border-radius: 14px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
     }
 
-    .recurring-info p {
-        font-size: 0.875rem;
-        color: var(--gray-500);
-    }
-
-    .recurring-meta {
+    .detail-item {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        padding: 16px;
-        background: var(--gray-50);
-        border-radius: var(--radius-lg);
+        gap: 0.25rem;
     }
 
-    .meta-item {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.85rem;
+    .detail-label {
+        font-size: 0.75rem;
+        color: var(--recurring-text-secondary);
+        font-weight: 600;
     }
 
-    .meta-label { color: var(--gray-500); }
-    .meta-value { font-weight: 600; color: var(--gray-800); }
+    .detail-value {
+        font-size: 0.9rem;
+        color: var(--recurring-text-primary);
+        font-weight: 700;
+    }
 
-    .recurring-actions {
-        display: flex;
-        gap: 12px;
+    .card-footer {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
         margin-top: auto;
     }
 
-    .btn-action {
-        flex: 1;
-        padding: 10px;
+    .btn-recurring {
+        padding: 0.6rem;
         border-radius: 10px;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         font-weight: 700;
-        text-align: center;
         text-decoration: none;
-        transition: var(--transition-fast);
+        text-align: center;
+        transition: all 0.2s;
+        border: 1px solid var(--recurring-border);
     }
 
-    .btn-edit { background: var(--gray-100); color: var(--gray-700); }
-    .btn-pause { background: var(--warning-light); color: var(--warning); }
-    .btn-resume { background: var(--success-light); color: var(--success); }
+    .btn-edit { background: white; color: var(--recurring-text-primary); }
+    .btn-edit:hover { background: #f1f5f9; }
 
-    .btn-danger-outline {
-        background: var(--danger-light);
-        color: var(--danger);
-        border: 1px solid var(--danger);
-    }
+    .btn-state { background: var(--recurring-accent-soft); color: var(--recurring-accent); border-color: transparent; }
+    .btn-state:hover { background: var(--recurring-accent); color: white; }
 
-    .btn-action:hover {
-        opacity: 0.8;
+    .btn-delete { background: #fef2f2; color: #ef4444; border-color: transparent; }
+    .btn-delete:hover { background: #ef4444; color: white; }
+
+    /* Mobile Adaptations */
+    @media (max-width: 640px) {
+        .recurring-container { padding: 1rem; }
+        .recurring-grid { grid-template-columns: 1fr; }
+        .card-footer { grid-template-columns: 1fr 1fr; }
+        .btn-delete { grid-column: span 2; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="section-header">
-    <h2 class="section-title">Active Recurring Schedules</h2>
-    <a href="{% url 'invoices:create_recurring' %}" class="btn-header">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        New Recurring Invoice
-    </a>
-</div>
-
-{% if recurring_invoices %}
-<div class="recurring-grid">
-    {% for recurring in recurring_invoices %}
-    <div class="recurring-card">
-        <div class="recurring-card-header">
-            <div class="client-avatar">{{ recurring.client_name.0 }}</div>
-            <span class="recurring-status {% if recurring.is_active %}status-active{% else %}status-paused{% endif %}">
-                {% if recurring.is_active %}Active{% else %}Paused{% endif %}
-            </span>
+<div class="recurring-container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--recurring-text-primary); letter-spacing: -0.02em;">Subscription Billing</h2>
+            <p style="color: var(--recurring-text-secondary); font-size: 0.95rem;">Manage automated invoice generation and client schedules</p>
         </div>
-        
-        <div class="recurring-info">
-            <h3>{{ recurring.client_name }}</h3>
-            <p>{{ recurring.client_email }}</p>
-        </div>
-
-        <div class="recurring-meta">
-            <div class="meta-item">
-                <span class="meta-label">Frequency</span>
-                <span class="meta-value">{{ recurring.get_frequency_display }}</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Amount</span>
-                <span class="meta-value">{{ recurring.currency }} {{ recurring.total|floatformat:2 }}</span>
-            </div>
-            <div class="meta-item">
-                <span class="meta-label">Next Invoice</span>
-                <span class="meta-value">{{ recurring.next_invoice_date|date:"M d, Y" }}</span>
-            </div>
-        </div>
-
-        <div class="recurring-actions">
-            <a href="{% url 'invoices:edit_recurring' recurring.id %}" class="btn-action btn-edit">Edit</a>
-            {% if recurring.is_active %}
-            <a href="{% url 'invoices:pause_recurring' recurring.id %}" class="btn-action btn-pause">Pause</a>
-            {% else %}
-            <a href="{% url 'invoices:resume_recurring' recurring.id %}" class="btn-action btn-resume">Resume</a>
-            {% endif %}
-            <button type="button" class="btn-action btn-danger-outline" onclick="confirmDeleteRecurring('{{ recurring.id }}', '{{ recurring.client_name }}')">
-                Delete
-            </button>
-        </div>
+        <a href="{% url 'invoices:create_recurring' %}" class="btn-primary" style="background: var(--recurring-accent); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            New Schedule
+        </a>
     </div>
-    {% endfor %}
-</div>
 
-<!-- Delete Recurring Modal -->
-<div id="deleteRecurringModal" class="modal-backdrop" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title">Delete Recurring Schedule</h3>
-            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+    {% if recurring_invoices %}
+    <div class="recurring-grid">
+        {% for recurring in recurring_invoices %}
+        <div class="recurring-card">
+            <div class="card-header">
+                <div class="client-profile">
+                    <div class="client-initials">{{ recurring.client_name|slice:":1" }}</div>
+                    <div>
+                        <div style="font-weight: 700; color: var(--recurring-text-primary);">{{ recurring.client_name }}</div>
+                        <div style="font-size: 0.75rem; color: var(--recurring-text-secondary);">{{ recurring.client_email }}</div>
+                    </div>
+                </div>
+                <span class="status-pill {% if recurring.is_active %}status-active{% else %}status-paused{% endif %}">
+                    {% if recurring.is_active %}Active{% else %}Paused{% endif %}
+                </span>
+            </div>
+
+            <div class="billing-details">
+                <div class="detail-item">
+                    <span class="detail-label">Billing Cycle</span>
+                    <span class="detail-value">{{ recurring.get_frequency_display }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Amount</span>
+                    <span class="detail-value">{{ recurring.currency }} {{ recurring.total|floatformat:2 }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Next Invoice</span>
+                    <span class="detail-value">{{ recurring.next_invoice_date|date:"M d, Y" }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Total Sent</span>
+                    <span class="detail-value">0</span> <!-- Placeholder for count logic -->
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <a href="{% url 'invoices:edit_recurring' recurring.id %}" class="btn-recurring btn-edit">Edit</a>
+                {% if recurring.is_active %}
+                    <a href="{% url 'invoices:pause_recurring' recurring.id %}" class="btn-recurring btn-state">Pause</a>
+                {% else %}
+                    <a href="{% url 'invoices:resume_recurring' recurring.id %}" class="btn-recurring btn-state" style="background: #dcfce7; color: #15803d;">Resume</a>
+                {% endif %}
+                <button type="button" class="btn-recurring btn-delete" onclick="handleDelete('{{ recurring.id }}', '{{ recurring.client_name }}')">Delete</button>
+            </div>
         </div>
-        <div class="modal-body">
-            <p>This will permanently stop and delete the recurring schedule for <strong id="deleteClientName"></strong>.</p>
-            <p style="color: var(--danger); font-size: 0.875rem; margin-top: 0.5rem;">This action cannot be undone and no future invoices will be generated for this schedule.</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn-pagination" onclick="closeDeleteModal()">Cancel</button>
-            <button type="button" class="btn-header" style="background: var(--danger);" id="confirmDeleteBtn">Delete Schedule</button>
-        </div>
+        {% endfor %}
     </div>
+    {% else %}
+    <div style="text-align: center; padding: 5rem 2rem; background: white; border-radius: 24px; border: 1px solid var(--recurring-border);">
+        <div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; color: #94a3b8;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 4 23 10 17 10"/><path d="M1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </div>
+        <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--recurring-text-primary); margin-bottom: 0.5rem;">Automate Your Billing</h3>
+        <p style="color: var(--recurring-text-secondary); max-width: 400px; margin: 0 auto 2rem;">Stop creating the same invoices every month. Set up a schedule and let InvoiceFlow handle the rest.</p>
+        <a href="{% url 'invoices:create_recurring' %}" class="btn-primary" style="background: var(--recurring-accent); color: white; padding: 0.8rem 2rem; border-radius: 12px; font-weight: 700; text-decoration: none;">Create First Schedule</a>
+    </div>
+    {% endif %}
 </div>
 
 <script>
-    let recurringToDelete = null;
-    function confirmDeleteRecurring(id, clientName) {
-        recurringToDelete = id;
-        document.getElementById('deleteClientName').textContent = clientName;
-        document.getElementById('deleteRecurringModal').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeDeleteModal() {
-        document.getElementById('deleteRecurringModal').style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-
-    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-        if (!recurringToDelete) return;
-        
-        const btn = this;
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="loading-spinner"></span> Deleting...';
-        
-        fetch(`/recurring/${recurringToDelete}/delete/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                const card = document.querySelector(`button[onclick*="'${recurringToDelete}'"]`).closest('.recurring-card');
-                card.style.opacity = '0.5';
-                card.style.pointerEvents = 'none';
-                
-                closeDeleteModal();
-                showToast('Success', data.message, 'success');
-                
-                setTimeout(() => {
-                    card.remove();
-                    if (document.querySelectorAll('.recurring-card').length === 0) {
-                        window.location.reload();
-                    }
-                }, 500);
-            } else {
-                showToast('Error', data.message || 'Failed to delete recurring schedule.', 'error');
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Error', 'An error occurred. Please try again.', 'error');
-            btn.disabled = false;
-            btn.textContent = originalText;
-        });
-    });
-
-    function showToast(title, message, type) {
-        if (window.showToast) {
-            window.showToast(message, type);
-        } else {
-            alert(message);
-        }
-    }
-
-    // Close on backdrop click
-    window.onclick = function(event) {
-        const modal = document.getElementById('deleteRecurringModal');
-        if (event.target == modal) {
-            closeDeleteModal();
+    function handleDelete(id, client) {
+        if (confirm(`Are you sure you want to delete the recurring schedule for ${client}? This cannot be undone.`)) {
+            fetch(`/recurring/${id}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) location.reload();
+                else alert(data.message || 'Error deleting schedule');
+            });
         }
     }
 </script>
-{% else %}
-<div class="empty-state">
-    <div class="empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 4 23 10 17 10"/><path d="M1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-    </div>
-    <h3>No Recurring Invoices</h3>
-    <p>Automate your billing by creating recurring invoice schedules for your long-term clients.</p>
-    <a href="{% url 'invoices:create_recurring' %}" class="btn-header" style="margin-top: 24px;">Create First Schedule</a>
-</div>
-{% endif %}
 {% endblock %}
