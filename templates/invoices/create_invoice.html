@@ -247,6 +247,49 @@
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
+    /* Tooltip System for Pro UX */
+    .pro-tooltip {
+        position: relative;
+        display: inline-block;
+        margin-left: 4px;
+        cursor: help;
+    }
+
+    .pro-tooltip:hover .tooltip-content {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(-8px);
+    }
+
+    .tooltip-content {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%) translateY(0);
+        background: var(--gray-900);
+        color: var(--white);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        white-space: nowrap;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    .tooltip-content::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: var(--gray-900) transparent transparent transparent;
+    }
 </style>
 {% endblock %}
 
@@ -377,11 +420,23 @@
                         </select>
                     </div>
                     <div class="form-group-modern">
-                        <label class="label-modern">Tax Rate (%)</label>
+                        <label class="label-modern">
+                            Tax Rate (%)
+                            <div class="pro-tooltip">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                <span class="tooltip-content">Standard VAT or Sales Tax</span>
+                            </div>
+                        </label>
                         <input type="number" name="tax_rate" class="input-modern" step="0.01" value="{{ default_tax }}" required>
                     </div>
                     <div class="form-group-modern">
-                        <label class="label-modern">Discount (%)</label>
+                        <label class="label-modern">
+                            Discount (%)
+                            <div class="pro-tooltip">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                                <span class="tooltip-content">Percentage deduction applied before tax</span>
+                            </div>
+                        </label>
                         <input type="number" name="discount" class="input-modern" step="0.01" value="0" required>
                     </div>
                 </div>
@@ -404,7 +459,7 @@
             </div>
             <div class="card-body-padded">
                 <div class="items-container">
-                    <table class="items-table">
+                    <table class="items-table" aria-label="Line items collection">
                         <thead>
                             <tr>
                                 <th style="width: 50%;">Description</th>
@@ -456,13 +511,13 @@
         </div>
 
         <!-- Floating Footer -->
-        <div class="floating-footer">
+        <div class="floating-footer" role="toolbar" aria-label="Form actions">
             <input type="hidden" name="status" id="invoice-status" value="unpaid">
-            <a href="{% url 'invoices:invoice_list' %}" class="sidebar-link" style="padding: 10px 24px; color: var(--gray-500);">Discard Changes</a>
-            <button type="button" id="save-draft-btn" class="btn-pagination" style="height: 52px; border-radius: 14px; border: 1px solid var(--gray-200); padding: 0 24px; font-weight: 600;">
+            <a href="{% url 'invoices:invoice_list' %}" class="sidebar-link" style="padding: 10px 24px; color: var(--gray-500);" aria-label="Discard changes and return to list">Discard Changes</a>
+            <button type="button" id="save-draft-btn" class="btn-pagination" style="height: 52px; border-radius: 14px; border: 1px solid var(--gray-200); padding: 0 24px; font-weight: 600;" aria-label="Save current progress as a draft">
                 Save as Draft
             </button>
-            <button type="submit" class="btn-header" style="min-width: 200px; height: 52px; border-radius: 14px; box-shadow: var(--shadow-lg);">
+            <button type="submit" class="btn-header" style="min-width: 200px; height: 52px; border-radius: 14px; box-shadow: var(--shadow-lg);" aria-label="Finalize and generate invoice">
                 Generate Invoice
             </button>
         </div>
@@ -511,12 +566,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = document.createElement('tr');
             row.className = 'item-row-modern';
             row.innerHTML = `
-                <td><input type="text" class="input-modern item-desc" value="${item.description}" placeholder="e.g. Graphic Design Services" required></td>
-                <td><input type="number" class="input-modern item-qty" value="${item.quantity}" min="0.01" step="any" required></td>
-                <td><input type="number" class="input-modern item-price" value="${item.unit_price}" min="0" step="0.01" required></td>
+                <td><input type="text" class="input-modern item-desc" value="${item.description}" placeholder="e.g. Graphic Design Services" aria-label="Item description" required></td>
+                <td><input type="number" class="input-modern item-qty" value="${item.quantity}" min="0.01" step="any" aria-label="Quantity" required></td>
+                <td><input type="number" class="input-modern item-price" value="${item.unit_price}" min="0" step="0.01" aria-label="Unit price" required></td>
                 <td style="text-align: right; font-weight: 700; color: var(--gray-900);" class="item-total-display">0.00</td>
                 <td style="text-align: right;">
-                    <button type="button" class="btn-remove" data-index="${index}" style="border:none; background:none; cursor:pointer;">
+                    <button type="button" class="btn-remove" data-index="${index}" style="border:none; background:none; cursor:pointer;" aria-label="Remove item">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                     </button>
                 </td>
