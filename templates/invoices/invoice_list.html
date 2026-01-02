@@ -263,16 +263,20 @@
         })
         .then(data => {
             if (data.success) {
-                const row = document.querySelector(`button[onclick*="'${invoiceToDelete}'"]`).closest('tr');
-                row.style.opacity = '0.5';
-                row.style.pointerEvents = 'none';
+                const row = document.querySelector(`tr[data-invoice-id="${invoiceToDelete}"]`);
+                if (row) {
+                    row.style.opacity = '0.5';
+                    row.style.pointerEvents = 'none';
+                    row.style.transition = 'all 0.5s ease';
+                    row.style.transform = 'translateX(20px)';
+                }
                 
                 closeDeleteModal();
                 showToast('Success', data.message, 'success');
                 
                 setTimeout(() => {
-                    row.remove();
-                    if (document.querySelectorAll('.data-table tbody tr').length === 0) {
+                    if (row) row.remove();
+                    if (document.querySelectorAll('.pro-table tbody tr').length === 0) {
                         window.location.reload();
                     }
                 }, 500);
@@ -380,7 +384,7 @@
                 </thead>
                 <tbody>
                     {% for invoice in invoices %}
-                    <tr>
+                    <tr data-invoice-id="{{ invoice.id }}">
                         <td>
                             <div style="font-family: var(--font-mono); font-weight: 700; color: var(--gray-900);">#{{ invoice.invoice_id }}</div>
                         </td>
