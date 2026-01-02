@@ -27,7 +27,7 @@ function initializeFormValidation() {
   const form = document.getElementById('invoiceForm') || document.querySelector('form');
   if (!form) return;
   
-  const inputs = form.querySelectorAll('input, textarea, select');
+  const inputs = form.querySelectorAll('input:not([type="hidden"]), textarea, select');
   
   inputs.forEach(input => {
     // Real-time validation on blur

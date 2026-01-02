@@ -21,6 +21,9 @@
     },
 
     initPageTransitions() {
+      // Transitions disabled for authenticated pages to avoid layout shift with fixed sidebar
+      if (document.body.classList.contains('light-authenticated')) return;
+
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       
       const mainContent = document.getElementById('main-content');
@@ -70,7 +73,7 @@
 
     initAppSidebar() {
       const mobileToggle = document.querySelector('.mobile-menu-toggle');
-      const sidebar = document.querySelector('.app-sidebar, .dashboard-sidebar');
+      const sidebar = document.querySelector('.app-sidebar, .dashboard-sidebar, [data-sidebar]');
       
       if (!mobileToggle || !sidebar) return;
 
