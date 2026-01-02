@@ -283,6 +283,12 @@
             <div class="status-value {% if invoice.status == 'paid' %}status-paid{% else %}status-pending{% endif %}">
                 {{ invoice.get_status_display }}
             </div>
+            {% if invoice.status == 'paid' %}
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--gray-500); font-size: 0.75rem; margin-top: 8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>Invoice Locked</span>
+            </div>
+            {% endif %}
             <p style="font-size: 0.75rem; color: var(--gray-400);">Updated {{ invoice.updated_at|timesince }} ago</p>
         </div>
 
@@ -299,6 +305,11 @@
                 <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="btn btn-secondary action-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Edit Invoice
+                </a>
+
+                <a href="{% url 'invoices:duplicate_invoice' invoice.id %}" class="btn btn-secondary action-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Duplicate Invoice
                 </a>
 
                 <a href="{% url 'invoices:generate_pdf' invoice.id %}" class="btn btn-secondary action-btn">
