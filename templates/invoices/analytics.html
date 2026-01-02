@@ -7,44 +7,70 @@
 
 {% block extra_css %}
 <style>
+    :root {
+        --analytics-accent: #6366f1;
+        --analytics-border: #e2e8f0;
+        --analytics-bg-soft: #f8fafc;
+        --analytics-text-primary: #0f172a;
+        --analytics-text-secondary: #64748b;
+    }
+
+    .analytics-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .analytics-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        margin-top: 32px;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+        margin-top: 2rem;
     }
 
     .analytics-card {
         background: white;
-        padding: 32px;
-        border-radius: var(--radius-xl);
-        border: 1px solid var(--gray-200);
-        box-shadow: var(--shadow-sm);
+        padding: 2rem;
+        border-radius: 24px;
+        border: 1px solid var(--analytics-border);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     .analytics-card-header {
-        margin-bottom: 24px;
+        margin-bottom: 2rem;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
 
     .analytics-card-title {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: var(--gray-900);
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--analytics-text-primary);
+        letter-spacing: -0.02em;
     }
 
     .chart-container {
-        height: 320px;
+        height: 350px;
         position: relative;
+    }
+
+    .client-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
     }
 
     .client-item {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        margin-bottom: 20px;
+        gap: 0.75rem;
     }
 
     .client-header {
@@ -54,109 +80,120 @@
     }
 
     .client-name {
-        font-weight: 600;
-        color: var(--gray-700);
+        font-weight: 700;
+        color: var(--analytics-text-primary);
         font-size: 0.95rem;
     }
 
     .client-value {
-        font-weight: 700;
-        color: var(--gray-900);
+        font-weight: 800;
+        color: var(--analytics-accent);
+        font-size: 0.95rem;
     }
 
-    .progress-bar-bg {
+    .progress-track {
         width: 100%;
-        height: 8px;
-        background: var(--gray-100);
+        height: 10px;
+        background: var(--analytics-bg-soft);
         border-radius: 999px;
         overflow: hidden;
     }
 
-    .progress-bar-fill {
+    .progress-fill {
         height: 100%;
-        background: var(--primary);
+        background: var(--analytics-accent);
         border-radius: 999px;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    @media (max-width: 1024px) {
-        .analytics-grid {
-            grid-template-columns: 1fr;
-        }
+    /* Mobile Adaptations */
+    @media (max-width: 1200px) {
+        .analytics-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+        .analytics-container { padding: 1rem; }
+        .analytics-card { padding: 1.5rem; }
+        .chart-container { height: 280px; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="metrics-grid">
-    <div class="metric-card">
-        <div class="metric-header">
-            <div class="metric-icon-wrapper revenue">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+<div class="analytics-container">
+    <div class="metrics-grid">
+        <div class="metric-card hover-scale">
+            <div class="metric-header">
+                <div class="metric-icon-wrapper revenue">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div class="metric-trend positive">+{{ collection_rate|default:100 }}%</div>
             </div>
-            <div class="metric-trend positive">+{{ collection_rate|default:0 }}%</div>
-        </div>
-        <div>
-            <span class="metric-title">Total Revenue</span>
-            <div class="metric-value">{{ currency|default:"$" }} {{ total_revenue|floatformat:2|default:"0.00" }}</div>
-        </div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-header">
-            <div class="metric-icon-wrapper invoices">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <div>
+                <span class="metric-title">Total Revenue</span>
+                <div class="metric-value">{{ currency|default:"$" }} {{ total_revenue|floatformat:2|default:"0.00" }}</div>
             </div>
         </div>
-        <div>
-            <span class="metric-title">Avg. Invoice Value</span>
-            <div class="metric-value">{{ currency|default:"$" }} {{ average_invoice|floatformat:2|default:"0.00" }}</div>
-        </div>
-    </div>
-    <div class="metric-card">
-        <div class="metric-header">
-            <div class="metric-icon-wrapper overdue">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div class="metric-card hover-scale">
+            <div class="metric-header">
+                <div class="metric-icon-wrapper invoices">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
             </div>
-            <div class="metric-trend negative">{{ overdue_ratio|default:0 }}%</div>
+            <div>
+                <span class="metric-title">Avg. Invoice Value</span>
+                <div class="metric-value">{{ currency|default:"$" }} {{ average_invoice|floatformat:2|default:"0.00" }}</div>
+            </div>
         </div>
-        <div>
-            <span class="metric-title">Overdue Ratio</span>
-            <div class="metric-value">{{ overdue_ratio|default:0 }}%</div>
-        </div>
-    </div>
-</div>
-
-<div class="analytics-grid">
-    <!-- Revenue Trend Chart -->
-    <div class="analytics-card">
-        <div class="analytics-card-header">
-            <h3 class="analytics-card-title">Revenue Growth</h3>
-        </div>
-        <div class="chart-container">
-            <canvas id="growthChart"></canvas>
+        <div class="metric-card hover-scale">
+            <div class="metric-header">
+                <div class="metric-icon-wrapper overdue">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </div>
+                <div class="metric-trend negative">{{ overdue_ratio|default:0 }}%</div>
+            </div>
+            <div>
+                <span class="metric-title">Overdue Ratio</span>
+                <div class="metric-value">{{ overdue_ratio|default:0 }}%</div>
+            </div>
         </div>
     </div>
 
-    <!-- Top Clients -->
-    <div class="analytics-card">
-        <div class="analytics-card-header">
-            <h3 class="analytics-card-title">Top Clients by Revenue</h3>
+    <div class="analytics-grid">
+        <!-- Revenue Trend Chart -->
+        <div class="analytics-card">
+            <div class="analytics-card-header">
+                <h3 class="analytics-card-title">Revenue Growth</h3>
+                <div style="font-size: 0.85rem; color: var(--analytics-text-secondary); font-weight: 600;">Last 6 Months</div>
+            </div>
+            <div class="chart-container">
+                <canvas id="growthChart"></canvas>
+            </div>
         </div>
-        <div class="client-list">
-            {% for client in top_clients %}
-            <div class="client-item">
-                <div class="client-header">
-                    <span class="client-name">{{ client.name }}</span>
-                    <span class="client-value">{{ currency|default:"$" }} {{ client.total_revenue|floatformat:2 }}</span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" style="width: {{ client.share|default:0 }}%"></div>
-                </div>
+
+        <!-- Top Clients -->
+        <div class="analytics-card">
+            <div class="analytics-card-header">
+                <h3 class="analytics-card-title">Performance by Client</h3>
             </div>
-            {% empty %}
-            <div class="empty-state">
-                <p>No client data available yet.</p>
+            <div class="client-list">
+                {% for client in top_clients %}
+                <div class="client-item">
+                    <div class="client-header">
+                        <span class="client-name">{{ client.name }}</span>
+                        <span class="client-value">{{ currency|default:"$" }} {{ client.total_revenue|floatformat:2 }}</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width: {{ client.share|default:0 }}%"></div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align: center; padding: 3rem 0; color: var(--analytics-text-secondary);">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 1rem; opacity: 0.3;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <p style="font-weight: 600;">No client performance data yet.</p>
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
         </div>
     </div>
 </div>
@@ -169,8 +206,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const revenueCtx = document.getElementById('growthChart');
     if (revenueCtx) {
         const rawData = '{{ revenue_chart_data_json|safe|default:"{\"labels\": [], \"data\": []}" }}';
-        const revenueData = JSON.parse(rawData);
+        let revenueData;
+        try {
+            revenueData = JSON.parse(rawData);
+        } catch(e) {
+            revenueData = {labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], data: [0, 0, 0, 0, 0, 0]};
+        }
         
+        const gradient = revenueCtx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.2)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
         new Chart(revenueCtx, {
             type: 'line',
             data: {
@@ -179,37 +225,55 @@ document.addEventListener('DOMContentLoaded', function() {
                     label: 'Revenue',
                     data: revenueData.data.length > 0 ? revenueData.data : [0, 0, 0, 0, 0, 0],
                     borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    backgroundColor: gradient,
                     fill: true,
-                    tension: 0.4,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    borderWidth: 3
+                    tension: 0.45,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#fff',
+                    pointBorderWidth: 3,
+                    pointHoverRadius: 8,
+                    borderWidth: 4
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index',
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        padding: 12,
-                        backgroundColor: '#1f2937',
+                        padding: 16,
+                        backgroundColor: '#0f172a',
                         titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 13 }
+                        bodyFont: { size: 14 },
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return '{{ currency|default:"$" }} ' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2});
+                            }
+                        }
                     }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: '#f3f4f6' },
-                        ticks: { font: { size: 11, weight: '500' } }
+                        grid: { color: '#f1f5f9', drawBorder: false },
+                        ticks: { 
+                            padding: 10,
+                            font: { size: 12, weight: '600', family: 'Inter' },
+                            color: '#64748b'
+                        }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { font: { size: 11, weight: '500' } }
+                        ticks: { 
+                            padding: 10,
+                            font: { size: 12, weight: '600', family: 'Inter' },
+                            color: '#64748b'
+                        }
                     }
                 }
             }

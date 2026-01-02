@@ -3,167 +3,219 @@
 
 {% block title %}Invoice Templates - InvoiceFlow{% endblock %}
 {% block page_title %}Invoice Templates{% endblock %}
-{% block page_subtitle %}Choose and customize professional templates for your business invoices{% endblock %}
+{% block page_subtitle %}Professional, high-conversion templates for your business{% endblock %}
 
 {% block extra_css %}
 <style>
+    :root {
+        --template-accent: #6366f1;
+        --template-border: #e2e8f0;
+        --template-bg-soft: #f8fafc;
+        --template-text-primary: #0f172a;
+        --template-text-secondary: #64748b;
+        --template-radius: 24px;
+    }
+
+    .templates-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     .templates-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 32px;
-        margin-top: 32px;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
     }
 
     .template-card {
         background: white;
-        border: 1px solid var(--gray-200);
-        border-radius: var(--radius-xl);
+        border: 1px solid var(--template-border);
+        border-radius: var(--template-radius);
         overflow: hidden;
-        transition: var(--transition-fast);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         display: flex;
         flex-direction: column;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
     .template-card:hover {
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-        border-color: var(--primary);
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border-color: var(--template-accent);
     }
 
     .template-preview {
-        height: 240px;
-        background: var(--gray-100);
+        height: 280px;
+        background: var(--template-bg-soft);
         display: flex;
         align-items: center;
         justify-content: center;
         position: relative;
+        padding: 2rem;
     }
 
     .template-preview-mock {
-        width: 140px;
-        height: 180px;
+        width: 180px;
+        height: 230px;
         background: white;
-        box-shadow: var(--shadow-md);
-        border-radius: 4px;
-        padding: 12px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 0.75rem;
+        transition: transform 0.3s ease;
     }
 
-    .mock-line { height: 4px; background: var(--gray-100); border-radius: 2px; }
-    .mock-header { height: 12px; background: var(--primary-light); width: 60%; }
+    .template-card:hover .template-preview-mock {
+        transform: scale(1.05);
+    }
+
+    .mock-line { height: 6px; background: #f1f5f9; border-radius: 3px; }
+    .mock-header { height: 16px; background: var(--template-accent); width: 60%; border-radius: 4px; }
 
     .template-info {
-        padding: 24px;
+        padding: 2rem;
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 12px;
     }
 
     .template-name {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: var(--gray-900);
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--template-text-primary);
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.01em;
     }
 
     .template-desc {
-        font-size: 0.875rem;
-        color: var(--gray-500);
-        line-height: 1.5;
+        font-size: 0.95rem;
+        color: var(--template-text-secondary);
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
     }
 
-    .template-badge {
+    .template-tag {
         position: absolute;
-        top: 12px;
-        right: 12px;
-        background: var(--primary);
+        top: 1.25rem;
+        right: 1.25rem;
+        background: var(--template-accent);
         color: white;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.7rem;
+        padding: 0.4rem 1rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.05em;
+        box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
     }
 
-    .btn-select-template {
+    .btn-select {
         margin-top: auto;
-        display: block;
-        padding: 12px;
-        background: var(--gray-900);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.875rem;
+        background: var(--template-text-primary);
         color: white;
-        text-align: center;
         text-decoration: none;
         font-weight: 700;
         border-radius: 12px;
-        transition: var(--transition-fast);
+        transition: all 0.2s;
     }
 
-    .btn-select-template:hover {
+    .btn-select:hover {
         background: black;
+        transform: translateY(-2px);
+    }
+
+    /* Mobile Adaptations */
+    @media (max-width: 640px) {
+        .templates-container { padding: 1rem; }
+        .templates-grid { grid-template-columns: 1fr; }
+        .template-preview { height: 240px; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="templates-grid">
-    <!-- Modern Minimalist -->
-    <div class="template-card">
-        <div class="template-preview">
-            <span class="template-badge">Popular</span>
-            <div class="template-preview-mock">
-                <div class="mock-header"></div>
-                <div class="mock-line" style="width: 40%"></div>
-                <div style="flex: 1"></div>
-                <div class="mock-line"></div>
-                <div class="mock-line"></div>
-                <div class="mock-line" style="width: 80%"></div>
+<div class="templates-container">
+    <div class="templates-grid">
+        <!-- Modern Minimalist -->
+        <div class="template-card">
+            <div class="template-preview">
+                <span class="template-tag">Popular</span>
+                <div class="template-preview-mock">
+                    <div class="mock-header"></div>
+                    <div class="mock-line" style="width: 40%"></div>
+                    <div style="flex: 1"></div>
+                    <div class="mock-line"></div>
+                    <div class="mock-line"></div>
+                    <div class="mock-line" style="width: 80%"></div>
+                </div>
+            </div>
+            <div class="template-info">
+                <h3 class="template-name">Modern Minimal</h3>
+                <p class="template-desc">A clean, high-impact design that puts your work first. Perfect for digital agencies, consultants, and creative freelancers.</p>
+                <a href="#" class="btn-select">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Use This Template</span>
+                </a>
             </div>
         </div>
-        <div class="template-info">
-            <h3 class="template-name">Modern Minimalist</h3>
-            <p class="template-desc">Clean, spacious design focused on readability and professional elegance. Best for consulting and creative services.</p>
-            <a href="#" class="btn-select-template">Use Template</a>
-        </div>
-    </div>
 
-    <!-- Professional Corporate -->
-    <div class="template-card">
-        <div class="template-preview">
-            <div class="template-preview-mock" style="border-top: 4px solid var(--info);">
-                <div class="mock-header" style="background: var(--info-light);"></div>
-                <div class="mock-line" style="width: 40%"></div>
-                <div style="flex: 1"></div>
-                <div class="mock-line"></div>
-                <div class="mock-line"></div>
-                <div class="mock-line" style="width: 80%"></div>
+        <!-- Professional Corporate -->
+        <div class="template-card">
+            <div class="template-preview">
+                <div class="template-preview-mock" style="border-top: 6px solid #06b6d4;">
+                    <div class="mock-header" style="background: #06b6d4;"></div>
+                    <div class="mock-line" style="width: 40%"></div>
+                    <div style="flex: 1"></div>
+                    <div class="mock-line"></div>
+                    <div class="mock-line"></div>
+                    <div class="mock-line" style="width: 80%"></div>
+                </div>
+            </div>
+            <div class="template-info">
+                <h3 class="template-name">Enterprise Classic</h3>
+                <p class="template-desc">Trust-building layout with a traditional structure. Ideal for legal, financial services, and established corporations.</p>
+                <a href="#" class="btn-select">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Use This Template</span>
+                </a>
             </div>
         </div>
-        <div class="template-info">
-            <h3 class="template-name">Corporate Standard</h3>
-            <p class="template-desc">Traditional structure with reinforced branding elements. Ideal for established businesses and legal firms.</p>
-            <a href="#" class="btn-select-template">Use Template</a>
-        </div>
-    </div>
 
-    <!-- Creative Glass -->
-    <div class="template-card">
-        <div class="template-preview">
-            <div class="template-preview-mock" style="background: linear-gradient(135deg, #fff, #f8fafc);">
-                <div class="mock-header" style="background: linear-gradient(to right, var(--primary), var(--info));"></div>
-                <div class="mock-line" style="width: 40%"></div>
-                <div style="flex: 1"></div>
-                <div class="mock-line"></div>
-                <div class="mock-line"></div>
-                <div class="mock-line" style="width: 80%"></div>
+        <!-- Creative Gradient -->
+        <div class="template-card">
+            <div class="template-preview">
+                <div class="template-preview-mock" style="background: linear-gradient(135deg, #fff, #f8fafc);">
+                    <div class="mock-header" style="background: linear-gradient(to right, #6366f1, #06b6d4);"></div>
+                    <div class="mock-line" style="width: 40%"></div>
+                    <div style="flex: 1"></div>
+                    <div class="mock-line"></div>
+                    <div class="mock-line"></div>
+                    <div class="mock-line" style="width: 80%"></div>
+                </div>
             </div>
-        </div>
-        <div class="template-info">
-            <h3 class="template-name">Creative Gradient</h3>
-            <p class="template-desc">Vibrant and energetic design using modern gradients. Perfect for startups and digital agencies.</p>
-            <a href="#" class="btn-select-template">Use Template</a>
+            <div class="template-info">
+                <h3 class="template-name">Digital Native</h3>
+                <p class="template-desc">Vibrant, bold, and unapologetically modern. Designed for tech startups and creators who want to stand out.</p>
+                <a href="#" class="btn-select">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span>Use This Template</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>
