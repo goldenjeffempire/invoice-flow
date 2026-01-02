@@ -27,68 +27,63 @@
     </style>
 </head>
 <body class="light-authenticated" style="background-color: #f8fafc; color: #0f172a;">
-    <div class="authenticated-layout" style="display: flex; min-height: 100vh;">
+    <div class="authenticated-layout">
         <!-- Sidebar Navigation -->
         {% include 'components/authenticated-sidebar.html' %}
 
         <!-- Main Content Area -->
-        <div class="authenticated-main" style="flex: 1; display: flex; flex-direction: column; overflow-x: hidden;">
+        <main class="authenticated-main">
             <!-- Header -->
-            <header class="authenticated-header" style="background: white; border-bottom: 1px solid #e2e8f0; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; sticky: top;">
-                <div class="header-left" style="display: flex; align-items: center; gap: 1rem;">
-                    <button class="sidebar-toggle-mobile" style="display: none; border: none; background: transparent; cursor: pointer;">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            <header class="authenticated-header">
+                <div class="header-left">
+                    <button class="sidebar-toggle-mobile" id="mobile-menu-toggle" aria-label="Toggle navigation menu">
+                        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
                     </button>
-                    <div>
-                        <h1 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">{% block page_title %}Dashboard{% endblock %}</h1>
-                        <p style="font-size: 0.875rem; color: #64748b; margin: 0;">{% block page_subtitle %}Welcome back{% endblock %}</p>
+                    <div class="header-breadcrumb">
+                        <h1 class="header-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                        <p class="header-subtitle">{% block page_subtitle %}Welcome back, {{ user.first_name|default:user.username }}{% endblock %}</p>
                     </div>
                 </div>
                 <div class="header-actions">
-                    <a href="{% url 'invoices:create_invoice_start' %}" style="background: #6366f1; color: white; padding: 0.6rem 1.2rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        <span>New Invoice</span>
-                    </a>
+                    <div class="header-search lg:flex hidden">
+                        <div class="search-wrapper">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" placeholder="Search invoices..." aria-label="Search">
+                            <span class="search-shortcut">⌘K</span>
+                        </div>
+                    </div>
+                    <div class="header-buttons">
+                        <a href="{% url 'invoices:create_invoice_start' %}" class="btn-primary-modern">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span class="hidden sm:inline">New Invoice</span>
+                        </a>
+                    </div>
                 </div>
             </header>
 
             <!-- Page Content -->
-            <div class="authenticated-content" style="padding: 2rem; flex: 1;">
-                {% block content %}{% endblock %}
+            <div class="authenticated-content">
+                <div class="content-container">
+                    {% block content %}{% endblock %}
+                </div>
             </div>
-        </div>
+        </main>
     </div>
 
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <script src="{% static 'js/responsive-nav.js' %}"></script>
     <script>
-        // Mobile sidebar toggle
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.querySelector('.authenticated-sidebar');
-            const toggleBtn = document.querySelector('.sidebar-toggle-mobile');
-            
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', function() {
-                    sidebar.classList.toggle('collapsed');
-                });
-            }
-
-            // Close sidebar on link click (mobile)
-            if (window.innerWidth <= 768) {
-                const sidebarLinks = sidebar.querySelectorAll('.sidebar-link');
-                sidebarLinks.forEach(link => {
-                    link.addEventListener('click', function() {
-                        sidebar.classList.add('collapsed');
-                    });
-                });
-            }
-
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 768) {
-                    sidebar.classList.remove('collapsed');
-                }
-            });
-        });
-
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
             if ((e.ctrlKey || e.metaKey) && e.key === 'n') {

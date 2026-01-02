@@ -12,93 +12,60 @@
     let lastScrollY = 0;
 
     // DOM Elements
-    const sidebar = document.querySelector('.dashboard-sidebar');
-    const sidebarOverlay = document.querySelector('.sidebar-overlay');
-    const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
-    const sidebarToggle = document.querySelector('.sidebar-toggle');
-    const navLanding = document.querySelector('.nav-landing');
-    const navToggle = document.querySelector('.nav-landing-toggle');
-    const mobileNav = document.querySelector('.mobile-nav');
+    const sidebar = document.querySelector('.authenticated-sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const sidebarCloseMobile = document.getElementById('sidebar-close-mobile');
 
     // Initialize
     function init() {
+        if (!sidebar) return;
         setupSidebar();
-        setupMobileNav();
-        setupLandingNav();
-        setupScrollBehavior();
         setupKeyboardNav();
-        handleResize();
-        window.addEventListener('resize', debounce(handleResize, 150));
     }
 
     // Sidebar functionality
     function setupSidebar() {
-        if (!sidebar) return;
-
-        // Mobile toggle
         if (mobileMenuToggle) {
             mobileMenuToggle.addEventListener('click', toggleSidebar);
         }
 
-        // Desktop collapse toggle
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', toggleSidebarCollapse);
+        if (sidebarCloseMobile) {
+            sidebarCloseMobile.addEventListener('click', closeSidebar);
         }
 
-        // Overlay click to close
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', closeSidebar);
         }
 
-        // Restore collapsed state from localStorage
-        const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-        if (isCollapsed && window.innerWidth >= 1024) {
-            sidebar.classList.add('is-collapsed');
-        }
+        // Close sidebar on link click (mobile)
+        const sidebarLinks = sidebar.querySelectorAll('.sidebar-link');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    closeSidebar();
+                }
+            });
+        });
     }
 
     function toggleSidebar() {
-        sidebarOpen = !sidebarOpen;
-        sidebar.classList.toggle('is-open', sidebarOpen);
+        sidebar.classList.toggle('collapsed');
+        const isOpen = !sidebar.classList.contains('collapsed');
         
         if (sidebarOverlay) {
-            sidebarOverlay.classList.toggle('is-visible', sidebarOpen);
+            sidebarOverlay.classList.toggle('is-visible', isOpen);
         }
         
-        if (mobileMenuToggle) {
-            mobileMenuToggle.setAttribute('aria-expanded', sidebarOpen);
-        }
-        
-        document.body.style.overflow = sidebarOpen ? 'hidden' : '';
-        
-        if (sidebarOpen) {
-            trapFocus(sidebar);
-        }
+        document.body.style.overflow = isOpen ? 'hidden' : '';
     }
 
     function closeSidebar() {
-        sidebarOpen = false;
-        sidebar.classList.remove('is-open');
-        
+        sidebar.classList.add('collapsed');
         if (sidebarOverlay) {
             sidebarOverlay.classList.remove('is-visible');
         }
-        
-        if (mobileMenuToggle) {
-            mobileMenuToggle.setAttribute('aria-expanded', 'false');
-        }
-        
         document.body.style.overflow = '';
-    }
-
-    function toggleSidebarCollapse() {
-        sidebar.classList.toggle('is-collapsed');
-        const isCollapsed = sidebar.classList.contains('is-collapsed');
-        localStorage.setItem('sidebar-collapsed', isCollapsed);
-        
-        if (sidebarToggle) {
-            sidebarToggle.setAttribute('aria-expanded', !isCollapsed);
-        }
     }
 
     // Mobile navigation for landing pages
