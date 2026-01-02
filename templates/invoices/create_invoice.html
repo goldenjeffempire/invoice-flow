@@ -571,13 +571,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = document.createElement('tr');
             row.className = 'item-row-modern';
             row.innerHTML = `
-                <td><input type="text" class="input-modern item-desc" value="${item.description}" placeholder="e.g. Graphic Design Services" aria-label="Item description" required></td>
-                <td><input type="number" class="input-modern item-qty" value="${item.quantity}" min="0.01" step="any" aria-label="Quantity" required></td>
-                <td><input type="number" class="input-modern item-price" value="${item.unit_price}" min="0" step="0.01" aria-label="Unit price" required></td>
-                <td style="text-align: right; font-weight: 700; color: var(--gray-900);" class="item-total-display">0.00</td>
+                <td>
+                    <input type="text" class="input-modern item-desc" value="${item.description}" placeholder="Description" required>
+                </td>
+                <td>
+                    <input type="number" class="input-modern item-qty" value="${item.quantity}" min="1" required>
+                </td>
+                <td>
+                    <input type="number" class="input-modern item-price" value="${item.unit_price}" step="0.01" required>
+                </td>
+                <td style="text-align: right; font-weight: 700; font-family: 'Inter';">
+                    <span class="row-total">0.00</span>
+                </td>
                 <td style="text-align: right;">
-                    <button type="button" class="btn-remove" data-index="${index}" style="border:none; background:none; cursor:pointer;" aria-label="Remove item">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    <button type="button" class="btn-delete" onclick="removeItem(${index})" style="color: var(--danger);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                     </button>
                 </td>
             `;
@@ -586,36 +594,44 @@ document.addEventListener('DOMContentLoaded', function() {
         calculateTotals();
     }
 
+    window.removeItem = function(index) {
+        if (items.length > 1) {
+            items.splice(index, 1);
+            renderItems();
+        }
+    };
+
     function calculateTotals() {
         let subtotal = 0;
-        const taxRate = parseFloat(taxRateInput.value) || 0;
-        const discountRate = parseFloat(discountInput.value) || 0;
-
-        document.querySelectorAll('.item-row-modern').forEach((row, index) => {
+        const rows = itemsBody.querySelectorAll('tr');
+        
+        rows.forEach((row, index) => {
             const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
             const price = parseFloat(row.querySelector('.item-price').value) || 0;
             const total = qty * price;
             subtotal += total;
-            row.querySelector('.item-total-display').textContent = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+            row.querySelector('.row-total').textContent = total.toFixed(2);
             
-            if (items[index]) {
-                items[index].description = row.querySelector('.item-desc').value;
-                items[index].quantity = qty;
-                items[index].unit_price = price;
-            }
+            items[index].description = row.querySelector('.item-desc').value;
+            items[index].quantity = qty;
+            items[index].unit_price = price;
         });
 
+        const discountRate = parseFloat(discountInput.value) || 0;
+        const taxRate = parseFloat(taxRateInput.value) || 0;
+        
         const discountAmount = subtotal * (discountRate / 100);
         const taxableAmount = subtotal - discountAmount;
         const taxAmount = taxableAmount * (taxRate / 100);
         const total = taxableAmount + taxAmount;
 
-        document.getElementById('tax-rate-badge').textContent = taxRate;
+        document.getElementById('subtotal-display').textContent = subtotal.toFixed(2);
+        document.getElementById('discount-display').textContent = `-${discountAmount.toFixed(2)}`;
+        document.getElementById('tax-display').textContent = taxAmount.toFixed(2);
+        document.getElementById('total-display').textContent = total.toFixed(2);
+        
         document.getElementById('discount-rate-badge').textContent = discountRate;
-        document.getElementById('subtotal-display').textContent = subtotal.toLocaleString(undefined, {minimumFractionDigits: 2});
-        document.getElementById('discount-display').textContent = '-' + discountAmount.toLocaleString(undefined, {minimumFractionDigits: 2});
-        document.getElementById('tax-display').textContent = taxAmount.toLocaleString(undefined, {minimumFractionDigits: 2});
-        document.getElementById('total-display').textContent = total.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('tax-rate-badge').textContent = taxRate;
         
         lineItemsInput.value = JSON.stringify(items);
     }
@@ -625,49 +641,9 @@ document.addEventListener('DOMContentLoaded', function() {
         renderItems();
     });
 
-    itemsBody.addEventListener('click', (e) => {
-        const btn = e.target.closest('.btn-remove');
-        if (btn) {
-            const index = parseInt(btn.dataset.index);
-            if (items.length > 1) {
-                items.splice(index, 1);
-                renderItems();
-            } else {
-                showToast('Action Restricted', 'At least one line item is required.', 'error');
-            }
-        }
-    });
-
     itemsBody.addEventListener('input', calculateTotals);
     taxRateInput.addEventListener('input', calculateTotals);
     discountInput.addEventListener('input', calculateTotals);
-
-    form.addEventListener('submit', function(e) {
-        if (items.length === 0 || items[0].description.trim() === '') {
-            e.preventDefault();
-            showToast('Validation Error', 'Please complete at least one line item.', 'error');
-            return;
-        }
-        
-        // Visual feedback
-        const submitBtn = form.querySelector('button[type="submit"]');
-        submitBtn.classList.add('btn-loading');
-        
-        calculateTotals();
-    });
-
-    // Keyboard Shortcuts
-    document.addEventListener('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-            e.preventDefault();
-            const submitBtn = form.querySelector('button[type="submit"]');
-            submitBtn.click();
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
-            e.preventDefault();
-            if (saveDraftBtn) saveDraftBtn.click();
-        }
-    });
 
     renderItems();
 });
