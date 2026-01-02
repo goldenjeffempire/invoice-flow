@@ -161,78 +161,46 @@
 
 {% block content %}
 <div class="content-container">
-    <div class="recurring-container">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-        <div>
-            <h2 style="font-size: 1.5rem; font-weight: 800; color: var(--recurring-text-primary); letter-spacing: -0.02em;">Subscription Billing</h2>
-            <p style="color: var(--recurring-text-secondary); font-size: 0.95rem;">Manage automated invoice generation and client schedules</p>
+    <div class="coming-soon-wrapper" style="padding: 4rem 1.5rem; text-align: center; background: white; border-radius: 24px; border: 1px solid var(--gray-200); margin-top: 2rem;">
+        <div class="coming-soon-icon" style="width: 80px; height: 80px; background: var(--info-light); color: var(--info); border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 2rem; animation: float 3s ease-in-out infinite;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.2" />
+            </svg>
         </div>
-        <a href="{% url 'invoices:create_recurring' %}" class="btn-primary" style="background: var(--recurring-accent); color: white; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            New Schedule
-        </a>
-    </div>
-
-    {% if recurring_invoices %}
-    <div class="recurring-grid">
-        {% for recurring in recurring_invoices %}
-        <div class="recurring-card">
-            <div class="card-header">
-                <div class="client-profile">
-                    <div class="client-initials">{{ recurring.client_name|slice:":1" }}</div>
-                    <div>
-                        <div style="font-weight: 700; color: var(--recurring-text-primary);">{{ recurring.client_name }}</div>
-                        <div style="font-size: 0.75rem; color: var(--recurring-text-secondary);">{{ recurring.client_email }}</div>
-                    </div>
-                </div>
-                <span class="status-pill {% if recurring.is_active %}status-active{% else %}status-paused{% endif %}">
-                    {% if recurring.is_active %}Active{% else %}Paused{% endif %}
-                </span>
+        <h2 style="font-size: 2.5rem; font-weight: 800; color: var(--gray-900); letter-spacing: -0.02em; margin-bottom: 1rem;">Subscription Billing</h2>
+        <p style="font-size: 1.125rem; color: var(--gray-600); max-width: 600px; margin: 0 auto 2.5rem; line-height: 1.6;">
+            Automate your repetitive tasks with smart recurring invoices. Our automated billing engine is currently under development and will be available to all users soon.
+        </p>
+        <div class="coming-soon-badge" style="display: inline-flex; align-items: center; gap: 0.5rem; background: var(--info-light); color: var(--info); padding: 0.5rem 1.25rem; border-radius: 999px; font-weight: 700; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3rem;">
+            <span style="width: 8px; height: 8px; background: var(--info); border-radius: 50%;"></span>
+            Development In Progress
+        </div>
+        
+        <div class="features-preview" style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap; opacity: 0.6;">
+            <div class="feature-item" style="display: flex; align-items: center; gap: 0.75rem; color: var(--gray-500); font-weight: 600;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--success);"><polyline points="20 6 9 17 4 12"/></svg>
+                Auto-Generation
             </div>
-
-            <div class="billing-details">
-                <div class="detail-item">
-                    <span class="detail-label">Billing Cycle</span>
-                    <span class="detail-value">{{ recurring.get_frequency_display }}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Amount</span>
-                    <span class="detail-value">{{ recurring.currency }} {{ recurring.total|floatformat:2 }}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Next Invoice</span>
-                    <span class="detail-value">{{ recurring.next_invoice_date|date:"M d, Y" }}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Total Sent</span>
-                    <span class="detail-value">0</span> <!-- Placeholder for count logic -->
-                </div>
+            <div class="feature-item" style="display: flex; align-items: center; gap: 0.75rem; color: var(--gray-500); font-weight: 600;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--success);"><polyline points="20 6 9 17 4 12"/></svg>
+                Smart Retries
             </div>
-
-            <div class="card-footer">
-                <a href="{% url 'invoices:edit_recurring' recurring.id %}" class="btn-recurring btn-edit">Edit</a>
-                {% if recurring.is_active %}
-                    <a href="{% url 'invoices:pause_recurring' recurring.id %}" class="btn-recurring btn-state">Pause</a>
-                {% else %}
-                    <a href="{% url 'invoices:resume_recurring' recurring.id %}" class="btn-recurring btn-state" style="background: #dcfce7; color: #15803d;">Resume</a>
-                {% endif %}
-                <button type="button" class="btn-recurring btn-delete" onclick="handleDelete('{{ recurring.id }}', '{{ recurring.client_name }}')">Delete</button>
+            <div class="feature-item" style="display: flex; align-items: center; gap: 0.75rem; color: var(--gray-500); font-weight: 600;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--success);"><polyline points="20 6 9 17 4 12"/></svg>
+                Customer Portal
             </div>
         </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div style="text-align: center; padding: 5rem 2rem; background: white; border-radius: 24px; border: 1px solid var(--recurring-border);">
-        <div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 24px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; color: #94a3b8;">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 4 23 10 17 10"/><path d="M1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        </div>
-        <h3 style="font-size: 1.5rem; font-weight: 800; color: var(--recurring-text-primary); margin-bottom: 0.5rem;">Automate Your Billing</h3>
-        <p style="color: var(--recurring-text-secondary); max-width: 400px; margin: 0 auto 2rem;">Stop creating the same invoices every month. Set up a schedule and let InvoiceFlow handle the rest.</p>
-        <a href="{% url 'invoices:create_recurring' %}" class="btn-primary" style="background: var(--recurring-accent); color: white; padding: 0.8rem 2rem; border-radius: 12px; font-weight: 700; text-decoration: none;">Create First Schedule</a>
-    </div>
-    {% endif %}
     </div>
 </div>
+
+<style>
+@keyframes float {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(180deg); }
+    100% { transform: translateY(0px) rotate(360deg); }
+}
+</style>
+{% endblock %}
 
 <script>
     function handleDelete(id, client) {
