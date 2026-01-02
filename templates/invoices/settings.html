@@ -4,449 +4,422 @@
 {% block title %}Settings - InvoiceFlow{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/settings-pages.css' %}">
 <style>
-    /* Modern, light-theme only overrides */
     :root {
-        --primary: #6366f1;
-        --primary-dark: #4f46e5;
-        --primary-light: #e0e7ff;
-        --success: #10b981;
-        --danger: #ef4444;
-        --slate-50: #f8fafc;
-        --slate-100: #f1f5f9;
-        --slate-200: #e2e8f0;
-        --slate-900: #0f172a;
+        --settings-accent: #6366f1;
+        --settings-border: #e2e8f0;
+        --settings-bg-soft: #f8fafc;
+        --settings-text-primary: #0f172a;
+        --settings-text-secondary: #64748b;
+        --settings-radius: 20px;
     }
 
-    .settings-page-wrapper {
+    .settings-grid {
         display: grid;
         grid-template-columns: 280px 1fr;
         gap: 2rem;
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 0 auto;
-        padding: 1rem;
+        padding: 1.5rem;
+        animation: fadeIn 0.4s ease-out;
     }
 
-    @media (max-width: 1024px) {
-        .settings-page-wrapper {
-            grid-template-columns: 1fr;
-        }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
-    .settings-sidebar {
+    /* Sidebar Navigation */
+    .settings-nav {
         background: white;
-        border-radius: 1rem;
+        border: 1px solid var(--settings-border);
+        border-radius: var(--settings-radius);
         padding: 1rem;
-        border: 1px solid var(--slate-200);
         height: fit-content;
         position: sticky;
-        top: 1rem;
+        top: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
 
-    .settings-nav-item {
+    .nav-item {
         display: flex;
-        items-center: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
+        align-items: center;
+        gap: 0.875rem;
+        padding: 0.875rem 1.25rem;
         width: 100%;
-        border-radius: 0.5rem;
-        font-weight: 500;
-        color: #64748b;
-        transition: all 0.2s;
+        border-radius: 12px;
+        font-weight: 600;
+        color: var(--settings-text-secondary);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         border: none;
         background: transparent;
         cursor: pointer;
         text-align: left;
-    }
-
-    .settings-nav-item:hover {
-        background: var(--slate-50);
-        color: var(--slate-900);
-    }
-
-    .settings-nav-item.active {
-        background: var(--primary-light);
-        color: var(--primary);
-    }
-
-    .settings-nav-icon {
-        width: 1.25rem;
-        height: 1.25rem;
-    }
-
-    .settings-main {
-        background: white;
-        border-radius: 1rem;
-        padding: 2rem;
-        border: 1px solid var(--slate-200);
-    }
-
-    .settings-section-header {
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 1px solid var(--slate-100);
-    }
-
-    .settings-section-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--slate-900);
-    }
-
-    .settings-section-description {
-        color: #64748b;
-        margin-top: 0.5rem;
-    }
-
-    .settings-field-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .settings-field-label {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--slate-900);
-    }
-
-    .settings-field-input, select, textarea, input[type="text"], input[type="email"], input[type="password"] {
-        padding: 0.75rem 1rem;
-        border-radius: 0.5rem;
-        border: 1px solid var(--slate-200);
-        font-size: 0.875rem;
-        transition: all 0.2s;
-        width: 100%;
-    }
-
-    .settings-field-input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px var(--primary-light);
-    }
-
-    .settings-btn-primary {
-        background: var(--primary);
-        color: white;
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        border: none;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-
-    .settings-btn-primary:hover {
-        background: var(--primary-dark);
-    }
-
-    .settings-card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1.5rem;
-        background: var(--slate-50);
-        border-radius: 1rem;
-        border: 1px solid var(--slate-200);
-    }
-
-    .settings-card-content h4 {
-        font-weight: 700;
-        color: var(--slate-900);
         margin-bottom: 0.25rem;
     }
 
-    .settings-card-content p {
-        font-size: 0.875rem;
-        color: #64748b;
+    .nav-item:hover {
+        background: var(--settings-bg-soft);
+        color: var(--settings-text-primary);
     }
 
-    .settings-card-action {
-        color: var(--primary);
-        font-weight: 600;
-        font-size: 0.875rem;
-        text-decoration: none;
+    .nav-item.active {
+        background: var(--settings-accent);
+        color: white;
+        box-shadow: 0 4px 12px -2px rgba(99, 102, 241, 0.3);
+    }
+
+    .nav-icon {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2.2;
+    }
+
+    /* Main Content Area */
+    .settings-content {
+        background: white;
+        border: 1px solid var(--settings-border);
+        border-radius: var(--settings-radius);
+        padding: 2.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-header {
+        margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--settings-text-primary);
+        letter-spacing: -0.02em;
+    }
+
+    .section-desc {
+        color: var(--settings-text-secondary);
+        margin-top: 0.5rem;
+        font-size: 1rem;
+    }
+
+    /* Form Styles */
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .field-label {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--settings-text-primary);
+    }
+
+    input, select, textarea {
+        padding: 0.875rem 1.125rem;
+        border-radius: 12px;
+        border: 1.5px solid var(--settings-border);
+        font-size: 0.95rem;
+        color: var(--settings-text-primary);
+        transition: all 0.2s;
+        width: 100%;
+        background: #fdfdfd;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--settings-accent);
+        background: white;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+
+    .btn-save {
+        background: var(--settings-text-primary);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .btn-save:hover {
+        background: black;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    /* Cards */
+    .feature-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.75rem;
+        background: var(--settings-bg-soft);
+        border-radius: 18px;
+        border: 1px solid var(--settings-border);
+        margin-top: 1.5rem;
+    }
+
+    .feature-card h4 {
+        font-weight: 800;
+        color: var(--settings-text-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .feature-card p {
+        font-size: 0.9rem;
+        color: var(--settings-text-secondary);
+    }
+
+    /* Mobile Adaptations */
+    @media (max-width: 1024px) {
+        .settings-grid { grid-template-columns: 1fr; }
+        .settings-nav { position: static; margin-bottom: 1.5rem; }
+    }
+
+    @media (max-width: 640px) {
+        .form-row { grid-template-columns: 1fr; }
+        .settings-content { padding: 1.5rem; }
     }
 </style>
 {% endblock %}
 
-{% block page_title %}Settings{% endblock %}
-{% block page_subtitle %}Manage your account and payment preferences{% endblock %}
+{% block page_title %}Account Settings{% endblock %}
+{% block page_subtitle %}Manage your business identity and security preferences{% endblock %}
 
 {% block content %}
-<div class="settings-page-wrapper">
-    <!-- Settings Navigation -->
-    <aside class="settings-sidebar">
+<div class="settings-grid">
+    <aside>
         <nav class="settings-nav">
-            <button onclick="switchTab('profile')" id="tab-profile" class="settings-nav-item active">
-                <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                <span>Profile & Business</span>
+            <button onclick="switchTab('profile')" id="tab-profile" class="nav-item active">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                <span>Business Profile</span>
             </button>
-            <button onclick="switchTab('payments')" id="tab-payments" class="settings-nav-item">
-                <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                <span>Payments</span>
+            <button onclick="switchTab('payments')" id="tab-payments" class="nav-item">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span>Payout Settings</span>
             </button>
-            <button onclick="switchTab('security')" id="tab-security" class="settings-nav-item">
-                <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+            <button onclick="switchTab('security')" id="tab-security" class="nav-item">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                 <span>Security</span>
             </button>
-            <button onclick="switchTab('notifications')" id="tab-notifications" class="settings-nav-item">
-                <svg class="settings-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+            <button onclick="switchTab('notifications')" id="tab-notifications" class="nav-item">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                 <span>Notifications</span>
             </button>
         </nav>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="settings-main">
-        <!-- Profile & Business Section -->
+    <main class="settings-content">
+        <!-- Business Profile -->
         <section id="section-profile" class="settings-section">
-            <div class="settings-section-header">
-                <h2 class="settings-section-title">Business Profile</h2>
-                <p class="settings-section-description">How your business appears on invoices and communications.</p>
+            <div class="section-header">
+                <h2 class="section-title">Business Profile</h2>
+                <p class="section-desc">Manage your business information used on all invoices.</p>
             </div>
-            <form id="profile-form" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_profile_update' %}')">
+            <form onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_profile_update' %}')">
                 {% csrf_token %}
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">First Name</label>
+                <div class="form-row">
+                    <div class="field-group">
+                        <label class="field-label">First Name</label>
                         {{ user_form.first_name }}
                     </div>
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Last Name</label>
+                    <div class="field-group">
+                        <label class="field-label">Last Name</label>
                         {{ user_form.last_name }}
                     </div>
                 </div>
-                <div class="settings-field-group">
-                    <label class="settings-field-label">Email Address</label>
+                <div class="field-group">
+                    <label class="field-label">Business Email</label>
                     {{ user_form.email }}
                 </div>
-                <div class="settings-field-group">
-                    <label class="settings-field-label">Company Name</label>
+                <div class="field-group">
+                    <label class="field-label">Company Name</label>
                     {{ profile_form.company_name }}
                 </div>
-                <div class="settings-field-group">
-                    <label class="settings-field-label">Business Address</label>
+                <div class="field-group">
+                    <label class="field-label">Address</label>
                     {{ profile_form.business_address }}
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Invoice Prefix</label>
+                <div class="form-row">
+                    <div class="field-group">
+                        <label class="field-label">Invoice Prefix</label>
                         {{ profile_form.invoice_prefix }}
                     </div>
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Default Currency</label>
+                    <div class="field-group">
+                        <label class="field-label">Default Currency</label>
                         {{ profile_form.default_currency }}
                     </div>
                 </div>
-                <button type="submit" class="settings-btn-primary">Save Business Profile</button>
+                <button type="submit" class="btn-save">Update Profile</button>
             </form>
         </section>
 
-        <!-- Payments Section -->
+        <!-- Payouts Section -->
         <section id="section-payments" class="settings-section" style="display: none;">
-            <div class="settings-section-header">
-                <h2 class="settings-section-title">Payment Settings</h2>
-                <p class="settings-section-description">Configure how you accept payments via Paystack.</p>
+            <div class="section-header">
+                <h2 class="section-title">Payout Settings</h2>
+                <p class="section-desc">Configure where you receive your automated payouts.</p>
             </div>
             
-            <div class="settings-card" style="margin-bottom: 2rem; background: #f0fdf4; border-color: #bbf7d0;">
-                <div class="settings-card-content">
-                    <h4 style="color: #166534;">Paystack Integrated</h4>
-                    <p style="color: #166534;">Your account is ready to receive payments directly. No additional setup required.</p>
+            <div class="feature-card" style="background: #f0fdf4; border-color: #bbf7d0; margin-bottom: 2.5rem;">
+                <div>
+                    <h4 style="color: #166534;">Payment Gateway Ready</h4>
+                    <p style="color: #166534;">Your account is fully integrated with Paystack.</p>
                 </div>
-                <div style="color: #166534; display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                <div style="color: #166534; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                     Active
                 </div>
             </div>
 
-            <form id="payments-form" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_payments_update' %}')">
+            <form onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_payments_update' %}')">
                 {% csrf_token %}
-                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--slate-900); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">Payout Destination</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Bank Name</label>
+                <div class="form-row">
+                    <div class="field-group">
+                        <label class="field-label">Bank Name</label>
                         {{ payment_form.bank_name }}
                     </div>
-                    <div class="settings-field-group">
-                        <label class="settings-field-label">Account Number</label>
+                    <div class="field-group">
+                        <label class="field-label">Account Number</label>
                         {{ payment_form.account_number_encrypted }}
                     </div>
                 </div>
-                <div class="settings-field-group">
-                    <label class="settings-field-label">Account Holder Name</label>
+                <div class="field-group">
+                    <label class="field-label">Account Name</label>
                     {{ payment_form.account_name }}
                 </div>
-                
-                <h3 style="font-size: 0.875rem; font-weight: 700; color: var(--slate-900); text-transform: uppercase; letter-spacing: 0.05em; margin: 2rem 0 1rem;">Accepted Payment Methods</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border: 1px solid var(--slate-200); border-radius: 0.5rem; cursor: pointer;">
-                        <span style="font-size: 0.875rem; font-weight: 600;">Card Payments</span>
-                        {{ payment_form.enable_card_payments }}
-                    </label>
-                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1rem; border: 1px solid var(--slate-200); border-radius: 0.5rem; cursor: pointer;">
-                        <span style="font-size: 0.875rem; font-weight: 600;">Bank Transfers</span>
-                        {{ payment_form.enable_bank_transfers }}
-                    </label>
-                </div>
-                
-                <button type="submit" class="settings-btn-primary">Update Payment Settings</button>
+                <button type="submit" class="btn-save">Update Payouts</button>
             </form>
         </section>
 
         <!-- Security Section -->
         <section id="section-security" class="settings-section" style="display: none;">
-            <div class="settings-section-header">
-                <h2 class="settings-section-title">Security</h2>
-                <p class="settings-section-description">Manage your password and account protection.</p>
+            <div class="section-header">
+                <h2 class="section-title">Account Security</h2>
+                <p class="section-desc">Manage your password and authentication methods.</p>
             </div>
-            <form id="security-form" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_security_update' %}')">
+            <form onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_security_update' %}')">
                 {% csrf_token %}
-                <div class="settings-field-group">
-                    <label class="settings-field-label">Current Password</label>
+                <div class="field-group">
+                    <label class="field-label">Current Password</label>
                     {{ password_form.current_password }}
                 </div>
-                <div class="settings-field-group">
-                    <label class="settings-field-label">New Password</label>
-                    {{ password_form.new_password }}
-                </div>
-                <div class="settings-field-group">
-                    <label class="settings-field-label">Confirm New Password</label>
-                    {{ password_form.confirm_password }}
-                </div>
-                <button type="submit" class="settings-btn-primary">Update Password</button>
-            </form>
-
-            <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--slate-100);">
-                <div class="settings-card">
-                    <div class="settings-card-content">
-                        <h4>Two-Factor Authentication</h4>
-                        <p>Secure your account with an extra verification layer.</p>
+                <div class="form-row">
+                    <div class="field-group">
+                        <label class="field-label">New Password</label>
+                        {{ password_form.new_password }}
                     </div>
-                    {% if mfa_enabled %}
-                    <span style="color: var(--success); font-weight: 700; background: #ecfdf5; padding: 0.5rem 1rem; border-radius: 0.5rem;">Enabled</span>
-                    {% else %}
-                    <a href="{% url 'invoices:mfa_setup' %}" class="settings-card-action">Enable 2FA</a>
-                    {% endif %}
+                    <div class="field-group">
+                        <label class="field-label">Confirm New Password</label>
+                        {{ password_form.confirm_password }}
+                    </div>
                 </div>
+                <button type="submit" class="btn-save">Change Password</button>
+            </form>
+            <div class="feature-card">
+                <div>
+                    <h4>Two-Factor Authentication</h4>
+                    <p>Add an extra layer of security to your account.</p>
+                </div>
+                <a href="{% url 'invoices:mfa_setup' %}" style="color: var(--settings-accent); font-weight: 700; text-decoration: none;">Enable 2FA</a>
             </div>
         </section>
 
         <!-- Notifications Section -->
         <section id="section-notifications" class="settings-section" style="display: none;">
-            <div class="settings-section-header">
-                <h2 class="settings-section-title">Notifications</h2>
-                <p class="settings-section-description">Choose how you want to be notified of activity.</p>
+            <div class="section-header">
+                <h2 class="section-title">Notifications</h2>
+                <p class="section-desc">Choose how you want to be notified of activity.</p>
             </div>
-            <form id="notifications-form" onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_notifications_update' %}')">
+            <form onsubmit="handleFormSubmit(event, '{% url 'invoices:settings_notifications_update' %}')">
                 {% csrf_token %}
                 <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
                     {% for field in notification_form %}
-                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.25rem; border: 1px solid var(--slate-200); border-radius: 0.75rem; cursor: pointer;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; padding: 1.5rem; border: 1px solid var(--settings-border); border-radius: 16px; cursor: pointer; transition: all 0.2s;">
                         <div>
-                            <span style="display: block; font-weight: 600; color: var(--slate-900);">{{ field.label }}</span>
-                            {% if field.help_text %}<span style="font-size: 0.75rem; color: #64748b;">{{ field.help_text }}</span>{% endif %}
+                            <span style="display: block; font-weight: 700; color: var(--settings-text-primary);">{{ field.label }}</span>
+                            {% if field.help_text %}<span style="font-size: 0.85rem; color: var(--settings-text-secondary); margin-top: 2px; display: block;">{{ field.help_text }}</span>{% endif %}
                         </div>
-                        {{ field }}
+                        <div style="transform: scale(1.2);">{{ field }}</div>
                     </label>
                     {% endfor %}
                 </div>
-                <button type="submit" class="settings-btn-primary">Save Notification Preferences</button>
+                <button type="submit" class="btn-save">Save Preferences</button>
             </form>
         </section>
     </main>
 </div>
 
-<!-- Toast Container -->
-<div id="toast-container" style="position: fixed; bottom: 2rem; right: 2rem; z-index: 1000; display: flex; flex-direction: column; gap: 0.5rem;"></div>
+<div id="toast-container" style="position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.75rem;"></div>
 
 <script>
     function switchTab(tabId) {
         document.querySelectorAll('.settings-section').forEach(s => s.style.display = 'none');
         document.getElementById('section-' + tabId).style.display = 'block';
-
-        document.querySelectorAll('.settings-nav-item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
         document.getElementById('tab-' + tabId).classList.add('active');
-        
         history.replaceState(null, null, '#' + tabId);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash.substring(1);
-        if (hash && ['profile', 'security', 'notifications', 'payments'].includes(hash)) {
-            switchTab(hash);
-        }
+        if (hash && ['profile', 'security', 'notifications', 'payments'].includes(hash)) switchTab(hash);
     });
 
     async function handleFormSubmit(event, url) {
         event.preventDefault();
         const form = event.target;
         const btn = form.querySelector('button[type="submit"]');
-        const originalText = btn.innerText;
-        
+        const originalText = btn.innerHTML;
         btn.disabled = true;
-        btn.innerText = 'Saving...';
+        btn.innerHTML = 'Saving Changes...';
 
         try {
             const formData = new FormData(form);
-            // Get the CSRF token from the specific form being submitted
-            const csrfInput = form.querySelector('[name=csrfmiddlewaretoken]');
-            const csrfToken = csrfInput ? csrfInput.value : document.querySelector('[name=csrfmiddlewaretoken]').value;
-            
             const response = await fetch(url, {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-CSRFToken': csrfToken,
+                    'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value,
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
-            
             const data = await response.json();
-            if (response.ok && data.success) {
-                showToast(data.message || 'Settings updated successfully!', 'success');
-            } else {
-                let errorMsg = data.message || 'Error updating settings.';
-                if (data.errors) {
-                    const firstError = Object.values(data.errors)[0];
-                    if (Array.isArray(firstError)) errorMsg = firstError[0];
-                }
-                showToast(errorMsg, 'error');
-            }
+            if (data.success) showToast(data.message || 'Settings saved!', 'success');
+            else showToast(data.message || 'Update failed', 'error');
         } catch (e) {
-            showToast('Connection error. Please try again.', 'error');
+            showToast('Network error, please try again', 'error');
         } finally {
             btn.disabled = false;
-            btn.innerText = originalText;
+            btn.innerHTML = originalText;
         }
     }
 
     function showToast(msg, type) {
-        const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
-        toast.style.padding = '1rem 1.5rem';
-        toast.style.borderRadius = '0.5rem';
-        toast.style.background = 'white';
-        toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
-        toast.style.border = `1px solid ${type === 'success' ? '#bbf7d0' : '#fecaca'}`;
-        toast.style.color = type === 'success' ? '#166534' : '#991b1b';
-        toast.style.fontWeight = '600';
+        toast.style.cssText = `padding: 1rem 1.5rem; background: white; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 2px solid ${type === 'success' ? '#10b981' : '#ef4444'}; color: #0f172a; font-weight: 700; min-width: 250px; animation: slideIn 0.3s ease-out;`;
         toast.innerText = msg;
-        
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateY(0)';
-        }, 10);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(20px)';
-            setTimeout(() => toast.remove(), 500);
-        }, 5000);
+        document.getElementById('toast-container').appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 4000);
     }
 </script>
+
+<style>
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+</style>
 {% endblock %}
