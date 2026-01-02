@@ -204,6 +204,49 @@
         .invoice-grid { grid-template-columns: 1fr; gap: 0; }
         .totals-box { max-width: 100%; }
     }
+    /* Typography & Spacing Enhancements */
+    .header-title {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+
+    .label-modern {
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-size: 0.75rem;
+        color: var(--gray-500);
+    }
+
+    .input-modern {
+        font-feature-settings: "tnum"; /* Tabular numbers for price inputs */
+    }
+
+    /* Interactive Feedback */
+    .btn-loading {
+        position: relative;
+        color: transparent !important;
+        pointer-events: none;
+    }
+
+    .btn-loading::after {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        top: 50%;
+        left: 50%;
+        margin: -10px 0 0 -10px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: var(--white);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 {% endblock %}
 
@@ -545,7 +588,25 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('Validation Error', 'Please complete at least one line item.', 'error');
             return;
         }
+        
+        // Visual feedback
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.classList.add('btn-loading');
+        
         calculateTotals();
+    });
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.click();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+            e.preventDefault();
+            if (saveDraftBtn) saveDraftBtn.click();
+        }
     });
 
     renderItems();
