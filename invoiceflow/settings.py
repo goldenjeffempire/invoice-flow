@@ -82,6 +82,7 @@ if not IS_PRODUCTION:
         "https://*.replit.dev",
         "https://*.repl.co",
         "https://*.onrender.com",
+        "https://*.kirk.replit.dev",
     ]
 else:
     CSRF_TRUSTED_ORIGINS += [
