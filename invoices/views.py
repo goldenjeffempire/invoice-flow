@@ -793,7 +793,29 @@ def invoice_detail(request, invoice_id):
     invoice = get_object_or_404(
         Invoice.objects.prefetch_related("line_items"), id=invoice_id, user=request.user
     )
-    return render(request, "invoices/invoice_detail.html", {"invoice": invoice})
+    business = getattr(request.user, 'profile', None)
+    return render(request, "invoices/invoice_detail.html", {
+        "invoice": invoice,
+        "business": business,
+        "active": "invoices"
+    })
+
+
+@login_required
+@require_POST
+def mark_invoice_paid(request, invoice_id):
+    invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
+    invoice.status = 'paid'
+    invoice.save()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return HttpResponse(json.dumps({
+            "success": True, 
+            "message": "Invoice marked as paid successfully."
+        }).encode('utf-8'), content_type="application/json")
+        
+    messages.success(request, "Invoice marked as paid.")
+    return redirect("invoices:invoice_detail", invoice_id=invoice.id)
 
 
 @login_required

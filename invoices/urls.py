@@ -31,6 +31,7 @@ urlpatterns = [
     path("invoice/<int:invoice_id>/delete/", views.delete_invoice, name="delete_invoice"),
     path("invoice/<int:invoice_id>/duplicate/", views.duplicate_invoice, name="duplicate_invoice"),
     path("invoice/<int:invoice_id>/status/", views.update_invoice_status, name="update_invoice_status"),
+    path("invoice/<int:invoice_id>/mark-paid/", views.mark_invoice_paid, name="mark_invoice_paid"),
     path("invoice/<int:invoice_id>/pdf/", views.generate_pdf, name="generate_pdf"),
     path("invoice/<int:invoice_id>/email/", views.send_invoice_email, name="send_invoice_email"),
     path("invoice/<int:invoice_id>/whatsapp/", views.whatsapp_share, name="whatsapp_share"),
