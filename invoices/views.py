@@ -866,41 +866,49 @@ def edit_invoice(request, invoice_id):
 
 
 @login_required
+@require_POST
 def delete_invoice(request, invoice_id):
-    """Delete an existing invoice and its line items with AJAX support."""
+    """Delete an existing invoice and its line items with AJAX support and state checks."""
     invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
     invoice_display_id = invoice.invoice_id
     
-    if request.method == "POST":
-        try:
-            with transaction.atomic():
-                invoice.delete()
+    # Graceful handling for paid invoices
+    if invoice.status == Invoice.Status.PAID:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return HttpResponse(json.dumps({
+                "success": False, 
+                "message": "Paid invoices are locked and cannot be deleted for accounting integrity."
+            }).encode('utf-8'), content_type="application/json", status=403)
+        messages.error(request, "Paid invoices cannot be deleted.")
+        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
+        
+    try:
+        with transaction.atomic():
+            invoice.delete()
+        
+        # Invalidate cache
+        from .services import AnalyticsService
+        AnalyticsService.invalidate_user_cache(request.user.id)
+        
+        message = f"Invoice #{invoice_display_id} has been deleted successfully."
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return HttpResponse(json.dumps({
+                "success": True, 
+                "message": message,
+                "redirect_url": "/invoices/list/"
+            }).encode('utf-8'), content_type="application/json")
             
-            # Invalidate cache
-            from .services import AnalyticsService
-            AnalyticsService.invalidate_user_cache(request.user.id)
-            
-            message = f"Invoice #{invoice_display_id} has been deleted."
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return HttpResponse(json.dumps({
-                    "success": True, 
-                    "message": message,
-                    "redirect_url": "/invoices/list/"
-                }).encode('utf-8'), content_type="application/json")
-                
-            messages.success(request, message)
-            return redirect("invoices:invoice_list")
-        except Exception as e:
-            logger.error(f"Error deleting invoice {invoice_id}: {e}")
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
-                return HttpResponse(json.dumps({
-                    "success": False, 
-                    "message": "A database error occurred while deleting the invoice."
-                }).encode('utf-8'), content_type="application/json", status=500)
-            messages.error(request, "Failed to delete invoice.")
-            return redirect("invoices:invoice_detail", invoice_id=invoice_id)
-
-    return render(request, "invoices/delete_invoice.html", {"invoice": invoice})
+        messages.success(request, message)
+        return redirect("invoices:invoice_list")
+    except Exception as e:
+        logger.error(f"Error deleting invoice {invoice_id}: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
+            return HttpResponse(json.dumps({
+                "success": False, 
+                "message": "A database error occurred while deleting the invoice."
+            }).encode('utf-8'), content_type="application/json", status=500)
+        messages.error(request, "Failed to delete invoice.")
+        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
 
 
 @login_required
