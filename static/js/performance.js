@@ -128,7 +128,7 @@
           var entries = entryList.getEntries();
           entries.forEach(function(entry) {
             if (entry.name === 'first-contentful-paint') {
-              console.log('[Performance] FCP:', Math.round(entry.startTime), 'ms');
+              // FCP tracked
             }
           });
         }).observe({ entryTypes: ['paint'] });
@@ -138,7 +138,7 @@
         new PerformanceObserver(function(entryList) {
           var entries = entryList.getEntries();
           entries.forEach(function(entry) {
-            console.log('[Performance] LCP:', Math.round(entry.startTime), 'ms');
+            // LCP tracked
           });
         }).observe({ entryTypes: ['largest-contentful-paint'] });
       } catch (e) {}
@@ -148,7 +148,7 @@
           var entries = entryList.getEntries();
           entries.forEach(function(entry) {
             if (!entry.hadRecentInput) {
-              console.log('[Performance] CLS:', entry.value.toFixed(4));
+              // CLS tracked
             }
           });
         }).observe({ entryTypes: ['layout-shift'] });
@@ -158,7 +158,7 @@
         new PerformanceObserver(function(entryList) {
           var entries = entryList.getEntries();
           entries.forEach(function(entry) {
-            console.log('[Performance] FID:', Math.round(entry.processingStart - entry.startTime), 'ms');
+            // FID tracked
           });
         }).observe({ entryTypes: ['first-input'] });
       } catch (e) {}
