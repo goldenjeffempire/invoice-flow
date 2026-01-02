@@ -22,6 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebar.classList.toggle('is-open');
             if (overlay) overlay.classList.toggle('is-visible');
             document.body.style.overflow = sidebar.classList.contains('is-open') ? 'hidden' : '';
+            
+            // Focus management for mobile
+            if (sidebar.classList.contains('is-open')) {
+                const firstLink = sidebar.querySelector('.sidebar-link');
+                if (firstLink) firstLink.focus();
+            }
         } else {
             // Desktop: Toggle collapsed state
             layout.classList.toggle('sidebar-collapsed');
