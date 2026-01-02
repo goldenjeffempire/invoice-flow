@@ -1,7 +1,6 @@
 {% comment %}
 Modern Authenticated Sidebar Navigation Component
 Usage: {% include 'components/authenticated-sidebar.html' %}
-
 Light-theme only, mobile-first responsive design
 {% endcomment %}
 <aside class="authenticated-sidebar" data-sidebar role="navigation" aria-label="Sidebar">
@@ -47,8 +46,13 @@ Light-theme only, mobile-first responsive design
 
         <!-- Invoices Section -->
         <div class="sidebar-nav-group" role="group" aria-labelledby="nav-label-invoices">
-            <span class="sidebar-nav-label" id="nav-label-invoices">Invoicing</span>
-            <ul class="sidebar-nav-list" role="list">
+            <button class="sidebar-section-toggle" aria-expanded="true" aria-controls="nav-list-invoices">
+                <span class="sidebar-nav-label" id="nav-label-invoices">Invoicing</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toggle-icon">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+            <ul class="sidebar-nav-list" id="nav-list-invoices" role="list">
                 <li>
                     <a href="{% url 'invoices:invoice_list' %}" class="sidebar-link {% if active == 'invoices' %}active{% endif %}" aria-current="{% if active == 'invoices' %}page{% else %}false{% endif %}">
                         <div class="sidebar-link-icon" aria-hidden="true">
@@ -91,8 +95,13 @@ Light-theme only, mobile-first responsive design
 
         <!-- Templates Section -->
         <div class="sidebar-nav-group" role="group" aria-labelledby="nav-label-templates">
-            <span class="sidebar-nav-label" id="nav-label-templates">Templates</span>
-            <ul class="sidebar-nav-list" role="list">
+            <button class="sidebar-section-toggle" aria-expanded="true" aria-controls="nav-list-templates">
+                <span class="sidebar-nav-label" id="nav-label-templates">Templates</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="toggle-icon">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+            <ul class="sidebar-nav-list" id="nav-list-templates" role="list">
                 <li>
                     <a href="{% url 'templates' %}" class="sidebar-link {% if active == 'templates' %}active{% endif %}" aria-current="{% if active == 'templates' %}page{% else %}false{% endif %}">
                         <div class="sidebar-link-icon" aria-hidden="true">
@@ -115,6 +124,26 @@ Light-theme only, mobile-first responsive design
                 </li>
             </ul>
         </div>
+
+        <!-- Admin Section (Only for Staff) -->
+        {% if user.is_staff %}
+        <div class="sidebar-nav-group" role="group" aria-labelledby="nav-label-admin">
+            <span class="sidebar-nav-label" id="nav-label-admin">Administration</span>
+            <ul class="sidebar-nav-list" role="list">
+                <li>
+                    <a href="/admin/" class="sidebar-link" target="_blank">
+                        <div class="sidebar-link-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                                <path d="M12 8v4" /><path d="M12 16h.01" />
+                            </svg>
+                        </div>
+                        <span>Admin Panel</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
 
         <!-- Account Section -->
         <div class="sidebar-nav-group" role="group" aria-labelledby="nav-label-account">
