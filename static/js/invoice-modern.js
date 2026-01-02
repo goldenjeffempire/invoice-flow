@@ -121,29 +121,33 @@ function validateField(field) {
  * Real-time Search
  */
 function initializeRealtimeSearch() {
-  const searchInput = document.querySelector('[name="search"]');
-  if (!searchInput) return;
+  const searchInputs = document.querySelectorAll('input[name="search"]');
+  if (searchInputs.length === 0) return;
   
   let searchTimeout;
   
-  searchInput.addEventListener('input', function(e) {
-    clearTimeout(searchTimeout);
-    const query = this.value.trim();
-    
-    if (query.length === 0) {
-      // Reset if empty
-      const form = document.getElementById('searchForm');
-      if (form) form.submit();
-      return;
-    }
-    
-    if (query.length >= 2) {
-      // Debounce search
-      searchTimeout = setTimeout(() => {
-        const form = document.getElementById('searchForm');
-        if (form) form.submit();
-      }, 300);
-    }
+  searchInputs.forEach(searchInput => {
+    searchInput.addEventListener('input', function(e) {
+      clearTimeout(searchTimeout);
+      const query = this.value.trim();
+      const form = this.closest('form');
+      if (!form) return;
+
+      if (query.length === 0) {
+        // Reset if empty and we are on the list page
+        if (window.location.pathname.includes('/invoices/')) {
+           form.submit();
+        }
+        return;
+      }
+      
+      if (query.length >= 2) {
+        // Debounce search
+        searchTimeout = setTimeout(() => {
+          form.submit();
+        }, 400);
+      }
+    });
   });
 }
 

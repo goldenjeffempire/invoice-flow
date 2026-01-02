@@ -49,16 +49,16 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <div class="header-search lg:flex hidden">
+                    <form action="{% url 'invoices:invoice_list' %}" method="get" class="header-search lg:flex hidden" id="global-search-form">
                         <div class="search-wrapper">
                             <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="11" cy="11" r="8"></circle>
                                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                             </svg>
-                            <input type="text" placeholder="Search invoices..." aria-label="Search">
+                            <input type="text" name="search" placeholder="Search invoices..." aria-label="Search" value="{{ search_query|default:'' }}">
                             <span class="search-shortcut">⌘K</span>
                         </div>
-                    </div>
+                    </form>
                     <div class="header-buttons">
                         <a href="{% url 'invoices:create_invoice_start' %}" class="btn-primary-modern">
                             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -92,7 +92,8 @@
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
                 e.preventDefault();
-                // Implement search
+                const globalSearch = document.querySelector('#global-search-form input[name="search"]');
+                if (globalSearch) globalSearch.focus();
             }
         });
     </script>
