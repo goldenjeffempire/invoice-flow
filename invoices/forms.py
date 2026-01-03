@@ -219,7 +219,9 @@ class InvoiceForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             if field != 'automated_reminders_enabled':
-                self.fields[field].widget.attrs.update({'class': 'input-modern'})
+                current_classes = self.fields[field].widget.attrs.get('class', '')
+                if 'input-modern' not in current_classes:
+                    self.fields[field].widget.attrs['class'] = f"input-modern {current_classes}".strip()
 
 
 class UserDetailsForm(forms.ModelForm):
