@@ -627,6 +627,28 @@ class InvoiceSearchForm(forms.Form):
         return cleaned_data
 
 
+class UserReminderSettingsForm(forms.ModelForm):
+    class Meta:
+        model = UserReminderSettings
+        fields = [
+            'enabled', 
+            'remind_before_days', 
+            'remind_after_days',
+            'reminder_subject',
+            'reminder_body',
+            'max_retries',
+            'retry_delay_minutes'
+        ]
+        widgets = {
+            'enabled': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer'}),
+            'remind_before_days': forms.NumberInput(attrs={'class': 'form-input'}),
+            'remind_after_days': forms.NumberInput(attrs={'class': 'form-input'}),
+            'reminder_subject': forms.TextInput(attrs={'class': 'form-input'}),
+            'reminder_body': forms.Textarea(attrs={'class': 'form-input', 'rows': 5}),
+            'max_retries': forms.NumberInput(attrs={'class': 'form-input'}),
+            'retry_delay_minutes': forms.NumberInput(attrs={'class': 'form-input'}),
+        }
+
 class WaitlistForm(forms.ModelForm):
     """Form for email capture from landing page and Coming Soon pages."""
 
