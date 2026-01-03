@@ -606,15 +606,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const rows = itemsBody.querySelectorAll('tr');
         
         rows.forEach((row, index) => {
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const qtyInput = row.querySelector('.item-qty');
+            const priceInput = row.querySelector('.item-price');
+            const descInput = row.querySelector('.item-desc');
+            
+            const qty = parseFloat(qtyInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
             const total = qty * price;
             subtotal += total;
-            row.querySelector('.row-total').textContent = total.toFixed(2);
+            row.querySelector('.row-total').textContent = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             
-            items[index].description = row.querySelector('.item-desc').value;
-            items[index].quantity = qty;
-            items[index].unit_price = price;
+            // Sync with JS array
+            if (items[index]) {
+                items[index].description = descInput.value;
+                items[index].quantity = qty;
+                items[index].unit_price = price;
+            }
         });
 
         const discountRate = parseFloat(discountInput.value) || 0;
@@ -625,15 +632,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const taxAmount = taxableAmount * (taxRate / 100);
         const total = taxableAmount + taxAmount;
 
-        document.getElementById('subtotal-display').textContent = subtotal.toFixed(2);
-        document.getElementById('discount-display').textContent = `-${discountAmount.toFixed(2)}`;
-        document.getElementById('tax-display').textContent = taxAmount.toFixed(2);
-        document.getElementById('total-display').textContent = total.toFixed(2);
+        document.getElementById('subtotal-display').textContent = subtotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('discount-display').textContent = `-${discountAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        document.getElementById('tax-display').textContent = taxAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('total-display').textContent = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         
         document.getElementById('discount-rate-badge').textContent = discountRate;
         document.getElementById('tax-rate-badge').textContent = taxRate;
         
         lineItemsInput.value = JSON.stringify(items);
+        
+        // Add visual validation feedback
+        discountInput.classList.toggle('border-danger', discountRate < 0 || discountRate > 100);
+        taxRateInput.classList.toggle('border-danger', taxRate < 0 || taxRate > 100);
     }
 
     addItemBtn.addEventListener('click', () => {
