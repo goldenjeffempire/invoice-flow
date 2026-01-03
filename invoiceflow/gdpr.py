@@ -60,7 +60,8 @@ def export_user_data(request):
     GDPR Article 20 - Right to Data Portability.
     Export all user data in machine-readable format (JSON).
     """
-    from invoices.models import GDPRRequest
+    from django.apps import apps
+    GDPRRequest = apps.get_model('invoices', 'GDPRRequest')
 
     try:
         user = request.user
@@ -93,7 +94,8 @@ def export_user_data(request):
         }
 
         try:
-            from invoices.models import Invoice, UserProfile
+            Invoice = apps.get_model('invoices', 'Invoice')
+            UserProfile = apps.get_model('invoices', 'UserProfile')
 
             profile = UserProfile.objects.filter(user=user).first()
             if profile:
@@ -153,7 +155,8 @@ def request_data_deletion(request):
     Submit a request to delete all user data.
     Request is persisted to database before email notification.
     """
-    from invoices.models import GDPRRequest
+    from django.apps import apps
+    GDPRRequest = apps.get_model('invoices', 'GDPRRequest')
 
     try:
         user = request.user
@@ -243,7 +246,8 @@ def submit_sar(request):
     Submit a formal SAR for comprehensive data disclosure.
     Request is persisted to database before email notification.
     """
-    from invoices.models import GDPRRequest
+    from django.apps import apps
+    GDPRRequest = apps.get_model('invoices', 'GDPRRequest')
 
     try:
         user = request.user
