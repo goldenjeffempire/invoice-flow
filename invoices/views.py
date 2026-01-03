@@ -283,11 +283,18 @@ def reminder_dashboard(request):
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     
+    sent_today = ReminderLog.objects.filter(invoice__user=request.user, sent_at__gte=today_start, success=True).count()
+    total_sent = ReminderLog.objects.filter(invoice__user=request.user).count()
+    total_opened = ReminderLog.objects.filter(invoice__user=request.user, opened_at__isnull=False).count()
+    total_clicked = ReminderLog.objects.filter(invoice__user=request.user, clicked_at__isnull=False).count()
+    
     stats = {
         'total_rules': rules.count(),
         'pending_reminders': ScheduledReminder.objects.filter(invoice__user=request.user, status=ScheduledReminder.Status.PENDING).count(),
-        'sent_today': ReminderLog.objects.filter(invoice__user=request.user, sent_at__gte=today_start, success=True).count(),
+        'sent_today': sent_today,
         'failures': ScheduledReminder.objects.filter(invoice__user=request.user, status=ScheduledReminder.Status.FAILED).count(),
+        'open_rate': round((total_opened / total_sent * 100), 1) if total_sent > 0 else 0,
+        'click_rate': round((total_clicked / total_sent * 100), 1) if total_sent > 0 else 0,
     }
 
     return render(request, "invoices/reminders/dashboard.html", {
@@ -329,6 +336,60 @@ def reminder_settings(request):
         "form": ReminderRuleForm(),
         "active": "settings"
     })
+
+@login_required
+def track_reminder_click(request, log_id):
+    """Track clicks on reminder links."""
+    from .models import ReminderLog
+    from django.shortcuts import redirect
+    log = get_object_or_404(ReminderLog, id=log_id)
+    if not log.clicked_at:
+        log.clicked_at = timezone.now()
+        log.save(update_fields=['clicked_at'])
+    
+    # Redirect to the public invoice page
+    return redirect('invoices:public_invoice', invoice_id=log.invoice.id)
+
+def track_reminder_open(request, log_id):
+    """Track email opens via a transparent pixel."""
+    from .models import ReminderLog
+    from django.http import HttpResponse
+    try:
+        log = ReminderLog.objects.get(id=log_id)
+        if not log.opened_at:
+            log.opened_at = timezone.now()
+            log.save(update_fields=['opened_at'])
+    except Exception:
+        pass
+    
+    # Return a 1x1 transparent GIF
+    pixel_data = b'\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00\x21\xf9\x04\x01\x00\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b'
+    return HttpResponse(pixel_data, content_type="image/gif")
+
+@login_required
+@require_POST
+def bulk_reminder_action(request):
+    """Bulk manage scheduled reminders."""
+    from .models import ScheduledReminder
+    action = request.POST.get('action')
+    reminder_ids = request.POST.getlist('reminder_ids')
+    
+    if not reminder_ids:
+        messages.warning(request, "No reminders selected.")
+        return redirect('invoices:reminder_settings')
+        
+    reminders = ScheduledReminder.objects.filter(id__in=reminder_ids, invoice__user=request.user)
+    
+    if action == 'cancel':
+        reminders.update(status=ScheduledReminder.Status.CANCELLED)
+        messages.success(request, f"Cancelled {reminders.count()} reminders.")
+    elif action == 'reschedule':
+        # Simple reschedule for tomorrow
+        new_date = timezone.now() + timedelta(days=1)
+        reminders.update(scheduled_for=new_date, status=ScheduledReminder.Status.PENDING)
+        messages.success(request, f"Rescheduled {reminders.count()} reminders for tomorrow.")
+        
+    return redirect('invoices:reminder_settings')
 
 @login_required
 @require_POST

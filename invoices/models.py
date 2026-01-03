@@ -424,6 +424,8 @@ class ReminderLog(models.Model):
     subject = models.CharField(max_length=255)
     body = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
+    opened_at = models.DateTimeField(null=True, blank=True)
+    clicked_at = models.DateTimeField(null=True, blank=True)
     success = models.BooleanField(default=True)
 
 
@@ -805,6 +807,8 @@ class ReminderLog(models.Model):
     subject = models.CharField(max_length=255)
     body = models.TextField()
     sent_at = models.DateTimeField(auto_now_add=True)
+    opened_at = models.DateTimeField(null=True, blank=True)
+    clicked_at = models.DateTimeField(null=True, blank=True)
     success = models.BooleanField(default=True)
 
 class PaymentRecipient(models.Model):

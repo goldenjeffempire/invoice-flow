@@ -96,6 +96,10 @@ class ReminderSchedulingService:
                 
                 subject = subject_template.format(**context)
                 body = body_template.format(**context)
+                
+                # Append tracking pixel and link wrapping (simplified for now)
+                tracking_pixel_url = f"{settings.SITE_URL}/invoices/settings/reminders/pixel/{reminder.id}/"
+                body += f"\n\n<img src='{tracking_pixel_url}' width='1' height='1' />"
 
                 # Multi-channel routing
                 if rule.channel == 'email':
