@@ -1,0 +1,158 @@
+{% extends "base/layout-authenticated.html" %}
+{% load static %}
+
+{% block title %}Reminder Dashboard - InvoiceFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -8px rgba(0,0,0,0.1);
+    }
+    .status-pill {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+</style>
+{% endblock %}
+
+{% block page_title %}Reminder Intelligence{% endblock %}
+{% block page_subtitle %}Monitor and manage your automated collection sequences.{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="stat-card bg-white p-6 rounded-3xl">
+            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Active Rules</p>
+            <h3 class="text-3xl font-black text-gray-900">{{ stats.total_rules }}</h3>
+        </div>
+        <div class="stat-card bg-white p-6 rounded-3xl">
+            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Pending Reminders</p>
+            <h3 class="text-3xl font-black text-indigo-600">{{ stats.pending_reminders }}</h3>
+        </div>
+        <div class="stat-card bg-white p-6 rounded-3xl">
+            <p class="text-xs font-bold text-gray-400 uppercase mb-1">Sent Today</p>
+            <h3 class="text-3xl font-black text-green-600">{{ stats.sent_today }}</h3>
+        </div>
+        <div class="stat-card bg-white p-6 rounded-3xl">
+            <p class="text-xs font-bold text-gray-400 uppercase mb-1">System Failures</p>
+            <h3 class="text-3xl font-black text-red-600">{{ stats.failures }}</h3>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Upcoming Reminders -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-50 flex justify-between items-center">
+                    <h3 class="text-lg font-extrabold text-gray-900">Next 10 Scheduled Reminders</h3>
+                    <a href="{% url 'invoices:reminder_rules' %}" class="text-sm font-bold text-indigo-600 hover:text-indigo-700 transition-colors">Manage Rules →</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
+                                <th class="px-8 py-4">Invoice</th>
+                                <th class="px-8 py-4">Rule</th>
+                                <th class="px-8 py-4">Scheduled For</th>
+                                <th class="px-8 py-4">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            {% for rem in upcoming %}
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="px-8 py-4 font-bold text-gray-900">#{{ rem.invoice.invoice_id }}</td>
+                                <td class="px-8 py-4 text-gray-600">{{ rem.rule.name }}</td>
+                                <td class="px-8 py-4 text-gray-500 text-sm">{{ rem.scheduled_for|date:"M d, Y H:i" }}</td>
+                                <td class="px-8 py-4">
+                                    <span class="status-pill bg-yellow-100 text-yellow-700">{{ rem.get_status_display }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-8 py-12 text-center text-gray-400 italic">No upcoming reminders found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-50">
+                    <h3 class="text-lg font-extrabold text-gray-900">Recent Delivery Logs</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
+                                <th class="px-8 py-4">Recipient</th>
+                                <th class="px-8 py-4">Subject</th>
+                                <th class="px-8 py-4">Time</th>
+                                <th class="px-8 py-4">Result</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            {% for log in recent_logs %}
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="px-8 py-4 text-gray-900 font-semibold">{{ log.recipient_email }}</td>
+                                <td class="px-8 py-4 text-gray-500 text-sm">{{ log.subject|truncatechars:40 }}</td>
+                                <td class="px-8 py-4 text-gray-400 text-xs">{{ log.sent_at|timesince }} ago</td>
+                                <td class="px-8 py-4">
+                                    {% if log.success %}
+                                    <span class="status-pill bg-green-100 text-green-700">Delivered</span>
+                                    {% else %}
+                                    <span class="status-pill bg-red-100 text-red-700">Failed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Quick Stats/Health -->
+        <div class="space-y-8">
+            <div class="bg-indigo-900 rounded-3xl p-8 text-white">
+                <h4 class="text-xl font-black mb-4">System Health</h4>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-indigo-300 text-sm">Task Runner</span>
+                        <span class="bg-green-500/20 text-green-400 text-[10px] font-black px-2 py-1 rounded">ACTIVE</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-indigo-300 text-sm">Email Gateway</span>
+                        <span class="bg-green-500/20 text-green-400 text-[10px] font-black px-2 py-1 rounded">ONLINE</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-3xl p-8 border border-gray-100">
+                <h4 class="text-lg font-black text-gray-900 mb-4">Active Rules</h4>
+                <div class="space-y-4">
+                    {% for rule in rules %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-2xl">
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">{{ rule.name }}</p>
+                            <p class="text-[10px] text-gray-400 uppercase">{{ rule.get_channel_display }}</p>
+                        </div>
+                        <div class="w-2 h-2 rounded-full {% if rule.is_active %}bg-green-500{% else %}bg-gray-300{% endif %}"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

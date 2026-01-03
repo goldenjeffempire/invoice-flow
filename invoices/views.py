@@ -261,34 +261,40 @@ def profile_update_ajax(request):
     return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 @login_required
-@require_http_methods(["GET", "POST"])
-def reminder_settings(request):
-    """Manage automated reminder rules."""
-    from .models import ReminderRule
-    from .forms import ReminderRuleForm
-    
+def reminder_dashboard(request):
+    """Modern dashboard for managing and monitoring automated reminders."""
+    from .models import ScheduledReminder, ReminderLog, ReminderRule
+    from django.db.models import Count, Q
+    from datetime import timedelta
+    from django.utils import timezone
+
     rules = ReminderRule.objects.filter(user=request.user)
+    upcoming = ScheduledReminder.objects.filter(
+        invoice__user=request.user,
+        status=ScheduledReminder.Status.PENDING
+    ).order_by('scheduled_for')[:10]
     
-    if request.method == "POST":
-        action = request.POST.get('action')
-        if action == "add":
-            form = ReminderRuleForm(request.POST)
-            if form.is_valid():
-                rule = form.save(commit=False)
-                rule.user = request.user
-                rule.save()
-                messages.success(request, "Reminder rule added successfully.")
-                return redirect("invoices:settings")
-        elif action == "delete":
-            rule_id = request.POST.get('rule_id')
-            ReminderRule.objects.filter(user=request.user, id=rule_id).delete()
-            messages.success(request, "Reminder rule deleted.")
-            return redirect("invoices:settings")
-            
-    return render(request, "invoices/reminders/rules.html", {
+    recent_logs = ReminderLog.objects.filter(
+        invoice__user=request.user
+    ).order_by('-sent_at')[:10]
+    
+    # Stats
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    stats = {
+        'total_rules': rules.count(),
+        'pending_reminders': ScheduledReminder.objects.filter(invoice__user=request.user, status=ScheduledReminder.Status.PENDING).count(),
+        'sent_today': ReminderLog.objects.filter(invoice__user=request.user, sent_at__gte=today_start, success=True).count(),
+        'failures': ScheduledReminder.objects.filter(invoice__user=request.user, status=ScheduledReminder.Status.FAILED).count(),
+    }
+
+    return render(request, "invoices/reminders/dashboard.html", {
         "rules": rules,
-        "form": ReminderRuleForm(),
-        "active": "settings"
+        "upcoming": upcoming,
+        "recent_logs": recent_logs,
+        "stats": stats,
+        "active": "reminders"
     })
 
 @login_required

@@ -69,7 +69,8 @@ urlpatterns = [
     path("settings/profile/", views.profile_update_ajax, name="settings_profile_update"),
     path("settings/security/", views.security_update_ajax, name="settings_security_update"),
     path("settings/notifications/", views.notifications_update_ajax, name="settings_notifications_update"),
-    path("settings/reminders/", views.reminder_settings, name="reminder_settings"),
+    path("settings/reminders/", views.reminder_dashboard, name="reminder_settings"),
+    path("settings/reminders/rules/", views.reminder_settings, name="reminder_rules"),
     path("settings/payments/", views.payment_settings_update_ajax, name="settings_payments_update"),
     
     # Redirects for backward compatibility
