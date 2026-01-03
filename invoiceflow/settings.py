@@ -84,6 +84,8 @@ if not IS_PRODUCTION:
         "https://*.onrender.com",
         "https://*.kirk.replit.dev",
         "https://d8dffb1d-9362-4982-990e-d46d5c7e2be1-00-2ipkuysg1w0hg.kirk.replit.dev:5000",
+        "https://087fbd41-1414-4106-a74e-ef4286b6c475-00-2lljvyorb3buk.spock.replit.dev:5000",
+        "https://087fbd41-1414-4106-a74e-ef4286b6c475-00-2lljvyorb3buk.spock.replit.dev",
     ]
 else:
     CSRF_TRUSTED_ORIGINS += [
