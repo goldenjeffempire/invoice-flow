@@ -55,7 +55,9 @@ class UnifiedMiddleware:
         else:
             response["X-Content-Type-Options"] = "nosniff"
             response["Referrer-Policy"] = "strict-origin-when-cross-origin"
-            response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            # Production: Use sensible defaults or let downstream handle
+            if "Cache-Control" not in response:
+                response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
 
         return response
 
