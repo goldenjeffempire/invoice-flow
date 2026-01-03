@@ -90,14 +90,18 @@ class ReminderSchedulingService:
                 subject = subject_template.format(**context)
                 body = body_template.format(**context)
 
-                # Use async task for actual sending with retries
-                from .async_tasks import AsyncTaskService
-                AsyncTaskService.send_payment_reminder_async(
-                    invoice.id, 
-                    subject=subject, 
-                    body=body,
-                    max_retries=rule.max_retries if rule.retry_on_failure else 0
-                )
+                # Multi-channel routing
+                if rule.channel == 'email':
+                    from .async_tasks import AsyncTaskService
+                    AsyncTaskService.send_payment_reminder_async(
+                        invoice.id, 
+                        subject=subject, 
+                        body=body,
+                        max_retries=rule.max_retries if rule.retry_on_failure else 0
+                    )
+                elif rule.channel == 'in_app':
+                    # Logic for in-app notification creation
+                    pass
                 
                 reminder.status = ScheduledReminder.Status.SENT
                 reminder.save()
