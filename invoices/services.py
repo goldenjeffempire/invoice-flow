@@ -37,9 +37,10 @@ class AutomatedReminderService:
     def schedule_reminders_for_invoice(invoice: Invoice) -> None:
         """Schedule initial reminders when an invoice is created."""
         from .models import AutomatedReminder, UserReminderSettings
+        from django.utils import timezone
         
-        settings, _ = UserReminderSettings.objects.get_or_create(user=invoice.user)
-        if not settings.enabled or not invoice.due_date:
+        user_settings, _ = UserReminderSettings.objects.get_or_create(user=invoice.user)
+        if not user_settings.enabled or not invoice.due_date:
             return
 
         # Clear existing unsent reminders
@@ -83,46 +84,46 @@ class AutomatedReminderService:
     @staticmethod
     def process_pending_reminders() -> int:
         """Process and send all pending reminders. Designed to be called by a cron job."""
-        from .models import AutomatedReminder
+        from .models import AutomatedReminder, UserReminderSettings
         from .sendgrid_service import SendGridEmailService
+        from django.utils import timezone
 
         now = timezone.now()
         pending = AutomatedReminder.objects.filter(
             is_sent=False,
             scheduled_for__lte=now,
             invoice__status="unpaid"
-        ).select_related('invoice', 'invoice__user', 'invoice__user__reminder_settings')
+        ).select_related('invoice', 'invoice__user')
 
         sent_count = 0
         for reminder in pending:
             try:
                 # Get user specific settings for templates
-                try:
-                    user_settings = reminder.invoice.user.reminder_settings
-                except AttributeError:
-                    from .models import UserReminderSettings
-                    user_settings, _ = UserReminderSettings.objects.get_or_create(user=reminder.invoice.user)
+                user_settings, _ = UserReminderSettings.objects.get_or_create(user=reminder.invoice.user)
                 
+                if not user_settings.enabled:
+                    continue
+
                 # Context for template formatting
                 context = {
                     'invoice_id': str(reminder.invoice.invoice_id),
                     'client_name': str(reminder.invoice.client_name),
                     'due_date': reminder.invoice.due_date.strftime('%Y-%m-%d') if reminder.invoice.due_date else 'N/A',
-                    'business_name': str(reminder.invoice.business_name),
-                    'total_amount': f"{reminder.invoice.currency} {reminder.invoice.total}"
+                    'business_name': str(reminder.invoice.business_name or reminder.invoice.user.username),
+                    'total_amount': f"{reminder.invoice.currency} {reminder.invoice.total_amount}"
                 }
                 
                 subject = user_settings.reminder_subject.format(**context)
                 body = user_settings.reminder_body.format(**context)
 
                 # Send using existing SendGrid service
-                success_data = SendGridEmailService.send_invoice_email_static(
+                success = SendGridEmailService.send_invoice_reminder(
                     reminder.invoice, 
                     subject_override=subject, 
                     body_override=body
                 )
                 
-                if success_data.get('status') == 'sent':
+                if success:
                     reminder.is_sent = True
                     reminder.sent_at = now
                     reminder.save()
