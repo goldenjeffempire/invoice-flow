@@ -127,6 +127,12 @@ class SendGridEmailService:
         """Send 'Invoice Ready' notification to client."""
         template_id = template_id or self.TEMPLATE_IDS.get("invoice_ready")
 
+        subtotal = invoice.subtotal
+        tax_rate = invoice.tax_rate
+        discount = invoice.discount
+        discount_amount = (subtotal * discount) / 100
+        tax_amount = ((subtotal - discount_amount) * tax_rate) / 100
+
         template_data = {
             "invoice_id": invoice.invoice_id,
             "invoice_date": invoice.invoice_date.strftime("%B %d, %Y"),
@@ -136,6 +142,10 @@ class SendGridEmailService:
             "business_email": invoice.business_email,
             "business_phone": invoice.business_phone,
             "currency": invoice.currency,
+            "subtotal": float(subtotal),
+            "tax_rate": float(tax_rate),
+            "tax_amount": float(tax_amount),
+            "discount_amount": float(discount_amount),
             "total_amount": f"{invoice.currency} {invoice.total:.2f}",
             "invoice_url": self._get_invoice_view_url(invoice),
             "line_items": [
