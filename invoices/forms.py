@@ -629,6 +629,7 @@ class InvoiceSearchForm(forms.Form):
 
 class UserReminderSettingsForm(forms.ModelForm):
     class Meta:
+        from .models import UserReminderSettings
         model = UserReminderSettings
         fields = [
             'enabled', 
