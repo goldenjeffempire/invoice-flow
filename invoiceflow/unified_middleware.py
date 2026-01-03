@@ -26,6 +26,10 @@ class UnifiedMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Extremely fast path for static files and service worker
+        if request.path.startswith(settings.STATIC_URL) or request.path == "/sw.js":
+            return self.get_response(request)
+
         start = time.time()
 
         if request.method not in ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]:

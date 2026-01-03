@@ -151,6 +151,24 @@ PERMISSIONS_POLICY = {
 }
 
 # =============================================================================
+# CACHING (Optimized for Production)
+# =============================================================================
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-snowflake",
+    },
+    "analytics": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "analytics-data",
+        "TIMEOUT": 300,
+    }
+}
+CACHE_TIMEOUT_DASHBOARD = 300
+CACHE_TIMEOUT_ANALYTICS = 600
+CACHE_TIMEOUT_TOP_CLIENTS = 1800
+
+# =============================================================================
 # INSTALLED APPS
 # =============================================================================
 INSTALLED_APPS = [
