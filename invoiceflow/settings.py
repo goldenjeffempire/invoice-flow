@@ -273,7 +273,15 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# Enhanced WhiteNoise Configuration for Caching
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = DEBUG
+WHITENOISE_IMMUTABLE_FILE_SUPPORT = not DEBUG
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+# Cache Headers Control
+WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0 # 1 year in production
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
