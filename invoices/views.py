@@ -2120,67 +2120,9 @@ def public_invoice(request, invoice_id: int):
 
 
 def public_payment(request, invoice_id: int):
-    """Initiate Paystack payment for an invoice."""
-    from invoices.paystack_service import get_paystack_service
-    from invoices.models import Payment
-    import uuid
-    
-    invoice = get_object_or_404(Invoice.objects.prefetch_related("line_items"), id=invoice_id)
-    paystack = get_paystack_service()
-    
-    if not paystack.is_configured:
-        messages.error(request, "Payment gateway is not configured.")
-        return redirect("public_invoice", invoice_id=invoice.id)
-    
-    profile = invoice.user.userprofile
-    if not profile.paystack_subaccount_active:
-        messages.error(request, "This invoice cannot be paid online.")
-        return redirect("public_invoice", invoice_id=invoice.id)
-    
-    # Generate unique payment reference
-    reference = f"INV{invoice.id}_{uuid.uuid4().hex[:8].upper()}"
-    
-    # Initialize payment with Paystack
-    callback_url = request.build_absolute_uri(f"/payment-callback/?reference={reference}")
-    metadata = {
-        "invoice_id": invoice.id,
-        "client_email": invoice.client_email,
-        "business_name": invoice.business_name,
-    }
-    
-    result = paystack.initialize_payment(
-        email=invoice.client_email,
-        amount=invoice.total,
-        currency=invoice.currency,
-        reference=reference,
-        callback_url=callback_url,
-        metadata=metadata,
-        subaccount_code=profile.paystack_subaccount_code,
-        bearer="subaccount",
-    )
-    
-    if result.get("status") != "success":
-        messages.error(request, "Could not initialize payment. Please try again.")
-        return redirect("public_invoice", invoice_id=invoice.id)
-    
-    # Create Payment record
-    Payment.objects.create(
-        id=str(uuid.uuid4()),  # Ensure ID is provided
-        invoice=invoice,
-        user=invoice.user,
-        reference=reference,
-        amount=invoice.total,
-        currency=invoice.currency,
-        status="pending",
-        customer_email=invoice.client_email,
-        customer_name=invoice.client_name,
-        gateway="paystack",
-        subaccount_code=profile.paystack_subaccount_code,
-        metadata=metadata,
-    )
-    
-    # Redirect to Paystack checkout
-    return redirect(result["authorization_url"])
+    """Redirect to the specialized payment view."""
+    from . import invoice_create_views
+    return invoice_create_views.public_payment(request, invoice_id)
 
 
 def payment_callback(request):

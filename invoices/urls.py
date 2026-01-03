@@ -40,7 +40,7 @@ urlpatterns = [
     # PUBLIC INVOICE & PAYMENTS
     # ------------------------------------------------------------------
     path("invoice/<int:invoice_id>/public/", views.public_invoice, name="public_invoice"),
-    path("invoice/<int:invoice_id>/pay/", views.public_payment, name="public_payment"),
+    path("invoice/<int:invoice_id>/pay/", invoice_create_views.public_payment, name="public_payment"),
     path("payments/callback/<int:invoice_id>/", views.payment_callback, name="payment_callback"),
 
     # ------------------------------------------------------------------
