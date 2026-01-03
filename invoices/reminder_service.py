@@ -33,6 +33,7 @@ class ReminderSchedulingService:
 
             if scheduled_time:
                 # Use update_or_create to prevent duplicate scheduling
+                # type: ignore[attr-defined]
                 ScheduledReminder.objects.update_or_create(
                     invoice=invoice,
                     rule=rule,
@@ -44,6 +45,7 @@ class ReminderSchedulingService:
     def process_pending_reminders(cls):
         """Finds and sends all pending reminders that are due."""
         now = timezone.now()
+        # type: ignore[attr-defined]
         pending = ScheduledReminder.objects.filter(
             status=ScheduledReminder.Status.PENDING,
             scheduled_for__lte=now
