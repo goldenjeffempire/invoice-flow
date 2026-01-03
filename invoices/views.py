@@ -285,9 +285,10 @@ def reminder_settings(request):
             messages.success(request, "Reminder rule deleted.")
             return redirect("invoices:settings")
             
-    return render(request, "invoices/settings/reminders.html", {
+    return render(request, "invoices/reminders/rules.html", {
         "rules": rules,
-        "form": ReminderRuleForm()
+        "form": ReminderRuleForm(),
+        "active": "settings"
     })
 
 @login_required
