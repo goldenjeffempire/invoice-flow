@@ -195,6 +195,9 @@ MIDDLEWARE = [
 ROOT_URLCONF = "invoiceflow.urls"
 WSGI_APPLICATION = "invoiceflow.wsgi.application"
 
+# Silence RuntimeWarnings for model re-registration (common in dev environments with reloaders)
+SILENCED_SYSTEM_CHECKS = ["models.W001"]
+
 # =============================================================================
 # DATABASE
 # =============================================================================
