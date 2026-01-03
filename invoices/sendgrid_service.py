@@ -180,37 +180,30 @@ class SendGridEmailService:
             subject=f"Invoice #{invoice.invoice_id} - Payment Received",
         )
 
-    def send_payment_reminder(self, invoice, recipient_email, template_id=None):
-        """Send payment reminder for unpaid invoice.
+    def send_invoice_email(self, invoice, recipient_email=None, template_id=None, subject_override=None, body_override=None):
+        """Generic method to send invoice email with possible overrides."""
+        recipient_email = recipient_email or invoice.client_email
+        
+        if subject_override and body_override:
+            # Send simple HTML email with custom content
+            return self._send_html_email(
+                to_email=recipient_email,
+                subject=subject_override,
+                plain_text=body_override,
+                html_content=f"<div style='font-family: sans-serif;'>{body_override.replace('\n', '<br>')}</div>"
+            )
+        
+        # Fallback to standard reminder template
+        return self.send_payment_reminder(invoice, recipient_email, template_id)
 
-        Sends from platform owner's verified email with Reply-To user's business email.
-        No SendGrid verification needed for users!
-        """
-        template_id = template_id or self.TEMPLATE_IDS.get("payment_reminder")
+    @staticmethod
+    def send_invoice_email_static(invoice, recipient_email=None, subject_override=None, body_override=None):
+        """Static wrapper for backward compatibility and easy access."""
+        service = SendGridEmailService()
+        return service.send_invoice_email(invoice, recipient_email, subject_override=subject_override, body_override=body_override)
 
-        template_data = {
-            "invoice_id": invoice.invoice_id,
-            "client_name": invoice.client_name,
-            "business_name": invoice.business_name,
-            "business_email": invoice.business_email,
-            "currency": invoice.currency,
-            "amount_due": f"{invoice.currency} {invoice.total:.2f}",
-            "due_date": (
-                invoice.due_date.strftime("%B %d, %Y") if invoice.due_date else "Upon receipt"
-            ),
-            "days_overdue": self._calculate_days_overdue(invoice),
-            "payment_info": self._format_payment_info(invoice),
-            "invoice_url": self._get_invoice_view_url(invoice),
-        }
-
-        return self._send_email(
-            user_business_email=invoice.business_email,
-            from_name=invoice.business_name,
-            to_email=recipient_email,
-            template_id=template_id,
-            template_data=template_data,
-            subject=f"Payment Reminder - Invoice #{invoice.invoice_id}",
-        )
+    # Alias for existing code that calls SendGridService.send_invoice_email
+    # Note: I'll need to check if there's a SendGridService alias or if I should rename the class
 
     # ============ USER EMAILS ============
 

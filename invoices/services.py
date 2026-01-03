@@ -83,8 +83,8 @@ class AutomatedReminderService:
     @staticmethod
     def process_pending_reminders() -> int:
         """Process and send all pending reminders. Designed to be called by a cron job."""
-        from .models import AutomatedReminder, EmailDeliveryLog
-        from .sendgrid_service import SendGridService
+        from .models import AutomatedReminder
+        from .sendgrid_service import SendGridEmailService
 
         now = timezone.now()
         pending = AutomatedReminder.objects.filter(
@@ -96,10 +96,33 @@ class AutomatedReminderService:
         sent_count = 0
         for reminder in pending:
             try:
-                # In a real production system, this would use the user's template settings
-                # For this implementation, we use a basic email trigger
-                success = SendGridService.send_invoice_email(reminder.invoice)
-                if success:
+                # Get user specific settings for templates
+                try:
+                    user_settings = reminder.invoice.user.reminder_settings
+                except AttributeError:
+                    from .models import UserReminderSettings
+                    user_settings, _ = UserReminderSettings.objects.get_or_create(user=reminder.invoice.user)
+                
+                # Context for template formatting
+                context = {
+                    'invoice_id': str(reminder.invoice.invoice_id),
+                    'client_name': str(reminder.invoice.client_name),
+                    'due_date': reminder.invoice.due_date.strftime('%Y-%m-%d') if reminder.invoice.due_date else 'N/A',
+                    'business_name': str(reminder.invoice.business_name),
+                    'total_amount': f"{reminder.invoice.currency} {reminder.invoice.total}"
+                }
+                
+                subject = user_settings.reminder_subject.format(**context)
+                body = user_settings.reminder_body.format(**context)
+
+                # Send using existing SendGrid service
+                success_data = SendGridEmailService.send_invoice_email_static(
+                    reminder.invoice, 
+                    subject_override=subject, 
+                    body_override=body
+                )
+                
+                if success_data.get('status') == 'sent':
                     reminder.is_sent = True
                     reminder.sent_at = now
                     reminder.save()

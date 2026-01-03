@@ -414,6 +414,13 @@ class UserReminderSettings(models.Model):
         default="Hi {client_name},\n\nThis is a friendly reminder that invoice {invoice_id} is due on {due_date}. Please let us know if you have any questions.\n\nBest regards,\n{business_name}"
     )
 
+    # Lifecycle tracking
+    max_retries = models.IntegerField(default=3)
+    retry_delay_minutes = models.IntegerField(default=60)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self) -> str:
         return f"Reminder Settings for {self.user.username}"
 
@@ -769,6 +776,13 @@ class UserReminderSettings(models.Model):
     reminder_body = models.TextField(
         default="Hi {client_name},\n\nThis is a friendly reminder that invoice {invoice_id} is due on {due_date}. Please let us know if you have any questions.\n\nBest regards,\n{business_name}"
     )
+
+    # Lifecycle tracking
+    max_retries = models.IntegerField(default=3)
+    retry_delay_minutes = models.IntegerField(default=60)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return f"Reminder Settings for {self.user.username}"
