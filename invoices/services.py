@@ -35,16 +35,13 @@ class AutomatedReminderService:
 
     @staticmethod
     def schedule_reminders_for_invoice(invoice: Invoice) -> None:
-        """Schedule initial reminders when an invoice is created."""
+        """Schedule reminders using the new ReminderSchedulingService."""
         from .reminder_service import ReminderSchedulingService
         ReminderSchedulingService.schedule_reminders_for_invoice(invoice)
 
     @staticmethod
     def process_pending_reminders():
-        """
-        Legacy method placeholder. 
-        New logic is in reminder_service.py
-        """
+        """Process reminders using the new ReminderSchedulingService."""
         from .reminder_service import ReminderSchedulingService
         return ReminderSchedulingService.process_pending_reminders()
 
@@ -70,7 +67,6 @@ class InvoiceService:
 
         invoice = invoice_form.save(commit=False)
         invoice.user = user
-        invoice.discount = Decimal(str(invoice_data.get("discount", 0)))
         invoice.save()
 
         for item_data in line_items_data:
@@ -105,7 +101,6 @@ class InvoiceService:
 
         user_id = invoice.user_id  # type: ignore[attr-defined]
         invoice = invoice_form.save(commit=False)
-        invoice.discount = Decimal(str(invoice_data.get("discount", 0)))
         invoice.save()
         invoice.line_items.all().delete()  # type: ignore[attr-defined]
 

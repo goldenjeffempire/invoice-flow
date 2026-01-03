@@ -32,11 +32,12 @@ class ReminderSchedulingService:
                 scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())) + timezone.timedelta(days=rule.days_delta)
 
             if scheduled_time:
-                ScheduledReminder.objects.create(
+                # Use update_or_create to prevent duplicate scheduling
+                ScheduledReminder.objects.update_or_create(
                     invoice=invoice,
                     rule=rule,
-                    scheduled_for=scheduled_time,
-                    status=ScheduledReminder.Status.PENDING
+                    status=ScheduledReminder.Status.PENDING,
+                    defaults={'scheduled_for': scheduled_time}
                 )
 
     @classmethod
@@ -70,7 +71,7 @@ class ReminderSchedulingService:
                     "invoice_id": str(invoice.invoice_id),
                     "client_name": str(invoice.client_name),
                     "due_date": str(invoice.due_date),
-                    "total_amount": f"{invoice.currency} {invoice.total}"
+                    "total_amount": f"{invoice.currency} {invoice.total_amount}"
                 }
                 
                 subject = subject_template.format(**context)

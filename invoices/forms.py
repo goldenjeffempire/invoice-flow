@@ -642,8 +642,9 @@ class ReminderRuleForm(forms.ModelForm):
         }
 
 class UserReminderSettingsForm(forms.Form):
-    # Temporary placeholder to prevent ImportErrors while transitioning
-    pass
+    # This form is deprecated in favor of ReminderRuleForm.
+    # Placeholder maintained for backward compatibility in existing views/templates.
+    enabled = forms.BooleanField(required=False)
 
 class WaitlistForm(forms.ModelForm):
     """Form for email capture from landing page and Coming Soon pages."""
