@@ -151,30 +151,29 @@ class InvoiceForm(forms.ModelForm):
         max_length=50,
         required=False,
         validators=[validate_phone_number],
-        widget=forms.TextInput(attrs={"class": "input-field"}),
+        widget=forms.TextInput(attrs={"class": "input-modern", "placeholder": "+1 (555) 000-0000"}),
     )
     client_phone = forms.CharField(
         max_length=50,
         required=False,
         validators=[validate_phone_number],
-        widget=forms.TextInput(attrs={"class": "input-field"}),
+        widget=forms.TextInput(attrs={"class": "input-modern", "placeholder": "+1 (555) 000-0000"}),
     )
     currency = forms.ChoiceField(
         choices=Invoice.CURRENCY_CHOICES,
         initial="USD",
-        widget=forms.Select(attrs={"class": "input-field"}),
-        help_text="Select the currency for this invoice",
+        widget=forms.Select(attrs={"class": "input-modern"}),
     )
     tax_rate = forms.DecimalField(
         max_digits=5,
         decimal_places=2,
         initial=0,
         validators=[validate_tax_rate],
-        widget=forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
+        widget=forms.NumberInput(attrs={"class": "input-modern", "step": "0.01", "placeholder": "0.00"}),
     )
     invoice_date = forms.DateField(
         validators=[validate_invoice_date],
-        widget=forms.DateInput(attrs={"class": "input-field", "type": "date"}),
+        widget=forms.DateInput(attrs={"class": "input-modern", "type": "date"}),
     )
 
     class Meta:
@@ -197,18 +196,16 @@ class InvoiceForm(forms.ModelForm):
             "notes",
         ]
         widgets = {
-            "business_name": forms.TextInput(attrs={"class": "input-field"}),
-            "business_email": forms.EmailInput(attrs={"class": "input-field"}),
-            "business_address": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
-            "client_name": forms.TextInput(attrs={"class": "input-field"}),
-            "client_email": forms.EmailInput(attrs={"class": "input-field"}),
-            "client_address": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
-            "due_date": forms.DateInput(attrs={"class": "input-field", "type": "date"}),
-            "currency": forms.Select(attrs={"class": "input-field"}),
-            "tax_rate": forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
-            "discount": forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
-            "automated_reminders_enabled": forms.CheckboxInput(attrs={"class": "input-field"}),
-            "notes": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
+            "business_name": forms.TextInput(attrs={"class": "input-modern", "placeholder": "Your Company Name"}),
+            "business_email": forms.EmailInput(attrs={"class": "input-modern", "placeholder": "billing@yourcompany.com"}),
+            "business_address": forms.Textarea(attrs={"class": "input-modern", "rows": 2, "placeholder": "Street, City, Country"}),
+            "client_name": forms.TextInput(attrs={"class": "input-modern", "placeholder": "Client Business Name"}),
+            "client_email": forms.EmailInput(attrs={"class": "input-modern", "placeholder": "client@example.com"}),
+            "client_address": forms.Textarea(attrs={"class": "input-modern", "rows": 2, "placeholder": "Client Address"}),
+            "due_date": forms.DateInput(attrs={"class": "input-modern", "type": "date"}),
+            "discount": forms.NumberInput(attrs={"class": "input-modern", "step": "0.01", "placeholder": "0.00"}),
+            "automated_reminders_enabled": forms.CheckboxInput(attrs={"class": "sr-only peer"}),
+            "notes": forms.Textarea(attrs={"class": "input-modern", "rows": 3, "placeholder": "Terms and conditions or thank you note"}),
         }
 
     def clean_discount(self):
@@ -217,6 +214,12 @@ class InvoiceForm(forms.ModelForm):
             if discount < 0 or discount > 100:
                 raise forms.ValidationError("Discount must be between 0 and 100.")
         return discount
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            if field != 'automated_reminders_enabled':
+                self.fields[field].widget.attrs.update({'class': 'input-modern'})
 
 
 class UserDetailsForm(forms.ModelForm):
