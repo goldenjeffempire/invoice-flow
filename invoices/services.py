@@ -109,6 +109,10 @@ class AutomatedReminderService:
         
         return sent_count
 
+
+class InvoiceService:
+    """Handles invoice creation and updates with atomic transactions."""
+
     @staticmethod
     @transaction.atomic
     def create_invoice(
