@@ -190,7 +190,7 @@ class SendGridEmailService:
                 to_email=recipient_email,
                 subject=subject_override,
                 plain_text=body_override,
-                html_content=f"<div style='font-family: sans-serif;'>{body_override.replace('\n', '<br>')}</div>"
+                html_content="<div style='font-family: sans-serif;'>" + body_override.replace('\n', '<br>') + "</div>"
             )
         
         # Fallback to standard reminder template
