@@ -30,7 +30,7 @@ class InvoicesConfig(AppConfig):
         try:
             import invoices.signals  # noqa: F401
         except Exception as exc:
-            logger.exception("Failed to import invoices.signals: %s", exc)
+            logger.exception("Failed to import signals: %s", exc)
 
         # ---------------------------------------------------------------------
         # 2. SAFE SHUTDOWN HANDLERS

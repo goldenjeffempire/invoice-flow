@@ -166,7 +166,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "csp",
 
-    "invoices",
+    "invoices.apps.InvoicesConfig",
 ]
 
 # =============================================================================
