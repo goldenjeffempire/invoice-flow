@@ -33,7 +33,7 @@ IS_REPLIT: bool = bool(os.getenv("REPL_ID") or os.getenv("REPLIT"))
 IS_RENDER: bool = bool(os.getenv("RENDER"))
 IS_PRODUCTION: bool = os.getenv("PRODUCTION") == "true"
 
-DEBUG: bool = False if IS_PRODUCTION else env.bool("DEBUG", default=IS_REPLIT)  # type: ignore[arg-type]
+DEBUG: bool = False if IS_PRODUCTION else env.bool("DEBUG", IS_REPLIT)  # type: ignore[arg-type]
 
 # =============================================================================
 # DOMAIN
@@ -44,8 +44,8 @@ PRODUCTION_URL = f"https://{PRODUCTION_DOMAIN}"
 # =============================================================================
 # SECURITY KEYS
 # =============================================================================
-SECRET_KEY: str = env("SECRET_KEY", default="django-insecure-dev-only")  # type: ignore[arg-type]
-ENCRYPTION_SALT: str = env("ENCRYPTION_SALT", default="dev-salt")  # type: ignore[arg-type]
+SECRET_KEY: str = env.str("SECRET_KEY", "django-insecure-dev-only")  # type: ignore[arg-type]
+ENCRYPTION_SALT: str = env.str("ENCRYPTION_SALT", "dev-salt")  # type: ignore[arg-type]
 
 if IS_PRODUCTION:
     if SECRET_KEY.startswith("django-insecure"):
@@ -105,19 +105,19 @@ if csrf_origins_env:
 # =============================================================================
 # SECURITY HEADERS (HARDENED)
 # =============================================================================
-SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=IS_PRODUCTION)
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", IS_PRODUCTION)
 
 # Secure cookies only in production (prevents conflicts with HTTP in development)
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=IS_PRODUCTION)
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=IS_PRODUCTION)
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", IS_PRODUCTION)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", IS_PRODUCTION)
 
 # HttpOnly always enabled (no JavaScript access to cookies)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
-SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000 if IS_PRODUCTION else 0)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=IS_PRODUCTION)
-SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=IS_PRODUCTION)
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", 31536000 if IS_PRODUCTION else 0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", IS_PRODUCTION)
+SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", IS_PRODUCTION)
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -153,7 +153,7 @@ PERMISSIONS_POLICY = {
 # =============================================================================
 # CACHING (Optimized for Production)
 # =============================================================================
-_redis_url = env("REDIS_URL", default=None)
+_redis_url = env.str("REDIS_URL", "")
 if _redis_url:
     CACHES = {
         "default": {
@@ -235,7 +235,7 @@ ROOT_URLCONF = "invoiceflow.urls"
 WSGI_APPLICATION = "invoiceflow.wsgi.application"
 
 # Silence RuntimeWarnings for model re-registration (common in dev environments with reloaders)
-SILENCED_SYSTEM_CHECKS = ["models.W001", "models.W036"]
+SILENCED_SYSTEM_CHECKS = ["models.W001", "models.W036", "models.W035"]
 
 # Logging Configuration
 LOGGING = {
@@ -268,6 +268,11 @@ LOGGING = {
             "level": "DEBUG",
             "propagate": False,
         },
+        "django.utils.autoreload": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
     },
 }
 
@@ -275,12 +280,15 @@ LOGGING = {
 # In development (DEBUG=True), we disable aggressive caching to allow immediate updates
 # In production, we use 1 year for immutable assets
 WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0
+# Static asset handling optimization
+WHITENOISE_KEEP_ONLY_HASHED_FILES = not DEBUG
+WHITENOISE_MANIFEST_STRICT = not DEBUG
 # =============================================================================
-database_url = env("DATABASE_URL", default=None)  # type: ignore[arg-type]
+database_url = env.str("DATABASE_URL", "")  # type: ignore[arg-type]
 if database_url:
     DATABASES: dict[str, dict[str, Any]] = {
         "default": {
-            **env.db(),
+            **env.db_url("DATABASE_URL"),
             "CONN_MAX_AGE": 600,
             "CONN_HEALTH_CHECKS": True,
         }
@@ -485,22 +493,22 @@ CONTENT_SECURITY_POLICY = {
 # EMAIL
 # =============================================================================
 EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST: str = env("EMAIL_HOST", default="smtp.gmail.com")  # type: ignore[arg-type]
-EMAIL_PORT: int = env.int("EMAIL_PORT", default=587)  # type: ignore[arg-type]
+EMAIL_HOST: str = env.str("EMAIL_HOST", "smtp.gmail.com")  # type: ignore[arg-type]
+EMAIL_PORT: int = env.int("EMAIL_PORT", 587)  # type: ignore[arg-type]
 EMAIL_USE_TLS: bool = True
-EMAIL_HOST_USER: str = env("EMAIL_HOST_USER", default="")  # type: ignore[arg-type]
-EMAIL_HOST_PASSWORD: str = env("EMAIL_HOST_PASSWORD", default="")  # type: ignore[arg-type]
+EMAIL_HOST_USER: str = env.str("EMAIL_HOST_USER", "")  # type: ignore[arg-type]
+EMAIL_HOST_PASSWORD: str = env.str("EMAIL_HOST_PASSWORD", "")  # type: ignore[arg-type]
 DEFAULT_FROM_EMAIL: str = f"noreply@{PRODUCTION_DOMAIN}"
 
 # =============================================================================
 # THIRD-PARTY
 # =============================================================================
-HCAPTCHA_SITEKEY: str = env("HCAPTCHA_SITEKEY", default="")  # type: ignore[arg-type]
-HCAPTCHA_SECRET: str = env("HCAPTCHA_SECRET", default="")  # type: ignore[arg-type]
+HCAPTCHA_SITEKEY: str = env.str("HCAPTCHA_SITEKEY", "")  # type: ignore[arg-type]
+HCAPTCHA_SECRET: str = env.str("HCAPTCHA_SECRET", "")  # type: ignore[arg-type]
 HCAPTCHA_ENABLED: bool = bool(HCAPTCHA_SITEKEY and HCAPTCHA_SECRET)
 
 # =============================================================================
 # API / WEBHOOKS
 # =============================================================================
-API_BASE_URL: str = env("API_BASE_URL", default=PRODUCTION_URL)  # type: ignore[arg-type]
-WEBHOOK_BASE_URL: str = env("WEBHOOK_BASE_URL", default=PRODUCTION_URL)  # type: ignore[arg-type]
+API_BASE_URL: str = env.str("API_BASE_URL", PRODUCTION_URL)  # type: ignore[arg-type]
+WEBHOOK_BASE_URL: str = env.str("WEBHOOK_BASE_URL", PRODUCTION_URL)  # type: ignore[arg-type]

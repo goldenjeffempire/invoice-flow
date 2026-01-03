@@ -32,10 +32,12 @@ class InvoicesConfig(AppConfig):
             logger.warning("Failed to register shutdown handlers: %s", exc)
 
         # Per-process flag to prevent re-execution in autoreload
-        run_once_flag = "_invoiceflow_startup_ran_per_process"
-        if getattr(self.__class__, run_once_flag, False):
+        if os.environ.get("RUN_MAIN") != "true" and not os.environ.get("RENDER"):
+            # In development, Django runs two processes. We only want the main one.
+            # In production (RENDER), we only have one process.
             return
-        setattr(self.__class__, run_once_flag, True)
+
+        run_once_flag = "_invoiceflow_startup_ran_per_process"
 
         # Only ONE worker in the entire cluster should run these operations
         # Use file-based lock to coordinate across workers
