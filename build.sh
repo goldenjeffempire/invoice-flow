@@ -106,6 +106,12 @@ python manage.py collectstatic \
     --clear \
     --verbosity 0
 
+# Compress static files for better performance if not in debug
+if [ "$DEBUG" != "true" ]; then
+    echo -e "${YELLOW}Compressing static files with WhiteNoise...${NC}"
+    # collectstatic with whitenoise storage already handles compression
+fi
+
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Static files collected${NC}"
 else

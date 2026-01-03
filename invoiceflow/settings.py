@@ -105,19 +105,19 @@ if csrf_origins_env:
 # =============================================================================
 # SECURITY HEADERS (HARDENED)
 # =============================================================================
-SECURE_SSL_REDIRECT = IS_PRODUCTION
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=IS_PRODUCTION)
 
 # Secure cookies only in production (prevents conflicts with HTTP in development)
-SESSION_COOKIE_SECURE = IS_PRODUCTION
-CSRF_COOKIE_SECURE = IS_PRODUCTION
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=IS_PRODUCTION)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=IS_PRODUCTION)
 
 # HttpOnly always enabled (no JavaScript access to cookies)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
-SECURE_HSTS_SECONDS = 31536000 if IS_PRODUCTION else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = IS_PRODUCTION
-SECURE_HSTS_PRELOAD = IS_PRODUCTION
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000 if IS_PRODUCTION else 0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=IS_PRODUCTION)
+SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=IS_PRODUCTION)
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -153,17 +153,37 @@ PERMISSIONS_POLICY = {
 # =============================================================================
 # CACHING (Optimized for Production)
 # =============================================================================
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-snowflake",
-    },
-    "analytics": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "analytics-data",
-        "TIMEOUT": 300,
+_redis_url = env("REDIS_URL", default=None)
+if _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": _redis_url,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
+        },
+        "analytics": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": _redis_url,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "TIMEOUT": 300,
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        },
+        "analytics": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "analytics-data",
+            "TIMEOUT": 300,
+        }
+    }
 CACHE_TIMEOUT_DASHBOARD = 300
 CACHE_TIMEOUT_ANALYTICS = 600
 CACHE_TIMEOUT_TOP_CLIENTS = 1800
