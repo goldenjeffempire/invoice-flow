@@ -307,20 +307,20 @@ def calculate_totals(request):
         if discount_rate < 0 or discount_rate > 100:
             discount_rate = Decimal('0')
         
-            # Calculate with discount applied before tax
-            discount_amount = (subtotal * discount_rate) / Decimal('100')
-            after_discount = subtotal - discount_amount
-            tax_amount = (after_discount * tax_rate) / Decimal('100')
-            total = after_discount + tax_amount
-            
-            return JsonResponse({
-                'success': True,
-                'subtotal': float(subtotal),
-                'discount_amount': float(discount_amount),
-                'after_discount': float(after_discount),
-                'tax_amount': float(tax_amount),
-                'total': float(total),
-            })
+        # Calculate with discount applied before tax
+        discount_amount = (subtotal * discount_rate) / Decimal('100')
+        after_discount = subtotal - discount_amount
+        tax_amount = (after_discount * tax_rate) / Decimal('100')
+        total = after_discount + tax_amount
+        
+        return JsonResponse({
+            'success': True,
+            'subtotal': float(subtotal),
+            'discount_amount': float(discount_amount),
+            'after_discount': float(after_discount),
+            'tax_amount': float(tax_amount),
+            'total': float(total),
+        })
     
     except json.JSONDecodeError:
         return JsonResponse({'success': False, 'error': 'Invalid JSON format'}, status=400)

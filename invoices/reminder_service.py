@@ -98,6 +98,7 @@ class ReminderSchedulingService:
                 body = body_template.format(**context)
                 
                 # Append tracking pixel and link wrapping (simplified for now)
+                from django.conf import settings
                 tracking_pixel_url = f"{settings.SITE_URL}/invoices/settings/reminders/pixel/{reminder.id}/"
                 body += f"\n\n<img src='{tracking_pixel_url}' width='1' height='1' />"
 

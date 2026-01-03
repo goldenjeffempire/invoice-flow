@@ -51,8 +51,11 @@ def initialize_payment(request):
             "code": "EMAIL_NOT_VERIFIED"
         }, status=403)
     
-    # ENFORCE: MFA completion
-    if not request.session.get("mfa_verified", False):
+    # MFA completion is optional for public payments but recommended for logged in users
+    # Check if MFA is enabled for this user
+    from .models import MFAProfile
+    mfa_enabled = MFAProfile.objects.filter(user=user, is_enabled=True).exists()
+    if mfa_enabled and not request.session.get("mfa_verified", False):
         return JsonResponse({
             "error": "MFA verification required",
             "code": "MFA_NOT_VERIFIED"

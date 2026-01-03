@@ -327,13 +327,16 @@ def reminder_dashboard(request):
     total_opened = ReminderLog.objects.filter(invoice__user=request.user, opened_at__isnull=False).count()
     total_clicked = ReminderLog.objects.filter(invoice__user=request.user, clicked_at__isnull=False).count()
     
+    open_rate = round((total_opened / total_sent * 100), 1) if total_sent > 0 else 0
+    click_rate = round((total_clicked / total_sent * 100), 1) if total_sent > 0 else 0
+    
     stats = {
         'total_rules': rules.count(),
         'pending_reminders': ScheduledReminder.objects.filter(invoice__user=request.user, status=ScheduledReminder.Status.PENDING).count(),
         'sent_today': sent_today,
         'failures': ScheduledReminder.objects.filter(invoice__user=request.user, status=ScheduledReminder.Status.FAILED).count(),
-        'open_rate': round((total_opened / total_sent * 100), 1) if total_sent > 0 else 0,
-        'click_rate': round((total_clicked / total_sent * 100), 1) if total_sent > 0 else 0,
+        'open_rate': open_rate,
+        'click_rate': click_rate,
     }
 
     return render(request, "invoices/reminders/dashboard.html", {
