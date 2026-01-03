@@ -16,24 +16,8 @@ class InvoicesConfig(AppConfig):
     name = "invoices"
 
     def ready(self):
-        """
-        Application initialization:
-        - Register signals
-        - Register safe shutdown handlers
-        - Warm critical caches (once, cluster-wide)
-        - Start keep-alive ONLY in production runtime (once per cluster)
-        """
-
-        # ---------------------------------------------------------------------
-        # 1. SIGNAL REGISTRATION (idempotent by Django design)
-        # ---------------------------------------------------------------------
-        # We use string-based signals or delayed imports to avoid early model access
-        try:
-            from django.db.models.signals import post_save, post_delete, pre_save
-            from django.contrib.auth import user_logged_in
-            import invoices.signals  # noqa: F401
-        except Exception as exc:
-            logger.exception("Failed to import signals: %s", exc)
+        # Only import and connect signals when the app is ready to prevent early model loading
+        from . import signals  # noqa
 
         # ---------------------------------------------------------------------
         # 2. SAFE SHUTDOWN HANDLERS

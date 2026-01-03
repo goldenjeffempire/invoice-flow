@@ -89,6 +89,26 @@ urlpatterns = [
     path("invoices/", include("invoices.urls")),
     # Root level profile redirect
     path("profile/", RedirectView.as_view(pattern_name='invoices:settings', permanent=True), name="profile"),
+    # Pages
+    path("features/", lazy_view("invoices.views.features"), name="features"),
+    path("pricing/", lazy_view("invoices.views.pricing"), name="pricing"),
+    path("templates-page/", lazy_view("invoices.views.templates_page"), name="templates"),
+    path("api-access/", lazy_view("invoices.views.api_access"), name="api"),
+    path("about/", lazy_view("invoices.views.about"), name="about"),
+    path("careers/", lazy_view("invoices.views.careers"), name="careers"),
+    path("contact/", lazy_view("invoices.views.contact"), name="contact"),
+    path("changelog/", lazy_view("invoices.views.changelog"), name="changelog"),
+    path("system-status/", lazy_view("invoices.views.system_status"), name="status"),
+    path("support/", lazy_view("invoices.views.support"), name="support"),
+    path("faq/", lazy_view("invoices.views.faq"), name="faq"),
+    path("terms/", lazy_view("invoices.views.terms"), name="terms"),
+    path("privacy/", lazy_view("invoices.views.privacy"), name="privacy"),
+    path("security/", lazy_view("invoices.views.security"), name="security"),
+    path("blog/", lazy_view("invoices.views.blog"), name="blog"),
+    path("blog/<slug:slug>/", lazy_view("invoices.views.blog_article"), name="blog_article"),
+    path("offline/", lazy_view("invoices.views.offline"), name="offline"),
+    path("newsletter/signup/", lazy_view("invoices.views.newsletter_signup"), name="newsletter_signup"),
+    path("newsletter/subscribe/", lazy_view("invoices.views.newsletter_signup"), name="newsletter_subscribe"),
 ]
 
 if settings.DEBUG:
