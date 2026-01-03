@@ -357,6 +357,68 @@ class Payment(models.Model):
 
 
 # ============================================================================
+# AUTOMATED REMINDERS
+# ============================================================================
+
+class AutomatedReminder(models.Model):
+    class ReminderType(models.TextChoices):
+        BEFORE_DUE = "before_due", "Before Due Date"
+        ON_DUE = "on_due", "On Due Date"
+        AFTER_DUE = "after_due", "After Due Date"
+        MANUAL = "manual", "Manual Reminder"
+
+    invoice = models.ForeignKey(
+        Invoice, on_delete=models.CASCADE, related_name="automated_reminders"
+    )
+    reminder_type = models.CharField(max_length=20, choices=ReminderType.choices)
+    scheduled_for = models.DateTimeField(db_index=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    is_sent = models.BooleanField(default=False)
+    
+    # Custom configuration
+    days_delta = models.IntegerField(default=0, help_text="Days relative to due date")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["scheduled_for"]
+        indexes = [
+            models.Index(fields=["is_sent", "scheduled_for"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Reminder for {self.invoice.invoice_id} ({self.get_reminder_type_display()})"
+
+# ============================================================================
+# INVOICE REMINDER CONFIG
+# ============================================================================
+
+class UserReminderSettings(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reminder_settings",
+    )
+    
+    enabled = models.BooleanField(default=True)
+    remind_before_days = models.IntegerField(default=3)
+    remind_after_days = models.IntegerField(default=7)
+    
+    # Email Template Customization
+    reminder_subject = models.CharField(
+        max_length=255, 
+        default="Payment Reminder: Invoice {invoice_id}"
+    )
+    reminder_body = models.TextField(
+        default="Hi {client_name},\n\nThis is a friendly reminder that invoice {invoice_id} is due on {due_date}. Please let us know if you have any questions.\n\nBest regards,\n{business_name}"
+    )
+
+    def __str__(self) -> str:
+        return f"Reminder Settings for {self.user.username}"
+
+
+# ============================================================================
 # PROCESSED PAYSTACK WEBHOOKS
 # ============================================================================
 
@@ -651,8 +713,65 @@ class PaymentSettings(models.Model):
 
 
 # ============================================================================
-# PAYMENT RECIPIENT
+# AUTOMATED REMINDERS
 # ============================================================================
+
+class AutomatedReminder(models.Model):
+    class ReminderType(models.TextChoices):
+        BEFORE_DUE = "before_due", "Before Due Date"
+        ON_DUE = "on_due", "On Due Date"
+        AFTER_DUE = "after_due", "After Due Date"
+        MANUAL = "manual", "Manual Reminder"
+
+    invoice = models.ForeignKey(
+        Invoice, on_delete=models.CASCADE, related_name="automated_reminders"
+    )
+    reminder_type = models.CharField(max_length=20, choices=ReminderType.choices)
+    scheduled_for = models.DateTimeField(db_index=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    is_sent = models.BooleanField(default=False)
+    
+    # Custom configuration
+    days_delta = models.IntegerField(default=0, help_text="Days relative to due date")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["scheduled_for"]
+        indexes = [
+            models.Index(fields=["is_sent", "scheduled_for"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"Reminder for {self.invoice.invoice_id} ({self.get_reminder_type_display()})"
+
+# ============================================================================
+# INVOICE REMINDER CONFIG
+# ============================================================================
+
+class UserReminderSettings(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reminder_settings",
+    )
+    
+    enabled = models.BooleanField(default=True)
+    remind_before_days = models.IntegerField(default=3)
+    remind_after_days = models.IntegerField(default=7)
+    
+    # Email Template Customization
+    reminder_subject = models.CharField(
+        max_length=255, 
+        default="Payment Reminder: Invoice {invoice_id}"
+    )
+    reminder_body = models.TextField(
+        default="Hi {client_name},\n\nThis is a friendly reminder that invoice {invoice_id} is due on {due_date}. Please let us know if you have any questions.\n\nBest regards,\n{business_name}"
+    )
+
+    def __str__(self) -> str:
+        return f"Reminder Settings for {self.user.username}"
 
 class PaymentRecipient(models.Model):
     class AccountType(models.TextChoices):

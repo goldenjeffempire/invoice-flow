@@ -30,8 +30,84 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class InvoiceService:
-    """Handles all invoice operations."""
+class AutomatedReminderService:
+    """Handles automated invoice reminders."""
+
+    @staticmethod
+    def schedule_reminders_for_invoice(invoice: Invoice) -> None:
+        """Schedule initial reminders when an invoice is created."""
+        from .models import AutomatedReminder, UserReminderSettings
+        
+        settings, _ = UserReminderSettings.objects.get_or_create(user=invoice.user)
+        if not settings.enabled or not invoice.due_date:
+            return
+
+        # Clear existing unsent reminders
+        AutomatedReminder.objects.filter(invoice=invoice, is_sent=False).delete()
+
+        # Remind before due
+        if settings.remind_before_days > 0:
+            scheduled_date = timezone.datetime.combine(
+                invoice.due_date - timezone.timedelta(days=settings.remind_before_days),
+                timezone.datetime.min.time()
+            )
+            AutomatedReminder.objects.create(
+                invoice=invoice,
+                reminder_type=AutomatedReminder.ReminderType.BEFORE_DUE,
+                scheduled_for=timezone.make_aware(scheduled_date),
+                days_delta=-settings.remind_before_days
+            )
+
+        # Remind on due date
+        scheduled_date_on = timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())
+        AutomatedReminder.objects.create(
+            invoice=invoice,
+            reminder_type=AutomatedReminder.ReminderType.ON_DUE,
+            scheduled_for=timezone.make_aware(scheduled_date_on),
+            days_delta=0
+        )
+
+        # Remind after due
+        if settings.remind_after_days > 0:
+            scheduled_date_after = timezone.datetime.combine(
+                invoice.due_date + timezone.timedelta(days=settings.remind_after_days),
+                timezone.datetime.min.time()
+            )
+            AutomatedReminder.objects.create(
+                invoice=invoice,
+                reminder_type=AutomatedReminder.ReminderType.AFTER_DUE,
+                scheduled_for=timezone.make_aware(scheduled_date_after),
+                days_delta=settings.remind_after_days
+            )
+
+    @staticmethod
+    def process_pending_reminders() -> int:
+        """Process and send all pending reminders. Designed to be called by a cron job."""
+        from .models import AutomatedReminder, EmailDeliveryLog
+        from .sendgrid_service import SendGridService
+
+        now = timezone.now()
+        pending = AutomatedReminder.objects.filter(
+            is_sent=False,
+            scheduled_for__lte=now,
+            invoice__status="unpaid"
+        ).select_related('invoice', 'invoice__user', 'invoice__user__reminder_settings')
+
+        sent_count = 0
+        for reminder in pending:
+            try:
+                # In a real production system, this would use the user's template settings
+                # For this implementation, we use a basic email trigger
+                success = SendGridService.send_invoice_email(reminder.invoice)
+                if success:
+                    reminder.is_sent = True
+                    reminder.sent_at = now
+                    reminder.save()
+                    sent_count += 1
+            except Exception as e:
+                logger.error(f"Failed to send reminder {reminder.id}: {e}")
+        
+        return sent_count
 
     @staticmethod
     @transaction.atomic

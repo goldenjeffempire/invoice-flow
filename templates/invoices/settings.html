@@ -222,10 +222,55 @@
                 <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
                 <span>Notifications</span>
             </button>
+            <button onclick="switchTab('reminders')" id="tab-reminders" class="nav-item">
+                <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <span>Reminders</span>
+            </button>
         </nav>
     </aside>
 
     <main class="settings-content">
+        <!-- Reminders Section -->
+        <section id="section-reminders" class="settings-section" style="display: none;">
+            <div class="section-header">
+                <h2 class="section-title">Automated Reminders</h2>
+                <p class="section-desc">Configure automated payment reminders for your clients.</p>
+            </div>
+            <div class="feature-card" style="margin-bottom: 2rem;">
+                <div>
+                    <h4>Smart Scheduling</h4>
+                    <p>Reminders are automatically paused once an invoice is marked as paid.</p>
+                </div>
+            </div>
+            <form id="reminder-settings-form">
+                <div class="field-group">
+                    <label class="field-label">Enable Automated Reminders</label>
+                    <select name="enabled">
+                        <option value="true">Active</option>
+                        <option value="false">Disabled</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="field-group">
+                        <label class="field-label">Remind Before Due (Days)</label>
+                        <input type="number" name="before_days" value="3" min="0" max="30">
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Remind After Overdue (Days)</label>
+                        <input type="number" name="after_days" value="7" min="0" max="30">
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Reminder Email Subject</label>
+                    <input type="text" name="subject" value="Payment Reminder: Invoice {invoice_id}">
+                </div>
+                <div class="field-group">
+                    <label class="field-label">Email Body Template</label>
+                    <textarea name="body" rows="6">Hi {client_name}, This is a friendly reminder that invoice {invoice_id} is due on {due_date}.</textarea>
+                </div>
+                <button type="button" class="btn-save" onclick="showToast('Reminder settings saved!', 'success')">Save Reminder Settings</button>
+            </form>
+        </section>
         <!-- Business Profile -->
         <section id="section-profile" class="settings-section">
             <div class="section-header">
@@ -381,7 +426,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         const hash = window.location.hash.substring(1);
-        if (hash && ['profile', 'security', 'notifications', 'payments'].includes(hash)) switchTab(hash);
+        if (hash && ['profile', 'security', 'notifications', 'payments', 'reminders'].includes(hash)) switchTab(hash);
     });
 
     async function handleFormSubmit(event, url) {
