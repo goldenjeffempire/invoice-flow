@@ -124,11 +124,7 @@ class SendGridEmailService:
     # ============ INVOICE EMAILS ============
 
     def send_invoice_ready(self, invoice, recipient_email, template_id=None):
-        """Send 'Invoice Ready' notification to client.
-
-        Sends from platform owner's verified email with Reply-To user's business email.
-        No SendGrid verification needed for users!
-        """
+        """Send 'Invoice Ready' notification to client."""
         template_id = template_id or self.TEMPLATE_IDS.get("invoice_ready")
 
         template_data = {
@@ -142,7 +138,23 @@ class SendGridEmailService:
             "currency": invoice.currency,
             "total_amount": f"{invoice.currency} {invoice.total:.2f}",
             "invoice_url": self._get_invoice_view_url(invoice),
+            "line_items": [
+                {"description": item.description, "quantity": item.quantity, "total": item.total}
+                for item in invoice.line_items.all()
+            ],
+            "notes": invoice.notes
         }
+
+        # If no SendGrid template ID is set, use local HTML/Text templates
+        if not template_id:
+            html_content = render_to_string("invoices/emails/invoice_ready.html", template_data)
+            text_content = render_to_string("invoices/emails/invoice_ready.txt", template_data)
+            return self._send_html_email(
+                to_email=recipient_email,
+                subject=f"Invoice #{invoice.invoice_id} Ready",
+                plain_text=text_content,
+                html_content=html_content
+            )
 
         return self._send_email(
             user_business_email=invoice.business_email,
