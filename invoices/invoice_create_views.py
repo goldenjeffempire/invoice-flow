@@ -129,6 +129,7 @@ def create_invoice_start(request):
             
             # Extract discount
             discount = request.POST.get("discount", "0")
+            status = request.POST.get("status", "unpaid")
             
             # Validate line items
             valid, error_msg = CreateInvoiceValidator.validate_line_items(line_items_data)
@@ -163,9 +164,12 @@ def create_invoice_start(request):
                 })
             
             # Create invoice using service layer
+            invoice_data = request.POST.copy()
+            invoice_data['status'] = status
+            
             invoice, form = InvoiceService.create_invoice(
                 user=request.user,
-                invoice_data=request.POST,
+                invoice_data=invoice_data,
                 files_data=request.FILES,
                 line_items_data=line_items_data
             )

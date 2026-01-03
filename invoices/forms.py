@@ -209,15 +209,12 @@ class InvoiceForm(forms.ModelForm):
             "notes": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
         }
 
-    def clean(self) -> dict:
-        cleaned_data = super().clean()
-        invoice_date = cleaned_data.get("invoice_date")
-        due_date = cleaned_data.get("due_date")
-        
-        if invoice_date and due_date and due_date < invoice_date:
-            self.add_error("due_date", "Due date cannot be earlier than invoice date.")
-            
-        return cleaned_data
+    def clean_discount(self):
+        discount = self.cleaned_data.get('discount')
+        if discount is not None:
+            if discount < 0 or discount > 100:
+                raise forms.ValidationError("Discount must be between 0 and 100.")
+        return discount
 
 
 class UserDetailsForm(forms.ModelForm):
