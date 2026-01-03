@@ -27,6 +27,7 @@ class InvoicesConfig(AppConfig):
         # ---------------------------------------------------------------------
         # 1. SIGNAL REGISTRATION (idempotent by Django design)
         # ---------------------------------------------------------------------
+        # We use string-based signals or delayed imports to avoid early model access
         try:
             import invoices.signals  # noqa: F401
         except Exception as exc:

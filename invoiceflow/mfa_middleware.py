@@ -73,7 +73,8 @@ class MFAEnforcementMiddleware:
             return self.get_response(request)
 
         try:
-            from invoices.models import MFAProfile
+            from django.apps import apps
+            MFAProfile = apps.get_model('invoices', 'MFAProfile')
 
             mfa_profile = MFAProfile.objects.get(user=user)
 
