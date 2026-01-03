@@ -264,6 +264,7 @@ def profile_update_ajax(request):
 def reminder_dashboard(request):
     """Modern dashboard for managing and monitoring automated reminders."""
     from .models import ScheduledReminder, ReminderLog, ReminderRule
+    from .forms import ReminderRuleForm
     from django.db.models import Count, Q
     from datetime import timedelta
     from django.utils import timezone
@@ -294,7 +295,39 @@ def reminder_dashboard(request):
         "upcoming": upcoming,
         "recent_logs": recent_logs,
         "stats": stats,
+        "form": ReminderRuleForm(),
         "active": "reminders"
+    })
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def reminder_settings(request):
+    """Manage automated reminder rules."""
+    from .models import ReminderRule
+    from .forms import ReminderRuleForm
+    
+    rules = ReminderRule.objects.filter(user=request.user)
+    
+    if request.method == "POST":
+        action = request.POST.get('action')
+        if action == "add":
+            form = ReminderRuleForm(request.POST)
+            if form.is_valid():
+                rule = form.save(commit=False)
+                rule.user = request.user
+                rule.save()
+                messages.success(request, "Reminder rule added successfully.")
+                return redirect("invoices:reminder_settings")
+        elif action == "delete":
+            rule_id = request.POST.get('rule_id')
+            ReminderRule.objects.filter(user=request.user, id=rule_id).delete()
+            messages.success(request, "Reminder rule deleted.")
+            return redirect("invoices:reminder_settings")
+            
+    return render(request, "invoices/reminders/rules.html", {
+        "rules": rules,
+        "form": ReminderRuleForm(),
+        "active": "settings"
     })
 
 @login_required
