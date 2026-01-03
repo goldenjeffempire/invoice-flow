@@ -29,6 +29,8 @@ class InvoicesConfig(AppConfig):
         # ---------------------------------------------------------------------
         # We use string-based signals or delayed imports to avoid early model access
         try:
+            from django.db.models.signals import post_save, post_delete, pre_save
+            from django.contrib.auth import user_logged_in
             import invoices.signals  # noqa: F401
         except Exception as exc:
             logger.exception("Failed to import signals: %s", exc)

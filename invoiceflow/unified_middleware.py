@@ -43,9 +43,19 @@ class UnifiedMiddleware:
             int(duration * 1000),
         )
 
-        response["X-Content-Type-Options"] = "nosniff"
-        response["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        # Force fresh content in development to avoid 304/stale state
+        if settings.DEBUG:
+            response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0, proxy-revalidate"
+            response["Pragma"] = "no-cache"
+            response["Expires"] = "0"
+            if "ETag" in response:
+                del response["ETag"]
+            if "Last-Modified" in response:
+                del response["Last-Modified"]
+        else:
+            response["X-Content-Type-Options"] = "nosniff"
+            response["Referrer-Policy"] = "strict-origin-when-cross-origin"
+            response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
 
         return response
 

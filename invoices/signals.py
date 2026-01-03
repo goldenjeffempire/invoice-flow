@@ -9,23 +9,24 @@ import logging
 from typing import Any, Type
 
 from django.contrib.auth import user_logged_in
-from django.contrib.auth.models import User
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
-
-from .models import Invoice, LineItem
-from .reminder_service import ReminderSchedulingService
-from .sendgrid_service import SendGridEmailService
+from django.apps import apps
 
 logger = logging.getLogger(__name__)
 
+def get_models():
+    Invoice = apps.get_model('invoices', 'Invoice')
+    LineItem = apps.get_model('invoices', 'LineItem')
+    User = apps.get_model('auth', 'User')
+    return Invoice, LineItem, User
 
 # =============================================================================
 # USER SIGNALS
 # =============================================================================
 
-@receiver(post_save, sender=User)
-def send_welcome_email_on_signup(sender, instance: User, created: bool, **kwargs):
+@receiver(post_save, sender='auth.User')
+def send_welcome_email_on_signup(sender, instance, created: bool, **kwargs):
     """
     Send welcome email only once for real user signups.
     """
@@ -39,6 +40,7 @@ def send_welcome_email_on_signup(sender, instance: User, created: bool, **kwargs
         return
 
     try:
+        from .sendgrid_service import SendGridEmailService
         service = SendGridEmailService()
         result = service.send_welcome_email(instance)
 
@@ -54,7 +56,7 @@ def send_welcome_email_on_signup(sender, instance: User, created: bool, **kwargs
 
 
 @receiver(user_logged_in)
-def warm_cache_on_login(sender: Any, request: Any, user: User, **kwargs):
+def warm_cache_on_login(sender, request, user, **kwargs):
     """
     Pre-warm analytics cache after successful login.
     Must NEVER block authentication.
@@ -73,8 +75,8 @@ def warm_cache_on_login(sender: Any, request: Any, user: User, **kwargs):
 # INVOICE SIGNALS
 # =============================================================================
 
-@receiver(pre_save, sender=Invoice)
-def track_invoice_status_change(sender, instance: Invoice, **kwargs):
+@receiver(pre_save, sender='invoices.Invoice')
+def track_invoice_status_change(sender, instance, **kwargs):
     """
     Store previous status to detect state transitions.
     """
@@ -83,20 +85,22 @@ def track_invoice_status_change(sender, instance: Invoice, **kwargs):
         return
 
     try:
+        Invoice = apps.get_model('invoices', 'Invoice')
         previous = Invoice.objects.only("status").get(pk=instance.pk)
         instance._previous_status = previous.status
-    except Invoice.DoesNotExist:
+    except Exception:
         instance._previous_status = None
 
 
-@receiver(post_save, sender=Invoice)
-def handle_invoice_save(sender, instance: Invoice, created: bool, **kwargs):
+@receiver(post_save, sender='invoices.Invoice')
+def handle_invoice_save(sender, instance, created: bool, **kwargs):
     """Trigger reminder scheduling whenever an invoice is created or updated."""
+    from .reminder_service import ReminderSchedulingService
     ReminderSchedulingService.schedule_reminders_for_invoice(instance)
 
 
-@receiver(post_save, sender=Invoice)
-def handle_invoice_paid(sender, instance: Invoice, created: bool, **kwargs):
+@receiver(post_save, sender='invoices.Invoice')
+def handle_invoice_paid(sender, instance, created: bool, **kwargs):
     """
     Send email when invoice transitions to PAID.
     """
@@ -115,6 +119,7 @@ def handle_invoice_paid(sender, instance: Invoice, created: bool, **kwargs):
         return
 
     try:
+        from .sendgrid_service import SendGridEmailService
         service = SendGridEmailService()
         result = service.send_invoice_paid(instance, instance.client_email)
 
@@ -133,9 +138,9 @@ def handle_invoice_paid(sender, instance: Invoice, created: bool, **kwargs):
 # CACHE INVALIDATION
 # =============================================================================
 
-@receiver(post_delete, sender=Invoice)
+@receiver(post_delete, sender='invoices.Invoice')
 def invalidate_cache_on_invoice_delete(
-    sender: Type[Invoice], instance: Invoice, **kwargs: Any
+    sender, instance, **kwargs: Any
 ) -> None:
     """
     Invalidate analytics cache when an invoice is deleted.
@@ -150,9 +155,9 @@ def invalidate_cache_on_invoice_delete(
         logger.warning("Cache invalidation failed (invoice delete): %s", exc)
 
 
-@receiver(post_delete, sender=LineItem)
+@receiver(post_delete, sender='invoices.LineItem')
 def invalidate_cache_on_lineitem_delete(
-    sender: Type[LineItem], instance: LineItem, **kwargs: Any
+    sender, instance, **kwargs: Any
 ) -> None:
     """
     Invalidate analytics cache when a line item is deleted.

@@ -7,10 +7,15 @@ from django.urls import include, path
 from django.views.generic.base import RedirectView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-from invoiceflow import cookie_consent, gdpr, mfa
-from invoices import paystack_views, views, admin_views
-from invoices.health import detailed_health, health_check, liveness_check, readiness_check
-from invoices.sitemap import sitemaps
+# Helper functions for lazy loading views to prevent early model imports
+def lazy_view(import_path):
+    def wrapper(request, *args, **kwargs):
+        import importlib
+        module_path, view_name = import_path.rsplit('.', 1)
+        module = importlib.import_module(module_path)
+        view_func = getattr(module, view_name)
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 handler404 = "invoices.views.custom_404"
 handler500 = "invoices.views.custom_500"
@@ -23,95 +28,63 @@ urlpatterns = [
     # REST API v1 (versioned endpoints)
     path("api/v1/", include("invoices.api.urls")),
     # Cookie Consent & GDPR Compliance
-    path("api/consent/set/", cookie_consent.set_cookie_consent, name="set_cookie_consent"),
-    path("api/consent/get/", cookie_consent.get_cookie_consent, name="get_cookie_consent"),
-    path(
-        "api/consent/withdraw/",
-        cookie_consent.withdraw_cookie_consent,
-        name="withdraw_cookie_consent",
-    ),
-    path("api/gdpr/export/", gdpr.export_user_data, name="gdpr_export"),
-    path("api/gdpr/delete/", gdpr.request_data_deletion, name="gdpr_delete"),
-    path("api/gdpr/sar/", gdpr.submit_sar, name="gdpr_sar"),
+    path("api/consent/set/", lazy_view("invoiceflow.cookie_consent.set_cookie_consent"), name="set_cookie_consent"),
+    path("api/consent/get/", lazy_view("invoiceflow.cookie_consent.get_cookie_consent"), name="get_cookie_consent"),
+    path("api/consent/withdraw/", lazy_view("invoiceflow.cookie_consent.withdraw_cookie_consent"), name="withdraw_cookie_consent"),
+    path("api/gdpr/export/", lazy_view("invoiceflow.gdpr.export_user_data"), name="gdpr_export"),
+    path("api/gdpr/delete/", lazy_view("invoiceflow.gdpr.request_data_deletion"), name="gdpr_delete"),
+    path("api/gdpr/sar/", lazy_view("invoiceflow.gdpr.submit_sar"), name="gdpr_sar"),
     # MFA (Two-Factor Authentication)
-    path("mfa/setup/", mfa.mfa_setup, name="mfa_setup"),
-    path("mfa/verify/", mfa.mfa_verify, name="mfa_verify"),
-    path("mfa/disable/", mfa.mfa_disable, name="mfa_disable"),
-    path("mfa/recovery/regenerate/", mfa.mfa_regenerate_recovery, name="mfa_regenerate_recovery"),
+    path("mfa/setup/", lazy_view("invoiceflow.mfa.mfa_setup"), name="mfa_setup"),
+    path("mfa/verify/", lazy_view("invoiceflow.mfa.mfa_verify"), name="mfa_verify"),
+    path("mfa/disable/", lazy_view("invoiceflow.mfa.mfa_disable"), name="mfa_disable"),
+    path("mfa/recovery/regenerate/", lazy_view("invoiceflow.mfa.mfa_regenerate_recovery"), name="mfa_regenerate_recovery"),
     # Health checks
-    path("health/", health_check, name="health_check"),
-    path("health/ready/", readiness_check, name="readiness_check"),
-    path("health/live/", liveness_check, name="liveness_check"),
-    path("health/detailed/", detailed_health, name="detailed_health"),
+    path("health/", lazy_view("invoices.health.health_check"), name="health_check"),
+    path("health/ready/", lazy_view("invoices.health.readiness_check"), name="readiness_check"),
+    path("health/live/", lazy_view("invoices.health.liveness_check"), name="liveness_check"),
+    path("health/detailed/", lazy_view("invoices.health.detailed_health"), name="detailed_health"),
     # Favicon
     path("favicon.ico", RedirectView.as_view(url='/static/favicon.svg'), name="favicon"),
     # Robots.txt (dynamic)
-    path("robots.txt", views.robots_txt, name="robots_txt"),
+    path("robots.txt", lazy_view("invoices.views.robots_txt"), name="robots_txt"),
     # Service worker (served from root for proper scope)
-    path("sw.js", views.service_worker, name="service_worker"),
+    path("sw.js", lazy_view("invoices.views.service_worker"), name="service_worker"),
     # Sitemap for SEO
-    path(
-        "sitemap.xml",
-        sitemap_view,
-        {"sitemaps": sitemaps},
-        name="django.contrib.sitemaps.views.sitemap",
-    ),
+    path("sitemap.xml", sitemap_view, {"sitemaps": {}}, name="django.contrib.sitemaps.views.sitemap"),
     # Admin
     path("admin/", admin.site.urls),
-    path("", views.home, name="home"),
-    path("signup/", views.signup, name="signup"),
-    path("login/", views.login_view, name="login"),
-    path("logout/", views.logout_view, name="logout"),
-    path("verify-email/<str:token>/", views.verify_email, name="verify_email"),
-    path("verification-sent/", views.verification_sent, name="verification_sent"),
-    path("resend-verification/", views.resend_verification, name="resend_verification"),
-    path("forgot-password/", views.forgot_password, name="forgot_password"),
-    path("forgot-password/sent/", views.forgot_password_sent, name="forgot_password_sent"),
-    path("reset-password/<str:token>/", views.reset_password, name="reset_password"),
+    path("", lazy_view("invoices.views.home"), name="home"),
+    path("signup/", lazy_view("invoices.views.signup"), name="signup"),
+    path("login/", lazy_view("invoices.views.login_view"), name="login"),
+    path("logout/", lazy_view("invoices.views.logout_view"), name="logout"),
+    path("verify-email/<str:token>/", lazy_view("invoices.views.verify_email"), name="verify_email"),
+    path("verification-sent/", lazy_view("invoices.views.verification_sent"), name="verification_sent"),
+    path("resend-verification/", lazy_view("invoices.views.resend_verification"), name="resend_verification"),
+    path("forgot-password/", lazy_view("invoices.views.forgot_password"), name="forgot_password"),
+    path("forgot-password/sent/", lazy_view("invoices.views.forgot_password_sent"), name="forgot_password_sent"),
+    path("reset-password/<str:token>/", lazy_view("invoices.views.reset_password"), name="reset_password"),
     # Dashboard
-    path("dashboard/", views.dashboard, name="dashboard"),
-    # Design System (Phase 1)
-    path("components-showcase/", views.components_showcase, name="components_showcase"),
-    # Footer pages
-    path("features/", views.features, name="features"),
-    path("pricing/", views.pricing, name="pricing"),
-    path("templates/", views.templates_page, name="templates"),
-    path("api-access/", views.api_access, name="api"),
-    path("about/", views.about, name="about"),
-    path("careers/", views.careers, name="careers"),
-    path("contact/", views.contact, name="contact"),
-    path("changelog/", views.changelog, name="changelog"),
-    path("system-status/", views.system_status, name="status"),
-    path("support/", views.support, name="support"),
-    path("faq/", views.faq, name="faq"),
-    path("terms/", views.terms, name="terms"),
-    path("privacy/", views.privacy, name="privacy"),
-    path("security/", views.security, name="security"),
-    path("blog/", views.blog, name="blog"),
-    path("blog/<slug:slug>/", views.blog_article, name="blog_article"),
-    path("offline/", views.offline, name="offline"),
-    path("newsletter/signup/", views.newsletter_signup, name="newsletter_signup"),
-    path("newsletter/subscribe/", views.newsletter_signup, name="newsletter_subscribe"),
+    path("dashboard/", lazy_view("invoices.views.dashboard"), name="dashboard"),
     # User features
-    path("my-templates/", views.invoice_templates, name="invoice_templates"),
-    path("my-templates/<int:template_id>/delete/", views.delete_template, name="delete_template"),
-    path("recurring/", views.recurring_invoices, name="recurring_invoices"),
+    path("my-templates/", lazy_view("invoices.views.invoice_templates"), name="invoice_templates"),
+    path("my-templates/<int:template_id>/delete/", lazy_view("invoices.views.delete_template"), name="delete_template"),
+    path("recurring/", lazy_view("invoices.views.recurring_invoices"), name="recurring_invoices"),
     # Admin endpoints
-    path("admin-dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
-    path("admin-users/", admin_views.admin_users, name="admin_users"),
-    path("admin-payments/", admin_views.admin_payments, name="admin_payments"),
-    path("admin-invoices/", admin_views.admin_invoices, name="admin_invoices"),
-    path("admin-contacts/", admin_views.admin_contacts, name="admin_contacts"),
-    path("admin-contacts/<int:submission_id>/update/", admin_views.update_contact_status, name="update_contact_status"),
+    path("admin-dashboard/", lazy_view("invoices.admin_views.admin_dashboard"), name="admin_dashboard"),
+    path("admin-users/", lazy_view("invoices.admin_views.admin_users"), name="admin_users"),
+    path("admin-payments/", lazy_view("invoices.admin_views.admin_payments"), name="admin_payments"),
+    path("admin-invoices/", lazy_view("invoices.admin_views.admin_invoices"), name="admin_invoices"),
+    path("admin-contacts/", lazy_view("invoices.admin_views.admin_contacts"), name="admin_contacts"),
     # Payment routes (Paystack)
-    path("payments/invoice/<int:invoice_id>/pay/", paystack_views.initiate_invoice_payment, name="initiate_payment"),
-    path("payments/callback/<int:invoice_id>/", paystack_views.payment_callback, name="payment_callback"),
-    path("payments/webhook/", paystack_views.paystack_webhook, name="paystack_webhook"),
-    path("payments/status/<int:invoice_id>/", paystack_views.payment_status, name="payment_status"),
-    # Public invoice payment (client access without login)
-    path("pay/<int:invoice_id>/", paystack_views.public_invoice_view, name="public_invoice"),
-    path("pay/<int:invoice_id>/checkout/", paystack_views.public_initiate_payment, name="public_payment"),
-    path("pay/<int:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
+    path("payments/invoice/<int:invoice_id>/pay/", lazy_view("invoices.paystack_views.initiate_invoice_payment"), name="initiate_payment"),
+    path("payments/callback/<int:invoice_id>/", lazy_view("invoices.paystack_views.payment_callback"), name="payment_callback"),
+    path("payments/webhook/", lazy_view("invoices.paystack_views.paystack_webhook"), name="paystack_webhook"),
+    path("payments/status/<int:invoice_id>/", lazy_view("invoices.paystack_views.payment_status"), name="payment_status"),
+    # Public invoice payment
+    path("pay/<int:invoice_id>/", lazy_view("invoices.paystack_views.public_invoice_view"), name="public_invoice"),
+    path("pay/<int:invoice_id>/checkout/", lazy_view("invoices.paystack_views.public_initiate_payment"), name="public_payment"),
+    path("pay/<int:invoice_id>/callback/", lazy_view("invoices.paystack_views.public_payment_callback"), name="public_payment_callback"),
     # Invoices (all invoice routes including settings, payments)
     path("invoices/", include("invoices.urls")),
     # Root level profile redirect
