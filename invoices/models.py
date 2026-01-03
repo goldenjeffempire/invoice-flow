@@ -419,6 +419,22 @@ class ReminderLog(models.Model):
     success = models.BooleanField(default=True)
 
 
+class InAppNotification(models.Model):
+    """Internal notifications for users within the platform dashboard."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="in_app_notifications")
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, null=True, blank=True)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "is_read"])]
+
+    def __str__(self) -> str:
+        return f"{self.title} for {self.user}"
+
 # ============================================================================
 # PROCESSED PAYSTACK WEBHOOKS
 # ============================================================================

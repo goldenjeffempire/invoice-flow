@@ -9,42 +9,49 @@ class ReminderSchedulingService:
     @staticmethod
     def schedule_reminders_for_invoice(invoice: Invoice):
         """Schedules all applicable reminders for a given invoice based on user's active rules."""
-        # type: ignore[attr-defined]
-        ScheduledReminder.objects.filter(
-            invoice=invoice, 
-            status=ScheduledReminder.Status.PENDING
-        ).update(status=ScheduledReminder.Status.CANCELLED)
+        # Use a transaction to ensure atomicity
+        from django.db import transaction
+        with transaction.atomic():
+            # type: ignore[attr-defined]
+            ScheduledReminder.objects.filter(
+                invoice=invoice, 
+                status=ScheduledReminder.Status.PENDING
+            ).update(status=ScheduledReminder.Status.CANCELLED)
 
-        if invoice.status == Invoice.Status.PAID:
-            return
+            if invoice.status == Invoice.Status.PAID:
+                return
 
-        rules = ReminderRule.objects.filter(user=invoice.user, is_active=True)
-        
-        for rule in rules:
-            scheduled_time = None
-            if rule.trigger_type == ReminderRule.TriggerType.UPON_CREATION:
-                scheduled_time = timezone.now()
-            elif rule.trigger_type == ReminderRule.TriggerType.ON_DUE and invoice.due_date:
-                scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time()))
-            elif rule.trigger_type == ReminderRule.TriggerType.BEFORE_DUE and invoice.due_date:
-                scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())) - timezone.timedelta(days=rule.days_delta)
-            elif rule.trigger_type == ReminderRule.TriggerType.AFTER_DUE and invoice.due_date:
-                scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())) + timezone.timedelta(days=rule.days_delta)
+            rules = ReminderRule.objects.filter(user=invoice.user, is_active=True)
+            
+            for rule in rules:
+                scheduled_time = None
+                if rule.trigger_type == ReminderRule.TriggerType.UPON_CREATION:
+                    scheduled_time = timezone.now()
+                elif rule.trigger_type == ReminderRule.TriggerType.ON_DUE and invoice.due_date:
+                    scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time()))
+                elif rule.trigger_type == ReminderRule.TriggerType.BEFORE_DUE and invoice.due_date:
+                    scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())) - timezone.timedelta(days=rule.days_delta)
+                elif rule.trigger_type == ReminderRule.TriggerType.AFTER_DUE and invoice.due_date:
+                    scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())) + timezone.timedelta(days=rule.days_delta)
 
-            if scheduled_time:
-                # Adjust for weekends if rule specified
-                if rule.exclude_weekends and scheduled_time.weekday() >= 5:
-                    days_to_add = (7 - scheduled_time.weekday())
-                    scheduled_time += timezone.timedelta(days=days_to_add)
+                if scheduled_time:
+                    # Adjust for weekends if rule specified
+                    if rule.exclude_weekends and scheduled_time.weekday() >= 5:
+                        days_to_add = (7 - scheduled_time.weekday())
+                        scheduled_time += timezone.timedelta(days=days_to_add)
 
-                # Use update_or_create to prevent duplicate scheduling
-                # type: ignore[attr-defined]
-                ScheduledReminder.objects.update_or_create(
-                    invoice=invoice,
-                    rule=rule,
-                    status=ScheduledReminder.Status.PENDING,
-                    defaults={'scheduled_for': scheduled_time}
-                )
+                    # Ensure we don't schedule in the past for future triggers
+                    if scheduled_time < timezone.now() and rule.trigger_type != ReminderRule.TriggerType.UPON_CREATION:
+                        continue
+
+                    # Use update_or_create to prevent duplicate scheduling
+                    # type: ignore[attr-defined]
+                    ScheduledReminder.objects.update_or_create(
+                        invoice=invoice,
+                        rule=rule,
+                        status=ScheduledReminder.Status.PENDING,
+                        defaults={'scheduled_for': scheduled_time}
+                    )
 
     @classmethod
     def process_pending_reminders(cls):
@@ -100,8 +107,13 @@ class ReminderSchedulingService:
                         max_retries=rule.max_retries if rule.retry_on_failure else 0
                     )
                 elif rule.channel == 'in_app':
-                    # Logic for in-app notification creation
-                    pass
+                    from .models import InAppNotification
+                    InAppNotification.objects.create(
+                        user=invoice.user,
+                        invoice=invoice,
+                        title=subject,
+                        message=body
+                    )
                 
                 reminder.status = ScheduledReminder.Status.SENT
                 reminder.save()
