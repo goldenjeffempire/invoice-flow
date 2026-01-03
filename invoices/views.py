@@ -667,67 +667,92 @@ def dashboard(request):
 
     base_queryset = Invoice.objects.filter(user=request.user)
 
-    # Core statistics
+    # Core statistics (Aggressively cached)
     stats = AnalyticsService.get_user_dashboard_stats(request.user)
     today = timezone.now().date()
     
-    # Calculate key metrics
-    overdue_count = base_queryset.filter(status="unpaid", due_date__lt=today).count()
-    due_this_week = base_queryset.filter(
-        status="unpaid", 
-        due_date__gte=today, 
-        due_date__lte=today + timedelta(days=7)
-    ).count()
+    # Check cache for auxiliary dashboard data
+    from django.core.cache import cache as django_cache
+    cache_key = f"dashboard_aux_data_{request.user.id}"
+    cached_aux = django_cache.get(cache_key)
     
-    # Monthly revenue trends (last 12 months)
-    twelve_months_ago = timezone.now() - timedelta(days=365)
-    monthly_data = (
-        base_queryset.filter(status="paid", invoice_date__gte=twelve_months_ago)
-        .annotate(month=TruncMonth("invoice_date"))
-        .values("month")
-        .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
-        .order_by("month")
-    )
-    
-    chart_labels = []
-    chart_data = []
-    for item in monthly_data:
-        if item["month"]:
-            chart_labels.append(item["month"].strftime("%b %Y"))
-            chart_data.append(float(item["total"] or 0))
-    
-    # Recent activity - limit to last 5
-    recent_invoices = base_queryset.prefetch_related("line_items").order_by("-created_at")[:5]
-    
-    # Invoice aging summary
-    aging_summary = {
-        "0_30": base_queryset.filter(
+    if cached_aux:
+        overdue_count = cached_aux['overdue_count']
+        due_this_week = cached_aux['due_this_week']
+        chart_labels = cached_aux['chart_labels']
+        chart_data = cached_aux['chart_data']
+        aging_summary = cached_aux['aging_summary']
+        top_clients = cached_aux['top_clients']
+        total_unpaid = cached_aux['total_unpaid']
+    else:
+        # Calculate key metrics
+        overdue_count = base_queryset.filter(status="unpaid", due_date__lt=today).count()
+        due_this_week = base_queryset.filter(
             status="unpaid", 
-            due_date__gte=today - timedelta(days=30),
-            due_date__lte=today
-        ).count(),
-        "31_60": base_queryset.filter(
-            status="unpaid",
-            due_date__gte=today - timedelta(days=60),
-            due_date__lt=today - timedelta(days=30)
-        ).count(),
-        "60_plus": base_queryset.filter(
-            status="unpaid",
-            due_date__lt=today - timedelta(days=60)
-        ).count(),
-    }
+            due_date__gte=today, 
+            due_date__lte=today + timedelta(days=7)
+        ).count()
+        
+        # Monthly revenue trends (last 12 months)
+        twelve_months_ago = timezone.now() - timedelta(days=365)
+        monthly_data = (
+            base_queryset.filter(status="paid", invoice_date__gte=twelve_months_ago)
+            .annotate(month=TruncMonth("invoice_date"))
+            .values("month")
+            .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
+            .order_by("month")
+        )
+        
+        chart_labels = []
+        chart_data = []
+        for item in monthly_data:
+            if item["month"]:
+                chart_labels.append(item["month"].strftime("%b %Y"))
+                chart_data.append(float(item["total"] or 0))
+        
+        # Invoice aging summary
+        aging_summary = {
+            "0_30": base_queryset.filter(
+                status="unpaid", 
+                due_date__gte=today - timedelta(days=30),
+                due_date__lte=today
+            ).count(),
+            "31_60": base_queryset.filter(
+                status="unpaid",
+                due_date__gte=today - timedelta(days=60),
+                due_date__lt=today - timedelta(days=30)
+            ).count(),
+            "60_plus": base_queryset.filter(
+                status="unpaid",
+                due_date__lt=today - timedelta(days=60)
+            ).count(),
+        }
+        
+        # Revenue breakdown by client (top 5)
+        top_clients = list(
+            base_queryset.values("client_name")
+            .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
+            .order_by("-total")[:5]
+        )
+        
+        # Calculate total unpaid amount for aging summary
+        total_unpaid = base_queryset.filter(status="unpaid").aggregate(
+            total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
+        )["total"] or Decimal("0")
+        
+        # Cache for 5 minutes
+        django_cache.set(cache_key, {
+            'overdue_count': overdue_count,
+            'due_this_week': due_this_week,
+            'chart_labels': chart_labels,
+            'chart_data': chart_data,
+            'aging_summary': aging_summary,
+            'top_clients': top_clients,
+            'total_unpaid': total_unpaid,
+        }, 300)
     
-    # Revenue breakdown by client (top 5)
-    top_clients = (
-        base_queryset.values("client_name")
-        .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
-        .order_by("-total")[:5]
-    )
-    
-    # Calculate total unpaid amount for aging summary
-    total_unpaid = base_queryset.filter(status="unpaid").aggregate(
-        total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
-    )["total"] or Decimal("0")
+    # Recent activity - limit to last 5 (always fresh)
+    recent_invoices = base_queryset.prefetch_related("line_items").order_by("-created_at")[:5]
     
     context = {
         "user": request.user,
@@ -742,7 +767,7 @@ def dashboard(request):
         "chart_data": json.dumps(chart_data),
         "recent_invoices": recent_invoices,
         "aging_summary": {**aging_summary, "total_unpaid": float(total_unpaid)},
-        "top_clients": list(top_clients),
+        "top_clients": top_clients,
         "active": "dashboard",
     }
     return render(request, "dashboard/main.html", context)
