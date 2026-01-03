@@ -685,7 +685,8 @@ def dashboard(request):
         top_clients = cached_aux['top_clients']
         total_unpaid = cached_aux['total_unpaid']
     else:
-        # Calculate key metrics
+        # Calculate key metrics with optimized queries
+        # 1. Overdue and Due this week
         overdue_count = base_queryset.filter(status="unpaid", due_date__lt=today).count()
         due_this_week = base_queryset.filter(
             status="unpaid", 
@@ -693,7 +694,18 @@ def dashboard(request):
             due_date__lte=today + timedelta(days=7)
         ).count()
         
-        # Monthly revenue trends (last 12 months)
+        # 2. Aging summary buckets
+        aging_30 = base_queryset.filter(status="unpaid", due_date__gte=today - timedelta(days=30), due_date__lte=today).count()
+        aging_60 = base_queryset.filter(status="unpaid", due_date__gte=today - timedelta(days=60), due_date__lt=today - timedelta(days=30)).count()
+        aging_plus = base_queryset.filter(status="unpaid", due_date__lt=today - timedelta(days=60)).count()
+        
+        aging_summary = {
+            "0_30": aging_30,
+            "31_60": aging_60,
+            "60_plus": aging_plus,
+        }
+        
+        # 3. Monthly revenue trends (Optimized grouping)
         twelve_months_ago = timezone.now() - timedelta(days=365)
         monthly_data = (
             base_queryset.filter(status="paid", invoice_date__gte=twelve_months_ago)
@@ -710,37 +722,19 @@ def dashboard(request):
                 chart_labels.append(item["month"].strftime("%b %Y"))
                 chart_data.append(float(item["total"] or 0))
         
-        # Invoice aging summary
-        aging_summary = {
-            "0_30": base_queryset.filter(
-                status="unpaid", 
-                due_date__gte=today - timedelta(days=30),
-                due_date__lte=today
-            ).count(),
-            "31_60": base_queryset.filter(
-                status="unpaid",
-                due_date__gte=today - timedelta(days=60),
-                due_date__lt=today - timedelta(days=30)
-            ).count(),
-            "60_plus": base_queryset.filter(
-                status="unpaid",
-                due_date__lt=today - timedelta(days=60)
-            ).count(),
-        }
-        
-        # Revenue breakdown by client (top 5)
+        # 4. Revenue breakdown by client (top 5)
         top_clients = list(
             base_queryset.values("client_name")
             .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
             .order_by("-total")[:5]
         )
         
-        # Calculate total unpaid amount for aging summary
+        # 5. Total unpaid amount
         total_unpaid = base_queryset.filter(status="unpaid").aggregate(
             total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
         )["total"] or Decimal("0")
         
-        # Cache for 5 minutes
+        # Cache for 10 minutes (increased from 5)
         django_cache.set(cache_key, {
             'overdue_count': overdue_count,
             'due_this_week': due_this_week,
@@ -749,7 +743,7 @@ def dashboard(request):
             'aging_summary': aging_summary,
             'top_clients': top_clients,
             'total_unpaid': total_unpaid,
-        }, 300)
+        }, 600)
     
     # Recent activity - limit to last 5 (always fresh)
     recent_invoices = base_queryset.prefetch_related("line_items").order_by("-created_at")[:5]
