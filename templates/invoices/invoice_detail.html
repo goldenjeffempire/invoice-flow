@@ -170,6 +170,18 @@
         .invoice-paper {
             padding: 24px;
         }
+        .info-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+            padding: 20px;
+        }
+        .invoice-header {
+            flex-direction: column;
+            gap: 24px;
+        }
+        .invoice-info {
+            text-align: left;
+        }
     }
 </style>
 {% endblock %}
@@ -181,13 +193,13 @@
     <div class="invoice-paper animate-fade-in">
         <div class="invoice-header">
             <div class="business-brand">
-                {% if business.logo %}
-                    <img src="{{ business.logo.url }}" alt="Logo" style="height: 48px; margin-bottom: 16px;">
+                {% if business.company_logo %}
+                    <img src="{{ business.company_logo.url }}" alt="Logo" style="height: 48px; margin-bottom: 16px;">
                 {% endif %}
-                <h2>{{ business.company_name|default:"InvoiceFlow Pro" }}</h2>
+                <h2>{{ invoice.business_name|default:business.company_name|default:"InvoiceFlow Pro" }}</h2>
                 <div class="info-value" style="font-size: 0.875rem; color: var(--gray-500);">
-                    {{ business.business_address|linebreaksbr }}<br>
-                    {{ business.business_email }}
+                    {{ invoice.business_address|default:business.business_address|linebreaksbr }}<br>
+                    {{ invoice.business_email|default:business.business_email }}
                 </div>
             </div>
             <div class="invoice-info">
@@ -220,30 +232,32 @@
             </div>
         </div>
 
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th style="width: 50%;">Description</th>
-                    <th style="text-align: center;">Qty</th>
-                    <th style="text-align: right;">Price</th>
-                    <th style="text-align: right;">Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in invoice.line_items.all %}
-                <tr>
-                    <td style="font-weight: 600; color: var(--gray-900);">{{ item.description }}</td>
-                    <td style="text-align: center; color: var(--gray-600);">{{ item.quantity }}</td>
-                    <td style="text-align: right; color: var(--gray-600);">{{ invoice.currency }} {{ item.unit_price|floatformat:2 }}</td>
-                    <td style="text-align: right; font-weight: 700; color: var(--gray-900);">{{ invoice.currency }} {{ item.total_price|floatformat:2 }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" style="text-align: center; padding: 32px; color: var(--gray-400);">No items added to this invoice.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div style="overflow-x: auto;">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Description</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Price</th>
+                        <th style="text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in invoice.line_items.all %}
+                    <tr>
+                        <td style="font-weight: 600; color: var(--gray-900);">{{ item.description }}</td>
+                        <td style="text-align: center; color: var(--gray-600);">{{ item.quantity }}</td>
+                        <td style="text-align: right; color: var(--gray-600);">{{ invoice.currency }} {{ item.unit_price|floatformat:2 }}</td>
+                        <td style="text-align: right; font-weight: 700; color: var(--gray-900);">{{ invoice.currency }} {{ item.total_price|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 32px; color: var(--gray-400);">No items added to this invoice.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <div class="summary-grid">
             <div class="summary-table">
@@ -304,10 +318,12 @@
                 </button>
                 {% endif %}
                 
+                {% if invoice.status != 'paid' %}
                 <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="btn btn-secondary action-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Edit Invoice
                 </a>
+                {% endif %}
 
                 <a href="{% url 'invoices:duplicate_invoice' invoice.id %}" class="btn btn-secondary action-btn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -334,12 +350,13 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="delete-modal" class="toast" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; background: white; color: var(--gray-900); text-align: center;">
-    <h3 style="margin-bottom: 12px;">Delete Invoice?</h3>
+<div id="delete-modal-backdrop" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; backdrop-filter: blur(4px);" onclick="closeDeleteModal()"></div>
+<div id="delete-modal" class="sidebar-card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 400px; z-index: 1000; margin: 0;">
+    <h3 style="margin-bottom: 12px; font-weight: 800;">Delete Invoice?</h3>
     <p style="color: var(--gray-500); font-size: 0.875rem; margin-bottom: 24px;">This action cannot be undone. Are you sure you want to delete invoice <strong id="delete-invoice-id"></strong>?</p>
     <div style="display: flex; gap: 12px;">
         <button class="btn btn-secondary" style="flex: 1;" onclick="closeDeleteModal()">Cancel</button>
-        <button id="confirmDeleteBtn" class="btn btn-primary" style="flex: 1; background: var(--error-600);">Delete</button>
+        <button id="confirmDeleteBtn" class="btn btn-primary" style="flex: 1; background: var(--error-600); border-color: var(--error-600);">Delete</button>
     </div>
 </div>
 </div>
@@ -366,20 +383,26 @@
             } else {
                 alert(data.message || 'Error marking invoice as paid');
             }
-        });
+        })
+        .catch(err => alert('Network error. Please try again.'));
     }
 
     function confirmDelete(id, displayId) {
         invoiceToDelete = id;
         document.getElementById('delete-invoice-id').textContent = '#' + displayId;
         document.getElementById('delete-modal').style.display = 'block';
+        document.getElementById('delete-modal-backdrop').style.display = 'block';
     }
 
     function closeDeleteModal() {
         document.getElementById('delete-modal').style.display = 'none';
+        document.getElementById('delete-modal-backdrop').style.display = 'none';
     }
 
     document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        this.disabled = true;
+        this.textContent = 'Deleting...';
+        
         fetch(`/invoices/invoice/${invoiceToDelete}/delete/`, {
             method: 'POST',
             headers: {
@@ -392,9 +415,16 @@
             if (data.success) {
                 window.location.href = '{% url "invoices:invoice_list" %}';
             } else {
-                alert(data.message);
+                alert(data.message || 'Error deleting invoice');
+                this.disabled = false;
+                this.textContent = 'Delete';
                 closeDeleteModal();
             }
+        })
+        .catch(err => {
+            alert('Network error. Please try again.');
+            this.disabled = false;
+            this.textContent = 'Delete';
         });
     });
 </script>
