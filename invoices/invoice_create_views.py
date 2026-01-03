@@ -9,91 +9,52 @@ from django.shortcuts import redirect, render, get_object_or_404
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
 from .models import Invoice, LineItem, UserProfile, InvoiceTemplate
+from .forms import InvoiceForm
+from .services import InvoiceService, AnalyticsService
 
 logger = logging.getLogger(__name__)
 
 @login_required
 @transaction.atomic
+@csrf_protect
 def create_invoice(request):
     """Modernized Create Invoice view with robust validation and handling."""
+    # Pre-populate business details from user profile
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    # Get recent unique clients
     recent_clients = Invoice.objects.filter(user=request.user).order_by("-created_at")[:10]
     
     if request.method == "POST":
         try:
-            # Extract info
-            business_name = request.POST.get("business_name")
-            business_email = request.POST.get("business_email")
-            business_phone = request.POST.get("business_phone", "")
-            business_address = request.POST.get("business_address")
+            line_items_json = request.POST.get("line_items", "[]")
+            line_items_data = json.loads(line_items_json)
             
-            client_name = request.POST.get("client_name")
-            client_email = request.POST.get("client_email")
-            client_phone = request.POST.get("client_phone", "")
-            client_address = request.POST.get("client_address")
-            
-            invoice_date = request.POST.get("invoice_date")
-            due_date = request.POST.get("due_date")
-            currency = request.POST.get("currency", "NGN")
-            tax_rate = Decimal(request.POST.get("tax_rate", "0") or "0")
-            discount = Decimal(request.POST.get("discount", "0") or "0")
-            notes = request.POST.get("notes", "")
-            reminders_enabled = request.POST.get("automated_reminders_enabled") == "on"
-            
-            # Basic Validation
-            if not all([business_name, business_email, client_name, client_email, invoice_date]):
-                messages.error(request, "Please fill in all required business and client details.")
+            if not line_items_data:
+                messages.error(request, "Please add at least one line item.")
                 return redirect("invoices:create_invoice")
 
-            # Create Invoice
-            invoice = Invoice.objects.create(
+            # Use Service layer for creation to ensure consistency
+            invoice, form = InvoiceService.create_invoice(
                 user=request.user,
-                business_name=business_name,
-                business_email=business_email,
-                business_phone=business_phone,
-                business_address=business_address,
-                client_name=client_name,
-                client_email=client_email,
-                client_phone=client_phone,
-                client_address=client_address,
-                invoice_date=invoice_date,
-                due_date=due_date or None,
-                currency=currency,
-                tax_rate=tax_rate,
-                discount=discount,
-                notes=notes,
-                automated_reminders_enabled=reminders_enabled,
-                status=Invoice.Status.UNPAID
+                invoice_data=request.POST,
+                files_data=request.FILES,
+                line_items_data=line_items_data
             )
             
-            # Process Line Items
-            line_items_data = json.loads(request.POST.get("line_items", "[]"))
-            if line_items_data:
-                for item in line_items_data:
-                    desc = item.get("description", "").strip()
-                    if desc:
-                        LineItem.objects.create(
-                            invoice=invoice,
-                            description=desc,
-                            quantity=Decimal(str(item.get("quantity", 1))),
-                            unit_price=Decimal(str(item.get("unit_price", 0)))
-                        )
-            
-            # Ensure at least one item
-            if not invoice.line_items.exists():
-                LineItem.objects.create(invoice=invoice, description="General Service", quantity=1, unit_price=0)
-            
-            from .services import AnalyticsService
-            AnalyticsService.invalidate_user_cache(request.user.id)
-            
-            messages.success(request, f"✓ Invoice {invoice.invoice_id} has been created successfully!")
-            return redirect("invoices:invoice_detail", invoice_id=invoice.id)
-            
+            if invoice:
+                messages.success(request, f"✓ Invoice {invoice.invoice_id} created successfully!")
+                return redirect("invoices:invoice_detail", invoice_id=invoice.id)
+            else:
+                # Handle form errors
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+                return redirect("invoices:create_invoice")
+                
         except Exception as e:
-            logger.error(f"Error creating invoice for user {request.user.id}: {str(e)}")
-            messages.error(request, f"An unexpected error occurred: {str(e)}")
+            logger.error(f"Error creating invoice: {str(e)}")
+            messages.error(request, f"Failed to create invoice: {str(e)}")
             return redirect("invoices:create_invoice")
 
     context = {
@@ -101,11 +62,13 @@ def create_invoice(request):
         "active": "create_invoice",
         "page_title": "Create Invoice",
         "today": timezone.now().date(),
+        "user_profile": profile,
     }
     return render(request, "invoices/create_invoice.html", context)
 
 @login_required
 @require_POST
+@csrf_protect
 def load_template(request):
     """Load invoice template data via AJAX."""
     try:
@@ -129,14 +92,20 @@ def load_template(request):
 
 @login_required
 @require_POST
+@csrf_protect
 def validate_invoice_form(request):
     """Real-time validation of invoice form fields."""
-    return JsonResponse({'success': True, 'errors': {}})
+    form = InvoiceForm(request.POST, request.FILES)
+    if form.is_valid():
+        return JsonResponse({'success': True, 'errors': {}})
+    else:
+        return JsonResponse({'success': False, 'errors': form.errors})
 
 @login_required
 @require_POST
+@csrf_protect
 def calculate_totals(request):
-    """Calculate invoice totals via AJAX."""
+    """Calculate invoice totals via AJAX for real-world usage."""
     try:
         line_items_json = request.POST.get('line_items_json', '[]')
         tax_rate = Decimal(request.POST.get('tax_rate', '0') or '0')
@@ -145,7 +114,9 @@ def calculate_totals(request):
         items = json.loads(line_items_json)
         subtotal = Decimal('0')
         for item in items:
-            subtotal += Decimal(str(item.get('quantity', 0))) * Decimal(str(item.get('unit_price', 0)))
+            qty = Decimal(str(item.get('quantity', 0) or 0))
+            price = Decimal(str(item.get('unit_price', 0) or 0))
+            subtotal += qty * price
         
         discount_amount = (subtotal * discount_rate) / Decimal('100')
         after_discount = subtotal - discount_amount
@@ -160,4 +131,5 @@ def calculate_totals(request):
             'total': float(total),
         })
     except Exception as e:
+        logger.error(f"Calculation error: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
