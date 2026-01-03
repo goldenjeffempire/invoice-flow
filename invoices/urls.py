@@ -21,7 +21,7 @@ urlpatterns = [
     # ------------------------------------------------------------------
     # CREATE INVOICE (Production-grade with comprehensive validation)
     # ------------------------------------------------------------------
-    path("create/", invoice_create_views.create_invoice_start, name="create_invoice_start"),
+    path("create/", invoice_create_views.create_invoice, name="create_invoice"),
     path("create/load-template/", invoice_create_views.load_template, name="load_template"),
     path("create/validate/", invoice_create_views.validate_invoice_form, name="validate_invoice_form"),
     path("create/calculate/", invoice_create_views.calculate_totals, name="calculate_totals"),

@@ -276,68 +276,113 @@
         opacity: 1;
         transform: translateX(-50%) translateY(-8px);
     }
+
+    /* Additional production-grade styles */
+    .field-error {
+        border-color: #ef4444 !important;
+        background-color: #fef2f2 !important;
+    }
+    .error-text {
+        color: #ef4444;
+        font-size: 0.75rem;
+        margin-top: 4px;
+        font-weight: 500;
+    }
+    .btn-loading {
+        position: relative;
+        color: transparent !important;
+        pointer-events: none;
+    }
+    .btn-loading::after {
+        content: "";
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        top: 50%;
+        left: 50%;
+        margin-top: -10px;
+        margin-left: -10px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="content-container">
     <div class="create-invoice-wrapper">
-        <div class="section-header" style="border: none; margin-bottom: 32px;">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
-                <h1 class="header-title" style="font-size: 2rem; letter-spacing: -0.02em;">New Invoice</h1>
-                <p class="header-subtitle">Draft a professional invoice in seconds</p>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Create Invoice</h1>
+                <p class="text-gray-500 mt-1">Generate a professional, production-ready invoice</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 uppercase tracking-wider">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2"></span>
+                    Draft Mode
+                </span>
+                <button type="button" class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Settings">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
             </div>
         </div>
 
-        <form method="POST" id="create-invoice-form" class="space-y-6">
+        <form method="POST" id="create-invoice-form" class="space-y-6" novalidate>
             {% csrf_token %}
             <input type="hidden" name="line_items" id="line-items-json">
 
             <div class="invoice-grid">
+                <!-- From Section -->
                 <div class="glass-card">
                     <div class="card-accent-header">
                         <div class="icon-box">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v1a3 3 0 006 0V7m6 0v1a3 3 0 006 0V7m-9 0h.01M4 21V10m16 11V10m-8 11V10"/></svg>
                         </div>
-                        <h2 class="modal-title">Business Profile</h2>
+                        <h2 class="text-lg font-bold text-gray-900">Your Business Details</h2>
                     </div>
                     <div class="card-body-padded">
                         <div class="form-group-modern">
                             <label class="label-modern">Business Name</label>
-                            {{ form.business_name }}
+                            <input type="text" name="business_name" class="input-modern" value="{{ user.profile.company_name|default:'' }}" required>
                         </div>
                         <div class="form-group-modern">
                             <label class="label-modern">Business Email</label>
-                            {{ form.business_email }}
+                            <input type="email" name="business_email" class="input-modern" value="{{ user.profile.business_email|default:user.email }}" required>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="form-group-modern">
-                                <label class="label-modern">Tax ID</label>
-                                <input type="text" name="tax_id" class="input-modern" placeholder="VAT-12345">
+                                <label class="label-modern">Phone Number</label>
+                                <input type="text" name="business_phone" class="input-modern" value="{{ user.profile.business_phone|default:'' }}">
                             </div>
                             <div class="form-group-modern">
-                                <label class="label-modern">Phone</label>
-                                {{ form.business_phone }}
+                                <label class="label-modern">Tax ID (Optional)</label>
+                                <input type="text" name="tax_id" class="input-modern" value="{{ user.profile.tax_id|default:'' }}" placeholder="VAT-12345">
                             </div>
                         </div>
                         <div class="form-group-modern">
                             <label class="label-modern">Address</label>
-                            {{ form.business_address }}
+                            <textarea name="business_address" class="input-modern min-h-[100px]" required>{{ user.profile.business_address|default:'' }}</textarea>
                         </div>
                     </div>
                 </div>
 
+                <!-- To Section -->
                 <div class="glass-card">
-                    <div class="card-accent-header" style="justify-content: space-between;">
-                        <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="card-accent-header justify-between">
+                        <div class="flex items-center gap-4">
                             <div class="icon-box">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                             </div>
-                            <h2 class="modal-title">Client Details</h2>
+                            <h2 class="text-lg font-bold text-gray-900">Client Information</h2>
                         </div>
                         {% if recent_clients %}
-                        <select id="recent-clients-select" class="input-modern" style="max-width: 200px; height: 38px; padding: 4px 12px; font-size: 0.85rem;">
-                            <option value="">Select Recent Client</option>
+                        <select id="recent-clients-select" class="text-sm border-gray-200 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Choose Recent Client</option>
                             {% for client in recent_clients %}
                                 <option value="{{ client.id }}" 
                                         data-name="{{ client.client_name }}" 
@@ -353,71 +398,81 @@
                     <div class="card-body-padded">
                         <div class="form-group-modern">
                             <label class="label-modern">Client Name</label>
-                            {{ form.client_name }}
+                            <input type="text" name="client_name" id="id_client_name" class="input-modern" placeholder="e.g. Acme Corp" required>
                         </div>
                         <div class="form-group-modern">
                             <label class="label-modern">Client Email</label>
-                            {{ form.client_email }}
+                            <input type="email" name="client_email" id="id_client_email" class="input-modern" placeholder="client@example.com" required>
                         </div>
                         <div class="form-group-modern">
                             <label class="label-modern">Phone Number</label>
-                            {{ form.client_phone }}
+                            <input type="text" name="client_phone" id="id_client_phone" class="input-modern" placeholder="+1 (555) 000-0000">
                         </div>
                         <div class="form-group-modern">
-                            <label class="label-modern">Client Address</label>
-                            {{ form.client_address }}
+                            <label class="label-modern">Billing Address</label>
+                            <textarea name="client_address" id="id_client_address" class="input-modern min-h-[100px]" placeholder="123 Client St, City, Country" required></textarea>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Settings Section -->
             <div class="glass-card">
                 <div class="card-accent-header">
                     <div class="icon-box">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     </div>
-                    <h2 class="modal-title">Invoice Settings</h2>
+                    <h2 class="text-lg font-bold text-gray-900">Invoice Configuration</h2>
                 </div>
                 <div class="card-body-padded">
-                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div class="form-group-modern">
-                            <label class="label-modern">Issue Date</label>
-                            {{ form.invoice_date }}
+                            <label class="label-modern">Invoice Date</label>
+                            <input type="date" name="invoice_date" class="input-modern" value="{% now 'Y-m-d' %}" required>
                         </div>
                         <div class="form-group-modern">
                             <label class="label-modern">Due Date</label>
-                            {{ form.due_date }}
+                            <input type="date" name="due_date" class="input-modern" value="{% now 'Y-m-d' %}" required>
                         </div>
                         <div class="form-group-modern">
                             <label class="label-modern">Currency</label>
-                            {{ form.currency }}
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Tax Rate (%)</label>
-                            {{ form.tax_rate }}
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Discount (%)</label>
-                            {{ form.discount }}
+                            <select name="currency" class="input-modern" required>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="NGN" selected>NGN - Nigerian Naira</option>
+                                <option value="CAD">CAD - Canadian Dollar</option>
+                            </select>
                         </div>
                         <div class="form-group-modern flex items-center pt-6">
                             <label class="relative inline-flex items-center cursor-pointer">
-                                {{ form.automated_reminders_enabled }}
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                <span class="ml-3 text-sm font-medium text-gray-700">Reminders</span>
+                                <input type="checkbox" name="automated_reminders_enabled" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                                <span class="ml-3 text-sm font-semibold text-gray-700">Auto Reminders</span>
                             </label>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+                        <div class="form-group-modern">
+                            <label class="label-modern">Tax Rate (%)</label>
+                            <input type="number" name="tax_rate" class="input-modern" value="{{ user.profile.default_tax_rate|default:0 }}" min="0" max="100" step="0.01">
+                        </div>
+                        <div class="form-group-modern">
+                            <label class="label-modern">Discount (%)</label>
+                            <input type="number" name="discount" class="input-modern" value="0" min="0" max="100" step="0.01">
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Items Section -->
             <div class="glass-card">
-                <div class="card-accent-header" style="justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 16px;">
+                <div class="card-accent-header justify-between">
+                    <div class="flex items-center gap-4">
                         <div class="icon-box">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                         </div>
-                        <h2 class="modal-title">Line Items</h2>
+                        <h2 class="text-lg font-bold text-gray-900">Line Items</h2>
                     </div>
                     <button type="button" id="add-item-btn" class="btn-add-item">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -431,12 +486,14 @@
                                 <tr>
                                     <th style="width: 50%;">Description</th>
                                     <th style="width: 15%;">Quantity</th>
-                                    <th style="width: 15%;">Price</th>
-                                    <th style="width: 15%; text-align: right;">Total</th>
+                                    <th style="width: 15%;">Unit Price</th>
+                                    <th style="width: 15%; text-align: right;">Amount</th>
                                     <th style="width: 5%;"></th>
                                 </tr>
                             </thead>
-                            <tbody id="line-items-body"></tbody>
+                            <tbody id="line-items-body">
+                                <!-- Items will be rendered here by JS -->
+                            </tbody>
                         </table>
                     </div>
 
@@ -447,43 +504,48 @@
                         </div>
                         <div class="total-row">
                             <span>Discount (<span id="discount-rate-badge">0</span>%)</span>
-                            <span id="discount-display" style="color: #ef4444;">-0.00</span>
+                            <span id="discount-display" class="text-red-400">-0.00</span>
                         </div>
                         <div class="total-row">
                             <span>Tax (<span id="tax-rate-badge">0</span>%)</span>
                             <span id="tax-display">0.00</span>
                         </div>
                         <div class="total-row grand-total">
-                            <span>Total</span>
+                            <span>Total Due</span>
                             <span id="total-display">0.00</span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Notes Section -->
             <div class="glass-card">
                 <div class="card-accent-header">
                     <div class="icon-box">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                     </div>
-                    <h2 class="modal-title">Notes</h2>
+                    <h2 class="text-lg font-bold text-gray-900">Notes & Terms</h2>
                 </div>
                 <div class="card-body-padded">
-                    {{ form.notes }}
+                    <textarea name="notes" class="input-modern min-h-[120px]" placeholder="Add payment instructions, terms, or a thank you message..."></textarea>
                 </div>
             </div>
 
+            <!-- Action Footer -->
             <div class="floating-footer">
                 <input type="hidden" name="status" id="invoice-status" value="unpaid">
-                <a href="{% url 'invoices:invoice_list' %}" class="btn-ghost" style="padding: 12px 24px; font-weight: 600;">Discard</a>
-                <button type="submit" class="btn-generate">
+                <div class="hidden sm:flex items-center text-xs text-gray-400 mr-4 font-medium animate-pulse" id="autosave-status">
+                    All changes synced
+                </div>
+                <a href="{% url 'invoices:invoice_list' %}" class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">Discard Draft</a>
+                <button type="submit" id="submit-btn" class="btn-generate">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                         <polyline points="14 2 14 8 20 8"></polyline>
                         <line x1="12" y1="18" x2="12" y2="12"></line>
                         <line x1="9" y1="15" x2="15" y2="15"></line>
                     </svg>
-                    Generate Invoice
+                    <span>Generate Invoice</span>
                 </button>
             </div>
         </form>
@@ -493,128 +555,158 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('create-invoice-form');
-    const itemsBody = document.getElementById('line-items-body');
-    const addItemBtn = document.getElementById('add-item-btn');
-    const lineItemsInput = document.getElementById('line-items-json');
-    const taxRateInput = document.querySelector('input[name="tax_rate"]');
-    const discountInput = document.querySelector('input[name="discount"]');
-    const recentClientsSelect = document.getElementById('recent-clients-select');
-    
-    let items = [{ description: '', quantity: 1, unit_price: 0 }];
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('create-invoice-form');
+        const itemsBody = document.getElementById('line-items-body');
+        const addItemBtn = document.getElementById('add-item-btn');
+        const lineItemsInput = document.getElementById('line-items-json');
+        const taxRateInput = document.querySelector('input[name="tax_rate"]');
+        const discountInput = document.querySelector('input[name="discount"]');
+        const recentClientsSelect = document.getElementById('recent-clients-select');
+        const submitBtn = document.getElementById('submit-btn');
+        const autosaveStatus = document.getElementById('autosave-status');
+        
+        let items = [{ description: '', quantity: 1, unit_price: 0 }];
 
-    function updateTotals() {
-        let subtotal = 0;
-        items.forEach(item => {
-            subtotal += (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
-        });
-        
-        const taxRate = parseFloat(taxRateInput.value) || 0;
-        const discountRate = parseFloat(discountInput.value) || 0;
-        
-        const discountAmount = (subtotal * discountRate) / 100;
-        const subtotalAfterDiscount = subtotal - discountAmount;
-        const taxAmount = (subtotalAfterDiscount * taxRate) / 100;
-        const total = subtotalAfterDiscount + taxAmount;
-        
-        const localeOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
-        document.getElementById('subtotal-display').textContent = subtotal.toLocaleString(undefined, localeOptions);
-        document.getElementById('discount-display').textContent = '-' + discountAmount.toLocaleString(undefined, localeOptions);
-        document.getElementById('tax-display').textContent = taxAmount.toLocaleString(undefined, localeOptions);
-        document.getElementById('total-display').textContent = total.toLocaleString(undefined, localeOptions);
-        
-        document.getElementById('discount-rate-badge').textContent = discountRate;
-        document.getElementById('tax-rate-badge').textContent = taxRate;
-        
-        lineItemsInput.value = JSON.stringify(items);
-    }
-
-    function renderItems() {
-        itemsBody.innerHTML = '';
-        items.forEach((item, index) => {
-            const row = document.createElement('tr');
-            row.className = 'item-row-modern';
+        function updateTotals() {
+            let subtotal = 0;
+            items.forEach(item => {
+                subtotal += (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+            });
             
-            row.innerHTML = `
-                <td><input type="text" class="input-modern item-desc" value="${item.description}" placeholder="Description" data-index="${index}"></td>
-                <td><input type="number" class="input-modern item-qty" value="${item.quantity}" min="0.01" step="0.01" data-index="${index}"></td>
-                <td><input type="number" class="input-modern item-price" value="${item.unit_price}" min="0" step="0.01" data-index="${index}"></td>
-                <td style="text-align: right; font-weight: 700; color: var(--gray-900);">
-                    ${((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                </td>
-                <td style="text-align: right;">
-                    <button type="button" class="btn-remove-item" data-index="${index}" style="color: #ef4444; background: none; border: none; cursor: pointer;">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                    </button>
-                </td>
-            `;
-            itemsBody.appendChild(row);
-        });
-        
-        document.querySelectorAll('.item-desc').forEach(el => el.addEventListener('input', e => {
-            items[e.target.dataset.index].description = e.target.value;
-            lineItemsInput.value = JSON.stringify(items);
-        }));
-        document.querySelectorAll('.item-qty').forEach(el => el.addEventListener('input', e => {
-            items[e.target.dataset.index].quantity = parseFloat(e.target.value) || 0;
-            updateTotals();
-            const rowTotalTd = e.target.closest('tr').children[3];
-            rowTotalTd.textContent = (items[e.target.dataset.index].quantity * items[e.target.dataset.index].unit_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }));
-        document.querySelectorAll('.item-price').forEach(el => el.addEventListener('input', e => {
-            items[e.target.dataset.index].unit_price = parseFloat(e.target.value) || 0;
-            updateTotals();
-            const rowTotalTd = e.target.closest('tr').children[3];
-            rowTotalTd.textContent = (items[e.target.dataset.index].quantity * items[e.target.dataset.index].unit_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }));
-        document.querySelectorAll('.btn-remove-item').forEach(el => el.addEventListener('click', e => {
-            const index = e.currentTarget.dataset.index;
-            if (items.length > 1) {
-                items.splice(index, 1);
-                renderItems();
-                updateTotals();
-            } else {
-                items[0] = { description: '', quantity: 1, unit_price: 0 };
-                renderItems();
-                updateTotals();
+            const taxRate = parseFloat(taxRateInput.value) || 0;
+            const discountRate = parseFloat(discountInput.value) || 0;
+            
+            const discountAmount = (subtotal * discountRate) / 100;
+            const subtotalAfterDiscount = subtotal - discountAmount;
+            const taxAmount = (subtotalAfterDiscount * taxRate) / 100;
+            const total = subtotalAfterDiscount + taxAmount;
+            
+            const localeOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+            document.getElementById('subtotal-display').textContent = subtotal.toLocaleString(undefined, localeOptions);
+            document.getElementById('discount-display').textContent = '-' + discountAmount.toLocaleString(undefined, localeOptions);
+            document.getElementById('tax-display').textContent = taxAmount.toLocaleString(undefined, localeOptions);
+            document.getElementById('total-display').textContent = total.toLocaleString(undefined, localeOptions);
+            
+            document.getElementById('discount-rate-badge').textContent = discountRate;
+            document.getElementById('tax-rate-badge').textContent = taxRate;
+            
+            lineItemsInput.value = JSON.stringify(items.filter(i => i.description.trim() !== '' || i.unit_price > 0));
+            
+            // Visual feedback for sync
+            if (autosaveStatus) {
+                autosaveStatus.textContent = 'Calculated live...';
+                setTimeout(() => {
+                    autosaveStatus.textContent = 'Ready to generate';
+                }, 1000);
             }
-        }));
-    }
+        }
 
-    addItemBtn.addEventListener('click', () => {
-        items.push({ description: '', quantity: 1, unit_price: 0 });
+        function renderItems() {
+            itemsBody.innerHTML = '';
+            items.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.className = 'item-row-modern';
+                
+                row.innerHTML = `
+                    <td><input type="text" class="input-modern item-desc" value="${item.description}" placeholder="e.g. Consulting Services" data-index="${index}" required></td>
+                    <td><input type="number" class="input-modern item-qty" value="${item.quantity}" min="0.01" step="0.01" data-index="${index}" required></td>
+                    <td><input type="number" class="input-modern item-price" value="${item.unit_price}" min="0" step="0.01" data-index="${index}" required></td>
+                    <td style="text-align: right; font-weight: 700; color: var(--gray-900);">
+                        ${((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </td>
+                    <td style="text-align: right;">
+                        <button type="button" class="btn-remove-item hover:bg-red-50 p-2 rounded-lg transition-colors" data-index="${index}">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                        </button>
+                    </td>
+                `;
+                itemsBody.appendChild(row);
+            });
+            
+            // Re-bind events
+            itemsBody.querySelectorAll('.item-desc').forEach(el => el.addEventListener('input', e => {
+                items[e.target.dataset.index].description = e.target.value;
+                updateTotals();
+            }));
+            itemsBody.querySelectorAll('.item-qty').forEach(el => el.addEventListener('input', e => {
+                items[e.target.dataset.index].quantity = parseFloat(e.target.value) || 0;
+                updateTotals();
+                const rowTotalTd = e.target.closest('tr').children[3];
+                rowTotalTd.textContent = (items[e.target.dataset.index].quantity * items[e.target.dataset.index].unit_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }));
+            itemsBody.querySelectorAll('.item-price').forEach(el => el.addEventListener('input', e => {
+                items[e.target.dataset.index].unit_price = parseFloat(e.target.value) || 0;
+                updateTotals();
+                const rowTotalTd = e.target.closest('tr').children[3];
+                rowTotalTd.textContent = (items[e.target.dataset.index].quantity * items[e.target.dataset.index].unit_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }));
+            itemsBody.querySelectorAll('.btn-remove-item').forEach(btn => btn.addEventListener('click', e => {
+                const index = parseInt(e.currentTarget.dataset.index);
+                if (items.length > 1) {
+                    items.splice(index, 1);
+                    renderItems();
+                    updateTotals();
+                } else {
+                    items[0] = { description: '', quantity: 1, unit_price: 0 };
+                    renderItems();
+                    updateTotals();
+                }
+            }));
+        }
+
+        addItemBtn.addEventListener('click', () => {
+            items.push({ description: '', quantity: 1, unit_price: 0 });
+            renderItems();
+            updateTotals();
+            // Focus on new item
+            const inputs = itemsBody.querySelectorAll('.item-desc');
+            inputs[inputs.length - 1].focus();
+        });
+
+        taxRateInput.addEventListener('input', updateTotals);
+        discountInput.addEventListener('input', updateTotals);
+
+        if (recentClientsSelect) {
+            recentClientsSelect.addEventListener('change', function() {
+                const option = this.options[this.selectedIndex];
+                if (option.value) {
+                    document.getElementById('id_client_name').value = option.dataset.name;
+                    document.getElementById('id_client_email').value = option.dataset.email;
+                    document.getElementById('id_client_phone').value = option.dataset.phone;
+                    document.getElementById('id_client_address').value = option.dataset.address;
+                }
+            });
+        }
+
+        form.addEventListener('submit', function(e) {
+            // Basic production validation
+            let isValid = true;
+            const requiredFields = form.querySelectorAll('[required]');
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    field.classList.add('field-error');
+                    isValid = false;
+                } else {
+                    field.classList.remove('field-error');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields marked in red.');
+                return;
+            }
+
+            // Prevent double submission
+            submitBtn.classList.add('btn-loading');
+            submitBtn.disabled = true;
+        });
+
+        // Initialize
         renderItems();
         updateTotals();
     });
-
-    taxRateInput.addEventListener('input', updateTotals);
-    discountInput.addEventListener('input', updateTotals);
-
-    if (recentClientsSelect) {
-        recentClientsSelect.addEventListener('change', function() {
-            const option = this.options[this.selectedIndex];
-            if (option.value !== "") {
-                document.querySelector('input[name="client_name"]').value = option.dataset.name;
-                document.querySelector('input[name="client_email"]').value = option.dataset.email;
-                document.querySelector('input[name="client_phone"]').value = option.dataset.phone;
-                document.querySelector('textarea[name="client_address"]').value = option.dataset.address;
-            }
-        });
-    }
-
-    renderItems();
-    updateTotals();
-    
-    form.addEventListener('submit', function(e) {
-        const hasEmptyItems = items.some(item => !item.description || item.unit_price < 0);
-        if (hasEmptyItems || items.length === 0) {
-            e.preventDefault();
-            alert('Please ensure all line items have a description and a valid price.');
-            return;
-        }
-        lineItemsInput.value = JSON.stringify(items);
-    });
-});
 </script>
 {% endblock %}
