@@ -99,7 +99,7 @@ body {
   bottom: 0;
   left: 0;
   z-index: 1000;
-  transition: var(--transition);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: var(--shadow-sm);
 }
 
@@ -225,8 +225,27 @@ body {
   font-size: 0.875rem;
   font-weight: 500;
   transition: var(--transition-fast);
-  margin: 0 var(--spacing-sm);
+  margin: 0.25rem var(--spacing-sm);
   border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--primary);
+  border-radius: 0 4px 4px 0;
+  transition: height 0.3s ease;
+}
+
+.sidebar-link.active::after {
+  height: 60%;
 }
 
 .sidebar-link:hover {
@@ -328,21 +347,58 @@ body {
 }
 
 .sidebar-toggle {
-  background: none;
-  border: none;
-  padding: 0.5rem;
-  color: var(--gray-500);
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  padding: 0.625rem;
+  color: var(--gray-600);
   cursor: pointer;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition-fast);
+  transition: var(--transition-spring);
+  box-shadow: var(--shadow-sm);
+  z-index: 1001;
 }
 
 .sidebar-toggle:hover {
+  background: var(--gray-50);
+  color: var(--primary);
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.sidebar-toggle:active {
+  transform: translateY(0);
+}
+
+.sidebar-toggle svg {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-collapsed .sidebar-toggle svg {
+  transform: rotate(180deg);
+}
+
+.sidebar-toggle-mobile {
   background: var(--gray-100);
-  color: var(--gray-900);
+  border: none;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.sidebar-toggle-mobile:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+  transform: rotate(90deg);
 }
 
 .header-breadcrumb {
@@ -462,12 +518,13 @@ body {
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(2px);
+  background: rgba(15, 23, 42, 0.3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 999;
   opacity: 0;
   visibility: hidden;
-  transition: var(--transition);
+  transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 
 .sidebar-overlay.is-visible {

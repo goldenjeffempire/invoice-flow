@@ -31,7 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             // Desktop: Toggle collapsed state
             layout.classList.toggle('sidebar-collapsed');
-            localStorage.setItem('sidebar-collapsed', layout.classList.contains('sidebar-collapsed'));
+            const isCollapsedNow = layout.classList.contains('sidebar-collapsed');
+            localStorage.setItem('sidebar-collapsed', isCollapsedNow);
+            
+            // Update toggle button aria-expanded state
+            if (toggleBtn) {
+                toggleBtn.setAttribute('aria-expanded', !isCollapsedNow);
+            }
         }
     }
 
