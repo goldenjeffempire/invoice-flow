@@ -169,6 +169,15 @@ def create_invoice_start(request):
             invoice_data['status'] = status
             invoice_data['automated_reminders_enabled'] = automated_reminders
             
+            # Ensure Decimal fields are valid before passing to service
+            try:
+                if 'tax_rate' in invoice_data:
+                    invoice_data['tax_rate'] = Decimal(str(invoice_data['tax_rate']))
+                if 'discount' in invoice_data:
+                    invoice_data['discount'] = Decimal(str(invoice_data['discount']))
+            except (ValueError, TypeError, DecimalException):
+                pass
+
             invoice, form = InvoiceService.create_invoice(
                 user=request.user,
                 invoice_data=invoice_data,

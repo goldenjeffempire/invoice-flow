@@ -70,11 +70,13 @@ class InvoiceService:
         invoice.save()
 
         for item_data in line_items_data:
+            if not item_data.get("description"):
+                continue
             LineItem.objects.create(  # type: ignore[attr-defined]
                 invoice=invoice,
                 description=item_data["description"],
-                quantity=Decimal(item_data["quantity"]),
-                unit_price=Decimal(item_data["unit_price"]),
+                quantity=Decimal(str(item_data.get("quantity", 1))),
+                unit_price=Decimal(str(item_data.get("unit_price", 0))),
             )
 
         AnalyticsService.invalidate_user_cache(user.id)
