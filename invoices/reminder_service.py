@@ -28,11 +28,14 @@ class ReminderSchedulingService:
                 if rule.trigger_type == ReminderRule.TriggerType.UPON_CREATION:
                     scheduled_time = timezone.now()
                 elif rule.trigger_type == ReminderRule.TriggerType.ON_DUE and invoice.due_date:
-                    scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time()))
+                    due_date = invoice.due_date
+                    scheduled_time = timezone.make_aware(timezone.datetime.combine(due_date, timezone.datetime.min.time()))
                 elif rule.trigger_type == ReminderRule.TriggerType.BEFORE_DUE and invoice.due_date:
-                    scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())) - timezone.timedelta(days=rule.days_delta)
+                    due_date = invoice.due_date
+                    scheduled_time = timezone.make_aware(timezone.datetime.combine(due_date, timezone.datetime.min.time())) - timezone.timedelta(days=rule.days_delta)
                 elif rule.trigger_type == ReminderRule.TriggerType.AFTER_DUE and invoice.due_date:
-                    scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())) + timezone.timedelta(days=rule.days_delta)
+                    due_date = invoice.due_date
+                    scheduled_time = timezone.make_aware(timezone.datetime.combine(due_date, timezone.datetime.min.time())) + timezone.timedelta(days=rule.days_delta)
 
                 if scheduled_time:
                     # Adjust for weekends if rule specified

@@ -547,9 +547,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (saveDraftBtn) {
         saveDraftBtn.addEventListener('click', function() {
-            statusInput.value = 'unpaid'; // Or 'draft' if we had a draft status
-            form.submit();
+            statusInput.value = 'unpaid';
+            if (validateAll()) {
+                form.submit();
+            }
         });
+    }
+
+    function validateAll() {
+        let isValid = true;
+        document.querySelectorAll('.input-modern[required]').forEach(input => {
+            if (!input.value.trim()) {
+                input.style.borderColor = 'var(--danger)';
+                isValid = false;
+            } else {
+                input.style.borderColor = '';
+            }
+        });
+        
+        if (items.length === 0 || (items.length === 1 && !items[0].description)) {
+            showToast('Error', 'Please add at least one line item.', 'error');
+            isValid = false;
+        }
+        
+        return isValid;
     }
 
     if (recentClientsSelect) {

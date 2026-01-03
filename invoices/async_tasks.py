@@ -526,7 +526,7 @@ class AsyncTaskService:
         )
 
     @staticmethod
-    def send_payment_reminder_async(invoice_id: int, subject: Optional[str] = None, body: Optional[str] = None, max_retries: int = 3) -> Future:
+    def send_payment_reminder_async(invoice_id: int, subject: Optional[str] = None, body: Optional[str] = None, max_retries: int = 3, attach_pdf: bool = True, reply_to: Optional[str] = None, sender_name: Optional[str] = None) -> Future:
         """Send payment reminder email asynchronously with retry.
 
         Returns a Future that resolves to the send result dict.
@@ -540,7 +540,10 @@ class AsyncTaskService:
             result = service.send_invoice_email(
                 invoice=invoice, 
                 subject_override=subject, 
-                body_override=body
+                body_override=body,
+                attach_pdf=attach_pdf,
+                reply_to=reply_to,
+                sender_name=sender_name
             )
 
             if result.get("status") == "sent":
