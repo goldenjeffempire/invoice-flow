@@ -199,8 +199,10 @@ WSGI_APPLICATION = "invoiceflow.wsgi.application"
 # Silence RuntimeWarnings for model re-registration (common in dev environments with reloaders)
 SILENCED_SYSTEM_CHECKS = ["models.W001"]
 
-# =============================================================================
-# DATABASE
+# Cache Headers Control
+# In development (DEBUG=True), we disable aggressive caching to allow immediate updates
+# In production, we use 1 year for immutable assets
+WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0
 # =============================================================================
 database_url = env("DATABASE_URL", default=None)  # type: ignore[arg-type]
 if database_url:
