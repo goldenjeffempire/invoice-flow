@@ -167,7 +167,19 @@
         {% block head_extra %}{% endblock %}
     </head>
     <body class="no-js {% block body_class %}{% endblock %} antialiased bg-gray-25">
-        <script nonce="{{ request.csp_nonce }}">document.body.classList.remove('no-js');</script>
+        <script nonce="{{ request.csp_nonce }}">
+            (function() {
+                document.body.classList.remove('no-js');
+                // Performance tracking
+                window.addEventListener('load', () => {
+                    const timing = performance.getEntriesByType('navigation')[0];
+                    if (timing) {
+                        const loadTime = timing.loadEventEnd - timing.startTime;
+                        console.log(`Page Load Time: ${loadTime.toFixed(2)}ms`);
+                    }
+                });
+            })();
+        </script>
         <a href="#main-content" class="skip-link">Skip to main content</a>
         <div id="live-announcer" class="live-region" aria-live="polite" aria-atomic="true"></div>
         
