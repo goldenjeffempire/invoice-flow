@@ -1783,6 +1783,19 @@ def analytics(request):
         "recent_invoices": recent_invoices,
     }
 
+    # Engagement Analytics
+    from .models import EngagementMetric, UserFeedback
+    engagement_stats = EngagementMetric.objects.values('metric_type').annotate(count=Count('id'))
+    recent_feedback = UserFeedback.objects.order_by('-timestamp')[:10]
+    
+    avg_rating = UserFeedback.objects.aggregate(Avg('rating'))['rating__avg'] or 0
+    
+    context.update({
+        'engagement_stats': engagement_stats,
+        'recent_feedback': recent_feedback,
+        'avg_rating': round(avg_rating, 1),
+    })
+    
     return render(request, "invoices/analytics.html", context)
 
 

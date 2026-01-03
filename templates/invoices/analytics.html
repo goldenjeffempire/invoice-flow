@@ -142,8 +142,8 @@
                 </div>
             </div>
             <div>
-                <span class="metric-title">Avg. Invoice Value</span>
-                <div class="metric-value">{{ currency|default:"$" }} {{ average_invoice|floatformat:2|default:"0.00" }}</div>
+                <span class="metric-title">Engagement (Avg Rating)</span>
+                <div class="metric-value">{{ avg_rating|default:"0.0" }} / 5.0</div>
             </div>
         </div>
         <div class="metric-card hover-scale">
@@ -164,39 +164,47 @@
         <!-- Revenue Trend Chart -->
         <div class="analytics-card">
             <div class="analytics-card-header">
-                <h3 class="analytics-card-title">Revenue Growth</h3>
-                <div style="font-size: 0.85rem; color: var(--analytics-text-secondary); font-weight: 600;">Last 6 Months</div>
+                <h3 class="analytics-card-title">User Feedback</h3>
+                <div style="font-size: 0.85rem; color: var(--analytics-text-secondary); font-weight: 600;">Recent Submissions</div>
             </div>
-            <div class="chart-container">
-                <canvas id="growthChart"></canvas>
+            <div class="client-list">
+                {% for feedback in recent_feedback %}
+                <div class="client-item" style="border-bottom: 1px solid var(--analytics-border); padding-bottom: 1rem;">
+                    <div class="client-header">
+                        <span class="client-name">Rating: {{ feedback.rating }} ★</span>
+                        <span class="client-value" style="font-size: 0.75rem;">{{ feedback.timestamp|timesince }} ago</span>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--analytics-text-secondary);">{{ feedback.comment|truncatechars:100 }}</p>
+                </div>
+                {% empty %}
+                <p style="text-align: center; color: var(--analytics-text-secondary);">No feedback yet.</p>
+                {% endfor %}
             </div>
         </div>
 
         <!-- Top Clients -->
         <div class="analytics-card">
             <div class="analytics-card-header">
-                <h3 class="analytics-card-title">Performance by Client</h3>
+                <h3 class="analytics-card-title">Engagement Distribution</h3>
             </div>
             <div class="client-list">
-                {% for client in top_clients %}
+                {% for stat in engagement_stats %}
                 <div class="client-item">
                     <div class="client-header">
-                        <span class="client-name">{{ client.name }}</span>
-                        <span class="client-value">{{ currency|default:"$" }} {{ client.total_revenue|floatformat:2 }}</span>
+                        <span class="client-name">{{ stat.metric_type|title }}</span>
+                        <span class="client-value">{{ stat.count }} events</span>
                     </div>
                     <div class="progress-track">
-                        <div class="progress-fill" style="width: {{ client.share|default:0 }}%"></div>
+                        <div class="progress-fill" style="width: 100%"></div>
                     </div>
                 </div>
                 {% empty %}
-                <div style="text-align: center; padding: 3rem 0; color: var(--analytics-text-secondary);">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 1rem; opacity: 0.3;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <p style="font-weight: 600;">No client performance data yet.</p>
-                </div>
+                <p style="text-align: center; color: var(--analytics-text-secondary);">No engagement data.</p>
                 {% endfor %}
             </div>
         </div>
     </div>
+
 </div>
 </div>
 </div>
