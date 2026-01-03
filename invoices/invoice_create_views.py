@@ -127,9 +127,10 @@ def create_invoice_start(request):
             line_items_json = request.POST.get("line_items", "[]")
             line_items_data = json.loads(line_items_json)
             
-            # Extract discount
+            # Extract discount and reminders toggle
             discount = request.POST.get("discount", "0")
             status = request.POST.get("status", "unpaid")
+            automated_reminders = request.POST.get("automated_reminders_enabled") == "on"
             
             # Validate line items
             valid, error_msg = CreateInvoiceValidator.validate_line_items(line_items_data)
@@ -166,6 +167,7 @@ def create_invoice_start(request):
             # Create invoice using service layer
             invoice_data = request.POST.copy()
             invoice_data['status'] = status
+            invoice_data['automated_reminders_enabled'] = automated_reminders
             
             invoice, form = InvoiceService.create_invoice(
                 user=request.user,

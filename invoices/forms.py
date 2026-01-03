@@ -193,6 +193,7 @@ class InvoiceForm(forms.ModelForm):
             "currency",
             "tax_rate",
             "discount",
+            "automated_reminders_enabled",
             "notes",
         ]
         widgets = {
@@ -206,6 +207,7 @@ class InvoiceForm(forms.ModelForm):
             "currency": forms.Select(attrs={"class": "input-field"}),
             "tax_rate": forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
             "discount": forms.NumberInput(attrs={"class": "input-field", "step": "0.01"}),
+            "automated_reminders_enabled": forms.CheckboxInput(attrs={"class": "input-field"}),
             "notes": forms.Textarea(attrs={"class": "input-field", "rows": 3}),
         }
 

@@ -243,6 +243,7 @@ class Invoice(models.Model):
     currency = models.CharField(max_length=3, default="USD", db_index=True)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
     discount = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
+    automated_reminders_enabled = models.BooleanField(default=True)
 
     status = models.CharField(
         max_length=10, choices=Status.choices, default=Status.UNPAID, db_index=True
