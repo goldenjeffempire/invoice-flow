@@ -58,6 +58,9 @@ class UnifiedMiddleware:
                 del response["ETag"]
             if "Last-Modified" in response:
                 del response["Last-Modified"]
+            # Force status code 200 for cached responses in development
+            if response.status_code == 304:
+                response.status_code = 200
         else:
             response["X-Content-Type-Options"] = "nosniff"
             response["Referrer-Policy"] = "strict-origin-when-cross-origin"
