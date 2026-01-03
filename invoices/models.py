@@ -1404,9 +1404,35 @@ class InvoiceAccessLog(models.Model):
         return f"Access {getattr(self.invoice, 'invoice_id', 'Unknown')} at {self.accessed_at}"
 
 
-# ============================================================================
-# EMAIL DELIVERY TRACKING & RETRY QUEUE
-# ============================================================================
+class EngagementMetric(models.Model):
+    class MetricType(models.TextChoices):
+        PAGE_VIEW = "page_view", "Page View"
+        BUTTON_CLICK = "button_click", "Button Click"
+        SESSION_DURATION = "session_duration", "Session Duration"
+        BOUNCE = "bounce", "Bounce"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="engagement_metrics")
+    invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name="engagement_metrics")
+    metric_type = models.CharField(max_length=20, choices=MetricType.choices)
+    element_id = models.CharField(max_length=100, blank=True)
+    value = models.FloatField(default=0.0)
+    metadata = models.JSONField(default=dict, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "metric_type", "timestamp"]),
+            models.Index(fields=["invoice", "metric_type"]),
+        ]
+
+class UserFeedback(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
+    comment = models.TextField(blank=True)
+    page_url = models.URLField(max_length=500)
+    user_agent = models.TextField(blank=True)
+    is_mobile = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
 class EmailDeliveryLog(models.Model):
     class Status(models.TextChoices):

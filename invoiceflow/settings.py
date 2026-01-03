@@ -177,6 +177,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "invoiceflow.unified_middleware.UnifiedMiddleware",
+    "invoiceflow.performance_middleware.PerformanceMonitoringMiddleware",
     "invoiceflow.unified_middleware.OptimizedRateLimitMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",

@@ -252,6 +252,78 @@
         <main id="main-content" role="main">
             {% block content %}{% endblock %}
         </main>
+
+        <!-- Feedback Component -->
+        <div id="feedback-widget" style="position: fixed; bottom: 20px; left: 20px; z-index: 10000;">
+            <button id="feedback-toggle" class="btn btn-primary btn-sm" style="border-radius: 50px; padding: 10px 20px;">
+                Feedback
+            </button>
+            <div id="feedback-form-container" class="card" style="display: none; position: absolute; bottom: 50px; left: 0; width: 300px; padding: 15px; box-shadow: var(--shadow-xl);">
+                <h5 class="m-0 mb-3">Rate your experience</h5>
+                <div class="flex gap-2 mb-3">
+                    {% for i in "12345" %}
+                    <button class="rating-btn btn btn-ghost btn-sm p-2" data-rating="{{ forloop.counter }}">{{ forloop.counter }}</button>
+                    {% endfor %}
+                </div>
+                <textarea id="feedback-comment" class="input mb-3" placeholder="Tell us more..." rows="3"></textarea>
+                <button id="feedback-submit" class="btn btn-primary btn-sm w-full">Submit</button>
+            </div>
+        </div>
+
+        <script nonce="{{ request.csp_nonce }}">
+            (function() {
+                const toggle = document.getElementById('feedback-toggle');
+                const container = document.getElementById('feedback-form-container');
+                const submit = document.getElementById('feedback-submit');
+                let selectedRating = null;
+
+                toggle.onclick = () => container.style.display = container.style.display === 'none' ? 'block' : 'none';
+
+                document.querySelectorAll('.rating-btn').forEach(btn => {
+                    btn.onclick = () => {
+                        selectedRating = btn.dataset.rating;
+                        document.querySelectorAll('.rating-btn').forEach(b => b.classList.remove('btn-primary'));
+                        btn.classList.add('btn-primary');
+                    };
+                });
+
+                submit.onclick = async () => {
+                    if (!selectedRating) return alert('Please select a rating');
+                    const res = await fetch("{% url 'invoices:submit_feedback' %}", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            rating: selectedRating,
+                            comment: document.getElementById('feedback-comment').value,
+                            url: window.location.href
+                        })
+                    });
+                    if (res.ok) {
+                        alert('Thank you for your feedback!');
+                        container.style.display = 'none';
+                    }
+                };
+
+                // Track engagement
+                const track = (type, metadata = {}) => {
+                    fetch("{% url 'invoices:record_engagement' %}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({ type, metadata, url: window.location.href })
+                    });
+                };
+
+                window.addEventListener('load', () => track('page_view'));
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('button, a')) {
+                        track('button_click', { element: e.target.innerText });
+                    }
+                });
+            })();
+        </script>
         {% block footer %}
             <footer class="footer footer-enhanced" role="contentinfo">
                 <div class="footer-wave" aria-hidden="true">

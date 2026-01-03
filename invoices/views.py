@@ -2,6 +2,45 @@ import calendar
 import hashlib
 import json
 import logging
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+
+@require_POST
+def record_engagement(request):
+    import json
+    try:
+        data = json.loads(request.body)
+        from .models import EngagementMetric
+        EngagementMetric.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            metric_type=data.get('type'),
+            element_id=data.get('element_id', ''),
+            value=data.get('value', 0.0),
+            metadata=data.get('metadata', {}),
+            invoice_id=data.get('invoice_id')
+        )
+        return JsonResponse({'status': 'ok'})
+    except Exception:
+        return JsonResponse({'status': 'error'}, status=400)
+
+@require_POST
+def submit_feedback(request):
+    import json
+    try:
+        data = json.loads(request.body)
+        from .models import UserFeedback
+        UserFeedback.objects.create(
+            user=request.user if request.user.is_authenticated else None,
+            rating=data.get('rating'),
+            comment=data.get('comment', ''),
+            page_url=data.get('url', ''),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            is_mobile='Mobile' in request.META.get('HTTP_USER_AGENT', '')
+        )
+        return JsonResponse({'status': 'ok'})
+    except Exception:
+        return JsonResponse({'status': 'error'}, status=400)
 import os
 import urllib.parse
 from datetime import datetime, date, timedelta
