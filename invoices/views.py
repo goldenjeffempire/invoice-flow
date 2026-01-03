@@ -261,6 +261,26 @@ def profile_update_ajax(request):
     return HttpResponse(json.dumps(response_data).encode('utf-8'), content_type="application/json", status=200)
 
 @login_required
+@require_http_methods(["GET", "POST"])
+def reminder_settings(request):
+    """Update automated reminder settings."""
+    from .models import UserReminderSettings
+    from .forms import UserReminderSettingsForm
+    
+    settings, _ = UserReminderSettings.objects.get_or_create(user=request.user)
+    
+    if request.method == "POST":
+        form = UserReminderSettingsForm(request.POST, instance=settings)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Reminder settings updated successfully.")
+            return redirect("invoices:settings")
+    else:
+        form = UserReminderSettingsForm(instance=settings)
+        
+    return render(request, "invoices/settings/reminders.html", {"form": form})
+
+@login_required
 @require_POST
 def notifications_update_ajax(request):
     from .forms import NotificationPreferencesForm
