@@ -104,7 +104,10 @@ class ReminderSchedulingService:
                         invoice.id, 
                         subject=subject, 
                         body=body,
-                        max_retries=rule.max_retries if rule.retry_on_failure else 0
+                        max_retries=rule.max_retries if rule.retry_on_failure else 0,
+                        attach_pdf=rule.attach_pdf,
+                        reply_to=rule.reply_to_email,
+                        sender_name=rule.custom_sender_name
                     )
                 elif rule.channel == 'in_app':
                     from .models import InAppNotification

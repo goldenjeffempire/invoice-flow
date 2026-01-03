@@ -382,7 +382,12 @@ class ReminderRule(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
+    # Advanced Settings
+    custom_sender_name = models.CharField(max_length=100, blank=True)
+    reply_to_email = models.EmailField(blank=True)
+    attach_pdf = models.BooleanField(default=True)
+    
     class Meta:
         ordering = ["trigger_type", "days_delta"]
         unique_together = ["user", "trigger_type", "days_delta"]
@@ -394,6 +399,7 @@ class ScheduledReminder(models.Model):
         SENT = "sent", "Sent"
         FAILED = "failed", "Failed"
         CANCELLED = "cancelled", "Cancelled"
+        RETRYING = "retrying", "Retrying"
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="scheduled_reminders")
     rule = models.ForeignKey(ReminderRule, on_delete=models.SET_NULL, null=True, blank=True)
@@ -402,6 +408,7 @@ class ScheduledReminder(models.Model):
     attempts = models.IntegerField(default=0)
     last_attempt = models.DateTimeField(null=True, blank=True)
     error_log = models.TextField(blank=True)
+    delivery_metadata = models.JSONField(default=dict, blank=True) # Store provider IDs, open rates, etc.
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -756,7 +763,12 @@ class ReminderRule(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
+    # Advanced Settings
+    custom_sender_name = models.CharField(max_length=100, blank=True)
+    reply_to_email = models.EmailField(blank=True)
+    attach_pdf = models.BooleanField(default=True)
+    
     class Meta:
         ordering = ["trigger_type", "days_delta"]
         unique_together = ["user", "trigger_type", "days_delta"]
@@ -768,6 +780,7 @@ class ScheduledReminder(models.Model):
         SENT = "sent", "Sent"
         FAILED = "failed", "Failed"
         CANCELLED = "cancelled", "Cancelled"
+        RETRYING = "retrying", "Retrying"
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="scheduled_reminders")
     rule = models.ForeignKey(ReminderRule, on_delete=models.SET_NULL, null=True, blank=True)
@@ -776,6 +789,7 @@ class ScheduledReminder(models.Model):
     attempts = models.IntegerField(default=0)
     last_attempt = models.DateTimeField(null=True, blank=True)
     error_log = models.TextField(blank=True)
+    delivery_metadata = models.JSONField(default=dict, blank=True) # Store provider IDs, open rates, etc.
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
