@@ -14,6 +14,7 @@ from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
 from .models import Invoice, LineItem
+from .reminder_service import ReminderSchedulingService
 from .sendgrid_service import SendGridEmailService
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,12 @@ def track_invoice_status_change(sender, instance: Invoice, **kwargs):
         instance._previous_status = previous.status
     except Invoice.DoesNotExist:
         instance._previous_status = None
+
+
+@receiver(post_save, sender=Invoice)
+def handle_invoice_save(sender, instance: Invoice, created: bool, **kwargs):
+    """Trigger reminder scheduling whenever an invoice is created or updated."""
+    ReminderSchedulingService.schedule_reminders_for_invoice(instance)
 
 
 @receiver(post_save, sender=Invoice)

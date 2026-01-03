@@ -627,28 +627,23 @@ class InvoiceSearchForm(forms.Form):
         return cleaned_data
 
 
-class UserReminderSettingsForm(forms.ModelForm):
+class ReminderRuleForm(forms.ModelForm):
     class Meta:
-        from .models import UserReminderSettings
-        model = UserReminderSettings
-        fields = [
-            'enabled', 
-            'remind_before_days', 
-            'remind_after_days',
-            'reminder_subject',
-            'reminder_body',
-            'max_retries',
-            'retry_delay_minutes'
-        ]
+        from .models import ReminderRule
+        model = ReminderRule
+        fields = ["name", "trigger_type", "days_delta", "subject_template", "body_template", "is_active"]
         widgets = {
-            'enabled': forms.CheckboxInput(attrs={'class': 'w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer'}),
-            'remind_before_days': forms.NumberInput(attrs={'class': 'form-input'}),
-            'remind_after_days': forms.NumberInput(attrs={'class': 'form-input'}),
-            'reminder_subject': forms.TextInput(attrs={'class': 'form-input'}),
-            'reminder_body': forms.Textarea(attrs={'class': 'form-input', 'rows': 5}),
-            'max_retries': forms.NumberInput(attrs={'class': 'form-input'}),
-            'retry_delay_minutes': forms.NumberInput(attrs={'class': 'form-input'}),
+            "name": forms.TextInput(attrs={"class": "form-input", "placeholder": "e.g., 3-day overdue notice"}),
+            "trigger_type": forms.Select(attrs={"class": "form-input"}),
+            "days_delta": forms.NumberInput(attrs={"class": "form-input"}),
+            "subject_template": forms.TextInput(attrs={"class": "form-input", "placeholder": "Optional subject template"}),
+            "body_template": forms.Textarea(attrs={"class": "form-input", "rows": 3, "placeholder": "Optional body template"}),
+            "is_active": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}),
         }
+
+class UserReminderSettingsForm(forms.Form):
+    # Temporary placeholder to prevent ImportErrors while transitioning
+    pass
 
 class WaitlistForm(forms.ModelForm):
     """Form for email capture from landing page and Coming Soon pages."""

@@ -263,22 +263,32 @@ def profile_update_ajax(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def reminder_settings(request):
-    """Update automated reminder settings."""
-    from .models import UserReminderSettings
-    from .forms import UserReminderSettingsForm
+    """Manage automated reminder rules."""
+    from .models import ReminderRule
+    from .forms import ReminderRuleForm
     
-    settings, _ = UserReminderSettings.objects.get_or_create(user=request.user)
+    rules = ReminderRule.objects.filter(user=request.user)
     
     if request.method == "POST":
-        form = UserReminderSettingsForm(request.POST, instance=settings)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Reminder settings updated successfully.")
+        action = request.POST.get('action')
+        if action == "add":
+            form = ReminderRuleForm(request.POST)
+            if form.is_valid():
+                rule = form.save(commit=False)
+                rule.user = request.user
+                rule.save()
+                messages.success(request, "Reminder rule added successfully.")
+                return redirect("invoices:settings")
+        elif action == "delete":
+            rule_id = request.POST.get('rule_id')
+            ReminderRule.objects.filter(user=request.user, id=rule_id).delete()
+            messages.success(request, "Reminder rule deleted.")
             return redirect("invoices:settings")
-    else:
-        form = UserReminderSettingsForm(instance=settings)
-        
-    return render(request, "invoices/settings/reminders.html", {"form": form})
+            
+    return render(request, "invoices/settings/reminders.html", {
+        "rules": rules,
+        "form": ReminderRuleForm()
+    })
 
 @login_required
 @require_POST
