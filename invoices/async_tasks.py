@@ -526,7 +526,7 @@ class AsyncTaskService:
         )
 
     @staticmethod
-    def send_payment_reminder_async(invoice_id: int) -> Future:
+    def send_payment_reminder_async(invoice_id: int, subject: Optional[str] = None, body: Optional[str] = None, max_retries: int = 3) -> Future:
         """Send payment reminder email asynchronously with retry.
 
         Returns a Future that resolves to the send result dict.
@@ -537,7 +537,11 @@ class AsyncTaskService:
         def _send():
             invoice = Invoice.objects.get(id=invoice_id)  # type: ignore[union-attr]
             service = SendGridEmailService()
-            result = service.send_payment_reminder(invoice, invoice.client_email)
+            result = service.send_invoice_email(
+                invoice=invoice, 
+                subject_override=subject, 
+                body_override=body
+            )
 
             if result.get("status") == "sent":
                 logger.info(f"Payment reminder sent for invoice #{invoice.invoice_id}")
@@ -549,9 +553,9 @@ class AsyncTaskService:
         return AsyncTaskService.submit_task_with_retry(
             _send,
             task_name=f"payment_reminder_{invoice_id}",
-            max_retries=2,
-            base_delay=1.0,
-            max_delay=10.0,
+            max_retries=max_retries,
+            base_delay=2.0,
+            max_delay=60.0,
         )
 
     @staticmethod

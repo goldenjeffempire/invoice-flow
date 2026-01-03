@@ -631,11 +631,14 @@ class ReminderRuleForm(forms.ModelForm):
     class Meta:
         from .models import ReminderRule
         model = ReminderRule
-        fields = ["name", "trigger_type", "days_delta", "subject_template", "body_template", "is_active"]
+        fields = ["name", "trigger_type", "days_delta", "exclude_weekends", "retry_on_failure", "max_retries", "subject_template", "body_template", "is_active"]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-input", "placeholder": "e.g., 3-day overdue notice"}),
             "trigger_type": forms.Select(attrs={"class": "form-input"}),
             "days_delta": forms.NumberInput(attrs={"class": "form-input"}),
+            "exclude_weekends": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}),
+            "retry_on_failure": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}),
+            "max_retries": forms.NumberInput(attrs={"class": "form-input"}),
             "subject_template": forms.TextInput(attrs={"class": "form-input", "placeholder": "Optional subject template"}),
             "body_template": forms.Textarea(attrs={"class": "form-input", "rows": 3, "placeholder": "Optional body template"}),
             "is_active": forms.CheckboxInput(attrs={"class": "w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300 transition-all cursor-pointer"}),

@@ -32,6 +32,11 @@ class ReminderSchedulingService:
                 scheduled_time = timezone.make_aware(timezone.datetime.combine(invoice.due_date, timezone.datetime.min.time())) + timezone.timedelta(days=rule.days_delta)
 
             if scheduled_time:
+                # Adjust for weekends if rule specified
+                if rule.exclude_weekends and scheduled_time.weekday() >= 5:
+                    days_to_add = (7 - scheduled_time.weekday())
+                    scheduled_time += timezone.timedelta(days=days_to_add)
+
                 # Use update_or_create to prevent duplicate scheduling
                 # type: ignore[attr-defined]
                 ScheduledReminder.objects.update_or_create(
@@ -65,6 +70,12 @@ class ReminderSchedulingService:
                     reminder.save()
                     continue
 
+                # Check for existing log to prevent duplicate sends (idempotency)
+                if ReminderLog.objects.filter(scheduled_reminder=reminder, success=True).exists():
+                    reminder.status = ScheduledReminder.Status.SENT
+                    reminder.save()
+                    continue
+
                 # Dynamic template rendering
                 subject_template = rule.subject_template or "Payment Reminder: Invoice #{invoice_id}"
                 body_template = rule.body_template or "Hi {client_name},\n\nThis is a reminder that invoice #{invoice_id} is due on {due_date}."
@@ -73,16 +84,19 @@ class ReminderSchedulingService:
                     "invoice_id": str(invoice.invoice_id),
                     "client_name": str(invoice.client_name),
                     "due_date": str(invoice.due_date),
-                    "total_amount": f"{invoice.currency} {invoice.total_amount}"
+                    "total_amount": f"{invoice.currency} {invoice.total}"
                 }
                 
                 subject = subject_template.format(**context)
                 body = body_template.format(**context)
 
-                email_service.send_invoice_email(
-                    invoice=invoice,
-                    subject_override=subject,
-                    body_override=body
+                # Use async task for actual sending with retries
+                from .async_tasks import AsyncTaskService
+                AsyncTaskService.send_payment_reminder_async(
+                    invoice.id, 
+                    subject=subject, 
+                    body=body,
+                    max_retries=rule.max_retries if rule.retry_on_failure else 0
                 )
                 
                 reminder.status = ScheduledReminder.Status.SENT
