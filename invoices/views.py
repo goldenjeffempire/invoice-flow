@@ -1844,35 +1844,6 @@ def analytics(request):
     }
     return render(request, "invoices/analytics.html", context)
 
-        "unpaid_invoices": stats["unpaid_invoices"],
-        "total_revenue": stats["total_revenue"],
-        "outstanding_amount": stats["outstanding_amount"],
-        "average_invoice": stats["average_invoice"],
-        "payment_rate": stats["payment_rate"],
-        "current_month_invoices": stats["current_month_invoices"],
-        "monthly_labels": json.dumps(monthly_labels),
-        "monthly_data": json.dumps(monthly_data),
-        "top_clients": top_clients,
-        "recent_invoices": recent_invoices,
-    }
-
-    # Engagement Analytics
-    from .models import EngagementMetric, UserFeedback
-    engagement_stats = EngagementMetric.objects.values('metric_type').annotate(count=Count('id'))
-    recent_feedback = UserFeedback.objects.order_by('-timestamp')[:10]
-    
-    avg_rating = UserFeedback.objects.aggregate(Avg('rating'))['rating__avg'] or 0
-    
-    context.update({
-        'engagement_stats': engagement_stats,
-        'recent_feedback': recent_feedback,
-        'avg_rating': round(avg_rating, 1),
-    })
-    
-    return render(request, "invoices/analytics.html", context)
-
-
-
 
 @login_required
 def invoice_templates(request):
