@@ -1185,8 +1185,8 @@ def duplicate_invoice(request, invoice_id):
     )
     
     if new_invoice:
-        messages.success(request, f"Invoice duplicated! New invoice: {new_invoice.invoice_id}")
-        return redirect("invoices:edit_invoice", invoice_id=new_invoice.pk)
+        messages.success(request, f"✓ Invoice duplicated successfully! New Invoice ID: {new_invoice.invoice_id}")
+        return redirect("invoices:invoice_detail", invoice_id=new_invoice.pk)
     else:
         messages.error(request, "Failed to duplicate invoice. Please try again.")
         return redirect("invoices:invoice_detail", invoice_id=invoice_id)
