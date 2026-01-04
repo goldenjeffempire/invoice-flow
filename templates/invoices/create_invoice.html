@@ -444,13 +444,54 @@
                                 <option value="CAD">CAD - Canadian Dollar</option>
                             </select>
                         </div>
-                        <div class="form-group-modern flex items-center pt-6">
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="automated_reminders_enabled" class="sr-only peer" checked>
+                        <div class="form-group-modern flex flex-col pt-2">
+                            <label class="relative inline-flex items-center cursor-pointer mb-4">
+                                <input type="checkbox" name="automated_reminders_enabled" class="sr-only peer" checked onchange="toggleReminderSettings(this)">
                                 <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
                                 <span class="ml-3 text-sm font-semibold text-gray-700">Auto Reminders</span>
                             </label>
+                            
+                            <div id="reminder-options" class="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100 transition-all">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="label-modern !mb-1">Before Due</label>
+                                        <select name="remind_before_days" class="input-modern !py-2 !text-xs">
+                                            <option value="3">3 days before</option>
+                                            <option value="1">1 day before</option>
+                                            <option value="0">Disabled</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="label-modern !mb-1">After Due</label>
+                                        <select name="remind_after_days" class="input-modern !py-2 !text-xs">
+                                            <option value="3">Every 3 days</option>
+                                            <option value="7" selected>Every 7 days</option>
+                                            <option value="0">Disabled</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input type="checkbox" name="remind_exclude_weekends" id="ex-weekends" class="rounded text-primary-600" checked>
+                                    <label for="ex-weekends" class="text-xs font-medium text-gray-600">Exclude weekends</label>
+                                </div>
+                            </div>
                         </div>
+                    </div>
+                    
+                    <script>
+                        function toggleReminderSettings(checkbox) {
+                            const options = document.getElementById('reminder-options');
+                            if (checkbox.checked) {
+                                options.style.opacity = '1';
+                                options.style.pointerEvents = 'auto';
+                                options.style.transform = 'translateY(0)';
+                            } else {
+                                options.style.opacity = '0.5';
+                                options.style.pointerEvents = 'none';
+                                options.style.transform = 'translateY(-5px)';
+                            }
+                        }
+                    </script>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
                         <div class="form-group-modern">

@@ -44,6 +44,19 @@ def create_invoice(request):
             )
             
             if invoice:
+                # Handle reminder customization if provided
+                if request.POST.get("automated_reminders_enabled") == "on":
+                    try:
+                        from .reminder_service import ReminderService
+                        ReminderService.schedule_reminders_for_invoice(
+                            invoice,
+                            before_days=int(request.POST.get("remind_before_days", 3)),
+                            after_days=int(request.POST.get("remind_after_days", 7)),
+                            exclude_weekends=request.POST.get("remind_exclude_weekends") == "on"
+                        )
+                    except Exception as e:
+                        logger.error(f"Error scheduling custom reminders: {e}")
+                
                 messages.success(request, f"✓ Invoice {invoice.invoice_id} created successfully!")
                 return redirect("invoices:invoice_detail", invoice_id=invoice.id) # type: ignore
             else:
