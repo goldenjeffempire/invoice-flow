@@ -775,43 +775,36 @@ def invoice_list(request):
 
     base_queryset = Invoice.objects.filter(user=request.user).prefetch_related("line_items")
 
+    # Advanced Filtering Logic
     status_filter = request.GET.get("status", "all")
     search_query = request.GET.get("search", "").strip()
     date_filter = request.GET.get("date_range", "all")
     sort_by = request.GET.get("sort", "-created_at")
 
-    if status_filter == "paid":
-        base_queryset = base_queryset.filter(status="paid")
-    elif status_filter == "unpaid":
-        base_queryset = base_queryset.filter(status="unpaid")
-    elif status_filter == "overdue":
-        today = timezone.now().date()
-        base_queryset = base_queryset.filter(status="unpaid", due_date__lt=today)
+    if status_filter != "all":
+        if status_filter == "overdue":
+            base_queryset = base_queryset.filter(status="unpaid", due_date__lt=today)
+        else:
+            base_queryset = base_queryset.filter(status=status_filter)
 
     if search_query:
-        query_filter = (
+        base_queryset = base_queryset.filter(
             Q(invoice_id__icontains=search_query) |
             Q(client_name__icontains=search_query) |
             Q(client_email__icontains=search_query)
         )
-        base_queryset = base_queryset.filter(query_filter)
 
-    today = timezone.now().date()
-    if date_filter == "7days":
-        start_date = today - timedelta(days=7)
-        base_queryset = base_queryset.filter(invoice_date__gte=start_date)
-    elif date_filter == "30days":
-        start_date = today - timedelta(days=30)
-        base_queryset = base_queryset.filter(invoice_date__gte=start_date)
-    elif date_filter == "90days":
-        start_date = today - timedelta(days=90)
-        base_queryset = base_queryset.filter(invoice_date__gte=start_date)
-    elif date_filter == "year":
-        start_date = today.replace(month=1, day=1)
-        base_queryset = base_queryset.filter(invoice_date__gte=start_date)
+    if date_filter != "all":
+        if date_filter == "7days":
+            base_queryset = base_queryset.filter(invoice_date__gte=today - timedelta(days=7))
+        elif date_filter == "30days":
+            base_queryset = base_queryset.filter(invoice_date__gte=today - timedelta(days=30))
+        elif date_filter == "90days":
+            base_queryset = base_queryset.filter(invoice_date__gte=today - timedelta(days=90))
+        elif date_filter == "this_month":
+            base_queryset = base_queryset.filter(invoice_date__month=today.month, invoice_date__year=today.year)
 
-    # Annotate BEFORE sorting to ensure 'line_items_total' field exists for sorting
-    # Use 'line_items_total' instead of 'total' to avoid conflict with Invoice.total property
+    # Annotate for calculated fields
     invoices_with_totals = base_queryset.annotate(
         line_items_total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
     )
@@ -825,24 +818,24 @@ def invoice_list(request):
         "-client_name": "-client_name",
         "-total": "-line_items_total",
         "total": "line_items_total",
-        "status": "status",
-        "-status": "-status",
         "due_date": "due_date",
         "-due_date": "-due_date",
+        "status": "status",
     }
-    order_by = valid_sorts.get(sort_by, "-created_at")
-    invoices_with_totals = invoices_with_totals.order_by(order_by)
+    invoices_with_totals = invoices_with_totals.order_by(valid_sorts.get(sort_by, "-created_at"))
 
-    paginator = Paginator(invoices_with_totals, 10) # Reduced for better mobile performance
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(invoices_with_totals, 12)
+    page_obj = paginator.get_page(request.GET.get("page", 1))
 
-    # Performance optimized stats
+    # Production-grade analytics for the list page
     stats_qs = Invoice.objects.filter(user=request.user)
-    total_count = stats_qs.count()
-    paid_count = stats_qs.filter(status="paid").count()
-    unpaid_count = stats_qs.filter(status="unpaid").count()
-    overdue_count = stats_qs.filter(status="unpaid", due_date__lt=today).count()
+    stats = {
+        "total": stats_qs.count(),
+        "paid": stats_qs.filter(status="paid").count(),
+        "unpaid": stats_qs.filter(status="unpaid").count(),
+        "overdue": stats_qs.filter(status="unpaid", due_date__lt=today).count(),
+        "total_revenue": stats_qs.filter(status="paid").aggregate(Sum('total'))['total__sum'] or 0,
+    }
 
     context = {
         "page_obj": page_obj,
@@ -851,14 +844,11 @@ def invoice_list(request):
         "search_query": search_query,
         "date_filter": date_filter,
         "sort_by": sort_by,
-        "total_count": total_count,
-        "paid_count": paid_count,
-        "unpaid_count": unpaid_count,
-        "overdue_count": overdue_count,
+        "stats": stats,
         "today": today,
         "active": "invoices",
-        "page_title": "Invoices",
-        "page_subtitle": f"Managing {total_count} invoices",
+        "page_title": "Invoice Management",
+        "page_subtitle": f"Tracking {stats['total']} total transactions"
     }
     return render(request, "invoices/invoice_list.html", context)
 
