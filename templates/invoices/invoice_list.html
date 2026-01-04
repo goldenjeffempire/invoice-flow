@@ -1,110 +1,102 @@
 {% extends 'base/layout-authenticated.html' %}
 {% load static %}
 
-{% block title %}Production Ledger{% endblock %}
-{% block page_title %}Production Ledger{% endblock %}
-{% block page_subtitle %}High-performance transaction management with accessibility-first design{% endblock %}
+{% block title %}Invoice Ledger{% endblock %}
+{% block page_title %}Invoice Ledger{% endblock %}
+{% block page_subtitle %}Enterprise-grade transaction management with real-time analytics and automated controls{% endblock %}
 
 {% block extra_css %}
 <style>
     :root {
-        --brand-primary: #6366f1;
-        --brand-primary-hover: #4f46e5;
+        --brand-accent: #6366f1;
+        --brand-accent-soft: rgba(99, 102, 241, 0.08);
         --slate-50: #f8fafc;
         --slate-100: #f1f5f9;
         --slate-200: #e2e8f0;
-        --slate-300: #cbd5e1;
         --slate-600: #475569;
         --slate-900: #0f172a;
-        --glass-bg: rgba(255, 255, 255, 0.95);
-        --glass-border: rgba(226, 232, 240, 0.8);
     }
 
-    .ledger-container {
-        max-width: 1400px;
+    .ledger-viewport {
+        max-width: 1440px;
         margin: 0 auto;
-        padding: 2rem 1rem 6rem;
+        padding: 2.5rem 1.5rem 6rem;
     }
 
-    /* Production-Grade Card System */
-    .metric-card {
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: 1.5rem;
-        padding: 1.75rem;
+    /* Production Analytics System */
+    .metric-surface {
+        background: #ffffff;
+        border: 1px solid var(--slate-200);
+        border-radius: 2rem;
+        padding: 2rem;
         transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 160px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        min-height: 180px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
 
-    .metric-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-        border-color: var(--brand-primary);
+    .metric-surface:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.06);
+        border-color: var(--brand-accent);
     }
 
-    /* Professional Ledger Entry */
-    .invoice-row {
-        background: white;
+    /* Elite Ledger Interface */
+    .ledger-entry {
+        background: #ffffff;
         border: 1px solid var(--slate-100);
-        border-radius: 1.25rem;
-        padding: 1.25rem 1.5rem;
-        margin-bottom: 0.75rem;
-        transition: all 0.2s ease;
+        border-radius: 1.5rem;
+        padding: 1.5rem 2rem;
+        margin-bottom: 0.85rem;
+        transition: all 0.3s ease;
         display: grid;
-        grid-template-columns: auto 1fr auto auto;
+        grid-template-columns: auto 1.5fr 1fr 1fr auto;
         align-items: center;
-        gap: 1.5rem;
+        gap: 2.5rem;
     }
 
-    .invoice-row:hover {
+    .ledger-entry:hover {
         background: var(--slate-50);
-        border-color: var(--brand-primary);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border-color: var(--brand-accent);
+        box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.04);
     }
 
-    /* Accessibility-First Controls */
-    .custom-checkbox {
-        width: 1.5rem;
-        height: 1.5rem;
-        border-radius: 0.5rem;
+    /* Production-Grade Controls */
+    .checkbox-pro {
+        width: 1.6rem;
+        height: 1.6rem;
+        border-radius: 0.6rem;
         border: 2px solid var(--slate-200);
         cursor: pointer;
         appearance: none;
-        transition: all 0.2s;
+        transition: all 0.25s;
         display: flex;
         align-items: center;
         justify-content: center;
-        outline-offset: 2px;
     }
 
-    .custom-checkbox:checked {
-        background: var(--brand-primary);
-        border-color: var(--brand-primary);
+    .checkbox-pro:checked {
+        background: var(--brand-accent);
+        border-color: var(--brand-accent);
     }
 
-    .custom-checkbox:checked::after {
+    .checkbox-pro:checked::after {
         content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
     }
 
-    .custom-checkbox:focus-visible {
-        outline: 2px solid var(--brand-primary);
-    }
-
-    /* High-Performance Status UI */
-    .status-label {
-        font-size: 0.7rem;
+    /* High-Performance Status Visualization */
+    .status-capsule {
+        font-size: 0.65rem;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-        padding: 0.4rem 0.85rem;
-        border-radius: 9999px;
+        letter-spacing: 0.1em;
+        padding: 0.45rem 1rem;
+        border-radius: 999px;
         display: inline-flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.6rem;
         white-space: nowrap;
     }
 
@@ -112,144 +104,166 @@
     .status-unpaid { background: #fffbeb; color: #92400e; border: 1px solid #fef3c7; }
     .status-overdue { background: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; }
 
-    /* Universal Responsive Layer */
-    @media (max-width: 1024px) {
-        .invoice-row {
-            grid-template-columns: auto 1fr auto;
-            gap: 1.25rem;
-        }
-        .row-status { display: none; }
+    /* Action Infrastructure */
+    .action-square {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--slate-600);
+        transition: all 0.2s;
+        border: 1px solid transparent;
     }
 
-    @media (max-width: 640px) {
-        .invoice-row {
-            grid-template-columns: auto 1fr;
-            padding: 1.25rem;
+    .action-square:hover {
+        background: white;
+        color: var(--brand-accent);
+        border-color: var(--slate-200);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    /* Universal Responsiveness Suite */
+    @media (max-width: 1200px) {
+        .ledger-entry {
+            grid-template-columns: auto 1fr 1fr auto;
+            gap: 1.5rem;
         }
-        .row-actions {
+        .entry-status-col { display: none; }
+    }
+
+    @media (max-width: 768px) {
+        .ledger-entry {
+            grid-template-columns: auto 1fr;
+            padding: 1.5rem;
+            gap: 1.25rem;
+        }
+        .entry-actions {
             grid-column: 1 / -1;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between;
             border-top: 1px solid var(--slate-100);
-            padding-top: 1rem;
+            padding-top: 1.25rem;
             margin-top: 0.5rem;
         }
     }
 
-    /* Performance Animations */
-    @keyframes fadeInSlide {
-        from { opacity: 0; transform: translateY(10px); }
+    /* Staggered Entry Orchestration */
+    @keyframes entryReveal {
+        from { opacity: 0; transform: translateY(16px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
-    .animate-in {
-        animation: fadeInSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    .animate-entry {
+        opacity: 0;
+        animation: entryReveal 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ledger-container">
-    <!-- Performance Analytics Layer -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+<div class="ledger-viewport">
+    <!-- Production Analytics Layer -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-7 mb-12">
         {% for label, val, color, icon in stats_items %}
-        <div class="metric-card animate-in" style="animation-delay: {{ forloop.counter0 }}00ms">
+        <div class="metric-surface animate-entry" style="animation-delay: {{ forloop.counter0 }}00ms">
             <div class="flex items-start justify-between">
-                <div class="w-12 h-12 rounded-2xl bg-{{ color }}-50 text-{{ color }}-600 flex items-center justify-center">
+                <div class="w-14 h-14 rounded-[1.25rem] bg-{{ color }}-50 text-{{ color }}-600 flex items-center justify-center">
                     {{ icon|safe }}
                 </div>
-                <div class="px-3 py-1 bg-{{ color }}-50 text-{{ color }}-700 text-[10px] font-black uppercase tracking-widest rounded-full">
-                    Live
+                <div class="px-3.5 py-1.5 bg-{{ color }}-50 text-{{ color }}-700 text-[10px] font-black uppercase tracking-[0.15em] rounded-full">
+                    Active
                 </div>
             </div>
-            <div class="mt-6">
-                <h3 class="text-3xl font-black text-slate-900 tracking-tight">{% if "Revenue" in label %}${{ val }}{% else %}{{ val }}{% endif %}</h3>
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">{{ label }}</p>
+            <div class="mt-8">
+                <h3 class="text-3xl font-black text-slate-900 tracking-tight">{% if "Volume" in label %}${{ val }}{% else %}{{ val }}{% endif %}</h3>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-[0.15em] mt-1.5">{{ label }}</p>
             </div>
         </div>
         {% endfor %}
     </div>
 
     <!-- Production Control Hub -->
-    <div class="bg-white p-5 rounded-[2rem] border border-slate-200 shadow-sm flex flex-col xl:flex-row gap-5 items-center mb-8">
-        <form method="get" class="flex flex-col md:flex-row flex-1 gap-4 w-full" aria-label="Search and filter invoices">
+    <div class="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col xl:flex-row gap-6 items-center mb-10">
+        <form method="get" class="flex flex-col md:flex-row flex-1 gap-5 w-full">
             <div class="relative flex-1 group">
-                <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-primary transition-colors" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input type="text" name="search" value="{{ search_query }}" aria-label="Search ID, client, or email" placeholder="Search ID, client, or email..." 
-                       class="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-semibold focus:bg-white focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all outline-none">
+                <svg class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-accent transition-colors" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="Search ID, client, or email..." 
+                       class="w-full pl-14 pr-7 py-4.5 bg-slate-50 border border-slate-100 rounded-[1.5rem] text-sm font-semibold focus:bg-white focus:ring-4 focus:ring-brand-accent/5 focus:border-brand-accent transition-all outline-none">
             </div>
-            <div class="flex gap-3 w-full md:w-auto">
-                <select name="status" onchange="this.form.submit()" aria-label="Filter by status" class="flex-1 md:w-44 bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:bg-white transition-all outline-none appearance-none">
+            <div class="flex gap-4 w-full md:w-auto">
+                <select name="status" onchange="this.form.submit()" class="flex-1 md:w-48 bg-slate-50 border border-slate-100 rounded-[1.5rem] px-6 py-4.5 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:bg-white transition-all outline-none appearance-none">
                     <option value="all">Status: All</option>
                     <option value="paid" {% if status_filter == 'paid' %}selected{% endif %}>Paid</option>
                     <option value="unpaid" {% if status_filter == 'unpaid' %}selected{% endif %}>Unpaid</option>
                     <option value="overdue" {% if status_filter == 'overdue' %}selected{% endif %}>Overdue</option>
                 </select>
-                <select name="date_range" onchange="this.form.submit()" aria-label="Filter by timeframe" class="flex-1 md:w-44 bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:bg-white transition-all outline-none appearance-none">
+                <select name="date_range" onchange="this.form.submit()" class="flex-1 md:w-48 bg-slate-50 border border-slate-100 rounded-[1.5rem] px-6 py-4.5 text-[11px] font-black uppercase tracking-widest text-slate-600 focus:bg-white transition-all outline-none appearance-none">
                     <option value="all">Time: All</option>
                     <option value="7days" {% if date_filter == '7days' %}selected{% endif %}>Last 7 Days</option>
-                    <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last Month</option>
-                    <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>Current Month</option>
+                    <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
                 </select>
             </div>
         </form>
         
-        <div class="flex items-center gap-3 w-full xl:w-auto border-t xl:border-t-0 xl:border-l border-slate-100 pt-5 xl:pt-0 xl:pl-5">
-            <button id="bulk-trigger" class="hidden px-8 py-4 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-100">
+        <div class="flex items-center gap-4 w-full xl:w-auto border-t xl:border-t-0 xl:border-l border-slate-100 pt-6 xl:pt-0 xl:pl-6">
+            <button id="bulk-trigger" class="hidden px-10 py-4.5 bg-slate-900 text-white rounded-[1.5rem] text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-slate-100">
                 Bulk Actions
             </button>
-            <a href="{% url 'invoices:create_invoice' %}" class="flex-1 xl:flex-none inline-flex items-center justify-center gap-3 px-10 py-4 bg-brand-primary text-white rounded-2xl font-black text-sm hover:bg-brand-primary-hover transition-all shadow-2xl shadow-indigo-100 active:scale-95">
-                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                Create Invoice
+            <a href="{% url 'invoices:create_invoice' %}" class="flex-1 xl:flex-none inline-flex items-center justify-center gap-3 px-12 py-4.5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-sm hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-100 active:scale-95">
+                <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+                Create
             </a>
         </div>
     </div>
 
-    <!-- Active Transaction Ledger -->
-    <form id="ledger-form" action="{% url 'invoices:bulk_invoice_action' %}" method="post">
+    <!-- High-Performance Ledger -->
+    <form id="ledger-bulk-form" action="{% url 'invoices:bulk_invoice_action' %}" method="post">
         {% csrf_token %}
-        <input type="hidden" name="action" id="bulk-action-input">
+        <input type="hidden" name="action" id="bulk-action-hidden">
         
-        <div class="space-y-3" role="list">
+        <div class="space-y-4">
             {% for invoice in invoices %}
-            <div class="invoice-row animate-in" style="animation-delay: {{ forloop.counter0 }}50ms" role="listitem">
-                <input type="checkbox" name="invoice_ids" value="{{ invoice.id }}" aria-label="Select invoice #{{ invoice.invoice_id }}" class="custom-checkbox invoice-select">
+            <div class="ledger-entry animate-entry" style="animation-delay: {{ forloop.counter0 }}50ms">
+                <input type="checkbox" name="invoice_ids" value="{{ invoice.id }}" class="checkbox-pro invoice-select">
                 
-                <div class="flex flex-col md:flex-row md:items-center gap-6 flex-1 min-w-0">
-                    <div class="min-w-[140px]">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">#{{ invoice.invoice_id }}</p>
-                        <p class="text-xs font-bold text-slate-600">{{ invoice.invoice_date|date:"M d, Y" }}</p>
+                <div class="flex flex-col md:flex-row md:items-center gap-8 flex-1 min-w-0">
+                    <div class="min-w-[150px]">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1.5">#{{ invoice.invoice_id }}</p>
+                        <p class="text-xs font-bold text-slate-500">{{ invoice.invoice_date|date:"M d, Y" }}</p>
                     </div>
                     
                     <div class="flex-1 min-w-0">
-                        <h4 class="text-lg font-black text-slate-900 truncate">{{ invoice.client_name }}</h4>
+                        <h4 class="text-lg font-black text-slate-900 leading-tight truncate">{{ invoice.client_name }}</h4>
                         <p class="text-[11px] text-slate-500 font-medium truncate">{{ invoice.client_email }}</p>
                     </div>
 
-                    <div class="row-amount text-left md:text-center md:min-w-[140px]">
-                        <p class="text-lg font-black text-slate-900">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</p>
-                        <span class="status-label row-status {% if invoice.status == 'paid' %}status-paid{% elif invoice.is_overdue %}status-overdue{% else %}status-unpaid{% endif %}">
-                            <span class="w-1.5 h-1.5 rounded-full bg-current" aria-hidden="true"></span>
+                    <div class="text-left md:text-center md:min-w-[160px]">
+                        <p class="text-lg font-black text-slate-900 mb-1">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</p>
+                        <span class="status-capsule entry-status-col {% if invoice.status == 'paid' %}status-paid{% elif invoice.is_overdue %}status-overdue{% else %}status-unpaid{% endif %}">
+                            <span class="w-2 h-2 rounded-full bg-current"></span>
                             {{ invoice.get_status_display }}
                         </span>
                     </div>
                 </div>
 
-                <div class="row-actions flex items-center gap-1">
-                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="w-10 h-10 flex items-center justify-center rounded-xl text-slate-600 hover:bg-white hover:text-brand-primary hover:shadow-sm border border-transparent hover:border-slate-100 transition-all" title="View Detail"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
-                    <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="w-10 h-10 flex items-center justify-center rounded-xl text-slate-600 hover:bg-white hover:text-brand-primary hover:shadow-sm border border-transparent hover:border-slate-100 transition-all" title="Edit Invoice"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>
-                    <button type="button" onclick="confirmPurge('{{ invoice.id }}', '{{ invoice.invoice_id }}')" class="w-10 h-10 flex items-center justify-center rounded-xl text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:shadow-sm border border-transparent hover:border-rose-100 transition-all" title="Delete Invoice"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                <div class="entry-actions flex items-center gap-2">
+                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="action-square" title="View"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                    <a href="{% url 'invoices:edit_invoice' invoice.id %}" class="action-square" title="Edit"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></a>
+                    <button type="button" onclick="confirmPurge('{{ invoice.id }}', '{{ invoice.invoice_id }}')" class="action-square text-rose-500 hover:bg-rose-50 hover:border-rose-100" title="Delete"><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                 </div>
             </div>
             {% empty %}
-            <div class="py-32 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100">
-                <div class="w-24 h-24 bg-slate-50 text-slate-200 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
-                    <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <div class="py-36 text-center bg-white rounded-[3.5rem] border-2 border-dashed border-slate-100">
+                <div class="w-28 h-28 bg-slate-50 text-slate-200 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10">
+                    <svg width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 </div>
-                <h2 class="text-3xl font-black text-slate-900 mb-4">No Transactions Found</h2>
-                <p class="text-slate-500 max-w-sm mx-auto mb-10 font-medium leading-relaxed">It's time to build your professional empire. Start by generating your first sophisticated invoice.</p>
-                <a href="{% url 'invoices:create_invoice' %}" class="inline-flex items-center gap-3 px-12 py-5 bg-brand-primary text-white rounded-[1.5rem] font-black hover:bg-brand-primary-hover transition-all shadow-2xl shadow-indigo-100">
-                    Generate First Invoice
+                <h3 class="text-4xl font-black text-slate-900 mb-4 tracking-tight">Financial Silence</h3>
+                <p class="text-slate-500 max-w-sm mx-auto mb-12 font-medium leading-relaxed">Your ledger is awaiting its first transaction. Generate a professional invoice in seconds.</p>
+                <a href="{% url 'invoices:create_invoice' %}" class="inline-flex items-center gap-3 px-14 py-5 bg-indigo-600 text-white rounded-[2rem] font-black hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-100">
+                    Initialize First Record
                 </a>
             </div>
             {% endfor %}
@@ -258,53 +272,53 @@
 
     <!-- Professional Pagination -->
     {% if page_obj.has_other_pages %}
-    <nav class="flex items-center justify-center gap-4 mt-16 mb-24" aria-label="Pagination Navigation">
+    <div class="flex items-center justify-center gap-5 mt-20 mb-24">
         {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&date_range={{ date_filter }}" class="w-14 h-14 flex items-center justify-center bg-white border border-slate-200 rounded-2xl text-slate-600 hover:border-brand-primary hover:text-brand-primary transition-all shadow-sm" aria-label="Previous page">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        <a href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&date_range={{ date_filter }}" class="w-16 h-16 flex items-center justify-center bg-white border border-slate-200 rounded-[1.25rem] text-slate-600 hover:border-brand-accent hover:text-brand-accent transition-all shadow-sm">
+            <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
         </a>
         {% endif %}
         
-        <div class="px-8 py-4 bg-white border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+        <div class="px-10 py-5 bg-white border border-slate-200 rounded-[1.25rem] text-[11px] font-black uppercase tracking-[0.25em] text-slate-400 shadow-sm">
             Page <span class="text-slate-900">{{ page_obj.number }}</span> of {{ page_obj.paginator.num_pages }}
         </div>
 
         {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&date_range={{ date_filter }}" class="w-14 h-14 flex items-center justify-center bg-brand-primary text-white rounded-2xl hover:bg-brand-primary-hover transition-all shadow-2xl shadow-indigo-100" aria-label="Next page">
-            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+        <a href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&date_range={{ date_filter }}" class="w-16 h-16 flex items-center justify-center bg-indigo-600 text-white rounded-[1.25rem] hover:bg-indigo-700 transition-all shadow-2xl shadow-indigo-100">
+            <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
         </a>
         {% endif %}
-    </nav>
+    </div>
     {% endif %}
 </div>
 
-<!-- Production Confirmation System -->
-<div id="purge-modal" class="fixed inset-0 z-[2000] hidden flex items-center justify-center px-6" role="dialog" aria-modal="true" aria-labelledby="purge-title">
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onclick="closePurge()"></div>
-    <div class="relative bg-white w-full max-w-md rounded-[3rem] p-12 text-center shadow-2xl animate-in">
-        <div class="w-24 h-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
-            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+<!-- Elite Destruction System -->
+<div id="purge-system" class="fixed inset-0 z-[2000] hidden flex items-center justify-center px-6">
+    <div class="absolute inset-0 bg-slate-900/65 backdrop-blur-xl" onclick="closePurge()"></div>
+    <div class="relative bg-white w-full max-w-md rounded-[3.5rem] p-12 text-center shadow-2xl animate-entry">
+        <div class="w-24 h-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center mx-auto mb-10">
+            <svg width="52" height="52" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
         </div>
-        <h3 id="purge-title" class="text-3xl font-black text-slate-900 mb-3">Delete Ledger #<span id="purge-label"></span>?</h3>
-        <p class="text-slate-500 mb-12 font-medium leading-relaxed text-sm">This operation is destructive and irreversible. All transaction history for this record will be permanently purged.</p>
-        <div class="flex flex-col gap-3">
-            <button id="purge-confirm-btn" class="w-full py-5 bg-rose-600 text-white rounded-2xl font-black hover:bg-rose-700 transition-all shadow-2xl shadow-rose-100">Confirm Deletion</button>
+        <h3 class="text-3xl font-black text-slate-900 mb-4 tracking-tight">Purge Ledger #<span id="target-id-label"></span>?</h3>
+        <p class="text-slate-500 mb-12 font-medium leading-relaxed text-sm">This action is destructive and irreversible. All associated transaction history will be permanently wiped from our secure infrastructure.</p>
+        <div class="flex flex-col gap-4">
+            <button id="purge-confirm-btn" class="w-full py-5 bg-rose-600 text-white rounded-[1.5rem] font-black hover:bg-rose-700 transition-all shadow-2xl shadow-rose-100">Confirm Destruction</button>
             <button onclick="closePurge()" class="w-full py-4 text-slate-400 font-bold hover:text-slate-900 transition-all">Dismiss</button>
         </div>
     </div>
 </div>
 
-<!-- Advanced Bulk Suite -->
-<div id="bulk-suite" class="fixed z-[1900] hidden bg-white rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.15)] border border-slate-100 p-3 w-64 animate-in">
-    <button onclick="execBulk('mark_paid')" class="w-full text-left px-6 py-4 rounded-xl text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all flex items-center gap-4">
-        <svg class="text-emerald-500" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg> Mark as Paid
+<!-- Advanced Bulk Context Suite -->
+<div id="bulk-suite" class="fixed z-[1900] hidden bg-white rounded-[2.5rem] shadow-[0_32px_64px_-12px_rgba(0,0,0,0.15)] border border-slate-100 p-3.5 w-64 animate-entry">
+    <button onclick="runBulk('mark_paid')" class="w-full text-left px-7 py-4.5 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all flex items-center gap-4">
+        <svg class="text-emerald-500" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg> Mark Paid
     </button>
-    <button onclick="execBulk('mark_unpaid')" class="w-full text-left px-6 py-4 rounded-xl text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-all flex items-center gap-4">
-        <svg class="text-amber-500" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Mark as Unpaid
+    <button onclick="runBulk('mark_unpaid')" class="w-full text-left px-7 py-4.5 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-all flex items-center gap-4">
+        <svg class="text-amber-500" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Mark Unpaid
     </button>
-    <div class="my-3 border-t border-slate-50"></div>
-    <button onclick="execBulk('delete')" class="w-full text-left px-6 py-4 rounded-xl text-[11px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50 transition-all flex items-center gap-4">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Purge Selection
+    <div class="my-3.5 border-t border-slate-50"></div>
+    <button onclick="runBulk('delete')" class="w-full text-left px-7 py-4.5 rounded-[1.25rem] text-[11px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-50 transition-all flex items-center gap-4">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Permanent Wipe
     </button>
 </div>
 {% endblock %}
@@ -312,20 +326,20 @@
 {% block extra_js %}
 <script>
     const selects = document.querySelectorAll('.invoice-select');
-    const bulkBtn = document.getElementById('bulk-trigger');
+    const bulkTrigger = document.getElementById('bulk-trigger');
     const bulkSuite = document.getElementById('bulk-suite');
 
     function refreshBulk() {
         const count = document.querySelectorAll('.invoice-select:checked').length;
-        bulkBtn.classList.toggle('hidden', count === 0);
-        bulkBtn.innerHTML = `Bulk Actions (${count}) <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" class="inline ml-1"><path d="m3 5 4 4 4-4"/></svg>`;
+        bulkTrigger.classList.toggle('hidden', count === 0);
+        bulkTrigger.innerHTML = `Bulk Actions (${count}) <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" class="inline ml-1"><path d="m3 5 4 4 4-4"/></svg>`;
     }
 
     selects.forEach(s => s.addEventListener('change', refreshBulk));
 
-    bulkBtn?.addEventListener('click', (e) => {
+    bulkTrigger?.addEventListener('click', (e) => {
         e.stopPropagation();
-        const rect = bulkBtn.getBoundingClientRect();
+        const rect = bulkTrigger.getBoundingClientRect();
         bulkSuite.style.top = `${rect.bottom + 16}px`;
         bulkSuite.style.right = `${window.innerWidth - rect.right}px`;
         bulkSuite.classList.toggle('hidden');
@@ -333,35 +347,35 @@
 
     document.addEventListener('click', () => bulkSuite?.classList.add('hidden'));
 
-    function execBulk(action) {
-        if (action === 'delete' && !confirm('Confirm mass deletion? This cannot be undone.')) return;
-        document.getElementById('bulk-action-input').value = action;
-        document.getElementById('ledger-form').submit();
+    function runBulk(action) {
+        if (action === 'delete' && !confirm('Are you absolutely certain? Data recovery will be impossible.')) return;
+        document.getElementById('bulk-action-hidden').value = action;
+        document.getElementById('ledger-bulk-form').submit();
     }
 
-    let currentId = null;
+    let activeDelId = null;
     function confirmPurge(id, displayId) {
-        currentId = id;
-        document.getElementById('purge-label').textContent = displayId;
-        document.getElementById('purge-modal').classList.remove('hidden');
+        activeDelId = id;
+        document.getElementById('target-id-label').textContent = displayId;
+        document.getElementById('purge-system').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     }
 
     function closePurge() {
-        document.getElementById('purge-modal').classList.add('hidden');
+        document.getElementById('purge-system').classList.add('hidden');
         document.body.style.overflow = '';
-        currentId = null;
+        activeDelId = null;
     }
 
     document.getElementById('purge-confirm-btn')?.addEventListener('click', () => {
-        if (!currentId) return;
-        fetch(`/invoices/invoice/${currentId}/delete/`, {
+        if (!activeDelId) return;
+        fetch(`/invoices/invoice/${activeDelId}/delete/`, {
             method: 'POST',
             headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(r => r.json())
         .then(data => data.success ? window.location.reload() : alert(data.message))
-        .catch(() => alert('Network synchronization error.'));
+        .catch(() => alert('Network synchronization failure.'));
     });
 </script>
 {% endblock %}
