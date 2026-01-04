@@ -837,7 +837,9 @@ def invoice_list(request):
         "paid": stats_qs.filter(status="paid").count(),
         "unpaid": stats_qs.filter(status="unpaid").count(),
         "overdue": stats_qs.filter(status="unpaid", due_date__lt=today).count(),
-        "total_revenue": stats_qs.filter(status="paid").aggregate(Sum('total'))['total__sum'] or 0,
+        "total_revenue": stats_qs.filter(status="paid").aggregate(
+            total_rev=Sum(F("line_items__quantity") * F("line_items__unit_price"))
+        )['total_rev'] or 0,
     }
 
     context = {
