@@ -50,7 +50,14 @@ def create_invoice(request):
                 for field, errors in form.errors.items():
                     for error in errors:
                         messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
-                return redirect("invoices:create_invoice")
+                return render(request, "invoices/create_invoice.html", {
+                    "form": form,
+                    "recent_clients": recent_clients,
+                    "active": "create_invoice",
+                    "page_title": "Create Invoice",
+                    "today": timezone.now().date(),
+                    "user_profile": profile,
+                })
                 
         except Exception as e:
             logger.error(f"Error creating invoice: {str(e)}")
