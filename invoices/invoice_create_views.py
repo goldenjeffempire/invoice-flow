@@ -65,12 +65,24 @@ def create_invoice(request):
             messages.error(request, f"Failed to create invoice: {str(e)}")
             return redirect("invoices:create_invoice")
 
+    from datetime import timedelta
     context = {
         "recent_clients": recent_clients,
         "active": "create_invoice",
         "page_title": "Create Invoice",
         "today": timezone.now().date(),
+        "default_due_date": timezone.now().date() + timedelta(days=30),
         "user_profile": profile,
+        "form": InvoiceForm(initial={
+            "business_name": profile.company_name,
+            "business_email": profile.business_email or request.user.email,
+            "business_phone": profile.business_phone,
+            "business_address": profile.business_address,
+            "currency": profile.default_currency or "USD",
+            "tax_rate": profile.default_tax_rate or 0,
+            "invoice_date": timezone.now().date(),
+            "due_date": timezone.now().date() + timedelta(days=30),
+        })
     }
     return render(request, "invoices/create_invoice.html", context)
 

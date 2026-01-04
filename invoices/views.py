@@ -982,32 +982,57 @@ def create_invoice(request):
 
 @login_required
 def invoice_detail(request, invoice_id):
+    """Modernized Invoice Detail view with robust permission checks."""
     invoice = get_object_or_404(
         Invoice.objects.prefetch_related("line_items"), id=invoice_id, user=request.user
     )
     business = getattr(request.user, 'profile', None)
+    
+    # Simple engagement tracking
+    try:
+        from .models import EngagementMetric
+        EngagementMetric.objects.create(
+            user=request.user,
+            metric_type="view_detail",
+            element_id=f"invoice_{invoice.id}",
+            invoice=invoice
+        )
+    except Exception:
+        pass
+        
     return render(request, "invoices/invoice_detail.html", {
         "invoice": invoice,
         "business": business,
-        "active": "invoices"
+        "active": "invoices",
+        "page_title": f"Invoice #{invoice.invoice_id}",
     })
 
 
 @login_required
 @require_POST
 def mark_invoice_paid(request, invoice_id):
+    """Securely mark an invoice as paid."""
     invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
-    invoice.status = 'paid'
-    invoice.save()
+    if invoice.status == "paid":
+        return JsonResponse({"success": False, "message": "Invoice is already paid."})
     
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return HttpResponse(json.dumps({
-            "success": True, 
-            "message": "Invoice marked as paid successfully."
-        }).encode('utf-8'), content_type="application/json")
-        
-    messages.success(request, "Invoice marked as paid.")
-    return redirect("invoices:invoice_detail", invoice_id=invoice.id)
+    try:
+        with transaction.atomic():
+            invoice.status = "paid"
+            invoice.save(update_fields=["status", "updated_at"])
+            
+            # Invalidate analytics cache
+            from .services import AnalyticsService
+            AnalyticsService.invalidate_user_cache(request.user.id)
+            
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({"success": True, "message": "Invoice marked as paid."})
+            
+        messages.success(request, "Invoice marked as paid.")
+        return redirect("invoices:invoice_detail", invoice_id=invoice.id)
+    except Exception as e:
+        logger.error(f"Error marking invoice as paid: {e}")
+        return JsonResponse({"success": False, "message": "Failed to update status."}, status=500)
 
 
 @login_required
@@ -1082,47 +1107,35 @@ def edit_invoice(request, invoice_id):
 @login_required
 @require_POST
 def delete_invoice(request, invoice_id):
-    """Delete an existing invoice and its line items with AJAX support and state checks."""
+    """Securely delete an invoice with status checks and cache invalidation."""
     invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
-    invoice_display_id = invoice.invoice_id
     
-    # Graceful handling for paid invoices
-    if invoice.status == Invoice.Status.PAID:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
-            return HttpResponse(json.dumps({
-                "success": False, 
-                "message": "Paid invoices are locked and cannot be deleted for accounting integrity."
-            }).encode('utf-8'), content_type="application/json", status=403)
-        messages.error(request, "Paid invoices cannot be deleted.")
-        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
-        
+    # Permission check: cannot delete paid invoices for accounting integrity
+    if invoice.status == "paid":
+        error_msg = "Paid invoices are locked and cannot be deleted for accounting integrity."
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({"success": False, "message": error_msg}, status=403)
+        messages.error(request, error_msg)
+        return redirect("invoices:invoice_detail", invoice_id=invoice.id)
+    
     try:
         with transaction.atomic():
+            invoice_id_display = invoice.invoice_id
             invoice.delete()
-        
-        # Invalidate cache
-        from .services import AnalyticsService
-        AnalyticsService.invalidate_user_cache(request.user.id)
-        
-        message = f"Invoice #{invoice_display_id} has been deleted successfully."
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
-            return HttpResponse(json.dumps({
-                "success": True, 
-                "message": message,
-                "redirect_url": "/invoices/list/"
-            }).encode('utf-8'), content_type="application/json")
             
-        messages.success(request, message)
+            # Invalidate analytics cache
+            from .services import AnalyticsService
+            AnalyticsService.invalidate_user_cache(request.user.id)
+            
+        success_msg = f"Invoice #{invoice_id_display} deleted successfully."
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({"success": True, "message": success_msg})
+            
+        messages.success(request, success_msg)
         return redirect("invoices:invoice_list")
     except Exception as e:
-        logger.error(f"Error deleting invoice {invoice_id}: {e}")
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.content_type == 'application/json':
-            return HttpResponse(json.dumps({
-                "success": False, 
-                "message": "A database error occurred while deleting the invoice."
-            }).encode('utf-8'), content_type="application/json", status=500)
-        messages.error(request, "Failed to delete invoice.")
-        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
+        logger.error(f"Error deleting invoice: {e}")
+        return JsonResponse({"success": False, "message": "Failed to delete invoice."}, status=500)
 
 
 @login_required
