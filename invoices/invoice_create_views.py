@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 @csrf_protect
 def create_invoice(request):
     """Modernized Create Invoice view with robust validation and handling."""
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    recent_clients = Invoice.objects.filter(user=request.user).order_by("-created_at")[:10]
+    profile, _ = UserProfile.objects.get_or_create(user=request.user) # type: ignore
+    recent_clients = Invoice.objects.filter(user=request.user).order_by("-created_at")[:10] # type: ignore
     
     if request.method == "POST":
         try:
@@ -45,11 +45,12 @@ def create_invoice(request):
             
             if invoice:
                 messages.success(request, f"✓ Invoice {invoice.invoice_id} created successfully!")
-                return redirect("invoices:invoice_detail", invoice_id=invoice.id)
+                return redirect("invoices:invoice_detail", invoice_id=invoice.id) # type: ignore
             else:
-                for field, errors in form.errors.items():
-                    for error in errors:
-                        messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
+                if form: # type: ignore
+                    for field, errors in form.errors.items(): # type: ignore
+                        for error in errors:
+                            messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
                 return render(request, "invoices/create_invoice.html", {
                     "form": form,
                     "recent_clients": recent_clients,
