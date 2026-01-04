@@ -827,18 +827,22 @@ def invoice_list(request):
         "total": "line_items_total",
         "status": "status",
         "-status": "-status",
+        "due_date": "due_date",
+        "-due_date": "-due_date",
     }
     order_by = valid_sorts.get(sort_by, "-created_at")
     invoices_with_totals = invoices_with_totals.order_by(order_by)
 
-    paginator = Paginator(invoices_with_totals, 15)
+    paginator = Paginator(invoices_with_totals, 10) # Reduced for better mobile performance
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
-    total_count = Invoice.objects.filter(user=request.user).count()
-    paid_count = Invoice.objects.filter(user=request.user, status="paid").count()
-    unpaid_count = Invoice.objects.filter(user=request.user, status="unpaid").count()
-    overdue_count = Invoice.objects.filter(user=request.user, status="unpaid", due_date__lt=today).count()
+    # Performance optimized stats
+    stats_qs = Invoice.objects.filter(user=request.user)
+    total_count = stats_qs.count()
+    paid_count = stats_qs.filter(status="paid").count()
+    unpaid_count = stats_qs.filter(status="unpaid").count()
+    overdue_count = stats_qs.filter(status="unpaid", due_date__lt=today).count()
 
     context = {
         "page_obj": page_obj,
@@ -853,52 +857,45 @@ def invoice_list(request):
         "overdue_count": overdue_count,
         "today": today,
         "active": "invoices",
+        "page_title": "Invoices",
+        "page_subtitle": f"Managing {total_count} invoices",
     }
     return render(request, "invoices/invoice_list.html", context)
 
 
 @login_required
+@require_POST
 def bulk_invoice_action(request):
-    """Handle bulk actions on invoices (mark paid, mark unpaid, delete, export)."""
-    if request.method != "POST":
-        messages.error(request, "Invalid request method.")
-        return redirect("invoice_list")
+    """Handle bulk actions on invoices (mark paid, mark unpaid, delete)."""
+    action = request.POST.get("action")
+    invoice_ids = request.POST.getlist("invoice_ids")
 
+    if not invoice_ids:
+        messages.warning(request, "No invoices selected.")
+        return redirect("invoices:invoice_list")
+
+    invoices = Invoice.objects.filter(id__in=invoice_ids, user=request.user)
+    
     try:
-        invoice_ids_str = request.POST.get("invoice_ids", "")
-        action = request.POST.get("action", "")
-
-        if not invoice_ids_str:
-            messages.error(request, "No invoices selected.")
-            return redirect("invoice_list")
-
-        invoice_ids = [int(id.strip()) for id in invoice_ids_str.split(",") if id.strip()]
-
-        if not invoice_ids:
-            messages.error(request, "No invoices selected.")
-            return redirect("invoice_list")
-
-        invoices = Invoice.objects.filter(id__in=invoice_ids, user=request.user)
-
         if action == "mark_paid":
-            count = invoices.update(status="paid")
-            messages.success(request, f"{count} invoice(s) marked as paid.")
+            updated = invoices.update(status="paid")
+            messages.success(request, f"Successfully marked {updated} invoice(s) as paid.")
         elif action == "mark_unpaid":
-            count = invoices.update(status="unpaid")
-            messages.success(request, f"{count} invoice(s) marked as unpaid.")
+            updated = invoices.update(status="unpaid")
+            messages.success(request, f"Successfully marked {updated} invoice(s) as unpaid.")
         elif action == "delete":
             count = invoices.count()
             invoices.delete()
-            from invoices.services import AnalyticsService
+            from .services import AnalyticsService
             AnalyticsService.invalidate_user_cache(request.user.id)
-            messages.success(request, f"{count} invoice(s) deleted.")
+            messages.success(request, f"Successfully deleted {count} invoice(s).")
         else:
             messages.error(request, "Invalid action.")
-
-        return redirect("invoice_list")
     except Exception as e:
-        messages.error(request, f"An error occurred: {str(e)}")
-        return redirect("invoice_list")
+        logger.error(f"Bulk action error: {e}")
+        messages.error(request, "An error occurred while processing bulk action.")
+
+    return redirect("invoices:invoice_list")
 
 
 @login_required
