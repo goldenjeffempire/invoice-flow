@@ -775,6 +775,9 @@ def invoice_list(request):
 
     base_queryset = Invoice.objects.filter(user=request.user).prefetch_related("line_items")
 
+    from django.utils import timezone
+    today = timezone.now().date()
+    
     # Advanced Filtering Logic
     status_filter = request.GET.get("status", "all")
     search_query = request.GET.get("search", "").strip()
