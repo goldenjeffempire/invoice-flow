@@ -1838,6 +1838,8 @@ def analytics(request):
         "chart_data": json.dumps(chart_data),
         "client_labels": json.dumps(client_labels),
         "client_data": json.dumps(client_data),
+        "client_labels_list": client_labels,
+        "client_data_list": client_data,
         "recent_feedback": recent_feedback,
         "engagement_stats": engagement_stats,
         "currency": request.user.profile.default_currency if hasattr(request.user, 'profile') else "$"
