@@ -1,491 +1,297 @@
 {% extends "base/layout-authenticated.html" %}
 {% load static %}
 
-{% block title %}Edit Invoice {{ invoice.invoice_id }} | InvoiceFlow{% endblock %}
-
-{% block page_title %}Edit Invoice{% endblock %}
-{% block page_subtitle %}Invoice #{{ invoice.invoice_id }}{% endblock %}
-
-{% block extra_css %}
-<style>
-    :root {
-        --invoice-primary: #6366f1;
-        --invoice-primary-hover: #4f46e5;
-        --invoice-bg: #f8fafc;
-        --invoice-card-bg: #ffffff;
-        --invoice-border: #e2e8f0;
-        --invoice-text: #1e293b;
-        --invoice-text-muted: #64748b;
-    }
-
-    .edit-container {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding-bottom: 5rem;
-    }
-
-    .glass-card {
-        background: var(--invoice-card-bg);
-        border: 1px solid var(--invoice-border);
-        border-radius: 1rem;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        overflow: hidden;
-        margin-bottom: 2rem;
-    }
-
-    .card-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--invoice-border);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        background: #fcfdfe;
-    }
-
-    .card-header h2 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--invoice-text);
-        margin: 0;
-    }
-
-    .card-body {
-        padding: 1.5rem;
-    }
-
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-    }
-
-    .input-group {
-        margin-bottom: 1.25rem;
-    }
-
-    .input-label {
-        display: block;
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--invoice-text-muted);
-        margin-bottom: 0.5rem;
-    }
-
-    .modern-input {
-        width: 100%;
-        padding: 0.625rem 0.875rem;
-        border: 1px solid var(--invoice-border);
-        border-radius: 0.5rem;
-        font-size: 0.9375rem;
-        color: var(--invoice-text);
-        transition: all 0.2s;
-        background: #ffffff;
-    }
-
-    .modern-input:focus {
-        outline: none;
-        border-color: var(--invoice-primary);
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    }
-
-    /* Line Items Table */
-    .items-table-container {
-        overflow-x: auto;
-        margin: -1.5rem;
-        padding: 1.5rem;
-    }
-
-    .items-table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 600px;
-    }
-
-    .items-table th {
-        text-align: left;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--invoice-text-muted);
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid var(--invoice-border);
-    }
-
-    .items-table td {
-        padding: 1rem;
-        border-bottom: 1px solid var(--invoice-border);
-        vertical-align: top;
-    }
-
-    .item-desc-cell { width: 45%; }
-    .item-qty-cell { width: 15%; }
-    .item-price-cell { width: 20%; }
-    .item-total-cell { width: 15%; text-align: right; }
-    .item-action-cell { width: 5%; text-align: right; }
-
-    .btn-delete {
-        color: #ef4444;
-        padding: 0.5rem;
-        border-radius: 0.375rem;
-        transition: all 0.2s;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .btn-delete:hover {
-        background: #fee2e2;
-    }
-
-    /* Summary Section */
-    .summary-grid {
-        display: grid;
-        grid-template-columns: 1fr 350px;
-        gap: 2rem;
-        margin-top: 1.5rem;
-    }
-
-    @media (max-width: 768px) {
-        .summary-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .summary-card {
-        background: #f8fafc;
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-    }
-
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.75rem;
-        font-size: 0.9375rem;
-    }
-
-    .summary-row.total {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--invoice-border);
-        font-weight: 700;
-        font-size: 1.125rem;
-        color: var(--invoice-text);
-    }
-
-    /* Floating Actions */
-    .actions-bar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: rgba(255, 255, 255, 0.8);
-        backdrop-filter: blur(8px);
-        border-top: 1px solid var(--invoice-border);
-        padding: 1rem 2rem;
-        display: flex;
-        justify-content: flex-end;
-        gap: 1rem;
-        z-index: 50;
-    }
-
-    .btn-modern {
-        padding: 0.625rem 1.25rem;
-        border-radius: 0.5rem;
-        font-weight: 600;
-        font-size: 0.9375rem;
-        transition: all 0.2s;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .btn-primary {
-        background: var(--invoice-primary);
-        color: white;
-        border: none;
-    }
-
-    .btn-primary:hover {
-        background: var(--invoice-primary-hover);
-        transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-        background: white;
-        color: var(--invoice-text);
-        border: 1px solid var(--invoice-border);
-    }
-
-    .btn-secondary:hover {
-        background: #f1f5f9;
-    }
-
-    .add-row-btn {
-        margin-top: 1rem;
-        color: var(--invoice-primary);
-        font-weight: 600;
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-        cursor: pointer;
-    }
-
-    .add-row-btn:hover {
-        text-decoration: underline;
-    }
-</style>
-{% endblock %}
+{% block page_title %}Edit Invoice #{{ invoice.invoice_id }}{% endblock %}
+{% block page_subtitle %}Update your billing document details{% endblock %}
 
 {% block content %}
-<div class="content-container">
-    <div class="edit-container">
-    <form method="POST" id="edit-invoice-form">
-        {% csrf_token %}
-        <input type="hidden" name="line_items" id="line-items-json">
+<div class="min-h-screen bg-slate-50 pb-20 -mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <form id="invoiceForm" method="POST" class="space-y-8" onsubmit="return handleFormSubmit(event)">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Left Column: Details -->
+                <div class="lg:col-span-8 space-y-6">
+                    <!-- Party Information -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-tight">Billing Information</h2>
+                            <span class="px-3 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-black uppercase tracking-widest text-slate-400">#{{ invoice.invoice_id }}</span>
+                        </div>
+                        <div class="p-8">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                <!-- From Section -->
+                                <div class="space-y-6">
+                                    <div class="flex items-center space-x-2 text-slate-600 mb-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                        <h3 class="text-xs font-black uppercase tracking-widest">Sender Details</h3>
+                                    </div>
+                                    <div class="grid gap-4">
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Business Name</label>
+                                            {{ invoice_form.business_name }}
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Email Address</label>
+                                            {{ invoice_form.business_email }}
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Phone Number</label>
+                                            {{ invoice_form.business_phone }}
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Address</label>
+                                            {{ invoice_form.business_address }}
+                                        </div>
+                                    </div>
+                                </div>
 
-        <!-- Parties Section -->
-        <div class="form-grid">
-            <div class="glass-card">
-                <div class="card-header">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-7h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                    <h2>Sender Information</h2>
-                </div>
-                <div class="card-body">
-                    <div class="input-group">
-                        <label class="input-label">Business Name</label>
-                        {{ invoice_form.business_name }}
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Business Email</label>
-                        {{ invoice_form.business_email }}
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Address</label>
-                        {{ invoice_form.business_address }}
-                    </div>
-                </div>
-            </div>
-
-            <div class="glass-card">
-                <div class="card-header">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                    <h2>Client Information</h2>
-                </div>
-                <div class="card-body">
-                    <div class="input-group">
-                        <label class="input-label">Client Name</label>
-                        {{ invoice_form.client_name }}
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Client Email</label>
-                        {{ invoice_form.client_email }}
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Client Address</label>
-                        {{ invoice_form.client_address }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dates & Settings -->
-        <div class="glass-card">
-            <div class="card-header">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <h2>Invoice Details</h2>
-            </div>
-            <div class="card-body">
-                <div class="form-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                    <div class="input-group">
-                        <label class="input-label">Invoice Date</label>
-                        {{ invoice_form.invoice_date }}
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Due Date</label>
-                        {{ invoice_form.due_date }}
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Currency</label>
-                        {{ invoice_form.currency }}
-                    </div>
-                    <div class="input-group">
-                        <label class="input-label">Tax Rate (%)</label>
-                        {{ invoice_form.tax_rate }}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Line Items -->
-        <div class="glass-card">
-            <div class="card-header" style="justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
-                    <h2>Line Items</h2>
-                </div>
-                <button type="button" class="add-row-btn" id="add-item-btn">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="3" x2="8" y2="13"></line><line x1="3" y1="8" x2="13" y2="8"></line></svg>
-                    Add Item
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="items-table-container">
-                    <table class="items-table">
-                        <thead>
-                            <tr>
-                                <th class="item-desc-cell">Description</th>
-                                <th class="item-qty-cell">Quantity</th>
-                                <th class="item-price-cell">Unit Price</th>
-                                <th class="item-total-cell">Total</th>
-                                <th class="item-action-cell"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="line-items-body">
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="summary-grid">
-                    <div>
-                        <div class="input-group">
-                            <label class="input-label">Additional Notes</label>
-                            {{ invoice_form.notes }}
+                                <!-- To Section -->
+                                <div class="space-y-6">
+                                    <div class="flex items-center space-x-2 text-slate-600 mb-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                        <h3 class="text-xs font-black uppercase tracking-widest">Client Details</h3>
+                                    </div>
+                                    <div class="grid gap-4">
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Client Name</label>
+                                            {{ invoice_form.client_name }}
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Client Email</label>
+                                            {{ invoice_form.client_email }}
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Client Phone</label>
+                                            {{ invoice_form.client_phone }}
+                                        </div>
+                                        <div class="space-y-1">
+                                            <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Client Address</label>
+                                            {{ invoice_form.client_address }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="summary-card">
-                        <div class="summary-row">
-                            <span style="color: var(--invoice-text-muted);">Subtotal</span>
-                            <span id="subtotal-display" style="font-weight: 600;">0.00</span>
+
+                    <!-- Line Items -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-tight">Invoice Items</h2>
+                            <button type="button" id="addItemBtn" class="inline-flex items-center px-4 py-2 border border-slate-200 text-xs font-bold rounded-xl text-indigo-600 bg-white hover:bg-slate-50 transition-all shadow-sm">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                Add New Row
+                            </button>
                         </div>
-                        <div class="summary-row">
-                            <span style="color: var(--invoice-text-muted);">Tax Amount</span>
-                            <span id="tax-display" style="font-weight: 600;">0.00</span>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-100" id="itemsTable">
+                                <thead class="bg-slate-50/50">
+                                    <tr>
+                                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/2">Description</th>
+                                        <th class="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Qty</th>
+                                        <th class="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Price</th>
+                                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Total</th>
+                                        <th class="px-4 py-4 text-right w-12"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100" id="itemsBody">
+                                    <!-- Dynamic rows -->
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="summary-row total">
-                            <span>Grand Total</span>
-                            <span id="total-display">0.00</span>
+                        <div class="p-8 border-t border-slate-100 bg-slate-50/30">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div class="space-y-2">
+                                    <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Notes & Terms</label>
+                                    {{ invoice_form.notes }}
+                                </div>
+                                <div class="flex flex-col justify-center items-end space-y-4">
+                                    <div class="w-full max-w-xs space-y-3">
+                                        <div class="flex justify-between items-center text-sm font-medium text-slate-600">
+                                            <span>Subtotal</span>
+                                            <span id="subtotalDisplay" class="text-slate-900 font-bold">$0.00</span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-sm">
+                                            <div class="flex items-center">
+                                                <span class="text-slate-500 mr-2">Tax Rate (%)</span>
+                                                <div class="w-16">
+                                                    {{ invoice_form.tax_rate }}
+                                                </div>
+                                            </div>
+                                            <span id="taxAmountDisplay" class="text-slate-900 font-bold">$0.00</span>
+                                        </div>
+                                        <div class="pt-3 border-t border-slate-200 flex justify-between items-center">
+                                            <span class="text-base font-black text-slate-900 uppercase tracking-tighter">Grand Total</span>
+                                            <span id="totalDisplay" class="text-2xl font-black text-indigo-600">$0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Sticky Footer Actions -->
-        <div class="actions-bar">
-            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn-modern btn-secondary">
-                Cancel
-            </a>
-            <button type="submit" class="btn-modern btn-primary">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"></path></svg>
-                Save Changes
-            </button>
-        </div>
-    </form>
+                <!-- Right Column: Meta -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8 sticky top-28">
+                        <div class="space-y-6">
+                            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-tight flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Schedule & Preferences
+                            </h2>
+                            
+                            <div class="grid grid-cols-1 gap-6">
+                                <div class="space-y-1">
+                                    <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Currency</label>
+                                    {{ invoice_form.currency }}
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Issue Date</label>
+                                    {{ invoice_form.invoice_date }}
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] font-bold text-slate-500 uppercase ml-1">Due Date</label>
+                                    {{ invoice_form.due_date }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <button type="submit" id="generateBtn" class="w-full inline-flex items-center justify-center px-6 py-4 text-base font-black text-white bg-indigo-600 rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 focus:ring-4 focus:ring-indigo-50 group">
+                                <span id="btnText">Save Changes</span>
+                                <svg id="btnSpinner" class="hidden animate-spin ml-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <svg id="btnIcon" class="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </button>
+                            <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="w-full inline-flex items-center justify-center px-6 py-3 text-sm font-bold text-slate-400 bg-white border border-slate-100 rounded-2xl hover:bg-slate-50 transition-all">
+                                Cancel & Discard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <input type="hidden" name="line_items" id="lineItemsInput">
+        </form>
+    </div>
 </div>
-</div>
 
-<script nonce="{{ request.csp_nonce }}">
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('edit-invoice-form');
-    const itemsBody = document.getElementById('line-items-body');
-    const addItemBtn = document.getElementById('add-item-btn');
-    const lineItemsInput = document.getElementById('line-items-json');
-    const currencySelect = document.querySelector('select[name="currency"]');
-    const taxRateInput = document.querySelector('input[name="tax_rate"]');
-    
-    // Initial items from server
-    let items = JSON.parse('{{ line_items_json|safe }}');
+<script>
+    let lineItems = JSON.parse('{{ line_items_json|safe }}');
 
     function renderItems() {
-        itemsBody.innerHTML = '';
-        items.forEach((item, index) => {
+        const body = document.getElementById('itemsBody');
+        body.innerHTML = '';
+        lineItems.forEach((item, index) => {
             const row = document.createElement('tr');
+            row.className = "group hover:bg-slate-50/50 transition-colors";
             row.innerHTML = `
-                <td class="item-desc-cell">
-                    <input type="text" class="modern-input item-desc" value="${item.description}" placeholder="Service or product description..." required>
+                <td class="px-6 py-4">
+                    <input type="text" class="form-input-clean w-full" value="${item.description}" 
+                           oninput="updateItem(${index}, 'description', this.value)" 
+                           placeholder="Describe the service or product...">
                 </td>
-                <td class="item-qty-cell">
-                    <input type="number" class="modern-input item-qty" value="${item.quantity}" min="0.01" step="any" required>
+                <td class="px-4 py-4">
+                    <input type="number" class="form-input-clean text-center w-full" value="${item.quantity}" 
+                           step="0.01" oninput="updateItem(${index}, 'quantity', this.value)">
                 </td>
-                <td class="item-price-cell">
-                    <input type="number" class="modern-input item-price" value="${item.unit_price}" min="0" step="0.01" required>
+                <td class="px-4 py-4">
+                    <div class="relative">
+                        <span class="absolute left-0 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                        <input type="number" class="form-input-clean pl-4 text-center w-full" value="${item.unit_price}" 
+                               step="0.01" oninput="updateItem(${index}, 'unit_price', this.value)">
+                    </div>
                 </td>
-                <td class="item-total-cell">
-                    <span class="item-total-display" style="font-weight: 600; color: var(--invoice-text);">0.00</span>
+                <td class="px-6 py-4 text-right">
+                    <span class="text-sm font-bold text-slate-900">
+                        $${(item.quantity * item.unit_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                    </span>
                 </td>
-                <td class="item-action-cell">
-                    <button type="button" class="btn-delete" onclick="removeItem(${index})">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <td class="px-4 py-4 text-right">
+                    <button type="button" onclick="removeItem(${index})" 
+                            class="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
             `;
-            itemsBody.appendChild(row);
+            body.appendChild(row);
         });
         calculateTotals();
     }
 
-    window.removeItem = function(index) {
-        if (items.length > 1) {
-            items.splice(index, 1);
-            renderItems();
-        } else {
-            alert("An invoice must have at least one item.");
-        }
-    };
-
-    function calculateTotals() {
-        let subtotal = 0;
-        const taxRate = parseFloat(taxRateInput.value) || 0;
-
-        const rows = itemsBody.querySelectorAll('tr');
-        rows.forEach((row, index) => {
-            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
-            const price = parseFloat(row.querySelector('.item-price').value) || 0;
-            const total = qty * price;
-            subtotal += total;
-            
-            row.querySelector('.item-total-display').textContent = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            
-            // Sync data
-            items[index].description = row.querySelector('.item-desc').value;
-            items[index].quantity = qty;
-            items[index].unit_price = price;
-        });
-
-        const taxAmount = subtotal * (taxRate / 100);
-        const total = subtotal + taxAmount;
-
-        document.getElementById('subtotal-display').textContent = subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('tax-display').textContent = taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('total-display').textContent = total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        
-        lineItemsInput.value = JSON.stringify(items);
+    function updateItem(index, field, value) {
+        lineItems[index][field] = value;
+        calculateTotals();
+        const row = document.getElementById('itemsBody').children[index];
+        const totalSpan = row.querySelector('td:nth-child(4) span');
+        const qty = parseFloat(lineItems[index].quantity) || 0;
+        const price = parseFloat(lineItems[index].unit_price) || 0;
+        totalSpan.innerText = '$' + (qty * price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
-    addItemBtn.addEventListener('click', () => {
-        items.push({ description: '', quantity: 1, unit_price: 0 });
+    function removeItem(index) {
+        if (lineItems.length > 1) {
+            lineItems.splice(index, 1);
+            renderItems();
+        }
+    }
+
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+        lineItems.push({ description: '', quantity: 1, unit_price: 0 });
         renderItems();
     });
 
-    itemsBody.addEventListener('input', calculateTotals);
-    taxRateInput.addEventListener('input', calculateTotals);
-    currencySelect.addEventListener('change', calculateTotals);
+    function calculateTotals() {
+        let subtotal = 0;
+        lineItems.forEach(item => {
+            subtotal += (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+        });
 
-    // Apply modern classes to Django form widgets
-    const inputs = document.querySelectorAll('#edit-invoice-form input:not([type="hidden"]), #edit-invoice-form select, #edit-invoice-form textarea');
-    inputs.forEach(input => {
-        input.classList.add('modern-input');
-        if (input.tagName === 'TEXTAREA') {
-            input.style.minHeight = '100px';
-        }
-    });
+        const taxRate = parseFloat(document.querySelector('input[name="tax_rate"]').value) || 0;
+        const taxAmount = (subtotal * taxRate) / 100;
+        const total = subtotal + taxAmount;
 
-    renderItems();
-});
+        const currency = document.querySelector('select[name="currency"]').value;
+        const symbol = currency === 'USD' ? '$' : currency + ' ';
+        
+        document.getElementById('subtotalDisplay').innerText = `${symbol}${subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        document.getElementById('taxAmountDisplay').innerText = `${symbol}${taxAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        document.getElementById('totalDisplay').innerText = `${symbol}${total.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        
+        document.getElementById('lineItemsInput').value = JSON.stringify(lineItems);
+    }
+
+    function handleFormSubmit(e) {
+        const btn = document.getElementById('generateBtn');
+        const text = document.getElementById('btnText');
+        const spinner = document.getElementById('btnSpinner');
+        const icon = document.getElementById('btnIcon');
+        
+        btn.disabled = true;
+        btn.classList.add('opacity-80', 'cursor-not-allowed');
+        text.innerText = 'Saving Changes...';
+        spinner.classList.remove('hidden');
+        icon.classList.add('hidden');
+        
+        return true;
+    }
+
+    document.querySelector('input[name="tax_rate"]').addEventListener('input', calculateTotals);
+    document.querySelector('select[name="currency"]').addEventListener('change', calculateTotals);
+
+    window.onload = renderItems;
 </script>
+
+<style>
+    .input-modern {
+        @apply block w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 sm:text-sm transition-all py-3 px-4 border font-medium;
+    }
+    .form-input-clean {
+        @apply block w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-400 focus:ring-0 sm:text-sm transition-all py-2 px-1 font-semibold text-slate-700 placeholder:text-slate-300 placeholder:font-normal;
+    }
+</style>
 {% endblock %}
