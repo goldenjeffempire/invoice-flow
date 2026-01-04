@@ -2,769 +2,277 @@
 {% load static %}
 
 {% block title %}Create Invoice - InvoiceFlow{% endblock %}
-
-{% block extra_css %}
-<style>
-    :root {
-        --glass-bg: rgba(255, 255, 255, 0.95);
-        --glass-border: rgba(229, 231, 235, 0.5);
-        --accent-indigo: #6366f1;
-        --accent-emerald: #10b981;
-        --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-    }
-
-    .create-invoice-wrapper {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2.5rem 1.5rem 8rem;
-    }
-
-    .glass-card {
-        background: white;
-        border: 1px solid #f1f5f9;
-        border-radius: 24px;
-        box-shadow: var(--card-shadow);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-    }
-
-    .glass-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
-        border-color: #e0e7ff;
-    }
-
-    .card-accent-header {
-        padding: 1.5rem 2rem;
-        background: #fafafa;
-        border-bottom: 1px solid #f1f5f9;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .icon-box {
-        width: 40px;
-        height: 40px;
-        background: white;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--accent-indigo);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    }
-
-    .input-modern {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        background: #f8fafc;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 12px;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
-        color: #1e293b;
-    }
-
-    .input-modern:focus {
-        background: white;
-        border-color: var(--accent-indigo);
-        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-        outline: none;
-    }
-
-    .item-row-modern {
-        background: white;
-        border-bottom: 1px solid #f1f5f9;
-        transition: all 0.2s ease;
-    }
-
-    .item-row-modern:hover {
-        background: #fcfdfe;
-    }
-
-    .totals-box {
-        margin-left: auto;
-        width: 100%;
-        max-width: 440px;
-        background: #0f172a;
-        color: white;
-        border-radius: 24px;
-        padding: 2.5rem;
-        margin-top: 3rem;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    }
-
-    .total-row.grand-total {
-        margin-top: 1.5rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid rgba(255,255,255,0.1);
-        font-size: 1.75rem;
-        font-weight: 800;
-        color: white;
-    }
-
-    .floating-footer {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        left: 24px;
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(229, 231, 235, 0.5);
-        padding: 1.25rem 2.5rem;
-        border-radius: 24px;
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 1.5rem;
-        z-index: 1000;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-    }
-
-    @media (min-width: 769px) {
-        .floating-footer {
-            left: 304px; /* Sidebar width + gap */
-        }
-    }
-
-    @media (max-width: 1024px) {
-        .invoice-grid { grid-template-columns: 1fr; gap: 1.5rem; }
-    }
-
-    @media (max-width: 768px) {
-        .floating-footer { 
-            left: 1.5rem; 
-            right: 1.5rem;
-            bottom: 1rem;
-            padding: 1rem; 
-            flex-direction: column-reverse;
-            gap: 1rem;
-            border-radius: 1.5rem;
-            align-items: stretch;
-            justify-content: center;
-        }
-        .create-invoice-wrapper { padding: 1.5rem 1rem 12rem; }
-        .btn-generate { width: 100%; justify-content: center; }
-        .totals-box { padding: 1.5rem; margin-top: 2rem; max-width: 100%; }
-        .card-body-padded { padding: 1.5rem; }
-        .items-table th:nth-child(3), .items-table td:nth-child(3) { display: none; }
-    }
-
-    @media (max-width: 480px) {
-        .metrics-grid { grid-template-columns: 1fr; }
-        .analytics-hero { padding: 1.25rem; }
-        .stat-value { font-size: 1.5rem; }
-        .header-title { font-size: 1.25rem; }
-    }
-
-    .pro-tooltip {
-        position: relative;
-        display: inline-block;
-        margin-left: 4px;
-        cursor: help;
-        vertical-align: middle;
-    }
-
-    .tooltip-content {
-        visibility: hidden;
-        opacity: 0;
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%) translateY(0);
-        background: var(--gray-900);
-        color: var(--white);
-        padding: 8px 12px;
-        border-radius: 8px;
-        font-size: 0.7rem;
-        font-weight: 500;
-        white-space: nowrap;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        z-index: 1000;
-        pointer-events: none;
-    }
-
-    .drag-handle {
-        cursor: grab;
-        color: #94a3b8;
-        padding: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: color 0.2s;
-    }
-    .drag-handle:active { cursor: grabbing; }
-    .drag-handle:hover { color: #6366f1; }
-    
-    .item-row-modern.dragging {
-        opacity: 0.5;
-        background: #f8fafc;
-        border: 2px dashed #6366f1;
-    }
-
-    .pro-badge {
-        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-        color: white;
-        padding: 2px 8px;
-        border-radius: 6px;
-        font-size: 0.65rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        margin-left: 8px;
-    }
-
-    /* Additional production-grade styles */
-    .field-error {
-        border-color: #ef4444 !important;
-        background-color: #fef2f2 !important;
-    }
-    .error-text {
-        color: #ef4444;
-        font-size: 0.75rem;
-        margin-top: 4px;
-        font-weight: 500;
-    }
-    .btn-loading {
-        position: relative;
-        color: transparent !important;
-        pointer-events: none;
-    }
-    .btn-loading::after {
-        content: "";
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        top: 50%;
-        left: 50%;
-        margin-top: -10px;
-        margin-left: -10px;
-        border: 2px solid rgba(255,255,255,0.3);
-        border-radius: 50%;
-        border-top-color: #fff;
-        animation: spin 0.6s linear infinite;
-    }
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-</style>
-{% endblock %}
+{% block page_title %}Create Invoice{% endblock %}
+{% block page_subtitle %}Generate a professional, production-ready document{% endblock %}
 
 {% block content %}
-<div class="content-container">
-    <div class="create-invoice-wrapper">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Create Invoice</h1>
-                <p class="text-gray-500 mt-1">Generate a professional, production-ready invoice</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 uppercase tracking-wider">
-                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2"></span>
-                    Draft Mode
-                </span>
-                <button type="button" class="p-2 text-gray-400 hover:text-gray-600 transition-colors" title="Settings">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                </button>
-            </div>
-        </div>
-
-        <form method="POST" id="create-invoice-form" class="space-y-6" novalidate>
-            {% csrf_token %}
-            <input type="hidden" name="line_items" id="line-items-json">
-
-            <div class="invoice-grid">
-                <!-- From Section -->
-                <div class="glass-card">
-                    <div class="card-accent-header">
-                        <div class="icon-box">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v1a3 3 0 006 0V7m6 0v1a3 3 0 006 0V7m-9 0h.01M4 21V10m16 11V10m-8 11V10"/></svg>
-                        </div>
-                        <h2 class="text-lg font-bold text-gray-900">Your Business Details</h2>
-                    </div>
-                    <div class="card-body-padded">
-                        <div class="form-group-modern">
-                            <label class="label-modern">Business Name</label>
-                            <input type="text" name="business_name" class="input-modern" value="{{ user.profile.company_name|default:'' }}" required>
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Business Email</label>
-                            <input type="email" name="business_email" class="input-modern" value="{{ user.profile.business_email|default:user.email }}" required>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div class="form-group-modern">
-                                <label class="label-modern">Phone Number</label>
-                                <input type="text" name="business_phone" class="input-modern" value="{{ user.profile.business_phone|default:'' }}">
+<div class="max-w-6xl mx-auto pb-24">
+    <form id="invoiceForm" method="POST" class="space-y-8" onsubmit="return handleFormSubmit(event)">
+        {% csrf_token %}
+        <input type="hidden" name="line_items" id="lineItemsInput">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left: Primary Details -->
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Parties -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-white rounded-lg border border-slate-200 text-indigo-600 shadow-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                             </div>
-                            <div class="form-group-modern">
-                                <label class="label-modern">Tax ID (Optional)</label>
-                                <input type="text" name="tax_id" class="input-modern" value="{{ user.profile.tax_id|default:'' }}" placeholder="VAT-12345">
-                            </div>
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Address</label>
-                            <textarea name="business_address" class="input-modern min-h-[100px]" required>{{ user.profile.business_address|default:'' }}</textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- To Section -->
-                <div class="glass-card">
-                    <div class="card-accent-header justify-between">
-                        <div class="flex items-center gap-4">
-                            <div class="icon-box">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                            </div>
-                            <h2 class="text-lg font-bold text-gray-900">Client Information</h2>
+                            <h2 class="text-sm font-black text-slate-900 uppercase tracking-tight">Billing Details</h2>
                         </div>
                         {% if recent_clients %}
-                        <select id="recent-clients-select" class="text-sm border-gray-200 rounded-lg focus:ring-primary-500 focus:border-primary-500">
+                        <select onchange="fillClient(this)" class="text-xs border-slate-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white">
                             <option value="">Choose Recent Client</option>
-                            {% for client in recent_clients %}
-                                <option value="{{ client.id }}" 
-                                        data-name="{{ client.client_name }}" 
-                                        data-email="{{ client.client_email }}" 
-                                        data-phone="{{ client.client_phone }}" 
-                                        data-address="{{ client.client_address }}">
-                                    {{ client.client_name }}
-                                </option>
+                            {% for c in recent_clients %}
+                            <option value="{{ c.id }}" data-name="{{ c.client_name }}" data-email="{{ c.client_email }}" data-address="{{ c.client_address }}">{{ c.client_name }}</option>
                             {% endfor %}
                         </select>
                         {% endif %}
                     </div>
-                    <div class="card-body-padded">
-                        <div class="form-group-modern">
-                            <label class="label-modern">Client Name</label>
-                            <input type="text" name="client_name" id="id_client_name" class="input-modern" placeholder="e.g. Acme Corp" required>
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Client Email</label>
-                            <input type="email" name="client_email" id="id_client_email" class="input-modern" placeholder="client@example.com" required>
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Phone Number</label>
-                            <input type="text" name="client_phone" id="id_client_phone" class="input-modern" placeholder="+1 (555) 000-0000">
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Billing Address</label>
-                            <textarea name="client_address" id="id_client_address" class="input-modern min-h-[100px]" placeholder="123 Client St, City, Country" required></textarea>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings Section -->
-            <div class="glass-card">
-                <div class="card-accent-header">
-                    <div class="icon-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    </div>
-                    <h2 class="text-lg font-bold text-gray-900">Invoice Configuration</h2>
-                </div>
-                <div class="card-body-padded">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div class="form-group-modern">
-                            <label class="label-modern">Invoice Date</label>
-                            <input type="date" name="invoice_date" class="input-modern" value="{% now 'Y-m-d' %}" required>
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Due Date</label>
-                            <input type="date" name="due_date" class="input-modern" value="{% now 'Y-m-d' %}" required>
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Currency</label>
-                            <select name="currency" class="input-modern" required>
-                                <option value="USD">USD - US Dollar</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - British Pound</option>
-                                <option value="NGN" selected>NGN - Nigerian Naira</option>
-                                <option value="CAD">CAD - Canadian Dollar</option>
-                            </select>
-                        </div>
-                        <div class="form-group-modern flex flex-col pt-2">
-                            <label class="relative inline-flex items-center cursor-pointer mb-4">
-                                <input type="checkbox" name="automated_reminders_enabled" class="sr-only peer" checked onchange="toggleReminderSettings(this)">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                                <span class="ml-3 text-sm font-semibold text-gray-700">Auto Reminders</span>
-                            </label>
-                            
-                            <div id="reminder-options" class="space-y-4 p-4 bg-gray-50 rounded-xl border border-gray-100 transition-all">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="label-modern !mb-1">Before Due</label>
-                                        <select name="remind_before_days" class="input-modern !py-2 !text-xs">
-                                            <option value="3">3 days before</option>
-                                            <option value="1">1 day before</option>
-                                            <option value="0">Disabled</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="label-modern !mb-1">After Due</label>
-                                        <select name="remind_after_days" class="input-modern !py-2 !text-xs">
-                                            <option value="3">Every 3 days</option>
-                                            <option value="7" selected>Every 7 days</option>
-                                            <option value="0">Disabled</option>
-                                        </select>
-                                    </div>
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <!-- From -->
+                        <div class="space-y-4">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">Sender (You)</label>
+                            <div class="space-y-4">
+                                <div class="space-y-1">
+                                    <span class="text-[11px] font-bold text-slate-500 ml-1">Business Name</span>
+                                    <input type="text" name="business_name" class="input-modern" value="{{ user.profile.company_name|default:'' }}" required>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <input type="checkbox" name="remind_exclude_weekends" id="ex-weekends" class="rounded text-primary-600" checked>
-                                    <label for="ex-weekends" class="text-xs font-medium text-gray-600">Exclude weekends</label>
+                                <div class="space-y-1">
+                                    <span class="text-[11px] font-bold text-slate-500 ml-1">Email</span>
+                                    <input type="email" name="business_email" class="input-modern" value="{{ user.profile.business_email|default:user.email }}" required>
+                                </div>
+                                <div class="space-y-1">
+                                    <span class="text-[11px] font-bold text-slate-500 ml-1">Address</span>
+                                    <textarea name="business_address" class="input-modern min-h-[80px]" required>{{ user.profile.business_address|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- To -->
+                        <div class="space-y-4">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">Recipient (Client)</label>
+                            <div class="space-y-4">
+                                <div class="space-y-1">
+                                    <span class="text-[11px] font-bold text-slate-500 ml-1">Client Name</span>
+                                    <input type="text" name="client_name" id="c_name" class="input-modern" placeholder="Acme Corp" required>
+                                </div>
+                                <div class="space-y-1">
+                                    <span class="text-[11px] font-bold text-slate-500 ml-1">Client Email</span>
+                                    <input type="email" name="client_email" id="c_email" class="input-modern" placeholder="billing@client.com" required>
+                                </div>
+                                <div class="space-y-1">
+                                    <span class="text-[11px] font-bold text-slate-500 ml-1">Client Address</span>
+                                    <textarea name="client_address" id="c_address" class="input-modern min-h-[80px]" placeholder="123 Street, City" required></textarea>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <script>
-                        function toggleReminderSettings(checkbox) {
-                            const options = document.getElementById('reminder-options');
-                            if (checkbox.checked) {
-                                options.style.opacity = '1';
-                                options.style.pointerEvents = 'auto';
-                                options.style.transform = 'translateY(0)';
-                            } else {
-                                options.style.opacity = '0.5';
-                                options.style.pointerEvents = 'none';
-                                options.style.transform = 'translateY(-5px)';
-                            }
-                        }
-                    </script>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
-                        <div class="form-group-modern">
-                            <label class="label-modern">Tax Rate (%)</label>
-                            <input type="number" name="tax_rate" class="input-modern" value="{{ user.profile.default_tax_rate|default:0 }}" min="0" max="100" step="0.01">
-                        </div>
-                        <div class="form-group-modern">
-                            <label class="label-modern">Discount (%)</label>
-                            <input type="number" name="discount" class="input-modern" value="0" min="0" max="100" step="0.01">
-                        </div>
-                    </div>
                 </div>
-            </div>
 
-            <!-- Items Section -->
-            <div class="glass-card">
-                <div class="card-accent-header justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="icon-box">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <!-- Items -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-white rounded-lg border border-slate-200 text-indigo-600 shadow-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                            </div>
+                            <h2 class="text-sm font-black text-slate-900 uppercase tracking-tight">Line Items</h2>
                         </div>
-                        <h2 class="text-lg font-bold text-gray-900">Line Items</h2>
+                        <button type="button" id="addItemBtn" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-indigo-600 hover:bg-slate-50 transition-all shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Add Row
+                        </button>
                     </div>
-                    <button type="button" id="copy-previous-btn" class="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-all">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                    Copy Previous
-                </button>
-                <button type="button" id="add-item-btn" class="btn-add-item !mt-0">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Add Item
-                    </button>
-                </div>
-                <div class="card-body-padded">
-                    <div class="items-container">
-                        <table class="items-table">
-                            <thead>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left" id="itemsTable">
+                            <thead class="bg-slate-50 border-b border-slate-100">
                                 <tr>
-                                    <th style="width: 50%;">Description</th>
-                                    <th style="width: 15%;">Quantity</th>
-                                    <th style="width: 15%;">Unit Price</th>
-                                    <th style="width: 15%; text-align: right;">Amount</th>
-                                    <th style="width: 5%;"></th>
+                                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-1/2">Description</th>
+                                    <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-24 text-center">Qty</th>
+                                    <th class="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-32 text-right">Price</th>
+                                    <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest w-32 text-right">Total</th>
+                                    <th class="px-4 py-4 w-12"></th>
                                 </tr>
                             </thead>
-                            <tbody id="line-items-body">
-                                <!-- Items will be rendered here by JS -->
+                            <tbody id="itemsBody" class="divide-y divide-slate-100">
+                                <!-- Dynamic JS Render -->
                             </tbody>
                         </table>
                     </div>
-
-                    <div class="totals-box">
-                        <div class="total-row">
-                            <span>Subtotal</span>
-                            <span id="subtotal-display">0.00</span>
-                        </div>
-                        <div class="total-row">
-                            <span>Discount (<span id="discount-rate-badge">0</span>%)</span>
-                            <span id="discount-display" class="text-red-400">-0.00</span>
-                        </div>
-                        <div class="total-row">
-                            <span>Tax (<span id="tax-rate-badge">0</span>%)</span>
-                            <span id="tax-display">0.00</span>
-                        </div>
-                        <div class="total-row grand-total">
-                            <span>Total Due</span>
-                            <span id="total-display">0.00</span>
+                    <div class="p-8 border-t border-slate-100 bg-slate-50/30">
+                        <div class="flex flex-col md:flex-row justify-between gap-10">
+                            <div class="flex-1 space-y-2">
+                                <span class="text-[11px] font-bold text-slate-500 ml-1">Notes & Payment Terms</span>
+                                <textarea name="notes" class="input-modern min-h-[100px]" placeholder="Add special notes or terms..."></textarea>
+                            </div>
+                            <div class="w-full md:w-72 space-y-4">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-500 font-bold text-[10px] uppercase tracking-widest">Subtotal</span>
+                                    <span id="subtotalDisplay" class="font-bold text-slate-900">$0.00</span>
+                                </div>
+                                <div class="flex justify-between items-center gap-4">
+                                    <div class="flex items-center gap-2 flex-1">
+                                        <span class="text-slate-500 font-bold text-[10px] uppercase tracking-widest">Discount (%)</span>
+                                        <input type="number" name="discount" class="input-modern !py-1 text-center" value="0" step="0.01">
+                                    </div>
+                                    <span id="discountAmountDisplay" class="font-bold text-rose-600">-$0.00</span>
+                                </div>
+                                <div class="flex justify-between items-center gap-4">
+                                    <div class="flex items-center gap-2 flex-1">
+                                        <span class="text-slate-500 font-bold text-[10px] uppercase tracking-widest">Tax (%)</span>
+                                        <input type="number" name="tax_rate" class="input-modern !py-1 text-center" value="{{ user.profile.default_tax_rate|default:0 }}" step="0.01">
+                                    </div>
+                                    <span id="taxAmountDisplay" class="font-bold text-slate-900">$0.00</span>
+                                </div>
+                                <div class="pt-6 border-t-2 border-slate-900 flex justify-between items-center">
+                                    <span class="text-xs font-black text-slate-900 uppercase tracking-widest">Total Amount</span>
+                                    <span id="totalDisplay" class="text-3xl font-black text-indigo-600 tracking-tighter">$0.00</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Notes Section -->
-            <div class="glass-card">
-                <div class="card-accent-header">
-                    <div class="icon-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <!-- Right: Config & Submit -->
+            <div class="space-y-8">
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-8 sticky top-28">
+                    <div class="space-y-6">
+                        <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Invoice Setup</h3>
+                        <div class="space-y-4">
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-bold text-slate-500 ml-1">Currency</span>
+                                <select name="currency" class="input-modern" required>
+                                    <option value="USD" selected>USD - US Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                    <option value="NGN">NGN - Nigerian Naira</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-bold text-slate-500 ml-1">Issue Date</span>
+                                <input type="date" name="invoice_date" class="input-modern" value="{% now 'Y-m-d' %}" required>
+                            </div>
+                            <div class="space-y-1">
+                                <span class="text-[11px] font-bold text-slate-500 ml-1">Due Date</span>
+                                <input type="date" name="due_date" class="input-modern" value="{{ default_due_date|date:'Y-m-d' }}" required>
+                            </div>
+                        </div>
                     </div>
-                    <h2 class="text-lg font-bold text-gray-900">Notes & Terms</h2>
-                </div>
-                <div class="card-body-padded">
-                    <textarea name="notes" class="input-modern min-h-[120px]" placeholder="Add payment instructions, terms, or a thank you message..."></textarea>
-                </div>
-            </div>
 
-            <!-- Action Footer -->
-            <div class="floating-footer">
-                <input type="hidden" name="status" id="invoice-status" value="unpaid">
-                <div class="hidden sm:flex items-center text-xs text-gray-400 mr-4 font-medium" id="autosave-status">
-                    All changes synced
+                    <div class="space-y-3">
+                        <button type="submit" id="saveBtn" class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black text-sm hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 group">
+                            <span id="btnText">Create Invoice</span>
+                            <svg id="btnSpinner" class="hidden animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <svg id="btnIcon" class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                        <a href="{% url 'invoices:invoice_list' %}" class="w-full flex items-center justify-center px-6 py-3 text-slate-400 font-bold text-sm hover:text-slate-600 transition-all">Cancel</a>
+                    </div>
                 </div>
-                <a href="{% url 'invoices:invoice_list' %}" class="px-6 py-3 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">Discard Draft</a>
-                <button type="button" id="submit-btn" class="btn-generate" onclick="validateAndSubmit()">
-                    <span class="btn-text">Generate Invoice</span>
-                    <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="12" y1="18" x2="12" y2="12"></line>
-                        <line x1="9" y1="15" x2="15" y2="15"></line>
-                    </svg>
-                </button>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<style>
+    .input-modern { @apply block w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white transition-all outline-none; }
+    .item-input { @apply block w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-400 focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-300 transition-all py-2; }
+</style>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('create-invoice-form');
-        const itemsBody = document.getElementById('line-items-body');
-        const addItemBtn = document.getElementById('add-item-btn');
-        const lineItemsInput = document.getElementById('line-items-json');
-        const taxRateInput = document.querySelector('input[name="tax_rate"]');
-        const discountInput = document.querySelector('input[name="discount"]');
-        const recentClientsSelect = document.getElementById('recent-clients-select');
-        const submitBtn = document.getElementById('submit-btn');
-        const autosaveStatus = document.getElementById('autosave-status');
-        
-        let items = [{ description: '', quantity: 1, unit_price: 0 }];
-
-        function updateTotals() {
-            let subtotal = 0;
-            items.forEach(item => {
-                subtotal += (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
-            });
-            
-            const taxRate = parseFloat(taxRateInput.value) || 0;
-            const discountRate = parseFloat(discountInput.value) || 0;
-            
-            const discountAmount = (subtotal * discountRate) / 100;
-            const subtotalAfterDiscount = subtotal - discountAmount;
-            const taxAmount = (subtotalAfterDiscount * taxRate) / 100;
-            const total = subtotalAfterDiscount + taxAmount;
-            
-            const localeOptions = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
-            document.getElementById('subtotal-display').textContent = subtotal.toLocaleString(undefined, localeOptions);
-            document.getElementById('discount-display').textContent = '-' + discountAmount.toLocaleString(undefined, localeOptions);
-            document.getElementById('tax-display').textContent = taxAmount.toLocaleString(undefined, localeOptions);
-            document.getElementById('total-display').textContent = total.toLocaleString(undefined, localeOptions);
-            
-            document.getElementById('discount-rate-badge').textContent = discountRate;
-            document.getElementById('tax-rate-badge').textContent = taxRate;
-            
-            lineItemsInput.value = JSON.stringify(items.filter(i => i.description.trim() !== '' || i.unit_price > 0));
-            
-            // Visual feedback for sync
-            if (autosaveStatus) {
-                autosaveStatus.textContent = 'Calculated live...';
-                setTimeout(() => {
-                    autosaveStatus.textContent = 'Ready to generate';
-                }, 1000);
-            }
-        }
+    let lineItems = [{ description: '', quantity: 1, unit_price: 0 }];
 
     function renderItems() {
-        itemsBody.innerHTML = '';
-        items.forEach((item, index) => {
+        const body = document.getElementById('itemsBody');
+        body.innerHTML = '';
+        lineItems.forEach((item, idx) => {
             const row = document.createElement('tr');
-            row.className = 'item-row-modern';
-            row.draggable = true;
-            row.dataset.index = index;
-            
+            row.className = "group hover:bg-slate-50/50 transition-all";
             row.innerHTML = `
-                <td class="drag-handle">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 9h14M5 15h14"/></svg>
+                <td class="px-6 py-4">
+                    <input type="text" class="item-input w-full" value="${item.description}" oninput="updateItem(${idx}, 'description', this.value)" placeholder="Item description...">
                 </td>
-                <td><input type="text" class="input-modern item-desc" value="${item.description}" placeholder="e.g. Consulting Services" data-index="${index}" required></td>
-                <td><input type="number" class="input-modern item-qty" value="${item.quantity}" min="0.01" step="0.01" data-index="${index}" required></td>
-                <td><input type="number" class="input-modern item-price" value="${item.unit_price}" min="0" step="0.01" data-index="${index}" required></td>
-                <td style="text-align: right; font-weight: 700; color: #0f172a;">
-                    ${((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0)).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                <td class="px-4 py-4 text-center">
+                    <input type="number" class="item-input text-center w-full" value="${item.quantity}" step="0.01" oninput="updateItem(${idx}, 'quantity', this.value)">
                 </td>
-                <td style="text-align: right;">
-                    <button type="button" class="btn-remove-item hover:bg-red-50 p-2 rounded-lg transition-colors" data-index="${index}">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M3 6h18m-2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                    </button>
+                <td class="px-4 py-4 text-right">
+                    <input type="number" class="item-input text-right w-full" value="${item.unit_price}" step="0.01" oninput="updateItem(${idx}, 'unit_price', this.value)">
+                </td>
+                <td class="px-6 py-4 text-right">
+                    <span class="text-sm font-black text-slate-900">$${(item.quantity * item.unit_price).toFixed(2)}</span>
+                </td>
+                <td class="px-4 py-4 text-right">
+                    <button type="button" onclick="removeItem(${idx})" class="p-2 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                 </td>
             `;
-            
-            // Drag and Drop Events
-            row.addEventListener('dragstart', (e) => {
-                e.target.classList.add('dragging');
-                e.dataTransfer.setData('text/plain', index);
-            });
-            
-            row.addEventListener('dragend', (e) => {
-                e.target.classList.remove('dragging');
-            });
-            
-            row.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                const draggingItem = document.querySelector('.dragging');
-                const currRow = e.target.closest('tr');
-                if (draggingItem !== currRow) {
-                    const rect = currRow.getBoundingClientRect();
-                    const midpoint = rect.top + rect.height / 2;
-                    if (e.clientY < midpoint) {
-                        itemsBody.insertBefore(draggingItem, currRow);
-                    } else {
-                        itemsBody.insertBefore(draggingItem, currRow.nextSibling);
-                    }
-                }
-            });
-
-            row.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const newItems = [];
-                itemsBody.querySelectorAll('tr').forEach(tr => {
-                    const idx = parseInt(tr.dataset.index);
-                    newItems.push(items[idx]);
-                });
-                items = newItems;
-                renderItems();
-                updateTotals();
-            });
-
-            itemsBody.appendChild(row);
+            body.appendChild(row);
         });
-        
-        // Re-bind events
-        itemsBody.querySelectorAll('.item-desc').forEach(el => el.addEventListener('input', e => {
-            items[e.target.dataset.index].description = e.target.value;
-            updateTotals();
-        }));
-        itemsBody.querySelectorAll('.item-qty').forEach(el => el.addEventListener('input', e => {
-            items[e.target.dataset.index].quantity = parseFloat(e.target.value) || 0;
-            updateTotals();
-            const rowTotalTd = e.target.closest('tr').children[4];
-            rowTotalTd.textContent = (items[e.target.dataset.index].quantity * items[e.target.dataset.index].unit_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }));
-        itemsBody.querySelectorAll('.item-price').forEach(el => el.addEventListener('input', e => {
-            items[e.target.dataset.index].unit_price = parseFloat(e.target.value) || 0;
-            updateTotals();
-            const rowTotalTd = e.target.closest('tr').children[4];
-            rowTotalTd.textContent = (items[e.target.dataset.index].quantity * items[e.target.dataset.index].unit_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-        }));
-        itemsBody.querySelectorAll('.btn-remove-item').forEach(btn => btn.addEventListener('click', e => {
-            const index = parseInt(e.currentTarget.dataset.index);
-            if (items.length > 1) {
-                items.splice(index, 1);
-                renderItems();
-                updateTotals();
-            } else {
-                items[0] = { description: '', quantity: 1, unit_price: 0 };
-                renderItems();
-                updateTotals();
-            }
-        }));
+        calculateTotals();
     }
 
-        addItemBtn.addEventListener('click', () => {
-            items.push({ description: '', quantity: 1, unit_price: 0 });
-            renderItems();
-            updateTotals();
-            // Focus on new item
-            const inputs = itemsBody.querySelectorAll('.item-desc');
-            inputs[inputs.length - 1].focus();
-        });
-
-        const copyPreviousBtn = document.getElementById('copy-previous-btn');
-        
-        if (copyPreviousBtn) {
-            copyPreviousBtn.addEventListener('click', async () => {
-                copyPreviousBtn.classList.add('btn-loading');
-                try {
-                    const response = await fetch('/invoices/create/load-template/?prev=1');
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.items && data.items.length > 0) {
-                            items = data.items;
-                            renderItems();
-                            updateTotals();
-                        }
-                    }
-                } catch (e) {
-                    console.error('Failed to load previous invoice items', e);
-                } finally {
-                    copyPreviousBtn.classList.remove('btn-loading');
-                }
-            });
-        }
-
-        if (recentClientsSelect) {
-            recentClientsSelect.addEventListener('change', function() {
-                const option = this.options[this.selectedIndex];
-                if (option.value) {
-                    document.getElementById('id_client_name').value = option.dataset.name;
-                    document.getElementById('id_client_email').value = option.dataset.email;
-                    document.getElementById('id_client_phone').value = option.dataset.phone;
-                    document.getElementById('id_client_address').value = option.dataset.address;
-                }
-            });
-        }
-
-        window.validateAndSubmit = function() {
-            let isValid = true;
-            const requiredFields = form.querySelectorAll('[required]');
-            
-            requiredFields.forEach(field => {
-                if (!field.value.trim()) {
-                    field.classList.add('field-error');
-                    isValid = false;
-                } else {
-                    field.classList.remove('field-error');
-                }
-            });
-
-            if (items.length === 0 || (items.length === 1 && !items[0].description.trim())) {
-                alert('Please add at least one line item with a description.');
-                isValid = false;
-            }
-
-            if (!isValid) {
-                const firstError = form.querySelector('.field-error');
-                if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
-            }
-
-            // Enhanced loading state
-            submitBtn.classList.add('btn-loading');
-            submitBtn.disabled = true;
-            if (btnText) btnText.textContent = 'Processing...';
-            
-            form.submit();
-        };
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            validateAndSubmit();
-        });
-
-        // Initialize
+    function updateItem(idx, field, val) {
+        lineItems[idx][field] = val;
         renderItems();
-        updateTotals();
+    }
+
+    function removeItem(idx) {
+        if (lineItems.length > 1) {
+            lineItems.splice(idx, 1);
+            renderItems();
+        }
+    }
+
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+        lineItems.push({ description: '', quantity: 1, unit_price: 0 });
+        renderItems();
     });
+
+    function calculateTotals() {
+        let subtotal = 0;
+        lineItems.forEach(i => subtotal += (parseFloat(i.quantity) || 0) * (parseFloat(i.unit_price) || 0));
+        
+        const discountRate = parseFloat(document.querySelector('input[name="discount"]').value) || 0;
+        const taxRate = parseFloat(document.querySelector('input[name="tax_rate"]').value) || 0;
+        
+        const discAmount = (subtotal * discountRate) / 100;
+        const taxAmount = ((subtotal - discAmount) * taxRate) / 100;
+        const total = subtotal - discAmount + taxAmount;
+        
+        const cur = document.querySelector('select[name="currency"]').value;
+        const sym = cur === 'USD' ? '$' : cur + ' ';
+        
+        document.getElementById('subtotalDisplay').textContent = sym + subtotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('discountAmountDisplay').textContent = '-' + sym + discAmount.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('taxAmountDisplay').textContent = sym + taxAmount.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById('totalDisplay').textContent = sym + total.toLocaleString(undefined, {minimumFractionDigits: 2});
+        
+        document.getElementById('lineItemsInput').value = JSON.stringify(lineItems);
+    }
+
+    document.querySelector('input[name="discount"]').addEventListener('input', calculateTotals);
+    document.querySelector('input[name="tax_rate"]').addEventListener('input', calculateTotals);
+    document.querySelector('select[name="currency"]').addEventListener('change', calculateTotals);
+
+    function fillClient(sel) {
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt.value) return;
+        document.getElementById('c_name').value = opt.dataset.name;
+        document.getElementById('c_email').value = opt.dataset.email;
+        document.getElementById('c_address').value = opt.dataset.address;
+    }
+
+    function handleFormSubmit(e) {
+        const btn = document.getElementById('saveBtn');
+        btn.disabled = true;
+        document.getElementById('btnText').textContent = 'Processing...';
+        document.getElementById('btnSpinner').classList.remove('hidden');
+        document.getElementById('btnIcon').classList.add('hidden');
+        return true;
+    }
+
+    window.onload = renderItems;
 </script>
 {% endblock %}
