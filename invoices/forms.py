@@ -277,6 +277,16 @@ class UserProfileForm(forms.ModelForm):
         ),
     )
 
+    default_currency = forms.ChoiceField(
+        choices=UserProfile.CURRENCY_CHOICES,
+        required=False,
+        widget=forms.Select(
+            attrs={
+                "class": "form-input",
+            }
+        ),
+    )
+
     class Meta:
         model = UserProfile
         fields = [

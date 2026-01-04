@@ -88,6 +88,22 @@ class ContactSubmission(models.Model):
 # ============================================================================
 
 class UserProfile(models.Model):
+    CURRENCY_CHOICES = [
+        ("USD", "$ - US Dollar"),
+        ("EUR", "€ - Euro"),
+        ("GBP", "£ - British Pound"),
+        ("NGN", "₦ - Nigerian Naira"),
+        ("CAD", "C$ - Canadian Dollar"),
+        ("AUD", "A$ - Australian Dollar"),
+        ("INR", "₹ - Indian Rupee"),
+        ("JPY", "¥ - Japanese Yen"),
+        ("ZAR", "R - South African Rand"),
+        ("KES", "KSh - Kenyan Shilling"),
+        ("GHS", "GH₵ - Ghanaian Cedi"),
+        ("BTC", "₿ - Bitcoin"),
+        ("ETH", "Ξ - Ethereum"),
+    ]
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -100,7 +116,7 @@ class UserProfile(models.Model):
     business_phone = models.CharField(max_length=50, blank=True)
     business_address = models.TextField(blank=True)
 
-    default_currency = models.CharField(max_length=3, default="USD")
+    default_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="USD")
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
 
     invoice_prefix = models.CharField(max_length=10, default="INV")

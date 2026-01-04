@@ -308,12 +308,65 @@
                     </div>
                     <div class="field-group">
                         <label class="field-label">Default Currency</label>
-                        {{ profile_form.default_currency }}
+                        <div class="currency-wrapper">
+                            {{ profile_form.default_currency }}
+                            <div id="currency-preview" class="currency-badge">
+                                <span class="currency-symbol"></span>
+                                <span class="currency-code"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <button type="submit" class="btn-save">Update Profile</button>
             </form>
         </section>
+
+        <style>
+            .currency-wrapper {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+            .currency-badge {
+                position: absolute;
+                right: 10px;
+                background: var(--settings-bg-soft);
+                padding: 4px 10px;
+                border-radius: 8px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                display: flex;
+                gap: 5px;
+                pointer-events: none;
+                border: 1px solid var(--settings-border);
+            }
+            .currency-symbol { color: var(--settings-accent); }
+        </style>
+
+        <script>
+            function updateCurrencyPreview() {
+                const select = document.querySelector('[name="default_currency"]');
+                const badge = document.getElementById('currency-preview');
+                const symbolSpan = badge.querySelector('.currency-symbol');
+                const codeSpan = badge.querySelector('.currency-code');
+                
+                if (select && select.selectedOptions[0]) {
+                    const text = select.selectedOptions[0].text;
+                    const parts = text.split(' - ');
+                    const symbolAndCode = parts[0].split(' ');
+                    symbolSpan.textContent = symbolAndCode[0];
+                    codeSpan.textContent = symbolAndCode[1] || parts[0];
+                }
+            }
+            
+            document.addEventListener('DOMContentLoaded', () => {
+                const currencySelect = document.querySelector('[name="default_currency"]');
+                if (currencySelect) {
+                    currencySelect.addEventListener('change', updateCurrencyPreview);
+                    updateCurrencyPreview();
+                }
+            });
+        </script>
 
         <!-- Payouts Section -->
         <section id="section-payments" class="settings-section" style="display: none;">
