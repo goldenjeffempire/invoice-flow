@@ -1761,51 +1761,89 @@ def newsletter_signup(request):
 
 @login_required
 def analytics(request):
-    from invoices.services import AnalyticsService
+    """Professional analytics dashboard with revenue visualizations."""
+    from django.db.models import Sum, Count, F, Q
+    from django.db.models.functions import TruncMonth
+    from datetime import datetime, timedelta
+    from decimal import Decimal
+    import json
+    import calendar
+    
+    # Time range
+    now = timezone.now()
+    twelve_months_ago = now - timedelta(days=365)
+    
+    # Revenue by Month
+    monthly_revenue = Invoice.objects.filter(
+        user=request.user,
+        status=Invoice.Status.PAID,
+        invoice_date__gte=twelve_months_ago
+    ).annotate(
+        month=TruncMonth('invoice_date')
+    ).values('month').annotate(
+        revenue=Sum(F('line_items__quantity') * F('line_items__unit_price'))
+    ).order_by('month')
+    
+    # Ensure all 12 months are represented even if zero
+    months_map = {}
+    for i in range(11, -1, -1):
+        target_month = (now.replace(day=1) - timedelta(days=30*i)).replace(day=1)
+        months_map[target_month.date()] = 0
+        
+    for entry in monthly_revenue:
+        months_map[entry['month']] = float(entry['revenue'] or 0)
+        
+    sorted_months = sorted(months_map.items())
+    chart_labels = [m[0].strftime('%b %Y') for m in sorted_months]
+    chart_data = [m[1] for m in sorted_months]
 
-    # Get optimized analytics stats
-    stats = AnalyticsService.get_user_analytics_stats(request.user)
-    top_clients = AnalyticsService.get_top_clients(request.user, limit=10)
+    # Client Revenue Distribution
+    client_revenue = Invoice.objects.filter(
+        user=request.user,
+        status=Invoice.Status.PAID
+    ).values('client_name').annotate(
+        revenue=Sum(F('line_items__quantity') * F('line_items__unit_price'))
+    ).order_by('-revenue')[:5]
+    
+    client_labels = [c['client_name'] for c in client_revenue]
+    client_data = [float(c['revenue'] or 0) for c in client_revenue]
 
-    # Get monthly trend data
-    invoices = Invoice.objects.filter(user=request.user)
-    now = datetime.now()
+    # Overview Stats
+    total_revenue = Invoice.objects.filter(
+        user=request.user, 
+        status=Invoice.Status.PAID
+    ).aggregate(
+        total=Sum(F('line_items__quantity') * F('line_items__unit_price'))
+    )['total'] or Decimal('0')
+    
+    total_pending = Invoice.objects.filter(
+        user=request.user, 
+        status=Invoice.Status.UNPAID
+    ).aggregate(
+        total=Sum(F('line_items__quantity') * F('line_items__unit_price'))
+    )['total'] or Decimal('0')
 
-    monthly_data_raw = (
-        invoices.annotate(month=TruncMonth("invoice_date"))
-        .values("month")
-        .annotate(count=Count("id"))
-        .order_by("month")
-    )
-
-    data_by_month = {}
-    for item in monthly_data_raw:
-        if item["month"]:
-            month_date = item["month"].date() if hasattr(item["month"], "date") else item["month"]
-            key = (month_date.year, month_date.month)
-            data_by_month[key] = item["count"]
-
-    monthly_labels = []
-    monthly_data = []
-
-    for i in range(6, -1, -1):
-        year = now.year
-        month = now.month - i
-        while month < 1:
-            month += 12
-            year -= 1
-
-        month_name = calendar.month_name[month][:3] + " " + str(year)
-        monthly_labels.append(month_name)
-
-        count = data_by_month.get((year, month), 0)
-        monthly_data.append(count)
-
-    recent_invoices = invoices.prefetch_related("line_items").order_by("-created_at")[:10]
+    # Get recent feedback for the dashboard
+    from .models import UserFeedback, EngagementMetric
+    recent_feedback = UserFeedback.objects.filter(user=request.user).order_by('-timestamp')[:5]
+    engagement_stats = EngagementMetric.objects.filter(user=request.user).values('metric_type').annotate(count=Count('id')).order_by('-count')
 
     context = {
-        "total_invoices": stats["total_invoices"],
-        "paid_invoices": stats["paid_invoices"],
+        "active": "analytics",
+        "page_title": "Revenue Analytics",
+        "page_subtitle": "Real-time financial performance and trends",
+        "total_revenue": total_revenue,
+        "total_pending": total_pending,
+        "chart_labels": json.dumps(chart_labels),
+        "chart_data": json.dumps(chart_data),
+        "client_labels": json.dumps(client_labels),
+        "client_data": json.dumps(client_data),
+        "recent_feedback": recent_feedback,
+        "engagement_stats": engagement_stats,
+        "currency": request.user.profile.default_currency if hasattr(request.user, 'profile') else "$"
+    }
+    return render(request, "invoices/analytics.html", context)
+
         "unpaid_invoices": stats["unpaid_invoices"],
         "total_revenue": stats["total_revenue"],
         "outstanding_amount": stats["outstanding_amount"],

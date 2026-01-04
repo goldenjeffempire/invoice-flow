@@ -1,294 +1,192 @@
 {% extends "base/layout-authenticated.html" %}
 {% load static %}
 
-{% block title %}Business Analytics - InvoiceFlow{% endblock %}
-{% block page_title %}Business Analytics{% endblock %}
-{% block page_subtitle %}Deep dive into your revenue and client performance metrics{% endblock %}
+{% block title %}Revenue Analytics - InvoiceFlow{% endblock %}
 
 {% block extra_css %}
 <style>
-    :root {
-        --analytics-accent: #6366f1;
-        --analytics-border: #e2e8f0;
-        --analytics-bg-soft: #f8fafc;
-        --analytics-text-primary: #0f172a;
-        --analytics-text-secondary: #64748b;
-    }
-
-    .analytics-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 1.5rem;
-        animation: fadeIn 0.4s ease-out;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
     .analytics-grid {
         display: grid;
-        grid-template-columns: 2fr 1fr;
+        grid-template-columns: repeat(12, 1fr);
         gap: 1.5rem;
-        margin-top: 2rem;
+        margin-bottom: 2rem;
     }
-
-    .analytics-card {
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1.25rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .stat-value {
+        font-size: 1.875rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-top: 0.5rem;
+    }
+    .chart-card {
         background: white;
         padding: 2rem;
-        border-radius: 24px;
-        border: 1px solid var(--analytics-border);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border-radius: 1.5rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     }
-
-    .analytics-card-header {
-        margin-bottom: 2rem;
+    .chart-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 1.5rem;
     }
-
-    .analytics-card-title {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: var(--analytics-text-primary);
-        letter-spacing: -0.02em;
-    }
-
-    .chart-container {
-        height: 350px;
-        position: relative;
-    }
-
-    .client-list {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .client-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .client-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .client-name {
+    .chart-title {
+        font-size: 1.125rem;
         font-weight: 700;
-        color: var(--analytics-text-primary);
-        font-size: 0.95rem;
-    }
-
-    .client-value {
-        font-weight: 800;
-        color: var(--analytics-accent);
-        font-size: 0.95rem;
-    }
-
-    .progress-track {
-        width: 100%;
-        height: 10px;
-        background: var(--analytics-bg-soft);
-        border-radius: 999px;
-        overflow: hidden;
-    }
-
-    .progress-fill {
-        height: 100%;
-        background: var(--analytics-accent);
-        border-radius: 999px;
-        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Mobile Adaptations */
-    @media (max-width: 1200px) {
-        .analytics-grid { grid-template-columns: 1fr; }
-    }
-
-    @media (max-width: 640px) {
-        .analytics-container { padding: 1rem; }
-        .analytics-card { padding: 1.5rem; }
-        .chart-container { height: 280px; }
+        color: #0f172a;
     }
 </style>
 {% endblock %}
 
+{% block page_title %}Revenue Analytics{% endblock %}
+{% block page_subtitle %}Real-time financial performance and business trends{% endblock %}
+
 {% block content %}
-<div class="content-container">
-    <div class="analytics-container">
-    <div class="metrics-grid">
-        <div class="metric-card hover-scale">
-            <div class="metric-header">
-                <div class="metric-icon-wrapper revenue">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                </div>
-                <div class="metric-trend positive">+{{ collection_rate|default:100 }}%</div>
-            </div>
-            <div>
-                <span class="metric-title">Total Revenue</span>
-                <div class="metric-value">{{ currency|default:"$" }} {{ total_revenue|floatformat:2|default:"0.00" }}</div>
-            </div>
+<div class="analytics-grid">
+    <div class="stat-card col-span-12 md:col-span-4">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Revenue</span>
+        <div class="stat-value text-indigo-600">{{ currency }}{{ total_revenue|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card col-span-12 md:col-span-4">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Amount</span>
+        <div class="stat-value text-amber-600">{{ currency }}{{ total_pending|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card col-span-12 md:col-span-4">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Engagement Rate</span>
+        <div class="stat-value text-emerald-600">{{ engagement_stats.0.count|default:0 }} Events</div>
+    </div>
+</div>
+
+<div class="analytics-grid">
+    <div class="chart-card col-span-12 lg:col-span-8">
+        <div class="chart-header">
+            <h3 class="chart-title">Revenue Growth (12 Months)</h3>
         </div>
-        <div class="metric-card hover-scale">
-            <div class="metric-header">
-                <div class="metric-icon-wrapper invoices">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                </div>
-            </div>
-            <div>
-                <span class="metric-title">Engagement (Avg Rating)</span>
-                <div class="metric-value">{{ avg_rating|default:"0.0" }} / 5.0</div>
-            </div>
-        </div>
-        <div class="metric-card hover-scale">
-            <div class="metric-header">
-                <div class="metric-icon-wrapper overdue">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                </div>
-                <div class="metric-trend negative">{{ overdue_ratio|default:0 }}%</div>
-            </div>
-            <div>
-                <span class="metric-title">Overdue Ratio</span>
-                <div class="metric-value">{{ overdue_ratio|default:0 }}%</div>
-            </div>
+        <div style="height: 400px; width: 100%;">
+            <canvas id="revenueChart"></canvas>
         </div>
     </div>
-
-    <div class="analytics-grid">
-        <!-- Revenue Trend Chart -->
-        <div class="analytics-card">
-            <div class="analytics-card-header">
-                <h3 class="analytics-card-title">User Feedback</h3>
-                <div style="font-size: 0.85rem; color: var(--analytics-text-secondary); font-weight: 600;">Recent Submissions</div>
-            </div>
-            <div class="client-list">
-                {% for feedback in recent_feedback %}
-                <div class="client-item" style="border-bottom: 1px solid var(--analytics-border); padding-bottom: 1rem;">
-                    <div class="client-header">
-                        <span class="client-name">Rating: {{ feedback.rating }} ★</span>
-                        <span class="client-value" style="font-size: 0.75rem;">{{ feedback.timestamp|timesince }} ago</span>
-                    </div>
-                    <p style="font-size: 0.85rem; color: var(--analytics-text-secondary);">{{ feedback.comment|truncatechars:100 }}</p>
-                </div>
-                {% empty %}
-                <p style="text-align: center; color: var(--analytics-text-secondary);">No feedback yet.</p>
-                {% endfor %}
-            </div>
+    <div class="chart-card col-span-12 lg:col-span-4">
+        <div class="chart-header">
+            <h3 class="chart-title">Top Clients Distribution</h3>
         </div>
-
-        <!-- Top Clients -->
-        <div class="analytics-card">
-            <div class="analytics-card-header">
-                <h3 class="analytics-card-title">Engagement Distribution</h3>
-            </div>
-            <div class="client-list">
-                {% for stat in engagement_stats %}
-                <div class="client-item">
-                    <div class="client-header">
-                        <span class="client-name">{{ stat.metric_type|title }}</span>
-                        <span class="client-value">{{ stat.count }} events</span>
-                    </div>
-                    <div class="progress-track">
-                        <div class="progress-fill" style="width: 100%"></div>
-                    </div>
-                </div>
-                {% empty %}
-                <p style="text-align: center; color: var(--analytics-text-secondary);">No engagement data.</p>
-                {% endfor %}
-            </div>
+        <div style="height: 400px; width: 100%;">
+            <canvas id="clientChart"></canvas>
         </div>
     </div>
+</div>
 
-</div>
-</div>
+<div class="analytics-grid">
+    <div class="chart-card col-span-12">
+        <div class="chart-header">
+            <h3 class="chart-title">Recent Feedback & Engagement</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-xs font-bold text-slate-500 uppercase border-b">
+                        <th class="pb-3">Client/User</th>
+                        <th class="pb-3">Rating</th>
+                        <th class="pb-3">Comment</th>
+                        <th class="pb-3">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for feedback in recent_feedback %}
+                    <tr class="border-b last:border-0">
+                        <td class="py-4 font-medium">{{ feedback.user.username|default:"Anonymous" }}</td>
+                        <td class="py-4">
+                            <span class="px-2 py-1 bg-amber-50 text-amber-700 rounded-md font-bold">{{ feedback.rating }} ★</span>
+                        </td>
+                        <td class="py-4 text-slate-600">{{ feedback.comment|truncatechars:80 }}</td>
+                        <td class="py-4 text-slate-400">{{ feedback.timestamp|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="py-8 text-center text-slate-400">No feedback entries yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}
-{% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const revenueCtx = document.getElementById('growthChart');
-    if (revenueCtx) {
-        const rawData = '{{ revenue_chart_data_json|safe|default:"{\"labels\": [], \"data\": []}" }}';
-        let revenueData;
-        try {
-            revenueData = JSON.parse(rawData);
-        } catch(e) {
-            revenueData = {labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], data: [0, 0, 0, 0, 0, 0]};
-        }
-        
-        const gradient = revenueCtx.getContext('2d').createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.2)');
-        gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
 
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Revenue Line Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
         new Chart(revenueCtx, {
             type: 'line',
             data: {
-                labels: revenueData.labels.length > 0 ? revenueData.labels : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                labels: {{ chart_labels|safe }},
                 datasets: [{
                     label: 'Revenue',
-                    data: revenueData.data.length > 0 ? revenueData.data : [0, 0, 0, 0, 0, 0],
+                    data: {{ chart_data|safe }},
                     borderColor: '#6366f1',
-                    backgroundColor: gradient,
+                    backgroundColor: 'rgba(99, 102, 241, 0.05)',
                     fill: true,
-                    tension: 0.45,
-                    pointRadius: 6,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
                     pointBackgroundColor: '#fff',
-                    pointBorderWidth: 3,
-                    pointHoverRadius: 8,
-                    borderWidth: 4
+                    pointBorderColor: '#6366f1',
+                    pointBorderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index',
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        padding: 16,
-                        backgroundColor: '#0f172a',
-                        titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 14 },
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return '{{ currency|default:"$" }} ' + context.parsed.y.toLocaleString(undefined, {minimumFractionDigits: 2});
-                            }
-                        }
-                    }
-                },
+                plugins: { legend: { display: false } },
                 scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: '#f1f5f9', drawBorder: false },
-                        ticks: { 
-                            padding: 10,
-                            font: { size: 12, weight: '600', family: 'Inter' },
-                            color: '#64748b'
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { borderDash: [5, 5], color: '#f1f5f9' },
+                        ticks: {
+                            callback: function(value) { return '{{ currency }}' + value.toLocaleString(); }
                         }
                     },
-                    x: {
-                        grid: { display: false },
-                        ticks: { 
-                            padding: 10,
-                            font: { size: 12, weight: '600', family: 'Inter' },
-                            color: '#64748b'
-                        }
-                    }
+                    x: { grid: { display: false } }
                 }
             }
         });
-    }
-});
+
+        // Client Doughnut Chart
+        const clientCtx = document.getElementById('clientChart').getContext('2d');
+        new Chart(clientCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ client_labels|safe }},
+                datasets: [{
+                    data: {{ client_data|safe }},
+                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true, font: { weight: '600' } } }
+                },
+                cutout: '75%'
+            }
+        });
+    });
 </script>
 {% endblock %}
