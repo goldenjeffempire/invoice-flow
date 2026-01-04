@@ -842,6 +842,14 @@ def invoice_list(request):
         )['total_rev'] or 0,
     }
 
+    # Dynamic Stat Items for Elite UI
+    stats_items = [
+        ("Total Invoices", stats['total'], "indigo", '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'),
+        ("Paid Volume", stats['paid'], "emerald", '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>'),
+        ("Awaiting Cash", stats['unpaid'], "amber", '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'),
+        ("Overdue Items", stats['overdue'], "rose", '<svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'),
+    ]
+
     context = {
         "page_obj": page_obj,
         "invoices": page_obj.object_list,
@@ -850,6 +858,7 @@ def invoice_list(request):
         "date_filter": date_filter,
         "sort_by": sort_by,
         "stats": stats,
+        "stats_items": stats_items,
         "today": today,
         "active": "invoices",
         "page_title": "Invoice Management",
