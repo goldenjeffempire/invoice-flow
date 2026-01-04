@@ -1828,6 +1828,13 @@ def analytics(request):
     recent_feedback = UserFeedback.objects.filter(user=request.user).order_by('-timestamp')[:5]
     engagement_stats = EngagementMetric.objects.filter(user=request.user).values('metric_type').annotate(count=Count('id')).order_by('-count')
 
+    client_performance = []
+    for i, name in enumerate(client_labels):
+        client_performance.append({
+            'name': name,
+            'revenue': client_data[i]
+        })
+
     context = {
         "active": "analytics",
         "page_title": "Revenue Analytics",
@@ -1838,8 +1845,7 @@ def analytics(request):
         "chart_data": json.dumps(chart_data),
         "client_labels": json.dumps(client_labels),
         "client_data": json.dumps(client_data),
-        "client_labels_list": client_labels,
-        "client_data_list": client_data,
+        "client_performance": client_performance,
         "recent_feedback": recent_feedback,
         "engagement_stats": engagement_stats,
         "currency": request.user.profile.default_currency if hasattr(request.user, 'profile') else "$"
