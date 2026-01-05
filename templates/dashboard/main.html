@@ -247,90 +247,42 @@
                 <div class="stat-label" style="font-size: 0.75rem; font-weight: 600;">Active</div>
             </div>
             <div class="stat-value-container">
-                <span class="stat-label">Total Invoices</span>
-                <span class="stat-value">{{ total_invoices|default:"0" }}</span>
+                <span class="stat-label">System Active</span>
+                <span class="stat-value">Ready</span>
             </div>
         </div>
 
-        <!-- Overdue Stat -->
+        <!-- System Stat -->
         <div class="stat-widget">
             <div class="stat-header">
-                <div class="stat-icon" style="background: var(--danger-light); color: var(--danger);">
+                <div class="stat-icon" style="background: var(--primary-light); color: var(--primary);">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10" />
-                        <line x1="12" y1="8" x2="12" y2="12" />
-                        <line x1="12" y1="16" x2="12.01" y2="16" />
-                    </svg>
-                </div>
-                {% if overdue_count > 0 %}
-                <div class="stat-trend" style="background: var(--danger-light); color: var(--danger); font-weight: 800;">
-                    Action Needed
-                </div>
-                {% endif %}
-            </div>
-            <div class="stat-value-container">
-                <span class="stat-label">Overdue</span>
-                <span class="stat-value">{{ overdue_count|default:"0" }}</span>
-            </div>
-        </div>
-
-        <!-- Pending Stat -->
-        <div class="stat-widget">
-            <div class="stat-header">
-                <div class="stat-icon" style="background: var(--warning-light); color: var(--warning);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="4" width="20" height="16" rx="2" />
-                        <path d="M7 15h0M2 9.5h20" />
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                     </svg>
                 </div>
             </div>
             <div class="stat-value-container">
-                <span class="stat-label">Awaiting Payment</span>
-                <span class="stat-value">{{ pending_amount|default:"0"|floatformat:2 }} <small style="font-size: 0.6em; color: var(--gray-400);">{{ user.profile.default_currency|default:"USD" }}</small></span>
+                <span class="stat-label">Security</span>
+                <span class="stat-value">Enabled</span>
             </div>
         </div>
     </div>
 
     <!-- Main Grid -->
     <div class="main-dashboard-grid">
-        <!-- Recent Activity -->
+        <!-- System Activity -->
         <div class="activity-card">
             <div class="card-head">
-                <h3 style="font-size: 1rem; font-weight: 700;">Recent Invoices</h3>
-                <a href="{% url 'invoices:invoice_list' %}" style="font-size: 0.875rem; color: var(--primary); text-decoration: none; font-weight: 600;">View all</a>
+                <h3 style="font-size: 1rem; font-weight: 700;">System Overview</h3>
             </div>
             <div class="card-body">
-                {% if recent_invoices %}
-                <ul class="activity-list">
-                    {% for invoice in recent_invoices %}
-                    <li class="activity-item">
-                        {% if invoice.status == 'paid' %}
-                            <div class="activity-status" style="background: var(--success);"></div>
-                        {% elif invoice.status == 'pending' %}
-                            <div class="activity-status" style="background: var(--warning);"></div>
-                        {% else %}
-                            <div class="activity-status" style="background: var(--danger);"></div>
-                        {% endif %}
-                        <div class="activity-details">
-                            <div class="activity-title">
-                                <span>#{{ invoice.invoice_id }} — {{ invoice.client_name }}</span>
-                                <span>{{ invoice.total|floatformat:2 }} {{ invoice.currency }}</span>
-                            </div>
-                            <div class="activity-meta">
-                                {{ invoice.get_status_display }} • Created {{ invoice.created_at|timesince }} ago
-                            </div>
-                        </div>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
                 <div style="padding: 3rem 1.5rem; text-align: center; color: var(--gray-400);">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 1rem; opacity: 0.5;">
-                        <path d="M9 12h6m-6 4h6m2-13H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 8v4l3 3"/>
                     </svg>
-                    <p>No activity yet. Start by reviewing your existing invoices.</p>
+                    <p>System is running normally. No recent activity to display.</p>
                 </div>
-                {% endif %}
             </div>
         </div>
 
@@ -341,13 +293,6 @@
             </div>
             <div class="card-body">
                 <div class="quick-action-grid">
-                    <a href="{% url 'invoices:invoice_list' %}" class="action-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                            <line x1="9" y1="3" x2="9" y2="21" />
-                        </svg>
-                        <span style="font-size: 0.8125rem; font-weight: 600;">Manage Invoices</span>
-                    </a>
                     <a href="{% url 'invoices:payment_history' %}" class="action-btn">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="2" y="5" width="20" height="14" rx="2" />
