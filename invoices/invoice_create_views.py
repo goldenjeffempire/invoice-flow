@@ -29,17 +29,13 @@ def create_invoice(request):
                     formset.instance = invoice
                     formset.save()
                     
-                    messages.success(request, f"Invoice {invoice.invoice_id} successfully generated.")
+                    messages.success(request, f"Invoice {invoice.invoice_id} successfully created!")
                     return redirect("invoices:invoice_detail", invoice_id=invoice.id)
             except Exception as e:
-                logger.error(f"Enterprise Invoice Creation Error: {e}")
-                messages.error(request, "A system error occurred. Our team has been notified.")
+                logger.error(f"Error creating enterprise invoice: {e}")
+                messages.error(request, "A critical error occurred while saving. Please try again.")
         else:
-            for error in form.non_field_errors():
-                messages.error(request, error)
-            for form_in_set in formset:
-                for error in form_in_set.non_field_errors():
-                    messages.error(request, error)
+            messages.error(request, "Please correct the errors in the form.")
     else:
         initial_data = {
             "business_name": profile.company_name,
@@ -83,5 +79,5 @@ def calculate_totals(request):
             "tax_amt": round(tax_amt, 2),
             "total": round(total, 2)
         })
-    except (ValueError, TypeError, json.JSONDecodeError) as e:
-        return JsonResponse({"error": "Invalid calculation parameters"}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": "Invalid calculation input"}, status=400)
