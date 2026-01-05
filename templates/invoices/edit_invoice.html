@@ -186,10 +186,20 @@
         body.innerHTML = '';
         lineItems.forEach((item, idx) => {
             const row = document.createElement('tr');
-            row.className = "group hover:bg-slate-50/50 transition-all";
+            row.className = "group hover:bg-slate-50/50 transition-all cursor-move animate-fade-in";
+            row.draggable = true;
+            row.dataset.index = idx;
+            
+            row.addEventListener('dragstart', handleDragStart);
+            row.addEventListener('dragover', handleDragOver);
+            row.addEventListener('drop', handleDrop);
+            
             row.innerHTML = `
-                <td class="px-6 py-4">
-                    <input type="text" class="item-input w-full" value="${item.description}" oninput="updateItem(${idx}, 'description', this.value)" placeholder="Item description...">
+                <td class="px-6 py-4 flex items-center gap-3">
+                    <div class="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"></path></svg>
+                    </div>
+                    <input type="text" class="item-input w-full" value="${item.description}" oninput="updateItem(${idx}, 'description', this.value)" placeholder="Enter service or product description...">
                 </td>
                 <td class="px-4 py-4 text-center">
                     <input type="number" class="item-input text-center w-full" value="${item.quantity}" step="0.01" oninput="updateItem(${idx}, 'quantity', this.value)">

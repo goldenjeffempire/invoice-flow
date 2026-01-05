@@ -270,18 +270,19 @@
 
     function sendEmail(id) {
         if (!confirm('Send this invoice to the client email?')) return;
+        showNotification('Preparing email...', 'info');
         fetch(`/invoices/invoice/${id}/email/`, {
             method: 'POST',
             headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(r => r.json())
-        .then(d => alert(d.message))
-        .catch(() => alert('Failed to send.'));
+        .then(d => showNotification(d.message, d.success ? 'success' : 'error'))
+        .catch(() => showNotification('Failed to send.', 'error'));
     }
 
     function copyPublicLink() {
         const link = window.location.origin + "{% url 'invoices:public_invoice' invoice.id %}";
-        navigator.clipboard.writeText(link).then(() => alert('Public link copied!'));
+        navigator.clipboard.writeText(link).then(() => showNotification('Public link copied to clipboard!'));
     }
 </script>
 {% endblock %}
