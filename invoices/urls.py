@@ -3,7 +3,6 @@ from django.urls import path
 from . import views
 from . import admin_views
 from . import paystack_views
-from . import invoice_create_views
 
 
 app_name = "invoices"
@@ -13,15 +12,6 @@ urlpatterns = [
     # INVOICE CORE
     # ------------------------------------------------------------------
     path("", views.invoice_list, name="invoice_list"),
-    path("list/", views.invoice_list, name="invoice_list_alt"),
-    path("analytics/", views.analytics, name="analytics"),
-    path("bulk-action/", views.bulk_invoice_action, name="bulk_invoice_action"),
-    path("export-csv/", views.export_invoices_csv, name="export_invoices_csv"),
-
-    # ------------------------------------------------------------------
-    # CREATE INVOICE
-    # ------------------------------------------------------------------
-    path("create/", invoice_create_views.create_invoice, name="create_invoice"),
 
     path("invoice/<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
     path("invoice/<int:invoice_id>/edit/", views.edit_invoice, name="edit_invoice"),
