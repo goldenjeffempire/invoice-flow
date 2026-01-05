@@ -162,6 +162,9 @@
                     Mark as Paid
                     <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 </button>
+                <button onclick="updateStatus('{{ invoice.id }}', 'unpaid')" class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-100 text-slate-700 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all group">
+                    Mark as Unpaid
+                </button>
                 {% endif %}
             </div>
 
@@ -240,15 +243,24 @@
     }
 
     function markPaid(id) {
-        if (!confirm('Mark this invoice as paid?')) return;
-        fetch(`/invoices/invoice/${id}/mark-paid/`, {
+        updateStatus(id, 'paid');
+    }
+
+    function updateStatus(id, status) {
+        if (!confirm(`Mark this invoice as ${status}?`)) return;
+        fetch(`/invoices/invoice/${id}/status/`, {
             method: 'POST',
-            headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
+            body: new URLSearchParams({ 'status': status }),
+            headers: { 
+                'X-CSRFToken': '{{ csrf_token }}', 
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
         })
         .then(r => r.json())
         .then(d => {
             if (d.success) {
-                showNotification('Invoice marked as paid.');
+                showNotification(`Invoice marked as ${status}.`);
                 setTimeout(() => window.location.reload(), 1000);
             } else {
                 showNotification(d.message, 'error');

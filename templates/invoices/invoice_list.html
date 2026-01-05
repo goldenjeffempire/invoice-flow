@@ -82,6 +82,19 @@
             </div>
             
             <div class="flex items-center gap-3">
+                <select id="invoice-sort" onchange="setFilter('sort', this.value)" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 bg-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                    <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+                    <option value="total" {% if sort_by == 'total' %}selected{% endif %}>Amount: Low to High</option>
+                    <option value="-total" {% if sort_by == '-total' %}selected{% endif %}>Amount: High to Low</option>
+                    <option value="due_date" {% if sort_by == 'due_date' %}selected{% endif %}>Due Date</option>
+                </select>
+                <select id="date-range" onchange="setFilter('date_range', this.value)" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 bg-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                    <option value="all" {% if date_filter == 'all' %}selected{% endif %}>All Time</option>
+                    <option value="7days" {% if date_filter == '7days' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="30days" {% if date_filter == '30days' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="this_month" {% if date_filter == 'this_month' %}selected{% endif %}>This Month</option>
+                </select>
                 <div class="flex p-1 bg-slate-100 rounded-2xl">
                     <button type="button" onclick="setFilter('status', 'all')" class="filter-chip active" id="filter-all">All</button>
                     <button type="button" onclick="setFilter('status', 'paid')" class="filter-chip" id="filter-paid">Paid</button>
@@ -218,6 +231,8 @@
 
     // Initialize filter state
     const currentStatus = new URLSearchParams(window.location.search).get('status') || 'all';
+    const currentDateRange = new URLSearchParams(window.location.search).get('date_range') || 'all';
+    
     document.querySelectorAll('.filter-chip').forEach(chip => {
         chip.classList.toggle('active', chip.id === `filter-${currentStatus}`);
     });
