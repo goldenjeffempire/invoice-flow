@@ -221,7 +221,9 @@
 
     function updateItem(idx, field, val) {
         lineItems[idx][field] = val;
-        renderItems();
+        // Debounce total calculation for performance
+        clearTimeout(window.calcTimeout);
+        window.calcTimeout = setTimeout(calculateTotals, 100);
     }
 
     function removeItem(idx) {
@@ -263,12 +265,48 @@
     document.querySelector('select[name="currency"]').addEventListener('change', calculateTotals);
 
     function handleFormSubmit(e) {
+        // Validation check
+        if (lineItems.some(item => !item.description.trim())) {
+            showNotification('Please provide a description for all line items.', 'error');
+            e.preventDefault();
+            return false;
+        }
+
         const btn = document.getElementById('saveBtn');
         btn.disabled = true;
-        document.getElementById('btnText').textContent = 'Processing...';
+        document.getElementById('btnText').textContent = 'Updating...';
         document.getElementById('btnSpinner').classList.remove('hidden');
         document.getElementById('btnIcon').classList.add('hidden');
         return true;
+    }
+
+    function handleDragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.dataset.index);
+        e.target.classList.add('opacity-50');
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+        const toIdx = parseInt(e.target.closest('tr').dataset.index);
+        
+        if (fromIdx !== toIdx) {
+            const item = lineItems.splice(fromIdx, 1)[0];
+            lineItems.splice(toIdx, 0, item);
+            renderItems();
+        }
+    }
+
+    function showNotification(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} animate-slide-in-right`;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
     }
 
     window.onload = renderItems;
