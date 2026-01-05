@@ -13,9 +13,10 @@
         </div>
         <div class="flex items-center gap-3">
             <button type="button" onclick="window.location.reload()" class="px-4 py-2 text-slate-600 font-bold text-sm hover:bg-slate-100 rounded-xl transition-all">Reset</button>
-            <button form="invoiceForm" type="submit" id="saveBtn" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2">
-                <span>Generate Invoice</span>
-                <svg id="btnIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            <button form="invoiceForm" type="submit" id="saveBtn" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2 group">
+                <span id="btnText">Generate Invoice</span>
+                <svg id="btnIcon" class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                <svg id="btnSpinner" class="hidden animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             </button>
         </div>
     </div>
@@ -55,8 +56,9 @@
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                         <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Line Items</h3>
-                        <button type="button" id="addItemBtn" class="p-2 text-indigo-600 hover:bg-white rounded-lg transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <button type="button" id="addItemBtn" class="p-2 text-indigo-600 hover:bg-white rounded-lg transition-all flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Add Row
                         </button>
                     </div>
                     <div class="overflow-x-auto">
@@ -94,14 +96,14 @@
                         </div>
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex items-center gap-2">
-                                <span class="text-slate-400 text-sm">Tax</span>
+                                <span class="text-slate-400 text-sm">Tax (%)</span>
                                 <input type="number" name="tax_rate" class="w-16 bg-white/10 border-0 rounded-lg px-2 py-1 text-xs font-bold text-center focus:ring-1 focus:ring-indigo-500" value="{{ user.profile.default_tax_rate|default:0 }}" step="0.01">
                             </div>
                             <span id="taxAmountDisplay" class="text-sm font-bold">$0.00</span>
                         </div>
                         <div class="flex items-center justify-between gap-4">
                             <div class="flex items-center gap-2">
-                                <span class="text-slate-400 text-sm">Discount</span>
+                                <span class="text-slate-400 text-sm">Discount (%)</span>
                                 <input type="number" name="discount" class="w-16 bg-white/10 border-0 rounded-lg px-2 py-1 text-xs font-bold text-center focus:ring-1 focus:ring-indigo-500" value="0" step="0.01">
                             </div>
                             <span id="discountAmountDisplay" class="text-sm font-bold text-rose-400">-$0.00</span>
@@ -121,10 +123,9 @@
                         <div>
                             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Currency</label>
                             <select name="currency" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all">
-                                <option value="USD" selected>USD - Dollar</option>
-                                <option value="EUR">EUR - Euro</option>
-                                <option value="GBP">GBP - Pound</option>
-                                <option value="NGN">NGN - Naira</option>
+                                {% for code, name in currency_choices %}
+                                <option value="{{ code }}" {% if code == default_currency %}selected{% endif %}>{{ code }} - {{ name }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div>
@@ -157,10 +158,10 @@
         body.innerHTML = '';
         lineItems.forEach((item, idx) => {
             const row = document.createElement('tr');
-            row.className = "group hover:bg-slate-50/50 transition-all";
+            row.className = "group hover:bg-slate-50/50 transition-all animate-fade-in";
             row.innerHTML = `
                 <td class="px-6 py-4">
-                    <input type="text" class="w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-500 focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-300 py-1" value="${item.description}" oninput="updateItem(${idx}, 'description', this.value)" placeholder="Description...">
+                    <input type="text" class="w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-500 focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-300 py-1 transition-all" value="${item.description}" oninput="updateItem(${idx}, 'description', this.value)" placeholder="Enter item description...">
                 </td>
                 <td class="px-4 py-4">
                     <input type="number" class="w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-500 focus:ring-0 text-sm font-bold text-center text-slate-900 py-1" value="${item.quantity}" step="0.01" oninput="updateItem(${idx}, 'quantity', this.value)">
@@ -169,10 +170,10 @@
                     <input type="number" class="w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-500 focus:ring-0 text-sm font-bold text-right text-slate-900 py-1" value="${item.unit_price}" step="0.01" oninput="updateItem(${idx}, 'unit_price', this.value)">
                 </td>
                 <td class="px-6 py-4 text-right">
-                    <span class="text-sm font-black text-slate-900">$${((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</span>
+                    <span class="text-sm font-black text-slate-900" data-item-total="${idx}">$${((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</span>
                 </td>
                 <td class="px-4 py-4 text-right">
-                    <button type="button" onclick="removeItem(${idx})" class="text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100">
+                    <button type="button" onclick="removeItem(${idx})" class="text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100 p-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </td>
@@ -184,7 +185,23 @@
 
     function updateItem(idx, field, val) {
         lineItems[idx][field] = val;
-        calculateTotals();
+        // Update row total immediately
+        const totalSpan = document.querySelector(`[data-item-total="${idx}"]`);
+        if (totalSpan) {
+            const rowTotal = (parseFloat(lineItems[idx].quantity) || 0) * (parseFloat(lineItems[idx].unit_price) || 0);
+            const cur = document.querySelector('select[name="currency"]').value;
+            const sym = getCurrencySymbol(cur);
+            totalSpan.textContent = sym + rowTotal.toFixed(2);
+        }
+        
+        // Debounce main totals
+        clearTimeout(window.calcTimeout);
+        window.calcTimeout = setTimeout(calculateTotals, 100);
+    }
+
+    function getCurrencySymbol(code) {
+        const symbols = {'USD': '$', 'EUR': '€', 'GBP': '£', 'NGN': '₦'};
+        return symbols[code] || code + ' ';
     }
 
     function removeItem(idx) {
@@ -211,7 +228,7 @@
         const total = subtotal - discAmount + taxAmount;
         
         const cur = document.querySelector('select[name="currency"]').value;
-        const sym = cur === 'USD' ? '$' : cur + ' ';
+        const sym = getCurrencySymbol(cur);
         
         document.getElementById('subtotalDisplay').textContent = sym + subtotal.toFixed(2);
         document.getElementById('discountAmountDisplay').textContent = '-' + sym + discAmount.toFixed(2);
@@ -221,18 +238,35 @@
         document.getElementById('lineItemsInput').value = JSON.stringify(lineItems);
     }
 
-    document.querySelector('input[name="tax_rate"]').addEventListener('input', calculateTotals);
-    document.querySelector('input[name="discount"]').addEventListener('input', calculateTotals);
-    document.querySelector('select[name="currency"]').addEventListener('change', calculateTotals);
+    ['tax_rate', 'discount'].forEach(name => {
+        document.querySelector(`input[name="${name}"]`).addEventListener('input', calculateTotals);
+    });
+    document.querySelector('select[name="currency"]').addEventListener('change', () => {
+        renderItems(); // Re-render to update all symbols
+    });
 
     function handleFormSubmit(e) {
-        if (lineItems.some(item => !item.description.trim())) {
-            alert('Please add descriptions for all items.');
+        const validItems = lineItems.filter(item => item.description.trim() !== '');
+        if (validItems.length === 0) {
+            alert('Please add at least one item with a description.');
             e.preventDefault();
             return false;
         }
-        document.getElementById('saveBtn').disabled = true;
-        document.getElementById('saveBtn').innerHTML = 'Creating...';
+        
+        // Final sync
+        document.getElementById('lineItemsInput').value = JSON.stringify(validItems);
+        
+        const btn = document.getElementById('saveBtn');
+        const text = document.getElementById('btnText');
+        const icon = document.getElementById('btnIcon');
+        const spinner = document.getElementById('btnSpinner');
+        
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-not-allowed');
+        text.textContent = 'Generating...';
+        icon.classList.add('hidden');
+        spinner.classList.remove('hidden');
+        
         return true;
     }
 
