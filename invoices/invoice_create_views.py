@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -21,6 +22,7 @@ def create_invoice(request):
                     with transaction.atomic():
                         invoice = form.save(commit=False)
                         invoice.user = request.user
+                        invoice.status = Invoice.Status.UNPAID
                         invoice.save()
                         
                         for item in line_items:
