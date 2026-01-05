@@ -2152,8 +2152,8 @@ def public_invoice(request, invoice_id: int):
 
 def public_payment(request, invoice_id: int):
     """Redirect to the specialized payment view."""
-    from . import invoice_create_views
-    return invoice_create_views.public_payment(request, invoice_id)
+    # Removed public_payment legacy call
+    return HttpResponse("Payment functionality under maintenance", status=503)
 
 
 def payment_callback(request):
