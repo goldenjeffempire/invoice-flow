@@ -6,16 +6,24 @@
 {% block page_subtitle %}Manage your billing records and track payment statuses{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/unified-design-system.css' %}">
 <style>
-    .status-badge {
-        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold capitalize;
+    .invoice-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .status-paid { @apply bg-emerald-100 text-emerald-800; }
-    .status-unpaid { @apply bg-amber-100 text-amber-800; }
-    .status-overdue { @apply bg-rose-100 text-rose-800; }
-    
-    .action-btn {
-        @apply p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all;
+    .invoice-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 9999px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 </style>
 {% endblock %}
@@ -117,7 +125,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         {% for invoice in invoices %}
-                        <tr class="hover:bg-slate-50/50 transition-colors">
+                        <tr class="invoice-card hover:bg-slate-50/50 transition-colors">
                             <td class="px-6 py-4">
                                 <input type="checkbox" name="invoice_ids" value="{{ invoice.id }}" class="invoice-checkbox rounded text-indigo-600 focus:ring-indigo-500 border-slate-300">
                             </td>
@@ -133,7 +141,7 @@
                                 <div class="font-black text-slate-900">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</div>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="status-badge {% if invoice.status == 'paid' %}status-paid{% elif invoice.status == 'overdue' %}status-overdue{% else %}status-unpaid{% endif %}">
+                                <span class="status-badge" style="background-color: var(--status-{{ invoice.status }}); color: var(--status-{{ invoice.status }}-text);">
                                     {{ invoice.get_status_display }}
                                 </span>
                             </td>
