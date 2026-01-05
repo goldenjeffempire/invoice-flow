@@ -12,6 +12,9 @@ urlpatterns = [
     # INVOICE CORE
     # ------------------------------------------------------------------
     path("", views.invoice_list, name="invoice_list"),
+    path("analytics/", views.analytics, name="analytics"),
+    path("bulk-action/", views.bulk_invoice_action, name="bulk_invoice_action"),
+    path("export-csv/", views.export_invoices_csv, name="export_invoices_csv"),
 
     path("invoice/<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
     path("invoice/<int:invoice_id>/edit/", views.edit_invoice, name="edit_invoice"),
