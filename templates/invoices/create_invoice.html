@@ -1,147 +1,208 @@
 {% extends "base/layout-authenticated.html" %}
 {% load static %}
 
-{% block title %}Create Invoice - InvoiceFlow{% endblock %}
+{% block title %}Create Professional Invoice - InvoiceFlow{% endblock %}
 
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 py-8 animate-fade-in">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight">New Invoice</h1>
-            <p class="text-slate-500 text-sm">Draft a professional billing document</p>
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Create Invoice</h1>
+            <p class="text-slate-500 text-sm mt-1">Generate a production-ready billing document for your clients.</p>
         </div>
         <div class="flex items-center gap-3">
-            <button type="button" onclick="window.location.reload()" class="px-4 py-2 text-slate-600 font-bold text-sm hover:bg-slate-100 rounded-xl transition-all">Reset</button>
-            <button form="invoiceForm" type="submit" id="saveBtn" class="px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center gap-2 group">
-                <span id="btnText">Generate Invoice</span>
-                <svg id="btnIcon" class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            <a href="{% url 'invoices:invoice_list' %}" class="px-5 py-2.5 text-slate-600 font-bold text-sm hover:bg-slate-100 rounded-xl transition-all">Cancel</a>
+            <button form="invoiceForm" type="submit" id="saveBtn" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black text-sm hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 flex items-center gap-2 group">
+                <span id="btnText">Save & Finalize</span>
+                <svg id="btnIcon" class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                 <svg id="btnSpinner" class="hidden animate-spin h-4 w-4 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             </button>
         </div>
     </div>
 
-    <form id="invoiceForm" method="POST" class="space-y-6" onsubmit="return handleFormSubmit(event)">
+    <form id="invoiceForm" method="POST" class="space-y-8" onsubmit="return handleFormSubmit(event)">
         {% csrf_token %}
         <input type="hidden" name="line_items" id="lineItemsInput">
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Main Content -->
-            <div class="lg:col-span-8 space-y-6">
-                <!-- Parties -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <!-- From -->
-                        <div class="space-y-4">
-                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">From</h3>
-                            <div class="space-y-3">
-                                <input type="text" name="business_name" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" value="{{ user.profile.company_name }}" placeholder="Your Business Name" required>
-                                <input type="email" name="business_email" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" value="{{ user.profile.business_email|default:user.email }}" placeholder="business@example.com" required>
-                                <textarea name="business_address" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all min-h-[80px]" placeholder="Business Address" required>{{ user.profile.business_address }}</textarea>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Main Content Area -->
+            <div class="lg:col-span-8 space-y-8">
+                <!-- Contact Information Card -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                        <!-- From Section -->
+                        <div class="p-8 space-y-6">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sender Details</h3>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Business Name</label>
+                                    <input type="text" name="business_name" class="w-full bg-slate-50 border-0 rounded-2xl px-5 py-3.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" value="{{ user.profile.company_name }}" placeholder="Your Business Name" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Business Email</label>
+                                    <input type="email" name="business_email" class="w-full bg-slate-50 border-0 rounded-2xl px-5 py-3.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" value="{{ user.profile.business_email|default:user.email }}" placeholder="business@example.com" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Address</label>
+                                    <textarea name="business_address" class="w-full bg-slate-50 border-0 rounded-2xl px-5 py-3.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all min-h-[100px] resize-none" placeholder="Business Address" required>{{ user.profile.business_address }}</textarea>
+                                </div>
                             </div>
                         </div>
-                        <!-- To -->
-                        <div class="space-y-4">
-                            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bill To</h3>
-                            <div class="space-y-3">
-                                <input type="text" name="client_name" id="c_name" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Client Name" required>
-                                <input type="email" name="client_email" id="c_email" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="client@example.com" required>
-                                <textarea name="client_address" id="c_address" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all min-h-[80px]" placeholder="Client Address" required></textarea>
+
+                        <!-- Bill To Section -->
+                        <div class="p-8 space-y-6">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Client Details</h3>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Client Name</label>
+                                    <input type="text" name="client_name" class="w-full bg-slate-50 border-0 rounded-2xl px-5 py-3.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Enter Client Name" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Client Email</label>
+                                    <input type="email" name="client_email" class="w-full bg-slate-50 border-0 rounded-2xl px-5 py-3.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="client@example.com" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">Client Address</label>
+                                    <textarea name="client_address" class="w-full bg-slate-50 border-0 rounded-2xl px-5 py-3.5 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all min-h-[100px] resize-none" placeholder="Client Billing Address" required></textarea>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Line Items -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
-                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Line Items</h3>
-                        <button type="button" id="addItemBtn" class="p-2 text-indigo-600 hover:bg-white rounded-lg transition-all flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            Add Row
+                <!-- Line Items Table -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="px-8 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Billing Items</h3>
+                        <button type="button" id="addItemBtn" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:bg-indigo-50 hover:border-indigo-100 transition-all shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Add New Line
                         </button>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-slate-50/50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
-                                    <th class="px-4 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Qty</th>
-                                    <th class="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Price</th>
-                                    <th class="px-6 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-32">Total</th>
-                                    <th class="px-4 py-3 w-12"></th>
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="bg-slate-50/30">
+                                    <th class="pl-8 pr-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Item Description</th>
+                                    <th class="px-4 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Qty</th>
+                                    <th class="px-4 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-36">Unit Price</th>
+                                    <th class="pl-4 pr-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-36">Subtotal</th>
+                                    <th class="w-12"></th>
                                 </tr>
                             </thead>
-                            <tbody id="itemsBody" class="divide-y divide-slate-100"></tbody>
+                            <tbody id="itemsBody" class="divide-y divide-slate-100">
+                                <!-- Dynamic Rows -->
+                            </tbody>
                         </table>
+                    </div>
+                    <div id="emptyState" class="hidden flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-50/30">
+                        <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100 mb-4">
+                            <svg class="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+                        </div>
+                        <h4 class="text-sm font-black text-slate-900 mb-1">No items added yet</h4>
+                        <p class="text-xs text-slate-500 max-w-[200px]">Click the button above to add your first billing item.</p>
                     </div>
                 </div>
 
-                <!-- Notes -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Notes & Terms</h3>
-                    <textarea name="notes" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-3 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all min-h-[100px]" placeholder="Add special instructions or terms..."></textarea>
+                <!-- Notes Card -->
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-8">
+                    <div class="flex items-center gap-2 mb-6">
+                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
+                        <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes & Terms</h3>
+                    </div>
+                    <textarea name="notes" class="w-full bg-slate-50 border-0 rounded-2xl px-6 py-4 text-sm font-bold placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500 transition-all min-h-[120px] resize-none" placeholder="Provide additional context, bank details, or terms for this invoice..."></textarea>
                 </div>
             </div>
 
-            <!-- Sidebar -->
-            <div class="lg:col-span-4 space-y-6">
-                <!-- Summary -->
-                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-xl">
-                    <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Order Summary</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-400">Subtotal</span>
-                            <span id="subtotalDisplay" class="font-bold">$0.00</span>
-                        </div>
-                        <div class="flex items-center justify-between gap-4">
-                            <div class="flex items-center gap-2">
-                                <span class="text-slate-400 text-sm">Tax (%)</span>
-                                <input type="number" name="tax_rate" class="w-16 bg-white/10 border-0 rounded-lg px-2 py-1 text-xs font-bold text-center focus:ring-1 focus:ring-indigo-500" value="{{ user.profile.default_tax_rate|default:0 }}" step="0.01">
+            <!-- Sidebar Configuration -->
+            <div class="lg:col-span-4 space-y-8">
+                <!-- Grand Total Card -->
+                <div class="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-8 opacity-10">
+                        <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14H11V21L20 10H13Z"/></svg>
+                    </div>
+                    
+                    <div class="relative z-10 space-y-8">
+                        <div>
+                            <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Financial Summary</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-slate-400 font-bold">Subtotal</span>
+                                    <span id="subtotalDisplay" class="font-black text-slate-200">$0.00</span>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-slate-400 font-bold text-sm">Tax</span>
+                                        <div class="relative">
+                                            <input type="number" name="tax_rate" class="w-16 bg-white/10 border-0 rounded-lg px-2 py-1.5 text-xs font-black text-center focus:ring-2 focus:ring-indigo-500 text-white" value="{{ user.profile.default_tax_rate|default:0 }}" step="0.01">
+                                            <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-500">%</span>
+                                        </div>
+                                    </div>
+                                    <span id="taxAmountDisplay" class="text-sm font-black text-slate-200">$0.00</span>
+                                </div>
+
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-slate-400 font-bold text-sm">Discount</span>
+                                        <div class="relative">
+                                            <input type="number" name="discount" class="w-16 bg-white/10 border-0 rounded-lg px-2 py-1.5 text-xs font-black text-center focus:ring-2 focus:ring-indigo-500 text-white" value="0" step="0.01">
+                                            <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-500">%</span>
+                                        </div>
+                                    </div>
+                                    <span id="discountAmountDisplay" class="text-sm font-black text-rose-400">-$0.00</span>
+                                </div>
                             </div>
-                            <span id="taxAmountDisplay" class="text-sm font-bold">$0.00</span>
                         </div>
-                        <div class="flex items-center justify-between gap-4">
-                            <div class="flex items-center gap-2">
-                                <span class="text-slate-400 text-sm">Discount (%)</span>
-                                <input type="number" name="discount" class="w-16 bg-white/10 border-0 rounded-lg px-2 py-1 text-xs font-bold text-center focus:ring-1 focus:ring-indigo-500" value="0" step="0.01">
-                            </div>
-                            <span id="discountAmountDisplay" class="text-sm font-bold text-rose-400">-$0.00</span>
-                        </div>
-                        <div class="pt-6 border-t border-white/10">
-                            <div class="flex justify-between items-end">
-                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total</span>
-                                <span id="totalDisplay" class="text-3xl font-black text-indigo-400 tracking-tighter">$0.00</span>
+
+                        <div class="pt-10 border-t border-white/5">
+                            <div class="flex flex-col gap-2">
+                                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Total Balance Due</span>
+                                <span id="totalDisplay" class="text-5xl font-black tracking-tighter text-white tabular-nums">$0.00</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Settings -->
-                <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 shadow-sm">
-                    <div class="space-y-4">
+                <!-- Advanced Options Card -->
+                <div class="bg-white rounded-3xl border border-slate-200 p-8 space-y-8 shadow-sm">
+                    <div class="space-y-6">
                         <div>
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Currency</label>
-                            <select name="currency" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all">
+                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Invoice Currency</label>
+                            <select name="currency" class="w-full bg-slate-50 border-0 rounded-2xl px-5 py-3.5 text-sm font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all appearance-none cursor-pointer">
                                 {% for code, name in currency_choices %}
-                                <option value="{{ code }}" {% if code == default_currency %}selected{% endif %}>{{ code }} - {{ name }}</option>
+                                <option value="{{ code }}" {% if code == default_currency %}selected{% endif %}>{{ code }} ({{ name }})</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div>
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Issue Date</label>
-                            <input type="date" name="invoice_date" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all" value="{% now 'Y-m-d' %}" required>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Due Date</label>
-                            <input type="date" name="due_date" class="w-full bg-slate-50 border-0 rounded-lg px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all" value="{{ default_due_date|date:'Y-m-d' }}" required>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Issue Date</label>
+                                <input type="date" name="invoice_date" class="w-full bg-slate-50 border-0 rounded-xl px-4 py-3.5 text-xs font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer" value="{% now 'Y-m-d' %}" required>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-3">Due Date</label>
+                                <input type="date" name="due_date" class="w-full bg-slate-50 border-0 rounded-xl px-4 py-3.5 text-xs font-black text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer" value="{{ default_due_date|date:'Y-m-d' }}" required>
+                            </div>
                         </div>
                     </div>
-                    <div class="pt-4 flex items-center justify-between border-t border-slate-100">
-                        <span class="text-xs font-bold text-slate-600">Auto-Reminders</span>
+
+                    <div class="pt-8 flex items-center justify-between border-t border-slate-100">
+                        <div class="flex flex-col">
+                            <span class="text-xs font-black text-slate-900">Auto-Reminders</span>
+                            <span class="text-[10px] font-bold text-slate-400">Remind client of due date</span>
+                        </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" name="automated_reminders_enabled" class="sr-only peer" checked>
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 shadow-inner"></div>
                         </label>
                     </div>
                 </div>
@@ -150,70 +211,99 @@
     </form>
 </div>
 
+<style>
+    .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    
+    .item-row:hover .delete-btn { opacity: 1; transform: translateX(0); }
+    .delete-btn { opacity: 0; transform: translateX(5px); transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+</style>
+
 <script>
     let lineItems = [{ description: '', quantity: 1, unit_price: 0 }];
 
     function renderItems() {
         const body = document.getElementById('itemsBody');
-        body.innerHTML = '';
-        lineItems.forEach((item, idx) => {
-            const row = document.createElement('tr');
-            row.className = "group hover:bg-slate-50/50 transition-all animate-fade-in";
-            row.innerHTML = `
-                <td class="px-6 py-4">
-                    <input type="text" class="w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-500 focus:ring-0 text-sm font-bold text-slate-900 placeholder:text-slate-300 py-1 transition-all" value="${item.description}" oninput="updateItem(${idx}, 'description', this.value)" placeholder="Enter item description...">
-                </td>
-                <td class="px-4 py-4">
-                    <input type="number" class="w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-500 focus:ring-0 text-sm font-bold text-center text-slate-900 py-1" value="${item.quantity}" step="0.01" oninput="updateItem(${idx}, 'quantity', this.value)">
-                </td>
-                <td class="px-4 py-4">
-                    <input type="number" class="w-full bg-transparent border-0 border-b border-transparent focus:border-indigo-500 focus:ring-0 text-sm font-bold text-right text-slate-900 py-1" value="${item.unit_price}" step="0.01" oninput="updateItem(${idx}, 'unit_price', this.value)">
-                </td>
-                <td class="px-6 py-4 text-right">
-                    <span class="text-sm font-black text-slate-900" data-item-total="${idx}">$${((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</span>
-                </td>
-                <td class="px-4 py-4 text-right">
-                    <button type="button" onclick="removeItem(${idx})" class="text-slate-300 hover:text-rose-500 transition-all opacity-0 group-hover:opacity-100 p-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
-                </td>
-            `;
-            body.appendChild(row);
-        });
+        const emptyState = document.getElementById('emptyState');
+        
+        if (lineItems.length === 0) {
+            body.innerHTML = '';
+            emptyState.classList.remove('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            body.innerHTML = '';
+            lineItems.forEach((item, idx) => {
+                const row = document.createElement('tr');
+                row.className = "item-row group hover:bg-indigo-50/20 transition-colors";
+                row.innerHTML = `
+                    <td class="pl-8 pr-4 py-6">
+                        <input type="text" class="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-indigo-500 focus:ring-0 text-sm font-black text-slate-900 placeholder:text-slate-300 py-1.5 transition-all" 
+                               value="${item.description}" 
+                               oninput="updateItem(${idx}, 'description', this.value)" 
+                               placeholder="Consulting services, product sale, etc.">
+                    </td>
+                    <td class="px-4 py-6">
+                        <input type="number" class="w-full bg-slate-50 border-0 rounded-xl px-2 py-2.5 text-xs font-black text-center text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all" 
+                               value="${item.quantity}" 
+                               step="0.01" 
+                               oninput="updateItem(${idx}, 'quantity', this.value)">
+                    </td>
+                    <td class="px-4 py-6">
+                        <input type="number" class="w-full bg-slate-50 border-0 rounded-xl px-4 py-2.5 text-xs font-black text-right text-slate-900 focus:ring-2 focus:ring-indigo-500 transition-all" 
+                               value="${item.unit_price}" 
+                               step="0.01" 
+                               oninput="updateItem(${idx}, 'unit_price', this.value)">
+                    </td>
+                    <td class="pl-4 pr-8 py-6 text-right">
+                        <span class="text-sm font-black text-slate-900 tabular-nums" data-item-total="${idx}">$${((item.quantity || 0) * (item.unit_price || 0)).toFixed(2)}</span>
+                    </td>
+                    <td class="pr-6 py-6 text-right">
+                        <button type="button" onclick="removeItem(${idx})" class="delete-btn text-slate-300 hover:text-rose-500 p-2 bg-slate-50 hover:bg-rose-50 rounded-lg transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </td>
+                `;
+                body.appendChild(row);
+            });
+        }
         calculateTotals();
     }
 
     function updateItem(idx, field, val) {
         lineItems[idx][field] = val;
-        // Update row total immediately
         const totalSpan = document.querySelector(`[data-item-total="${idx}"]`);
         if (totalSpan) {
             const rowTotal = (parseFloat(lineItems[idx].quantity) || 0) * (parseFloat(lineItems[idx].unit_price) || 0);
             const cur = document.querySelector('select[name="currency"]').value;
             const sym = getCurrencySymbol(cur);
-            totalSpan.textContent = sym + rowTotal.toFixed(2);
+            totalSpan.textContent = sym + rowTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
         }
         
-        // Debounce main totals
         clearTimeout(window.calcTimeout);
         window.calcTimeout = setTimeout(calculateTotals, 100);
     }
 
     function getCurrencySymbol(code) {
-        const symbols = {'USD': '$', 'EUR': '€', 'GBP': '£', 'NGN': '₦'};
+        const symbols = {'USD': '$', 'EUR': '€', 'GBP': '£', 'NGN': '₦', 'CAD': '$', 'AUD': '$'};
         return symbols[code] || code + ' ';
     }
 
     function removeItem(idx) {
-        if (lineItems.length > 1) {
-            lineItems.splice(idx, 1);
-            renderItems();
-        }
+        lineItems.splice(idx, 1);
+        renderItems();
     }
 
     document.getElementById('addItemBtn').addEventListener('click', () => {
         lineItems.push({ description: '', quantity: 1, unit_price: 0 });
         renderItems();
+        // Focus the last added item
+        setTimeout(() => {
+            const inputs = document.querySelectorAll('#itemsBody input[type="text"]');
+            if (inputs.length > 0) inputs[inputs.length - 1].focus();
+        }, 50);
     });
 
     function calculateTotals() {
@@ -224,16 +314,18 @@
         const discountRate = parseFloat(document.querySelector('input[name="discount"]').value) || 0;
         
         const discAmount = (subtotal * discountRate) / 100;
-        const taxAmount = ((subtotal - discAmount) * taxRate) / 100;
-        const total = subtotal - discAmount + taxAmount;
+        const subtotalAfterDiscount = subtotal - discAmount;
+        const taxAmount = (subtotalAfterDiscount * taxRate) / 100;
+        const total = subtotalAfterDiscount + taxAmount;
         
         const cur = document.querySelector('select[name="currency"]').value;
         const sym = getCurrencySymbol(cur);
+        const formatOptions = {minimumFractionDigits: 2, maximumFractionDigits: 2};
         
-        document.getElementById('subtotalDisplay').textContent = sym + subtotal.toFixed(2);
-        document.getElementById('discountAmountDisplay').textContent = '-' + sym + discAmount.toFixed(2);
-        document.getElementById('taxAmountDisplay').textContent = sym + taxAmount.toFixed(2);
-        document.getElementById('totalDisplay').textContent = sym + total.toFixed(2);
+        document.getElementById('subtotalDisplay').textContent = sym + subtotal.toLocaleString(undefined, formatOptions);
+        document.getElementById('discountAmountDisplay').textContent = '-' + sym + discAmount.toLocaleString(undefined, formatOptions);
+        document.getElementById('taxAmountDisplay').textContent = sym + taxAmount.toLocaleString(undefined, formatOptions);
+        document.getElementById('totalDisplay').textContent = sym + total.toLocaleString(undefined, formatOptions);
         
         document.getElementById('lineItemsInput').value = JSON.stringify(lineItems);
     }
@@ -241,19 +333,19 @@
     ['tax_rate', 'discount'].forEach(name => {
         document.querySelector(`input[name="${name}"]`).addEventListener('input', calculateTotals);
     });
+    
     document.querySelector('select[name="currency"]').addEventListener('change', () => {
-        renderItems(); // Re-render to update all symbols
+        renderItems();
     });
 
     function handleFormSubmit(e) {
         const validItems = lineItems.filter(item => item.description.trim() !== '');
         if (validItems.length === 0) {
-            alert('Please add at least one item with a description.');
+            alert('Please add at least one line item with a description.');
             e.preventDefault();
             return false;
         }
         
-        // Final sync
         document.getElementById('lineItemsInput').value = JSON.stringify(validItems);
         
         const btn = document.getElementById('saveBtn');
@@ -263,7 +355,7 @@
         
         btn.disabled = true;
         btn.classList.add('opacity-75', 'cursor-not-allowed');
-        text.textContent = 'Generating...';
+        text.textContent = 'Processing...';
         icon.classList.add('hidden');
         spinner.classList.remove('hidden');
         
