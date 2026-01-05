@@ -8,6 +8,19 @@
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/unified-design-system.css' %}">
 <div class="max-w-6xl mx-auto pb-24 animate-fade-in">
+    <!-- Form Progress Header (Hidden for now, can be used for multi-step) -->
+    <div class="mb-12 flex items-center justify-between">
+        <div class="space-y-1">
+            <h1 class="text-3xl font-black text-slate-900 tracking-tight">Create New Invoice</h1>
+            <p class="text-slate-500 font-medium">Draft a professional document in seconds.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="w-10 h-1 bg-indigo-600 rounded-full"></div>
+            <div class="w-10 h-1 bg-slate-200 rounded-full"></div>
+            <div class="w-10 h-1 bg-slate-200 rounded-full"></div>
+        </div>
+    </div>
+
     <form id="invoiceForm" method="POST" class="space-y-8" onsubmit="return handleFormSubmit(event)">
         {% csrf_token %}
         <input type="hidden" name="line_items" id="lineItemsInput">
@@ -192,10 +205,20 @@
         body.innerHTML = '';
         lineItems.forEach((item, idx) => {
             const row = document.createElement('tr');
-            row.className = "group hover:bg-slate-50/50 transition-all";
+            row.className = "group hover:bg-slate-50/50 transition-all cursor-move animate-fade-in";
+            row.draggable = true;
+            row.dataset.index = idx;
+            
+            row.addEventListener('dragstart', handleDragStart);
+            row.addEventListener('dragover', handleDragOver);
+            row.addEventListener('drop', handleDrop);
+            
             row.innerHTML = `
-                <td class="px-6 py-4">
-                    <input type="text" class="item-input w-full" value="${item.description}" oninput="updateItem(${idx}, 'description', this.value)" placeholder="Item description...">
+                <td class="px-6 py-4 flex items-center gap-3">
+                    <div class="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"></path></svg>
+                    </div>
+                    <input type="text" class="item-input w-full" value="${item.description}" oninput="updateItem(${idx}, 'description', this.value)" placeholder="Enter service or product description...">
                 </td>
                 <td class="px-4 py-4 text-center">
                     <input type="number" class="item-input text-center w-full" value="${item.quantity}" step="0.01" oninput="updateItem(${idx}, 'quantity', this.value)">
@@ -267,12 +290,48 @@
     }
 
     function handleFormSubmit(e) {
+        // Validation check
+        if (lineItems.some(item => !item.description.trim())) {
+            showNotification('Please provide a description for all line items.', 'error');
+            e.preventDefault();
+            return false;
+        }
+
         const btn = document.getElementById('saveBtn');
         btn.disabled = true;
-        document.getElementById('btnText').textContent = 'Processing...';
+        document.getElementById('btnText').textContent = 'Finalizing...';
         document.getElementById('btnSpinner').classList.remove('hidden');
         document.getElementById('btnIcon').classList.add('hidden');
         return true;
+    }
+
+    function handleDragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.dataset.index);
+        e.target.classList.add('opacity-50');
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+        const toIdx = parseInt(e.target.closest('tr').dataset.index);
+        
+        if (fromIdx !== toIdx) {
+            const item = lineItems.splice(fromIdx, 1)[0];
+            lineItems.splice(toIdx, 0, item);
+            renderItems();
+        }
+    }
+
+    function showNotification(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} animate-slide-in-right`;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
     }
 
     window.onload = renderItems;

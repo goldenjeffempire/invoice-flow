@@ -34,12 +34,12 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <!-- Main Invoice Content -->
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-3">
             <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden relative">
-                <div class="h-2 w-full {% if invoice.status == 'paid' %}bg-emerald-500{% else %}bg-indigo-600{% endif %}"></div>
-                <div class="p-8 md:p-12 space-y-12">
+                <div class="h-3 w-full {% if invoice.status == 'paid' %}bg-emerald-500{% else %}bg-indigo-600{% endif %}"></div>
+                <div class="p-8 md:p-16 space-y-16">
                     <!-- Header -->
                     <div class="flex flex-col md:flex-row justify-between gap-8">
                         <div class="space-y-4">
@@ -150,7 +150,21 @@
         </div>
 
         <!-- Sidebar Actions -->
-        <div class="space-y-6">
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Summary Stats -->
+            <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/20 space-y-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Balance Due</h3>
+                </div>
+                <div class="text-3xl font-black text-slate-900 tracking-tighter">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</div>
+                {% if invoice.status != 'paid' %}
+                <button onclick="markPaid('{{ invoice.id }}')" class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 group">
+                    Mark as Paid
+                    <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </button>
+                {% endif %}
+            </div>
+
             <!-- Share -->
             <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/20 space-y-4">
                 <h3 class="text-sm font-black text-slate-900 uppercase tracking-tight">Share Invoice</h3>
@@ -217,6 +231,14 @@
 </div>
 
 <script>
+    function showNotification(msg, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type} animate-slide-in-right`;
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
     function markPaid(id) {
         if (!confirm('Mark this invoice as paid?')) return;
         fetch(`/invoices/invoice/${id}/mark-paid/`, {
@@ -224,8 +246,15 @@
             headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(r => r.json())
-        .then(d => d.success ? window.location.reload() : alert(d.message))
-        .catch(() => alert('Failed to update.'));
+        .then(d => {
+            if (d.success) {
+                showNotification('Invoice marked as paid.');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showNotification(d.message, 'error');
+            }
+        })
+        .catch(() => showNotification('Failed to update.', 'error'));
     }
 
     function confirmDelete(id, displayId) {
