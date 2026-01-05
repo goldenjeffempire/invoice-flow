@@ -1,0 +1,315 @@
+{% extends "base/layout-authenticated.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/invoice-create-modern.css' %}">
+<style>
+    .invoice-form-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    .line-item-row {
+        transition: all 0.2s ease;
+    }
+    .line-item-row:hover {
+        background-color: rgba(0,0,0,0.02);
+    }
+    .form-input {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.375rem;
+        background-color: #fff;
+        transition: border-color 0.2s;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        ring: 2px;
+        ring-color: #3b82f6;
+    }
+    .section-card {
+        background: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="invoice-form-container py-6 px-4">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ page_title }}</h1>
+            <p class="text-gray-500">Fill in the details below to create a new professional invoice.</p>
+        </div>
+        <div class="flex space-x-3">
+            <button type="button" onclick="window.history.back()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                Cancel
+            </button>
+            <button type="submit" form="invoice-form" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Create Invoice
+            </button>
+        </div>
+    </div>
+
+    <form id="invoice-form" method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Business & Client Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Business Details -->
+            <div class="section-card">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Business Details</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                        {{ form.business_name }}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            {{ form.business_email }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                            {{ form.business_phone }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                        {{ form.business_address }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Details -->
+            <div class="section-card">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Client Details</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
+                        {{ form.client_name }}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Client Email</label>
+                            {{ form.client_email }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Client Phone</label>
+                            {{ form.client_phone }}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Client Address</label>
+                        {{ form.client_address }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Metadata -->
+        <div class="section-card">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Invoice Info</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Invoice Date</label>
+                    {{ form.invoice_date }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    {{ form.due_date }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                    {{ form.currency }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Tax Rate (%)</label>
+                    {{ form.tax_rate }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Items -->
+        <div class="section-card">
+            <h3 class="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Items & Services</h3>
+            {{ formset.management_form }}
+            <div id="line-items-container" class="space-y-4">
+                {% for item_form in formset %}
+                <div class="line-item-row grid grid-cols-12 gap-4 items-start pb-4 border-b last:border-0">
+                    <div class="col-span-12 md:col-span-6">
+                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1 md:hidden">Description</label>
+                        {{ item_form.description }}
+                        {{ item_form.id }}
+                    </div>
+                    <div class="col-span-4 md:col-span-2">
+                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1 md:hidden">Qty</label>
+                        {{ item_form.quantity }}
+                    </div>
+                    <div class="col-span-4 md:col-span-3">
+                        <label class="block text-xs font-medium text-gray-500 uppercase mb-1 md:hidden">Price</label>
+                        {{ item_form.unit_price }}
+                    </div>
+                    <div class="col-span-4 md:col-span-1 flex items-center justify-center pt-1">
+                        {% if formset.can_delete %}
+                        <div class="hidden">{{ item_form.DELETE }}</div>
+                        <button type="button" onclick="removeRow(this)" class="text-red-500 hover:text-red-700 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" onclick="addRow()" class="mt-4 flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Item
+            </button>
+        </div>
+
+        <!-- Summary & Notes -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="section-card">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Notes & Terms</h3>
+                {{ form.notes }}
+                <div class="mt-4 flex items-center">
+                    {{ form.automated_reminders_enabled }}
+                    <label for="{{ form.automated_reminders_enabled.id_for_label }}" class="ml-2 text-sm text-gray-700">Enable automated payment reminders</label>
+                </div>
+            </div>
+
+            <div class="section-card bg-gray-50">
+                <h3 class="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Summary</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm text-gray-600">
+                        <span>Subtotal</span>
+                        <span id="summary-subtotal">0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-600">
+                        <div class="flex items-center">
+                            <span>Discount</span>
+                            <div class="ml-2 w-20">
+                                {{ form.discount }}
+                            </div>
+                            <span class="ml-1">%</span>
+                        </div>
+                        <span id="summary-discount">0.00</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-600">
+                        <span id="tax-label">Tax ({{ form.tax_rate.value|default:"0" }}%)</span>
+                        <span id="summary-tax">0.00</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold text-gray-900 pt-3 border-t">
+                        <span>Total</span>
+                        <span id="summary-total">0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Template for new rows -->
+<template id="row-template">
+    <div class="line-item-row grid grid-cols-12 gap-4 items-start pb-4 border-b last:border-0">
+        <div class="col-span-12 md:col-span-6">
+            <input type="text" name="line_items-__prefix__-description" class="form-input" placeholder="Item description" id="id_line_items-__prefix__-description">
+        </div>
+        <div class="col-span-4 md:col-span-2">
+            <input type="number" name="line_items-__prefix__-quantity" step="0.01" value="1.00" class="form-input quantity-input" id="id_line_items-__prefix__-quantity">
+        </div>
+        <div class="col-span-4 md:col-span-3">
+            <input type="number" name="line_items-__prefix__-unit_price" step="0.01" value="0.00" class="form-input price-input" id="id_line_items-__prefix__-unit_price">
+        </div>
+        <div class="col-span-4 md:col-span-1 flex items-center justify-center pt-1">
+            <button type="button" onclick="removeRow(this)" class="text-red-500 hover:text-red-700 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</template>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const container = document.getElementById('line-items-container');
+    const totalForms = document.getElementById('id_line_items-TOTAL_FORMS');
+    const template = document.getElementById('row-template').innerHTML;
+
+    function updateCalculations() {
+        const rows = container.querySelectorAll('.line-item-row');
+        let subtotal = 0;
+        
+        rows.forEach(row => {
+            if (row.style.display === 'none') return;
+            const qty = parseFloat(row.querySelector('[name*="-quantity"]').value) || 0;
+            const price = parseFloat(row.querySelector('[name*="-unit_price"]').value) || 0;
+            subtotal += qty * price;
+        });
+
+        const taxRate = parseFloat(document.getElementById('id_tax_rate').value) || 0;
+        const discountRate = parseFloat(document.getElementById('id_discount').value) || 0;
+        
+        const discountAmount = (subtotal * discountRate) / 100;
+        const taxableAmount = subtotal - discountAmount;
+        const taxAmount = (taxable_amount * taxRate) / 100;
+        const total = taxable_amount + taxAmount;
+
+        document.getElementById('summary-subtotal').textContent = subtotal.toFixed(2);
+        document.getElementById('summary-discount').textContent = '-' + discountAmount.toFixed(2);
+        document.getElementById('summary-tax').textContent = taxAmount.toFixed(2);
+        document.getElementById('summary-total').textContent = total.toFixed(2);
+        document.getElementById('tax-label').textContent = `Tax (${taxRate}%)`;
+    }
+
+    function addRow() {
+        const count = parseInt(totalForms.value);
+        const newRow = template.replace(/__prefix__/g, count);
+        container.insertAdjacentHTML('beforeend', newRow);
+        totalForms.value = count + 1;
+        
+        const latestRow = container.lastElementChild;
+        latestRow.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', updateCalculations);
+        });
+        
+        // Add scroll-to-new-item effect for better UX
+        latestRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function removeRow(btn) {
+        const row = btn.closest('.line-item-row');
+        const deleteInput = row.querySelector('[name*="-DELETE"]');
+        if (deleteInput) {
+            deleteInput.checked = true;
+            row.style.display = 'none';
+        } else {
+            row.remove();
+            // We don't decrement TOTAL_FORMS to avoid ID collisions, 
+            // Django handles missing indices fine as long as they are within TOTAL_FORMS
+        }
+        updateCalculations();
+    }
+
+    // Initialize event listeners
+    document.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('input', updateCalculations);
+    });
+    
+    // Run initial calculation
+    updateCalculations();
+</script>
+{% endblock %}
