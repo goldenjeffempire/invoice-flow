@@ -657,105 +657,23 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    """Display comprehensive user dashboard with real-time analytics and actionable insights."""
-    from invoices.services import AnalyticsService
-    from datetime import timedelta
-    from django.db.models.functions import TruncMonth
-    from django.db.models import Sum, F
-    from django.utils import timezone
-    import json
-
-    base_queryset = Invoice.objects.filter(user=request.user)
-
-    # Core statistics (Aggressively cached)
-    stats = AnalyticsService.get_user_dashboard_stats(request.user)
-    today = timezone.now().date()
-    
-    # Check cache for auxiliary dashboard data
-    from django.core.cache import cache as django_cache
-    cache_key = f"dashboard_aux_data_{request.user.id}"
-    cached_aux = django_cache.get(cache_key)
-    
-    if cached_aux:
-        overdue_count = cached_aux['overdue_count']
-        due_this_week = cached_aux['due_this_week']
-        chart_labels = cached_aux['chart_labels']
-        chart_data = cached_aux['chart_data']
-        aging_summary = cached_aux['aging_summary']
-        top_clients = cached_aux['top_clients']
-        total_unpaid = cached_aux['total_unpaid']
-    else:
-        # Calculate key metrics with optimized queries
-        # 1. Overdue and Due this week
-        overdue_count = base_queryset.filter(status="unpaid", due_date__lt=today).count()
-        due_this_week = base_queryset.filter(
-            status="unpaid", 
-            due_date__gte=today, 
-            due_date__lte=today + timedelta(days=7)
-        ).count()
-        
-        # 2. Aging summary buckets
-        aging_30 = base_queryset.filter(status="unpaid", due_date__gte=today - timedelta(days=30), due_date__lte=today).count()
-        aging_60 = base_queryset.filter(status="unpaid", due_date__gte=today - timedelta(days=60), due_date__lt=today - timedelta(days=30)).count()
-        aging_plus = base_queryset.filter(status="unpaid", due_date__lt=today - timedelta(days=60)).count()
-        
-        aging_summary = {
-            "0_30": aging_30,
-            "31_60": aging_60,
-            "60_plus": aging_plus,
-        }
-        
-        # 3. Monthly revenue trends (Optimized grouping)
-        twelve_months_ago = timezone.now() - timedelta(days=365)
-        monthly_data = (
-            base_queryset.filter(status="paid", invoice_date__gte=twelve_months_ago)
-            .annotate(month=TruncMonth("invoice_date"))
-            .values("month")
-            .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
-            .order_by("month")
-        )
-        
-        chart_labels = []
-        chart_data = []
-        for item in monthly_data:
-            if item["month"]:
-                chart_labels.append(item["month"].strftime("%b %Y"))
-                chart_data.append(float(item["total"] or 0))
-        
-        # 4. Revenue breakdown by client (top 5)
-        top_clients = list(
-            base_queryset.values("client_name")
-            .annotate(total=Sum(F("line_items__quantity") * F("line_items__unit_price")))
-            .order_by("-total")[:5]
-        )
-        
-        # 5. Total unpaid amount
-        total_unpaid = base_queryset.filter(status="unpaid").aggregate(
-            total=Sum(F("line_items__quantity") * F("line_items__unit_price"))
-        )["total"] or Decimal("0")
-        
-        # Cache for 10 minutes (increased from 5)
-        django_cache.set(cache_key, {
-            'overdue_count': overdue_count,
-            'due_this_week': due_this_week,
-            'chart_labels': chart_labels,
-            'chart_data': chart_data,
-            'aging_summary': aging_summary,
-            'top_clients': top_clients,
-            'total_unpaid': total_unpaid,
-        }, 600)
-    
-@login_required
-def dashboard(request):
     """Modern dashboard view with key metrics."""
     from .models import Invoice, Payment
-    from django.db.models import Sum
+    from django.db.models import Sum, F
+    from django.utils import timezone
     from datetime import date, timedelta
+    from decimal import Decimal
     
     invoices = Invoice.objects.filter(user=request.user)
-    total_revenue = invoices.filter(status="paid").aggregate(Sum('line_items__quantity'))['line_items__quantity__sum'] or 0 # Simplified for demo
+    
+    # Calculate revenue from paid invoices
+    # We use F expressions to calculate total for each line item and sum them
+    total_revenue = invoices.filter(status="paid").aggregate(
+        total=Sum(F('line_items__quantity') * F('line_items__unit_price'))
+    )['total'] or Decimal('0.00')
+    
     pending_count = invoices.filter(status="unpaid").count()
-    overdue_count = invoices.filter(status="unpaid", due_date__lt=date.today()).count()
+    overdue_count = invoices.filter(status="unpaid", due_date__lt=timezone.now().date()).count()
     
     recent_invoices = invoices.order_by('-created_at')[:5]
     

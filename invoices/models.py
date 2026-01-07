@@ -759,76 +759,23 @@ class PaymentSettings(models.Model):
 
 
 # ============================================================================
-# AUTOMATED REMINDERS (NEW SYSTEM)
+# PROCESSED PAYSTACK WEBHOOKS
 # ============================================================================
 
-class ReminderRule(models.Model):
-    """Defines rules for when automated reminders should be sent."""
-    class TriggerType(models.TextChoices):
-        BEFORE_DUE = "before_due", "Days Before Due Date"
-        ON_DUE = "on_due", "On Due Date"
-        AFTER_DUE = "after_due", "Days After Due Date"
-        UPON_CREATION = "upon_creation", "Immediately Upon Creation"
-
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reminder_rules")
-    name = models.CharField(max_length=100)
-    trigger_type = models.CharField(max_length=20, choices=TriggerType.choices, default=TriggerType.AFTER_DUE)
-    days_delta = models.IntegerField(default=0)
-    channel = models.CharField(max_length=20, choices=[('email', 'Email'), ('in_app', 'In-App'), ('sms', 'SMS')], default='email')
-    exclude_weekends = models.BooleanField(default=False)
-    retry_on_failure = models.BooleanField(default=True)
-    max_retries = models.IntegerField(default=3)
-    retry_delay = models.IntegerField(default=300)  # Seconds
-    subject_template = models.CharField(max_length=255, blank=True)
-    body_template = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    # Advanced Settings
-    custom_sender_name = models.CharField(max_length=100, blank=True)
-    reply_to_email = models.EmailField(blank=True)
-    attach_pdf = models.BooleanField(default=True)
-    
-    class Meta:
-        ordering = ["trigger_type", "days_delta"]
-        unique_together = ["user", "trigger_type", "days_delta"]
-
-class ScheduledReminder(models.Model):
-    """A specific reminder instance scheduled for an invoice."""
-    class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
-        SENT = "sent", "Sent"
-        FAILED = "failed", "Failed"
-        CANCELLED = "cancelled", "Cancelled"
-        RETRYING = "retrying", "Retrying"
-
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="scheduled_reminders")
-    rule = models.ForeignKey(ReminderRule, on_delete=models.SET_NULL, null=True, blank=True)
-    scheduled_for = models.DateTimeField(db_index=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    attempts = models.IntegerField(default=0)
-    last_attempt = models.DateTimeField(null=True, blank=True)
-    error_log = models.TextField(blank=True)
-    delivery_metadata = models.JSONField(default=dict, blank=True) # Store provider IDs, open rates, etc.
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class ProcessedWebhook(models.Model):
+    event_id = models.CharField(max_length=255, unique=True, db_index=True)
+    processed_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["scheduled_for"]
-        indexes = [models.Index(fields=["status", "scheduled_for"])]
+        ordering = ["-processed_at"]
+        indexes = [
+            models.Index(fields=["event_id"]),
+            models.Index(fields=["-processed_at"]),
+        ]
 
-class ReminderLog(models.Model):
-    """Audit trail for all sent reminders."""
-    scheduled_reminder = models.OneToOneField(ScheduledReminder, on_delete=models.SET_NULL, null=True, related_name="log")
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
-    recipient_email = models.EmailField()
-    subject = models.CharField(max_length=255)
-    body = models.TextField()
-    sent_at = models.DateTimeField(auto_now_add=True)
-    opened_at = models.DateTimeField(null=True, blank=True)
-    clicked_at = models.DateTimeField(null=True, blank=True)
-    success = models.BooleanField(default=True)
+    def __str__(self) -> str:
+        return f"WebhookEvent {self.event_id}"
+
 
 class PaymentRecipient(models.Model):
     class AccountType(models.TextChoices):
