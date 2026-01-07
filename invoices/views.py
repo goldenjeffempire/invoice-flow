@@ -747,12 +747,104 @@ def dashboard(request):
     
 @login_required
 def dashboard(request):
-    """Simple dashboard view."""
+    """Modern dashboard view with key metrics."""
+    from .models import Invoice, Payment
+    from django.db.models import Sum
+    from datetime import date, timedelta
+    
+    invoices = Invoice.objects.filter(user=request.user)
+    total_revenue = invoices.filter(status="paid").aggregate(Sum('line_items__quantity'))['line_items__quantity__sum'] or 0 # Simplified for demo
+    pending_count = invoices.filter(status="unpaid").count()
+    overdue_count = invoices.filter(status="unpaid", due_date__lt=date.today()).count()
+    
+    recent_invoices = invoices.order_by('-created_at')[:5]
+    
     context = {
-        "user": request.user,
+        "total_revenue": total_revenue,
+        "pending_count": pending_count,
+        "overdue_count": overdue_count,
+        "recent_invoices": recent_invoices,
         "active": "dashboard",
     }
     return render(request, "dashboard/main.html", context)
+
+@login_required
+def invoice_list(request):
+    """View to list all invoices with filtering."""
+    from .models import Invoice
+    invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, "invoices/invoice_list.html", {"invoices": invoices, "active": "invoices"})
+
+@login_required
+def invoice_create(request):
+    """Modern invoice creation view."""
+    from .forms import InvoiceForm, LineItemFormSet
+    if request.method == "POST":
+        form = InvoiceForm(request.POST)
+        formset = LineItemFormSet(request.POST)
+        if form.is_valid() and formset.is_valid():
+            invoice = form.save(commit=False)
+            invoice.user = request.user
+            invoice.save()
+            formset.instance = invoice
+            formset.save()
+            messages.success(request, "Invoice created successfully!")
+            return redirect("invoices:invoice_detail", invoice_id=invoice.id)
+    else:
+        form = InvoiceForm()
+        formset = LineItemFormSet()
+    
+    return render(request, "invoices/invoice_create.html", {
+        "form": form,
+        "formset": formset,
+        "active": "invoices"
+    })
+
+@login_required
+def invoice_detail(request, invoice_id):
+    """Detailed view of an invoice."""
+    from .models import Invoice
+    invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
+    return render(request, "invoices/invoice_detail.html", {"invoice": invoice, "active": "invoices"})
+
+@login_required
+def invoice_edit(request, invoice_id):
+    """Edit an existing invoice."""
+    from .models import Invoice
+    from .forms import InvoiceForm, LineItemFormSet
+    invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
+    if request.method == "POST":
+        form = InvoiceForm(request.POST, instance=invoice)
+        formset = LineItemFormSet(request.POST, instance=invoice)
+        if form.is_valid() and formset.is_valid():
+            form.save()
+            formset.save()
+            messages.success(request, "Invoice updated successfully!")
+            return redirect("invoices:invoice_detail", invoice_id=invoice.id)
+    else:
+        form = InvoiceForm(instance=invoice)
+        formset = LineItemFormSet(instance=invoice)
+    
+    return render(request, "invoices/invoice_create.html", {
+        "form": form,
+        "formset": formset,
+        "invoice": invoice,
+        "active": "invoices"
+    })
+
+@login_required
+def invoice_delete(request, invoice_id):
+    """Delete an invoice."""
+    from .models import Invoice
+    invoice = get_object_or_404(Invoice, id=invoice_id, user=request.user)
+    invoice.delete()
+    messages.success(request, "Invoice deleted.")
+    return redirect("invoices:invoice_list")
+
+@login_required
+def invoice_pdf(request, invoice_id):
+    """Generate PDF for an invoice."""
+    return HttpResponse("PDF generation not implemented in this demo", status=501)
 
 
 # ============================================================================

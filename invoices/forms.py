@@ -8,11 +8,25 @@ from .models import (
     ContactSubmission,
     Invoice,
     InvoiceTemplate,
-    PaymentRecipient,
+    LineItem,
     PaymentSettings,
     RecurringInvoice,
     UserProfile,
     Waitlist,
+)
+
+class LineItemForm(forms.ModelForm):
+    class Meta:
+        model = LineItem
+        fields = ["description", "quantity", "unit_price"]
+        widgets = {
+            "description": forms.TextInput(attrs={"class": "input-modern", "placeholder": "Item description"}),
+            "quantity": forms.NumberInput(attrs={"class": "input-modern", "step": "0.01", "placeholder": "1"}),
+            "unit_price": forms.NumberInput(attrs={"class": "input-modern", "step": "0.01", "placeholder": "0.00"}),
+        }
+
+LineItemFormSet = forms.inlineformset_factory(
+    Invoice, LineItem, form=LineItemForm, extra=1, can_delete=True
 )
 from .validators import (
     InvoiceBusinessRules,

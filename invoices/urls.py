@@ -17,9 +17,14 @@ urlpatterns = [
     path("payments/history/", views.payment_history, name="payment_history"),
     path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
 
-    # ------------------------------------------------------------------
-    # SETTINGS (Modern & Production-grade)
-    # ------------------------------------------------------------------
+    path("dashboard/", views.dashboard, name="dashboard"),
+    path("create/", views.invoice_create, name="invoice_create"),
+    path("list/", views.invoice_list, name="invoice_list"),
+    path("<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
+    path("<int:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
+    path("<int:invoice_id>/delete/", views.invoice_delete, name="invoice_delete"),
+    path("<int:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf"),
+    
     path("settings/", views.settings_page, name="settings"),
     path("settings/profile/", views.profile_update_ajax, name="settings_profile_update"),
     path("settings/security/", views.security_update_ajax, name="settings_security_update"),

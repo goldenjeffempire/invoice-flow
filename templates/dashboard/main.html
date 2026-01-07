@@ -211,104 +211,81 @@
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-grid-layout">
+<div class="dashboard-grid-layout space-y-8">
     <!-- Stats Row -->
-    <div class="stats-container">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Revenue Stat -->
-        <div class="stat-widget">
-            <div class="stat-header">
-                <div class="stat-icon" style="background: var(--primary-light); color: var(--primary);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                    </svg>
-                </div>
-                <div class="stat-trend" style="background: var(--success-light); color: var(--success);">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="18 15 12 9 6 15" />
-                    </svg>
-                    12.5%
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-green-50 text-green-600 rounded-xl">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                 </div>
             </div>
-            <div class="stat-value-container">
-                <span class="stat-label">Total Revenue</span>
-                <span class="stat-value">{{ total_revenue|default:"0"|floatformat:2 }} <small style="font-size: 0.6em; color: var(--gray-400);">{{ user.profile.default_currency|default:"USD" }}</small></span>
-            </div>
+            <p class="text-sm font-semibold text-gray-500 mb-1">Total Revenue</p>
+            <h3 class="text-2xl font-black text-gray-900">{{ total_revenue|floatformat:2 }}</h3>
         </div>
 
-        <!-- Invoices Stat -->
-        <div class="stat-widget">
-            <div class="stat-header">
-                <div class="stat-icon" style="background: var(--gray-100); color: var(--gray-600);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                        <polyline points="14 2 14 8 20 8" />
-                    </svg>
+        <!-- Pending Invoices -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 00 2 2h12a2 2 0 00 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 </div>
-                <div class="stat-label" style="font-size: 0.75rem; font-weight: 600;">Active</div>
             </div>
-            <div class="stat-value-container">
-                <span class="stat-label">System Active</span>
-                <span class="stat-value">Ready</span>
-            </div>
+            <p class="text-sm font-semibold text-gray-500 mb-1">Pending Invoices</p>
+            <h3 class="text-2xl font-black text-gray-900">{{ pending_count }}</h3>
         </div>
 
-        <!-- System Stat -->
-        <div class="stat-widget">
-            <div class="stat-header">
-                <div class="stat-icon" style="background: var(--primary-light); color: var(--primary);">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                    </svg>
+        <!-- Overdue -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-red-50 text-red-600 rounded-xl">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 </div>
             </div>
-            <div class="stat-value-container">
-                <span class="stat-label">Security</span>
-                <span class="stat-value">Enabled</span>
-            </div>
+            <p class="text-sm font-semibold text-gray-500 mb-1">Overdue</p>
+            <h3 class="text-2xl font-black text-gray-900">{{ overdue_count }}</h3>
         </div>
     </div>
 
-    <!-- Main Grid -->
-    <div class="main-dashboard-grid">
-        <!-- System Activity -->
-        <div class="activity-card">
-            <div class="card-head">
-                <h3 style="font-size: 1rem; font-weight: 700;">System Overview</h3>
-            </div>
-            <div class="card-body">
-                <div style="padding: 3rem 1.5rem; text-align: center; color: var(--gray-400);">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 1rem; opacity: 0.5;">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M12 8v4l3 3"/>
-                    </svg>
-                    <p>System is running normally. No recent activity to display.</p>
-                </div>
-            </div>
+    <!-- Recent Invoices Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="p-6 border-b border-gray-50 flex justify-between items-center">
+            <h3 class="text-lg font-bold text-gray-900">Recent Invoices</h3>
+            <a href="{% url 'invoices:invoice_list' %}" class="text-indigo-600 font-semibold text-sm hover:underline">View All</a>
         </div>
-
-        <!-- Quick Actions -->
-        <div class="activity-card">
-            <div class="card-head">
-                <h3 style="font-size: 1rem; font-weight: 700;">Quick Actions</h3>
-            </div>
-            <div class="card-body">
-                <div class="quick-action-grid">
-                    <a href="{% url 'invoices:payment_history' %}" class="action-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="5" width="20" height="14" rx="2" />
-                            <line x1="2" y1="10" x2="22" y2="10" />
-                        </svg>
-                        <span style="font-size: 0.8125rem; font-weight: 600;">Payments</span>
-                    </a>
-                    <a href="{% url 'invoices:settings' %}" class="action-btn">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3" />
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                        </svg>
-                        <span style="font-size: 0.8125rem; font-weight: 600;">Settings</span>
-                    </a>
-                </div>
-            </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-widest">
+                    <tr>
+                        <th class="px-6 py-4">ID</th>
+                        <th class="px-6 py-4">Client</th>
+                        <th class="px-6 py-4">Amount</th>
+                        <th class="px-6 py-4">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for invoice in recent_invoices %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 font-medium text-gray-900">{{ invoice.invoice_id }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ invoice.client_name }}</td>
+                        <td class="px-6 py-4 font-semibold text-gray-900">{{ invoice.total|floatformat:2 }} {{ invoice.currency }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 rounded-full text-[10px] font-black uppercase
+                                {% if invoice.status == 'paid' %}bg-green-100 text-green-700
+                                {% elif invoice.status == 'unpaid' %}bg-amber-100 text-amber-700
+                                {% else %}bg-rose-100 text-rose-700{% endif %}">
+                                {{ invoice.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-gray-400 italic">No recent invoices</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
