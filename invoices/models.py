@@ -117,7 +117,7 @@ class UserProfile(models.Model):
     business_address = models.TextField(blank=True)
 
     default_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="USD")
-    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
+    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
 
     invoice_prefix = models.CharField(max_length=10, default="INV")
     timezone = models.CharField(max_length=63, default="UTC")
@@ -257,8 +257,8 @@ class Invoice(models.Model):
     due_date = models.DateField(null=True, blank=True, db_index=True)
 
     currency = models.CharField(max_length=3, default="USD", db_index=True)
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
-    discount = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    discount = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     automated_reminders_enabled = models.BooleanField(default=True)
 
     status = models.CharField(
@@ -315,7 +315,7 @@ class LineItem(models.Model):
     )
 
     description = models.CharField(max_length=500)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)  # type: ignore[assignment]
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     @property
@@ -395,7 +395,7 @@ class ReminderRule(models.Model):
     exclude_weekends = models.BooleanField(default=False)
     retry_on_failure = models.BooleanField(default=True)
     max_retries = models.IntegerField(default=3)
-    retry_delay = models.IntegerField(default=300)  # Seconds
+    retry_delay = models.IntegerField(default=300)
     subject_template = models.CharField(max_length=255, blank=True)
     body_template = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
@@ -467,20 +467,6 @@ class InAppNotification(models.Model):
 # ============================================================================
 # PROCESSED PAYSTACK WEBHOOKS
 # ============================================================================
-
-class ProcessedWebhook(models.Model):
-    event_id = models.CharField(max_length=255, unique=True, db_index=True)
-    processed_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-processed_at"]
-        indexes = [
-            models.Index(fields=["event_id"]),
-            models.Index(fields=["-processed_at"]),
-        ]
-
-    def __str__(self) -> str:
-        return f"WebhookEvent {self.event_id}"
 
 
 # ============================================================================
@@ -697,7 +683,7 @@ class RecurringInvoiceLineItem(models.Model):
         RecurringInvoice, on_delete=models.CASCADE, related_name="line_items"
     )
     description = models.CharField(max_length=500)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)  # type: ignore[assignment]
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     @property
@@ -735,8 +721,8 @@ class PaymentSettings(models.Model):
         max_length=20, choices=PayoutSchedule.choices, default=PayoutSchedule.DAILY
     )
     payout_threshold = models.DecimalField(
-        max_digits=12, decimal_places=2, default=0
-    )  # type: ignore[assignment]
+        max_digits=12, decimal_places=2, default=Decimal('0.00')
+    )
     send_payment_receipt = models.BooleanField(default=True)  # type: ignore[assignment]
     send_payout_notification = models.BooleanField(default=True)  # type: ignore[assignment]
     payment_instructions = models.TextField(blank=True)
@@ -761,20 +747,6 @@ class PaymentSettings(models.Model):
 # ============================================================================
 # PROCESSED PAYSTACK WEBHOOKS
 # ============================================================================
-
-class ProcessedWebhook(models.Model):
-    event_id = models.CharField(max_length=255, unique=True, db_index=True)
-    processed_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-processed_at"]
-        indexes = [
-            models.Index(fields=["event_id"]),
-            models.Index(fields=["-processed_at"]),
-        ]
-
-    def __str__(self) -> str:
-        return f"WebhookEvent {self.event_id}"
 
 
 class PaymentRecipient(models.Model):

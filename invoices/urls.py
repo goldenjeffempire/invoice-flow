@@ -18,6 +18,7 @@ urlpatterns = [
     path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
 
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("analytics/", views.dashboard, name="analytics"),
     path("create/", views.invoice_create, name="invoice_create"),
     path("list/", views.invoice_list, name="invoice_list"),
     path("<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
