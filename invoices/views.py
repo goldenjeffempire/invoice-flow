@@ -781,12 +781,6 @@ def pricing(request):
 
 
 @login_required
-def templates_page(request):
-    """Invoice templates coming soon page."""
-    return render(request, "pages/templates.html")
-
-
-@login_required
 def invoice_templates(request):
     """Manage reusable invoice templates."""
     from .models import InvoiceTemplate
