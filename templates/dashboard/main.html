@@ -1,162 +1,87 @@
 {% extends 'base/layout-authenticated.html' %}
 {% load static %}
 
-{% block title %}Dashboard - InvoiceFlow Platinum{% endblock %}
-
-{% block page_title %}Overview{% endblock %}
-{% block page_subtitle %}Generative business intelligence insights{% endblock %}
+{% block title %}Dashboard - InvoiceFlow Enterprise{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard-pro.css' %}">
-<style>
-    .dashboard-animate-in {
-        animation: fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-    }
-    
-    .chart-container {
-        position: relative;
-        height: 400px;
-        width: 100%;
-    }
-
-    .glass-nav-btn {
-        background: rgba(255, 255, 255, 0.4);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 0.5rem 1.25rem;
-        border-radius: 12px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .glass-nav-btn.active {
-        background: var(--gray-900);
-        color: white;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-    }
-</style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <!-- Enhanced Header -->
-    <div class="flex justify-between items-end mb-12 dashboard-animate-in">
+    <!-- Enterprise Header -->
+    <div class="flex justify-between items-center mb-8">
         <div>
-            <h1 class="text-6xl font-black text-gray-900 tracking-tighter mb-2">
-                Hello, {{ request.user.first_name|default:request.user.username }}<span class="text-indigo-600">.</span>
-            </h1>
-            <p class="text-gray-400 text-lg font-medium">Your business is scaling 14% faster than last quarter.</p>
+            <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <p class="text-sm text-gray-500">Welcome, {{ request.user.get_full_name|default:request.user.username }}</p>
         </div>
-        <div class="flex gap-4">
-            <a href="{% url 'invoices:invoice_create' %}" class="btn-primary flex items-center gap-3 text-lg font-bold">
-                <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                Deploy New Invoice
-            </a>
+        <div class="flex gap-3">
+            <a href="{% url 'invoices:invoice_create' %}" class="btn-primary">Create Invoice</a>
         </div>
     </div>
 
-    <!-- Futuristic Metrics -->
-    <div class="metrics-grid mb-12 dashboard-animate-in" style="animation-delay: 0.1s">
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="metric-card">
-            <div class="flex justify-between items-start mb-6">
-                <span class="text-xs font-black uppercase tracking-widest text-gray-400">Net Liquidity</span>
-                <div class="p-2 bg-green-50 rounded-lg text-green-500">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                </div>
-            </div>
-            <div class="metric-value">${{ total_revenue|floatformat:0 }}</div>
-            <div class="flex items-center gap-2 mt-4 text-sm font-bold text-green-600">
-                <span class="px-2 py-0.5 bg-green-100 rounded-md">+12.4%</span>
-                <span class="text-gray-400 font-medium">vs last month</span>
-            </div>
+            <h3 class="metric-title">Total Revenue</h3>
+            <p class="metric-value">${{ total_revenue|floatformat:2 }}</p>
+            <p class="text-xs text-green-600 font-bold">↑ 12% vs last month</p>
         </div>
-
         <div class="metric-card">
-            <div class="flex justify-between items-start mb-6">
-                <span class="text-xs font-black uppercase tracking-widest text-gray-400">Awaiting Settlement</span>
-                <div class="p-2 bg-indigo-50 rounded-lg text-indigo-500">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-            </div>
-            <div class="metric-value">{{ pending_count }}</div>
-            <p class="text-gray-400 text-sm font-medium mt-4">Average collection cycle: 4.2 days</p>
+            <h3 class="metric-title">Outstanding</h3>
+            <p class="metric-value">{{ pending_count }}</p>
+            <p class="text-xs text-gray-500">{{ unpaid_count }} unpaid invoices</p>
         </div>
-
         <div class="metric-card">
-            <div class="flex justify-between items-start mb-6">
-                <span class="text-xs font-black uppercase tracking-widest text-gray-400">Risk Threshold</span>
-                <div class="p-2 bg-red-50 rounded-lg text-red-500">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                </div>
-            </div>
-            <div class="metric-value">{{ overdue_count }}</div>
-            <p class="text-red-500 text-sm font-bold mt-4">Critical: 2 high-priority actions needed</p>
+            <h3 class="metric-title">Overdue</h3>
+            <p class="metric-value">{{ overdue_count }}</p>
+            <p class="text-xs text-red-600 font-bold">Requires attention</p>
         </div>
     </div>
 
-    <!-- Main Intelligence Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 dashboard-animate-in" style="animation-delay: 0.2s">
-        <div class="lg:col-span-2 space-y-12">
-            <!-- Predictive Analytics -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Analytics -->
             <div class="dashboard-section">
-                <div class="flex justify-between items-center mb-10">
-                    <h2 class="section-title">Revenue Trajectory</h2>
-                    <div class="flex gap-3 bg-gray-100 p-1.5 rounded-2xl">
-                        <button class="glass-nav-btn active">Predictive</button>
-                        <button class="glass-nav-btn">Historical</button>
-                    </div>
-                </div>
-                <div class="chart-container">
+                <h2 class="section-title">Revenue Performance</h2>
+                <div style="height: 300px;">
                     <canvas id="revenueChart"></canvas>
                 </div>
             </div>
 
-            <!-- Modern Data Grid -->
-            <div class="dashboard-section overflow-hidden">
-                <div class="flex justify-between items-center mb-8">
-                    <h2 class="section-title">Settlement Queue</h2>
-                    <a href="{% url 'invoices:invoice_list' %}" class="text-sm font-black text-indigo-600 uppercase tracking-widest hover:translate-x-1 transition-transform inline-block">Full Ledger →</a>
+            <!-- Recent Activity -->
+            <div class="dashboard-section">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="section-title">Recent Invoices</h2>
+                    <a href="{% url 'invoices:invoice_list' %}" class="text-sm font-bold text-gray-600 hover:text-black">View All →</a>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="table w-full">
+                    <table class="table">
                         <thead>
-                            <tr class="text-left">
-                                <th>Identity</th>
-                                <th>Entity</th>
-                                <th>Valuation</th>
+                            <tr>
+                                <th>Invoice ID</th>
+                                <th>Client</th>
+                                <th>Amount</th>
                                 <th>Status</th>
-                                <th></th>
+                                <th>Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for invoice in recent_invoices %}
-                            <tr class="group hover:bg-white/40 transition-colors">
+                            <tr>
+                                <td class="font-bold">#{{ invoice.invoice_id }}</td>
+                                <td>{{ invoice.client_name }}</td>
+                                <td class="font-bold">${{ invoice.total|floatformat:2 }}</td>
                                 <td>
-                                    <div class="font-black text-gray-900">#{{ invoice.invoice_id }}</div>
-                                    <div class="text-xs text-gray-400 font-bold uppercase">{{ invoice.date|date:"d M y" }}</div>
-                                </td>
-                                <td>
-                                    <div class="font-bold text-gray-800">{{ invoice.client_name }}</div>
-                                    <div class="text-xs text-gray-400">{{ invoice.client_email|truncatechars:18 }}</div>
-                                </td>
-                                <td>
-                                    <div class="font-black text-gray-900">${{ invoice.total|floatformat:2 }}</div>
-                                    <div class="text-[10px] text-gray-400 font-black uppercase">{{ invoice.currency }}</div>
-                                </td>
-                                <td>
-                                    <span class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest {% if invoice.status == 'paid' %}bg-green-100 text-green-700{% elif invoice.status == 'unpaid' %}bg-indigo-100 text-indigo-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                    <span class="badge badge-{{ invoice.status }}">
                                         {{ invoice.status }}
                                     </span>
                                 </td>
-                                <td class="text-right">
-                                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="p-3 bg-gray-100 rounded-xl hover:bg-gray-900 hover:text-white transition-all inline-block">
-                                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
-                                    </a>
-                                </td>
+                                <td class="text-gray-500">{{ invoice.date|date:"M d, Y" }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="py-20 text-center text-gray-400 font-bold">Initiate your first deployment to populate the queue.</td>
+                                <td colspan="5" class="text-center py-8 text-gray-400">No recent activity.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -165,40 +90,33 @@
             </div>
         </div>
 
-        <div class="space-y-12">
-            <!-- Strategic Actions -->
-            <div class="dashboard-section bg-gray-900 text-white border-none">
-                <h3 class="text-lg font-black mb-6 tracking-tight">Strategic Hub</h3>
-                <div class="grid grid-cols-1 gap-4">
-                    <a href="{% url 'invoices:invoice_create' %}" class="group p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-sm font-black uppercase tracking-widest text-indigo-400">Automate</span>
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
-                        </div>
-                        <p class="text-xs text-white/60 font-medium">Generate intelligent billing cycles</p>
+        <div class="space-y-8">
+            <!-- Quick Actions -->
+            <div class="dashboard-section">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-6">Operations</h3>
+                <div class="grid grid-cols-1 gap-3">
+                    <a href="{% url 'invoices:invoice_create' %}" class="p-4 border border-gray-200 rounded hover:bg-gray-50 flex items-center justify-between group transition-colors">
+                        <span class="text-sm font-bold">New Invoice</span>
+                        <svg class="w-4 h-4 text-gray-400 group-hover:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
-                    <a href="{% url 'invoices:invoice_list' %}" class="group p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-sm font-black uppercase tracking-widest text-purple-400">Optimize</span>
-                            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        </div>
-                        <p class="text-xs text-white/60 font-medium">Analyze payment velocity</p>
+                    <a href="{% url 'invoices:invoice_list' %}" class="p-4 border border-gray-200 rounded hover:bg-gray-50 flex items-center justify-between group transition-colors">
+                        <span class="text-sm font-bold">Export Data</span>
+                        <svg class="w-4 h-4 text-gray-400 group-hover:text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1M16 8l-4 4m0 0l-4-4m4 4V4"/></svg>
                     </a>
                 </div>
             </div>
 
-            <!-- Intelligent Feed -->
+            <!-- Summary Feed -->
             <div class="dashboard-section">
-                <h3 class="section-title mb-8">System Pulse</h3>
-                <div class="space-y-6">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-gray-500 mb-6">Recent Status Updates</h3>
+                <div class="space-y-4">
                     {% for invoice in recent_invoices|slice:":5" %}
-                    <div class="flex gap-4 group">
-                        <div class="w-1.5 h-12 rounded-full {% if invoice.status == 'paid' %}bg-green-400 shadow-[0_0_12px_rgba(74,222,128,0.5)]{% else %}bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,0.5)]{% endif %}"></div>
-                        <div>
-                            <div class="text-xs font-black text-gray-900">#{{ invoice.invoice_id }} — {{ invoice.status|upper }}</div>
-                            <div class="text-xs text-gray-400 font-bold mt-1">Processed {{ invoice.updated_at|timesince }} ago</div>
-                            <div class="text-[10px] text-indigo-600 font-black mt-1 uppercase tracking-tighter">Value: ${{ invoice.total|floatformat:0 }}</div>
+                    <div class="pb-4 border-b border-gray-100 last:border-0">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-xs font-bold">#{{ invoice.invoice_id }}</span>
+                            <span class="text-xs text-gray-500">{{ invoice.updated_at|timesince }} ago</span>
                         </div>
+                        <p class="text-xs text-gray-600">{{ invoice.client_name }} - ${{ invoice.total|floatformat:0 }}</p>
                     </div>
                     {% endfor %}
                 </div>
@@ -213,62 +131,32 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const ctx = document.getElementById('revenueChart').getContext('2d');
-        const primary = '#6366f1';
-        const secondary = '#a855f7';
-        
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(99, 102, 241, 0.15)');
-        gradient.addColorStop(0.5, 'rgba(168, 85, 247, 0.05)');
-        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
         new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
-                labels: ['Q1', 'Q2', 'Q3', 'Q4', 'Q5 (Proj)', 'Q6 (Proj)'],
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
                 datasets: [{
-                    label: 'Actual',
-                    data: [42000, 58000, 51000, 72000, null, null],
-                    borderColor: primary,
-                    borderWidth: 5,
-                    pointRadius: 6,
-                    pointBackgroundColor: '#fff',
-                    pointBorderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: gradient
-                }, {
-                    label: 'Projected',
-                    data: [null, null, null, 72000, 89000, 105000],
-                    borderColor: secondary,
-                    borderWidth: 4,
-                    borderDash: [10, 5],
-                    pointRadius: 0,
-                    tension: 0.4
+                    label: 'Revenue',
+                    data: [12000, 19000, 15000, 25000, 22000, 30000],
+                    backgroundColor: '#1a1a1a',
+                    borderRadius: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1f2937',
-                        padding: 16,
-                        titleFont: { size: 14, weight: '900' },
-                        bodyFont: { size: 13, weight: '600' },
-                        cornerRadius: 16,
-                        displayColors: false
-                    }
+                    legend: { display: false }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false },
-                        ticks: { font: { weight: 'bold', size: 11 }, color: '#9ca3af' }
+                        grid: { color: '#f0f0f0' },
+                        ticks: { font: { weight: 'bold', size: 10 } }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { font: { weight: 'bold', size: 11 }, color: '#9ca3af' }
+                        ticks: { font: { weight: 'bold', size: 10 } }
                     }
                 }
             }
