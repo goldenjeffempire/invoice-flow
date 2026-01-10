@@ -1,92 +1,55 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>{% block title %}InvoiceFlow{% endblock %} | Dashboard</title>
-    <meta name="description" content="{% block meta_description %}InvoiceFlow - Professional invoicing platform for modern businesses.{% endblock %}">
-    <meta name="theme-color" content="#6366f1">
-    <meta name="color-scheme" content="light">
-    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'icons/icon-192x192.png' %}">
-    <link rel="manifest" href="{% static 'manifest.json' %}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/authenticated-modern.css' %}">
-    {% block extra_css %}{% endblock %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}InvoiceFlow{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Prevent layout shift */
-        html { overflow-y: scroll; }
-        body { overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .sidebar { width: 260px; height: 100vh; position: fixed; left: 0; top: 0; background: #0f172a; color: white; }
+        .main-content { margin-left: 260px; padding: 2rem; }
+        .nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 0.5rem; transition: all 0.2s; color: #94a3b8; }
+        .nav-link:hover, .nav-link.active { background: #1e293b; color: white; }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
-<body class="light-authenticated" style="background-color: #f8fafc; color: #0f172a;">
-    <div class="authenticated-layout" id="app-layout">
-        <!-- Sidebar Navigation -->
-        {% include 'components/authenticated-sidebar.html' %}
-
-        <!-- Main Content Area -->
-        <main class="authenticated-main">
-            <!-- Header -->
-            <header class="authenticated-header sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b">
-                <div class="header-left">
-                    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">
-                        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                    </button>
-                    <div class="header-breadcrumb">
-                        <h1 class="header-title">{% block page_title %}Dashboard{% endblock %}</h1>
-                        <p class="header-subtitle">{% block page_subtitle %}Manage your business operations{% endblock %}</p>
-                    </div>
-                </div>
-                <div class="header-actions">
-                    <form action="{% url 'invoices:invoice_list' %}" method="get" class="header-search lg:flex hidden" id="global-search-form">
-                        <div class="search-wrapper">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                            <input type="text" name="search" placeholder="Search invoices..." aria-label="Search" value="{{ search_query|default:'' }}">
-                            <span class="search-shortcut">⌘K</span>
-                        </div>
-                    </form>
-                    <div class="header-buttons">
-                        <!-- Removed New Invoice button -->
-                    </div>
-                </div>
-            </header>
-
-            <!-- Page Content -->
-            <div class="authenticated-content">
-                <div class="content-container">
-                    {% block content %}{% endblock %}
+<body>
+    <aside class="sidebar p-6 flex flex-col">
+        <div class="flex items-center gap-3 mb-10">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="text-lg font-bold">InvoiceFlow</span>
+        </div>
+        <nav class="flex-1 space-y-1">
+            <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="{% url 'invoices:invoice_list' %}" class="nav-link {% if 'invoice' in request.path %}active{% endif %}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                Invoices
+            </a>
+        </nav>
+        <div class="pt-6 border-t border-slate-800">
+            <div class="flex items-center gap-3 px-2 mb-4">
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-sm">{{ user.username|slice:":1"|upper }}</div>
+                <div class="flex-1 overflow-hidden">
+                    <p class="text-xs font-semibold truncate">{{ user.username }}</p>
                 </div>
             </div>
-        </main>
-    </div>
-
-    <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-    <script src="{% static 'js/responsive-nav.js' %}"></script>
-    <script>
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                const globalSearch = document.querySelector('#global-search-form input[name="search"]');
-                if (globalSearch) globalSearch.focus();
-            }
-        });
-    </script>
+            <a href="{% url 'logout' %}" class="nav-link text-red-400 hover:text-red-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Logout
+            </a>
+        </div>
+    </aside>
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
