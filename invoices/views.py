@@ -686,6 +686,7 @@ def dashboard(request):
         "overdue_count": overdue_count,
         "recent_invoices": recent_invoices,
         "active": "dashboard",
+        "page_title": "Executive Overview",
     }
     return render(request, "dashboard/main.html", context)
 
