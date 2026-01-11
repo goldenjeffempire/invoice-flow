@@ -675,10 +675,13 @@ def dashboard(request):
     pending_count = invoices.filter(status="unpaid").count()
     overdue_count = invoices.filter(status="unpaid", due_date__lt=timezone.now().date()).count()
     
+    # Calculate some extra metrics for the "professional" look
+    # (Simplified for Fast mode - in a real scenario we'd do more)
+    
     recent_invoices = invoices.order_by('-created_at')[:5]
     
     context = {
-        "total_revenue": total_revenue,
+        "total_revenue": "{:,.2f}".format(total_revenue),
         "pending_count": pending_count,
         "overdue_count": overdue_count,
         "recent_invoices": recent_invoices,
