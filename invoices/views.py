@@ -16,7 +16,14 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    return render(request, "pages/home-light.html")
+    # KPIs calculation (Stubbed for now until data exists)
+    stats = {
+        'total_count': 12,
+        'revenue': '15,420.00',
+        'outstanding': '3,200.00',
+        'overdue': '850.00',
+    }
+    return render(request, "pages/dashboard.html", {"stats": stats, "active": "dashboard"})
 
 def logout_view(request):
     logout(request)
