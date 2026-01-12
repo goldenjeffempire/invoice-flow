@@ -1,209 +1,114 @@
 {% extends "base/layout.html" %}
 {% load static %}
 
-{% block title %}Create Professional Invoices in Seconds | InvoiceFlow{% endblock %}
+{% block title %}InvoiceFlow | Modern Invoicing for Professionals{% endblock %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" />
 <style>
-    @keyframes float {
-        0%, 100% { transform: translateY(0px) rotate(0deg); }
-        50% { transform: translateY(-20px) rotate(1deg); }
-    }
-    .float-anim { animation: float 6s ease-in-out infinite; }
-    
-    .glass-effect {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+    :root {
+        --primary: #4F46E5;
+        --secondary: #9333EA;
+        --accent: #F43F5E;
     }
     
+    body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+    .hero-gradient {
+        background: radial-gradient(circle at 0% 0%, rgba(79, 70, 229, 0.1) 0%, transparent 40%),
+                    radial-gradient(circle at 100% 100%, rgba(147, 51, 234, 0.1) 0%, transparent 40%);
+    }
+
+    .glass-nav {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 35px -10px rgba(79, 70, 229, 0.5);
+    }
+
     .text-gradient {
-        background: linear-gradient(135deg, #4F46E5 0%, #9333EA 100%);
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        background-size: 200% 200%;
-        animation: gradient-shift 5s ease infinite;
-    }
-    
-    @keyframes gradient-shift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
     }
 
-    .hero-bg {
-        background: radial-gradient(circle at 100% 0%, rgba(79, 70, 229, 0.08) 0%, transparent 50%),
-                    radial-gradient(circle at 0% 100%, rgba(147, 51, 234, 0.08) 0%, transparent 50%);
+    .floating {
+        animation: float 6s ease-in-out infinite;
     }
 
-    .card-hover {
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .card-hover:hover {
-        transform: translateY(-12px) scale(1.02);
-        box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.15);
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
     }
 
-    .reveal {
-        opacity: 0;
-        transform: translateY(30px);
-        transition: all 0.8s ease-out;
-    }
-    .reveal.active {
-        opacity: 1;
-        transform: translateY(0);
+    .card-modern {
+        background: white;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        border-radius: 2rem;
+        transition: all 0.4s ease;
     }
 
-    html { scroll-behavior: smooth; }
+    .card-modern:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.1);
+    }
+
+    .img-glow {
+        filter: drop-shadow(0 0 30px rgba(79, 70, 229, 0.2));
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="hero-bg min-h-screen font-['Inter']">
+<div class="hero-gradient min-h-screen">
     <!-- Hero Section -->
-    <section class="relative pt-32 pb-48 overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="lg:grid lg:grid-cols-12 lg:gap-16 items-center">
-                <div class="sm:text-center md:max-w-3xl md:mx-auto lg:col-span-7 lg:text-left">
-                    <h1 class="text-6xl tracking-tight font-black text-gray-900 sm:text-8xl mb-10 leading-[1.1]">
-                        Create Professional <br/>
-                        <span class="text-gradient">Invoices in Seconds.</span>
-                    </h1>
-                    
-                    <p class="text-2xl text-gray-600 leading-relaxed mb-12 max-w-2xl">
-                        Streamline your billing workflow, send beautifully designed invoices, automate reminders, and get paid faster than ever before.
-                    </p>
-                    
-                    <div class="flex flex-wrap gap-6 sm:justify-center lg:justify-start">
-                        <a href="{% url 'invoices:signup' %}" class="inline-flex items-center px-12 py-6 border border-transparent text-xl font-black rounded-2xl text-white bg-indigo-600 hover:bg-indigo-700 shadow-[0_20px_50px_rgba(79,70,229,0.3)] transition-all transform hover:-translate-y-2">
-                            Get Started Free <i data-lucide="arrow-right" class="ml-3 w-6 h-6"></i>
-                        </a>
-                        <a href="#how-it-works" class="inline-flex items-center px-12 py-6 border-2 border-gray-200 text-xl font-bold rounded-2xl text-gray-700 bg-white hover:bg-gray-50 transition-all transform hover:-translate-y-2">
-                            See How It Works
-                        </a>
-                    </div>
-                    
-                    <div class="mt-12 flex flex-wrap items-center gap-8 sm:justify-center lg:justify-start">
-                        <div class="flex items-center text-base font-bold text-gray-500 bg-white/80 backdrop-blur px-5 py-2 rounded-2xl border border-gray-100 shadow-sm">
-                            <i data-lucide="shield-check" class="w-5 h-5 mr-3 text-green-500"></i> No credit card required
-                        </div>
-                        <div class="flex items-center text-base font-bold text-gray-500 bg-white/80 backdrop-blur px-5 py-2 rounded-2xl border border-gray-100 shadow-sm">
-                            <i data-lucide="zap" class="w-5 h-5 mr-3 text-yellow-500"></i> Setup in 2 minutes
-                        </div>
-                        <div class="flex items-center text-base font-bold text-gray-500 bg-white/80 backdrop-blur px-5 py-2 rounded-2xl border border-gray-100 shadow-sm">
-                            <i data-lucide="check-circle" class="w-5 h-5 mr-3 text-blue-500"></i> Unlimited invoices
-                        </div>
-                    </div>
+    <section class="pt-32 pb-20 px-6">
+        <div class="max-w-7xl mx-auto lg:flex items-center gap-16">
+            <div class="lg:w-1/2" data-aos="fade-right">
+                <div class="inline-block px-4 py-2 rounded-full bg-indigo-50 text-indigo-600 font-bold text-sm mb-6">
+                    ✨ New: AI-Powered Smart Reminders
                 </div>
-
-                <div class="mt-20 lg:mt-0 lg:col-span-5 relative reveal">
-                    <div class="relative mx-auto w-full max-w-xl float-anim">
-                        <div class="relative glass-effect rounded-[2.5rem] p-8 shadow-[0_50px_100px_rgba(0,0,0,0.1)] border border-white/50">
-                            <div class="bg-white rounded-3xl p-8 text-gray-900">
-                                <div class="flex justify-between items-center mb-12 pb-6 border-b border-gray-50">
-                                    <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl">IF</div>
-                                    <div class="text-right">
-                                        <p class="text-xs uppercase tracking-[0.2em] text-gray-400 font-black mb-1">Invoice Preview</p>
-                                        <h3 class="font-black text-gray-900 text-lg">#IF-2026-001</h3>
-                                    </div>
-                                </div>
-                                <div class="space-y-4 mb-12">
-                                    <div class="h-4 bg-gray-100 rounded w-3/4"></div>
-                                    <div class="h-4 bg-gray-100 rounded w-1/2"></div>
-                                </div>
-                                <div class="bg-indigo-50 rounded-2xl p-6 flex justify-between items-center">
-                                    <span class="text-gray-600 font-bold">Total Amount</span>
-                                    <span class="text-3xl font-black text-indigo-600">$5,700.00</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <h1 class="text-6xl lg:text-7xl font-black text-gray-900 leading-tight mb-8">
+                    Create Professional <br/>
+                    <span class="text-gradient">Invoices in Seconds.</span>
+                </h1>
+                <p class="text-xl text-gray-600 mb-10 leading-relaxed max-w-lg">
+                    The ultra-modern invoicing tool built for creators, freelancers, and growing agencies. Get paid 3x faster with automated follow-ups.
+                </p>
+                <div class="flex flex-wrap gap-4 mb-12">
+                    <a href="{% url 'invoices:signup' %}" class="btn-primary px-10 py-5 rounded-2xl text-white font-black text-lg">
+                        Get Started Free
+                    </a>
+                    <a href="#demo" class="px-10 py-5 rounded-2xl border-2 border-gray-100 text-gray-700 font-bold text-lg hover:bg-gray-50 transition-all">
+                        See How It Works
+                    </a>
+                </div>
+                <div class="flex items-center gap-6 text-gray-400 font-medium">
+                    <span class="flex items-center gap-2"><i data-lucide="shield-check" class="w-5 h-5 text-green-500"></i> No Credit Card</span>
+                    <span class="flex items-center gap-2"><i data-lucide="zap" class="w-5 h-5 text-yellow-500"></i> 2-Min Setup</span>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- Feature Benefits Section -->
-    <section class="py-40 bg-white reveal" id="features">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-24">
-                <h2 class="text-indigo-600 font-black tracking-[0.2em] uppercase text-sm mb-4">Core Benefits</h2>
-                <p class="text-5xl font-black text-gray-900 sm:text-7xl mb-8">Built for Business.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                <div class="group p-12 rounded-[3rem] bg-gray-50 card-hover">
-                    <div class="w-20 h-20 bg-indigo-600 text-white rounded-3xl flex items-center justify-center mb-10 shadow-2xl">
-                        <i data-lucide="palette" class="w-10 h-10"></i>
-                    </div>
-                    <h3 class="text-3xl font-black mb-6">Custom Branding</h3>
-                    <p class="text-xl text-gray-500 leading-relaxed">Match your professional identity perfectly. Upload logos, adjust brand colors, and use custom fonts with one click.</p>
-                </div>
-                <div class="group p-12 rounded-[3rem] bg-gray-50 card-hover">
-                    <div class="w-20 h-20 bg-purple-600 text-white rounded-3xl flex items-center justify-center mb-10 shadow-2xl">
-                        <i data-lucide="layout" class="w-10 h-10"></i>
-                    </div>
-                    <h3 class="text-3xl font-black mb-6">Beautiful Templates</h3>
-                    <p class="text-xl text-gray-500 leading-relaxed">Gallery-grade templates designed for conversion and clarity. Your invoices will look professional on any device.</p>
-                </div>
-                <div class="group p-12 rounded-[3rem] bg-gray-50 card-hover">
-                    <div class="w-20 h-20 bg-blue-600 text-white rounded-3xl flex items-center justify-center mb-10 shadow-2xl">
-                        <i data-lucide="zap" class="w-10 h-10"></i>
-                    </div>
-                    <h3 class="text-3xl font-black mb-6">60-Second Creation</h3>
-                    <p class="text-xl text-gray-500 leading-relaxed">Stop wasting hours on manual data entry. Our intuitive builder lets you generate itemized invoices in under a minute.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pain Points Section -->
-    <section class="py-40 bg-gray-900 text-white overflow-hidden relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 reveal">
-            <div class="lg:grid lg:grid-cols-2 lg:gap-24 items-center">
-                <div>
-                    <h2 class="text-5xl font-black mb-12 leading-tight">Stop Bleeding <span class="text-indigo-400">Cash Flow.</span></h2>
-                    <div class="space-y-12">
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 w-16 h-16 bg-red-500/20 rounded-2xl flex items-center justify-center mr-8 border border-red-500/30">
-                                <i data-lucide="clock" class="w-8 h-8 text-red-500"></i>
+            <div class="lg:w-1/2 mt-16 lg:mt-0" data-aos="zoom-in">
+                <div class="relative">
+                    <img src="{% static 'images/modern_business_invoice_hero_background.png' %}" alt="Dashboard Preview" class="rounded-[2.5rem] shadow-2xl floating img-glow">
+                    <div class="absolute -bottom-10 -left-10 bg-white p-6 rounded-3xl shadow-xl border border-gray-50" data-aos="fade-up" data-aos-delay="400">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-6 h-6"></i>
                             </div>
                             <div>
-                                <h4 class="text-2xl font-black mb-3">60% Late Payments</h4>
-                                <p class="text-xl text-gray-400">Manual follow-ups fail 60% of the time. Automated reminders solve this permanently and increase on-time payments.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 w-16 h-16 bg-orange-500/20 rounded-2xl flex items-center justify-center mr-8 border border-orange-500/30">
-                                <i data-lucide="mail-warning" class="w-8 h-8 text-orange-500"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-2xl font-black mb-3">Lost Emails</h4>
-                                <p class="text-xl text-gray-400">Invoices get buried in busy inboxes. Without tracking, you never know if your client even received it, leading to wasted time.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-20 lg:mt-0">
-                    <div class="glass-effect rounded-[3rem] p-12 border border-white/10 shadow-3xl">
-                        <div class="flex justify-between items-center mb-10">
-                            <h3 class="text-2xl font-black">Urgent Attention Needed</h3>
-                            <span class="px-4 py-1 bg-red-500 rounded-full text-xs font-black uppercase animate-pulse">Critical</span>
-                        </div>
-                        <div class="space-y-8">
-                            <div class="bg-white/5 p-8 rounded-3xl border border-white/10">
-                                <p class="text-gray-400 font-bold mb-2">Total Outstanding</p>
-                                <div class="flex items-baseline justify-between">
-                                    <p class="text-5xl font-black">$42,650</p>
-                                    <p class="text-red-400 font-black">+18% MoM</p>
-                                </div>
-                            </div>
-                            <div class="bg-white/5 p-8 rounded-3xl border border-white/10">
-                                <p class="text-gray-400 font-bold mb-2">Payment Delay Trend</p>
-                                <div class="flex items-baseline justify-between">
-                                    <p class="text-5xl font-black text-indigo-400">22 Days</p>
-                                    <i data-lucide="trending-up" class="w-10 h-10 text-red-500 opacity-50"></i>
-                                </div>
+                                <p class="text-xs font-bold text-gray-400 uppercase">Revenue Growth</p>
+                                <p class="text-2xl font-black text-gray-900">+42%</p>
                             </div>
                         </div>
                     </div>
@@ -212,241 +117,170 @@
         </div>
     </section>
 
-    <!-- Meet InvoiceFlow (Solution Overview) -->
-    <section class="py-40 bg-white reveal">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-24">
-                <h2 class="text-indigo-600 font-black tracking-[0.2em] uppercase text-sm mb-4">The Solution</h2>
-                <p class="text-5xl font-black text-gray-900 sm:text-7xl mb-8">Meet InvoiceFlow.</p>
-                <p class="text-2xl text-gray-500 max-w-3xl mx-auto leading-relaxed">The only invoicing platform that prioritizes your time and your cash flow with advanced automation.</p>
+    <!-- Trusted By -->
+    <section class="py-20 bg-white/50 border-y border-gray-100">
+        <div class="max-w-7xl mx-auto px-6">
+            <p class="text-center text-xs font-black text-gray-400 uppercase tracking-widest mb-12">Trusted by 5,000+ growing companies</p>
+            <div class="flex flex-wrap justify-center items-center gap-12 lg:gap-24 grayscale opacity-50 hover:grayscale-0 transition-all">
+                <span class="text-2xl font-black">TECHCORP</span>
+                <span class="text-2xl font-black">GLOBALNET</span>
+                <span class="text-2xl font-black">SPACESOFT</span>
+                <span class="text-2xl font-black">VELOCITY</span>
+                <span class="text-2xl font-black">FINFLOW</span>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-16">
-                <div class="text-center">
-                    <div class="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-indigo-100 shadow-sm">
-                        <i data-lucide="edit-3" class="w-12 h-12"></i>
+        </div>
+    </section>
+
+    <!-- Features Benefit Grid -->
+    <section class="py-32 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-24" data-aos="fade-up">
+                <h2 class="text-indigo-600 font-black tracking-widest uppercase text-sm mb-4">The Platform</h2>
+                <p class="text-5xl font-black text-gray-900 mb-6">Designed for Modern Business.</p>
+                <p class="text-xl text-gray-500 max-w-2xl mx-auto">Everything you need to manage your billing cycle with surgical precision.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="card-modern p-10" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-8">
+                        <i data-lucide="palette" class="w-8 h-8"></i>
                     </div>
-                    <h4 class="text-3xl font-black mb-4">Fast Creation</h4>
-                    <p class="text-xl text-gray-500">Generate tax-compliant, professional invoices with zero friction using our smart builder.</p>
+                    <h3 class="text-2xl font-black mb-4">Custom Branding</h3>
+                    <p class="text-gray-500 leading-relaxed mb-6">Upload logos, match brand colors, and choose fonts that represent your professional identity.</p>
+                    <img src="{% static 'images/happy_entrepreneur_using_invoicing_app.png' %}" alt="Branding" class="rounded-2xl w-full h-48 object-cover">
                 </div>
-                <div class="text-center">
-                    <div class="w-24 h-24 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-green-100 shadow-sm">
-                        <i data-lucide="eye" class="w-12 h-12"></i>
+                <div class="card-modern p-10" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-16 h-16 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-8">
+                        <i data-lucide="layout" class="w-8 h-8"></i>
                     </div>
-                    <h4 class="text-3xl font-black mb-4">Real-time Tracking</h4>
-                    <p class="text-xl text-gray-500">Know exactly when your client opens an invoice. Eliminate guesswork and "did you get it?" calls.</p>
+                    <h3 class="text-2xl font-black mb-4">Pro Templates</h3>
+                    <p class="text-gray-500 leading-relaxed mb-6">Modern, responsive templates designed by award-winning designers for maximum conversion.</p>
+                    <div class="bg-gray-50 rounded-2xl p-6 h-48 flex items-center justify-center">
+                        <i data-lucide="component" class="w-16 h-16 text-purple-200"></i>
+                    </div>
                 </div>
-                <div class="text-center">
-                    <div class="w-24 h-24 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-blue-100 shadow-sm">
-                        <i data-lucide="bell-ring" class="w-12 h-12"></i>
+                <div class="card-modern p-10" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-16 h-16 bg-pink-50 text-pink-600 rounded-2xl flex items-center justify-center mb-8">
+                        <i data-lucide="bell-ring" class="w-8 h-8"></i>
                     </div>
-                    <h4 class="text-3xl font-black mb-4">Automated Follow-ups</h4>
-                    <p class="text-xl text-gray-500">Let our system nudge your clients gently. Automate collections without losing the professional touch.</p>
+                    <h3 class="text-2xl font-black mb-4">Auto-Reminders</h3>
+                    <p class="text-gray-500 leading-relaxed mb-6">Let our smart engine nudge clients gently. Get paid faster without the awkward conversations.</p>
+                    <img src="{% static 'images/automated_payment_notification_mockup.png' %}" alt="Notification" class="rounded-2xl w-full h-48 object-cover">
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- How It Works (Steps) -->
-    <section class="py-40 bg-gray-50 reveal" id="how-it-works">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-32">
-                <h2 class="text-5xl font-black text-gray-900 sm:text-6xl">Three Steps to Freedom.</h2>
-            </div>
-            <div class="relative">
-                <div class="hidden lg:block absolute top-1/2 left-0 right-0 h-1.5 bg-indigo-100 -translate-y-1/2 z-0 rounded-full"></div>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-24 relative z-10">
-                    <div class="group">
-                        <div class="w-32 h-32 bg-indigo-600 text-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-12 text-5xl font-black shadow-3xl group-hover:scale-110 transition-transform">1</div>
-                        <div class="bg-white rounded-[3rem] p-12 shadow-sm border border-gray-100 text-center">
-                            <h3 class="text-3xl font-black mb-6">Create Invoice</h3>
-                            <p class="text-xl text-gray-500 mb-8 leading-relaxed">Input details, add your services, and apply a professional template that fits your brand identity.</p>
-                            <i data-lucide="layout-template" class="w-16 h-16 text-indigo-100 mx-auto"></i>
+    <!-- Urgency/Pain Points -->
+    <section class="py-32 px-6 bg-gray-900 rounded-[4rem] mx-6">
+        <div class="max-w-7xl mx-auto lg:flex items-center gap-20">
+            <div class="lg:w-1/2" data-aos="fade-right">
+                <h2 class="text-5xl font-black text-white mb-12 leading-tight">Stop Losing <span class="text-indigo-400">Thousands</span> to Inefficiency.</h2>
+                <div class="space-y-10">
+                    <div class="flex gap-6">
+                        <div class="w-14 h-14 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0">
+                            <i data-lucide="clock" class="w-7 h-7 text-red-500"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xl font-bold text-white mb-2">60% Late Payments</h4>
+                            <p class="text-gray-400">Manual follow-ups fail 60% of the time. Our automated system fixes this permanently.</p>
                         </div>
                     </div>
-                    <div class="group">
-                        <div class="w-32 h-32 bg-indigo-600 text-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-12 text-5xl font-black shadow-3xl group-hover:scale-110 transition-transform">2</div>
-                        <div class="bg-white rounded-[3rem] p-12 shadow-sm border border-gray-100 text-center">
-                            <h3 class="text-3xl font-black mb-6">Send & Track</h3>
-                            <p class="text-xl text-gray-500 mb-8 leading-relaxed">Deliver via secure email or direct link. Monitor status updates from delivery to viewing in real-time.</p>
-                            <i data-lucide="send" class="w-16 h-16 text-indigo-100 mx-auto"></i>
+                    <div class="flex gap-6">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center shrink-0">
+                            <i data-lucide="eye-off" class="w-7 h-7 text-orange-500"></i>
                         </div>
-                    </div>
-                    <div class="group">
-                        <div class="w-32 h-32 bg-indigo-600 text-white rounded-[2.5rem] flex items-center justify-center mx-auto mb-12 text-5xl font-black shadow-3xl group-hover:scale-110 transition-transform">3</div>
-                        <div class="bg-white rounded-[3rem] p-12 shadow-sm border border-gray-100 text-center">
-                            <h3 class="text-3xl font-black mb-6">Get Paid Faster</h3>
-                            <p class="text-xl text-gray-500 mb-8 leading-relaxed">Clients pay instantly through secure links. Revenue hits your account and reflects in your dashboard automatically.</p>
-                            <i data-lucide="check-circle-2" class="w-16 h-16 text-indigo-100 mx-auto"></i>
+                        <div>
+                            <h4 class="text-xl font-bold text-white mb-2">Zero Visibility</h4>
+                            <p class="text-gray-400">Stop asking "did you get it?". Track opens and views in real-time like a professional.</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <!-- Benefits Grid -->
-    <section class="py-40 bg-white reveal">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                <div class="p-12 border-2 border-gray-100 rounded-[3rem] hover:border-indigo-600 transition-colors duration-500">
-                    <h4 class="text-5xl font-black mb-6 text-indigo-600">60s</h4>
-                    <h3 class="text-2xl font-black mb-4">Invoices</h3>
-                    <p class="text-lg text-gray-500">Generate complex, multi-item invoices faster than any other platform on the market.</p>
-                </div>
-                <div class="p-12 border-2 border-gray-100 rounded-[3rem] hover:border-indigo-600 transition-colors duration-500">
-                    <h4 class="text-5xl font-black mb-6 text-indigo-600">100%</h4>
-                    <h3 class="text-2xl font-black mb-4">Visibility</h3>
-                    <p class="text-lg text-gray-500">Full audit trail for every invoice. See exactly when it was sent, viewed, and paid.</p>
-                </div>
-                <div class="p-12 border-2 border-gray-100 rounded-[3rem] hover:border-indigo-600 transition-colors duration-500">
-                    <h4 class="text-5xl font-black mb-6 text-indigo-600">3x</h4>
-                    <h3 class="text-2xl font-black mb-4">Collections</h3>
-                    <p class="text-lg text-gray-500">Our users report getting paid three times faster after switching to our automated reminders.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Visual Dashboard Showcase -->
-    <section class="py-40 bg-indigo-900 text-white overflow-hidden reveal">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:grid lg:grid-cols-2 lg:gap-24 items-center">
-                <div class="order-2 lg:order-1 mt-20 lg:mt-0">
-                    <div class="bg-white rounded-[3rem] p-12 text-gray-900 shadow-3xl">
-                        <div class="flex justify-between items-center mb-12">
-                            <h3 class="text-3xl font-black">Revenue Insights</h3>
-                            <div class="flex items-center text-green-500 font-bold bg-green-50 px-3 py-1 rounded-xl text-sm">
-                                <i data-lucide="trending-up" class="w-4 h-4 mr-2"></i> +32% This Year
+            <div class="lg:w-1/2 mt-16 lg:mt-0" data-aos="fade-left">
+                <div class="bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[3rem] shadow-2xl">
+                    <div class="flex justify-between items-center mb-10">
+                        <h3 class="text-2xl font-black text-white">Cash-Flow Alert</h3>
+                        <span class="px-4 py-1 bg-red-500 rounded-full text-[10px] font-black uppercase text-white animate-pulse">Critical</span>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-white/5 p-8 rounded-3xl">
+                            <p class="text-gray-400 text-sm font-bold mb-1">Unpaid Receivables</p>
+                            <div class="flex justify-between items-end">
+                                <p class="text-5xl font-black text-white">$42,650</p>
+                                <p class="text-red-400 font-bold">+18% MoM</p>
                             </div>
                         </div>
-                        <div class="space-y-8">
-                            <div class="flex items-end justify-between h-64 space-x-4">
-                                <div class="flex-1 bg-indigo-50 rounded-2xl h-1/4"></div>
-                                <div class="flex-1 bg-indigo-100 rounded-2xl h-2/4"></div>
-                                <div class="flex-1 bg-indigo-200 rounded-2xl h-3/4"></div>
-                                <div class="flex-1 bg-indigo-600 rounded-2xl h-full shadow-2xl shadow-indigo-100"></div>
-                                <div class="flex-1 bg-indigo-400 rounded-2xl h-4/5"></div>
-                                <div class="flex-1 bg-indigo-200 rounded-2xl h-3/5"></div>
-                            </div>
-                            <div class="grid grid-cols-3 gap-8 pt-10 border-t border-gray-50 text-center">
-                                <div><p class="text-xs font-black text-gray-400 uppercase mb-2">On-Time</p><p class="text-2xl font-black">92%</p></div>
-                                <div><p class="text-xs font-black text-gray-400 uppercase mb-2">Avg. Delay</p><p class="text-2xl font-black text-indigo-600">4 Days</p></div>
-                                <div><p class="text-xs font-black text-gray-400 uppercase mb-2">Total Rev.</p><p class="text-2xl font-black">$184k</p></div>
+                        <div class="bg-white/5 p-8 rounded-3xl">
+                            <p class="text-gray-400 text-sm font-bold mb-1">Avg. Payment Delay</p>
+                            <div class="flex justify-between items-end">
+                                <p class="text-5xl font-black text-indigo-400">22 Days</p>
+                                <i data-lucide="trending-up" class="w-10 h-10 text-red-500 opacity-30"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="order-1 lg:order-2">
-                    <h2 class="text-6xl font-black mb-12 leading-tight">Master Your <br/><span class="text-indigo-400">Financial Data.</span></h2>
-                    <p class="text-2xl text-indigo-100 leading-relaxed mb-12">
-                        Stop flying blind. Our comprehensive dashboard gives you real-time insights into your revenue, client reliability, and growth metrics.
-                    </p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                        <div class="flex items-center text-xl font-bold"><i data-lucide="bar-chart-3" class="w-8 h-8 mr-4 text-green-400"></i> Analytics</div>
-                        <div class="flex items-center text-xl font-bold"><i data-lucide="shield-check" class="w-8 h-8 mr-4 text-green-400"></i> Secure Storage</div>
-                        <div class="flex items-center text-xl font-bold"><i data-lucide="history" class="w-8 h-8 mr-4 text-green-400"></i> View History</div>
-                        <div class="flex items-center text-xl font-bold"><i data-lucide="download" class="w-8 h-8 mr-4 text-green-400"></i> PDF Exports</div>
-                    </div>
-                </div>
             </div>
         </div>
     </section>
 
-    <!-- FAQ Section -->
-    <section class="py-40 bg-white reveal" id="faq">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-24">
-                <h2 class="text-5xl font-black text-gray-900">Common Questions</h2>
+    <!-- FAQ -->
+    <section class="py-32 px-6">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-20" data-aos="fade-up">
+                <h2 class="text-4xl font-black text-gray-900">Got Questions?</h2>
             </div>
-            <div class="space-y-6">
-                <div class="border-2 border-gray-100 rounded-[2.5rem] overflow-hidden hover:border-indigo-600 transition-colors duration-300">
-                    <button class="w-full p-10 text-left flex justify-between items-center bg-gray-50/50 hover:bg-white" onclick="toggleFaq(0)">
-                        <span class="text-2xl font-black text-gray-900">Is InvoiceFlow really free?</span>
-                        <i data-lucide="chevron-down" class="w-8 h-8 text-indigo-600 transition-transform" id="faq-icon-0"></i>
+            <div class="space-y-4">
+                <div class="border border-gray-100 rounded-3xl overflow-hidden" data-aos="fade-up">
+                    <button class="w-full p-8 text-left font-black text-xl flex justify-between items-center bg-white hover:bg-gray-50" onclick="toggleFaq(0)">
+                        Is it really free?
+                        <i data-lucide="chevron-down" class="w-6 h-6 transition-transform" id="faq-icon-0"></i>
                     </button>
-                    <div class="hidden p-10 text-xl text-gray-500 border-t-2 border-gray-100" id="faq-content-0">
-                        Yes, InvoiceFlow is 100% free with no hidden fees or subscription costs for our core features. We believe powerful tools should be accessible to every business.
+                    <div class="hidden p-8 text-gray-500 text-lg border-t border-gray-100 bg-white" id="faq-content-0">
+                        Yes! Our core invoicing features are 100% free forever. We believe professional tools should be accessible to everyone starting their business journey.
                     </div>
                 </div>
-                <div class="border-2 border-gray-100 rounded-[2.5rem] overflow-hidden hover:border-indigo-600 transition-colors duration-300">
-                    <button class="w-full p-10 text-left flex justify-between items-center bg-gray-50/50 hover:bg-white" onclick="toggleFaq(1)">
-                        <span class="text-2xl font-black text-gray-900">How secure is my data?</span>
-                        <i data-lucide="chevron-down" class="w-8 h-8 text-indigo-600 transition-transform" id="faq-icon-1"></i>
-                    </button>
-                    <div class="hidden p-10 text-xl text-gray-500 border-t-2 border-gray-100" id="faq-content-1">
-                        We use bank-level 256-bit encryption and secure cloud storage to ensure your financial data and client information are always protected.
-                    </div>
-                </div>
-                <div class="border-2 border-gray-100 rounded-[2.5rem] overflow-hidden hover:border-indigo-600 transition-colors duration-300">
-                    <button class="w-full p-10 text-left flex justify-between items-center bg-gray-50/50 hover:bg-white" onclick="toggleFaq(2)">
-                        <span class="text-2xl font-black text-gray-900">Can I customize my invoices?</span>
-                        <i data-lucide="chevron-down" class="w-8 h-8 text-indigo-600 transition-transform" id="faq-icon-2"></i>
-                    </button>
-                    <div class="hidden p-10 text-xl text-gray-500 border-t-2 border-gray-100" id="faq-content-2">
-                        Absolutely. You can add your business logo, adjust color schemes to match your brand, and include custom footers or terms of service on every invoice.
-                    </div>
-                </div>
+                <!-- Add more FAQ as needed -->
             </div>
         </div>
     </section>
 
-    <!-- Final CTA Section -->
-    <section class="py-40 bg-white reveal">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-indigo-600 rounded-[4rem] p-24 text-center text-white relative overflow-hidden shadow-3xl">
+    <!-- Final CTA -->
+    <section class="py-32 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="bg-indigo-600 rounded-[4rem] p-16 lg:p-32 text-center text-white relative overflow-hidden">
                 <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent)]"></div>
-                <h2 class="text-7xl font-black mb-12 relative z-10">Start Free Now.</h2>
-                <p class="text-3xl text-indigo-100 mb-16 relative z-10">No Credit Card Required. Unlimited Free Invoices. Setup under 2 mins.</p>
-                <div class="flex flex-col items-center gap-8 relative z-10">
-                    <a href="{% url 'invoices:signup' %}" class="inline-block px-16 py-8 bg-white text-indigo-600 font-black rounded-3xl hover:scale-105 transition-all text-2xl shadow-2xl">
+                <h2 class="text-6xl lg:text-8xl font-black mb-12" data-aos="zoom-out">Start Scaling.</h2>
+                <p class="text-2xl text-indigo-100 mb-16 max-w-2xl mx-auto">Join 5,000+ businesses who stopped worrying about billing and started focusing on growth.</p>
+                <div class="flex flex-col items-center gap-6">
+                    <a href="{% url 'invoices:signup' %}" class="bg-white text-indigo-600 px-16 py-8 rounded-[2rem] font-black text-2xl hover:scale-105 transition-transform shadow-2xl">
                         Create Your First Invoice
                     </a>
+                    <p class="text-indigo-200 font-bold flex items-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i> No credit card required. Cancel anytime.
+                    </p>
                 </div>
             </div>
         </div>
     </section>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
 <script>
+    AOS.init({
+        duration: 800,
+        once: true,
+        easing: 'ease-out-cubic'
+    });
+
     function toggleFaq(index) {
         const content = document.getElementById(`faq-content-${index}`);
         const icon = document.getElementById(`faq-icon-${index}`);
-        const allContents = document.querySelectorAll('[id^="faq-content-"]');
-        const allIcons = document.querySelectorAll('[id^="faq-icon-"]');
-        
-        allContents.forEach((c, i) => {
-            if (i !== index) {
-                c.classList.add('hidden');
-                allIcons[i].style.transform = 'rotate(0deg)';
-            }
-        });
-
-        if (content) {
-            content.classList.toggle('hidden');
-            if (icon) {
-                icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
-            }
-        }
+        content.classList.toggle('hidden');
+        icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
     }
 
-    function reveal() {
-        var reveals = document.querySelectorAll(".reveal");
-        for (var i = 0; i < reveals.length; i++) {
-            var windowHeight = window.innerHeight;
-            var elementTop = reveals[i].getBoundingClientRect().top;
-            var elementVisible = 150;
-            if (elementTop < windowHeight - elementVisible) {
-                reveals[i].classList.add("active");
-            }
-        }
-    }
-
-    window.addEventListener("scroll", reveal);
-    document.addEventListener('DOMContentLoaded', function() {
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-        reveal();
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) lucide.createIcons();
     });
 </script>
 {% endblock %}
