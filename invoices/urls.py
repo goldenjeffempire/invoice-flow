@@ -6,6 +6,14 @@ from . import views
 app_name = "invoices"
 
 urlpatterns = [
+    path("", views.home, name="home"),
+    path("login/", views.login_view, name="login"),
+    path("signup/", views.signup, name="signup"),
+    path("logout/", views.logout_view, name="logout"),
+    path("invoices/<str:invoice_id>/pdf/", views.download_invoice_pdf, name="invoice_pdf"),
+    path("invoices/<str:invoice_id>/delete/", views.delete_invoice, name="delete_invoice"),
+    path("invoices/<str:invoice_id>/reminder/", views.send_reminder, name="send_reminder"),
+    
     # ------------------------------------------------------------------
     # WAITLIST
     # ------------------------------------------------------------------
@@ -17,11 +25,14 @@ urlpatterns = [
     path("payments/history/", views.payment_history, name="payment_history"),
     path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
 
+    path("invoices/create/", views.invoice_create, name="invoices_create_legacy"),
+    path("invoices/<str:invoice_id>/", views.invoice_detail, name="invoice_detail_legacy"),
+    
     path("dashboard/", views.dashboard, name="dashboard"),
-    path("analytics/", views.dashboard, name="analytics"),
+    path("analytics/", views.analytics, name="analytics"),
     path("create/", views.invoice_create, name="invoice_create"),
-    path("list/", views.invoice_list, name="invoice_list"),
-    path("<int:invoice_id>/", views.invoice_detail, name="invoice_detail"),
+    path("list/", views.invoices_list, name="invoices_list"),
+    path("<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
     path("<int:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
     path("<int:invoice_id>/delete/", views.invoice_delete, name="invoice_delete"),
     path("<int:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf"),
@@ -48,6 +59,7 @@ urlpatterns = [
     path("mfa/verify/", views.mfa_verify, name="mfa_verify"),
     path("mfa/disable/", views.mfa_disable, name="mfa_disable"),
     path("mfa/backup-codes/", views.mfa_backup_codes, name="mfa_backup_codes"),
+    path("pricing/", views.pricing_view, name="pricing"),
     
     path("api/engagement/record/", views.record_engagement, name="record_engagement"),
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),

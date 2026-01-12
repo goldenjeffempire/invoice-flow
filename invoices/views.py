@@ -22,6 +22,72 @@ def signup(request):
         return redirect('dashboard')
     return render(request, "pages/home-light.html")
 
+def pricing_view(request):
+    return render(request, "pages/pricing.html")
+
+def waitlist_subscribe(request):
+    return redirect('invoices:home')
+
+def payment_history(request):
+    return redirect('invoices:dashboard')
+
+def payment_detail(request, payment_id):
+    return redirect('invoices:dashboard')
+
+def invoice_edit(request, invoice_id):
+    return redirect('invoices:invoice_detail', invoice_id=invoice_id)
+
+def invoice_delete(request, invoice_id):
+    return redirect('invoices:invoices_list')
+
+def invoice_pdf(request, invoice_id):
+    return redirect('invoices:invoice_detail', invoice_id=invoice_id)
+
+def settings_page(request):
+    return redirect('invoices:settings')
+
+def profile_update_ajax(request):
+    return redirect('invoices:settings')
+
+def security_update_ajax(request):
+    return redirect('invoices:settings')
+
+def notifications_update_ajax(request):
+    return redirect('invoices:settings')
+
+def reminder_dashboard(request):
+    return redirect('invoices:settings')
+
+def reminder_settings(request):
+    return redirect('invoices:settings')
+
+def track_reminder_click(request, log_id):
+    return redirect('invoices:home')
+
+def track_reminder_open(request, log_id):
+    return redirect('invoices:home')
+
+def payment_settings_update_ajax(request):
+    return redirect('invoices:settings')
+
+def mfa_setup(request):
+    return redirect('invoices:settings')
+
+def mfa_verify(request):
+    return redirect('invoices:settings')
+
+def mfa_disable(request):
+    return redirect('invoices:settings')
+
+def mfa_backup_codes(request):
+    return redirect('invoices:settings')
+
+def record_engagement(request):
+    return redirect('invoices:home')
+
+def submit_feedback(request):
+    return redirect('invoices:home')
+
 @login_required
 def dashboard(request):
     user_invoices = Invoice.objects.filter(user=request.user)

@@ -7,18 +7,5 @@ handler500 = "invoices.views.custom_500"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", views.home, name="home"),
-    path("login/", views.login_view, name="login"),
-    path("signup/", views.signup, name="signup"),
-    path("invoices/<str:invoice_id>/pdf/", views.download_invoice_pdf, name="invoice_pdf"),
-    path("invoices/<str:invoice_id>/delete/", views.delete_invoice, name="delete_invoice"),
-    path("invoices/<str:invoice_id>/reminder/", views.send_reminder, name="send_reminder"),
-    path("logout/", views.logout_view, name="logout"),
-    path("dashboard/", views.dashboard, name="dashboard"),
-    path("invoices/", views.invoices_list, name="invoices_list"),
-    path("invoices/create/", views.invoice_create, name="invoice_create"),
-    path("invoices/<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
-    path("analytics/", views.analytics, name="analytics"),
-    path("clients/", views.clients, name="clients"),
-    path("settings/", views.settings_view, name="settings"),
+    path("", include("invoices.urls", namespace="invoices")),
 ]
