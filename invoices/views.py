@@ -161,12 +161,81 @@ def settings_view(request):
         "active": "settings"
     })
 
-def logout_view(request):
-    logout(request)
-    return redirect("home")
+from django.http import HttpResponse
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+
+@login_required
+def download_invoice_pdf(request, invoice_id):
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice_{invoice_id}.pdf"'
+    
+    p = canvas.Canvas(response, pagesize=letter)
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(100, 750, f"INVOICE: {invoice.invoice_id}")
+    
+    p.setFont("Helvetica", 12)
+    p.drawString(100, 720, f"Date: {invoice.created_at.strftime('%Y-%m-%d')}")
+    p.drawString(100, 705, f"Due Date: {invoice.due_date.strftime('%Y-%m-%d')}")
+    p.drawString(100, 680, f"Client: {invoice.client_name}")
+    p.drawString(100, 665, f"Email: {invoice.client_email}")
+    
+    p.line(100, 650, 500, 650)
+    
+    y = 630
+    p.drawString(100, y, "Items:")
+    y -= 20
+    for item in invoice.items.all():
+        p.drawString(120, y, f"{item.description} - {item.quantity} x ${item.unit_price} = ${item.total_price}")
+        y -= 15
+        
+    p.line(100, y, 500, y)
+    y -= 20
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(100, y, f"Total Amount: ${invoice.total}")
+    
+    p.showPage()
+    p.save()
+    return response
+
+@login_required
+def delete_invoice(request, invoice_id):
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
+    if request.method == "POST":
+        invoice.delete()
+        messages.success(request, f"Invoice {invoice_id} deleted.")
+        return redirect('invoices_list')
+    return redirect('invoice_detail', invoice_id=invoice_id)
 
 def custom_404(request, exception):
     return render(request, "pages/home-light.html", status=404)
 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+def logout_view(request):
+    logout(request)
+    return redirect("home")
+
 def custom_500(request):
+    return render(request, "pages/home-light.html", status=500)
+
+@login_required
+def send_reminder(request, invoice_id):
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
+    try:
+        message = Mail(
+            from_email='noreply@invoiceflow.com',
+            to_emails=invoice.client_email,
+            subject=f'Payment Reminder: Invoice {invoice.invoice_id}',
+            html_content=f'<p>Hello {invoice.client_name},</p><p>This is a reminder that payment for invoice {invoice.invoice_id} of ${invoice.total} is due on {invoice.due_date}.</p>'
+        )
+        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        sg.send(message)
+        messages.success(request, f"Reminder sent to {invoice.client_email}")
+    except Exception as e:
+        messages.error(request, f"Failed to send reminder: {str(e)}")
+    return redirect('invoice_detail', invoice_id=invoice_id)
     return render(request, "pages/home-light.html", status=500)
