@@ -480,13 +480,13 @@ LOGGING = {
 # =============================================================================
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
-        "default-src": ("'self'",),
-        "script-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://js.hcaptcha.com"),
-        "style-src": ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com"),
+        "default-src": ("'self'", "https:"),
+        "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"),
+        "style-src": ("'self'", "'unsafe-inline'", "https:"),
         "img-src": ("'self'", "data:", "https:"),
-        "font-src": ("'self'", "https://fonts.gstatic.com"),
-        "connect-src": ("'self'", PRODUCTION_URL),
-        "frame-src": ("https://hcaptcha.com",),
+        "font-src": ("'self'", "data:", "https:"),
+        "connect-src": ("'self'", "https:"),
+        "frame-src": ("'self'", "https:"),
         "object-src": ("'none'",),
     },
     "INCLUDE_NONCE_IN": ["script-src", "style-src"],
