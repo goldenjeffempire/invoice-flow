@@ -1,41 +1,41 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-
-def home(request):
-    return render(request, "pages/home-light.html")
-
-def login_view(request):
-    # Minimal stub for clean baseline
-    return render(request, "pages/home-light.html")
-
-def signup(request):
-    # Minimal stub for clean baseline
-    return render(request, "pages/home-light.html")
-
-from .models import Invoice, UserProfile
+from django.db import transaction
+from decimal import Decimal
+from .models import Invoice, UserProfile, LineItem
 from django.db.models import Sum, Count, Q
 
 @login_required
 def dashboard(request):
-    # Fetch real user invoices
     user_invoices = Invoice.objects.filter(user=request.user)
     
-    # KPIs calculation
     stats = user_invoices.aggregate(
         total_count=Count('id'),
-        paid_revenue=Sum('total', filter=Q(status='paid')),
-        outstanding=Sum('total', filter=Q(status='unpaid')),
-        overdue=Sum('total', filter=Q(status='overdue'))
+        paid_revenue=Sum('line_items__quantity', filter=Q(status='paid')) * Sum('line_items__unit_price', filter=Q(status='paid')), # Simplified for stub, property is better but SQL needs aggregation
+        outstanding=Sum('line_items__quantity', filter=Q(status='unpaid')) * Sum('line_items__unit_price', filter=Q(status='unpaid')),
+        overdue=Sum('line_items__quantity', filter=Q(status='overdue')) * Sum('line_items__unit_price', filter=Q(status='overdue'))
     )
     
-    # Format numbers for template
+    # Better to calculate properly since properties can't be used in aggregate directly
+    total_revenue = Decimal('0.00')
+    total_outstanding = Decimal('0.00')
+    total_overdue = Decimal('0.00')
+    
+    for inv in user_invoices:
+        if inv.status == 'paid':
+            total_revenue += inv.total
+        elif inv.status == 'unpaid':
+            total_outstanding += inv.total
+        elif inv.status == 'overdue':
+            total_overdue += inv.total
+
     formatted_stats = {
-        'total_count': stats['total_count'] or 0,
-        'revenue': '{:,.2f}'.format(stats['paid_revenue'] or 0),
-        'outstanding': '{:,.2f}'.format(stats['outstanding'] or 0),
-        'overdue': '{:,.2f}'.format(stats['overdue'] or 0),
+        'total_count': user_invoices.count(),
+        'revenue': '{:,.2f}'.format(total_revenue),
+        'outstanding': '{:,.2f}'.format(total_outstanding),
+        'overdue': '{:,.2f}'.format(total_overdue),
     }
 
     recent_invoices = user_invoices.order_by('-created_at')[:5]
@@ -47,20 +47,30 @@ def dashboard(request):
     })
 
 @login_required
+def invoices_list(request):
+    invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, "pages/invoices_list.html", {
+        "invoices": invoices,
+        "active": "invoices"
+    })
+
+@login_required
 def invoice_create(request):
     if request.method == "POST":
-        # Basic form handling
         try:
             with transaction.atomic():
+                # Ensure profile exists
+                profile, created = UserProfile.objects.get_or_create(user=request.user)
+                
                 invoice = Invoice.objects.create(
                     user=request.user,
                     client_name=request.POST.get('client_name'),
                     client_email=request.POST.get('client_email'),
                     due_date=request.POST.get('due_date'),
-                    currency=request.POST.get('currency'),
+                    currency=request.POST.get('currency', 'USD'),
                     tax_rate=Decimal(request.POST.get('tax_rate', '0')),
-                    business_name=request.user.profile.company_name or request.user.get_full_name(),
-                    business_email=request.user.email
+                    business_name=profile.company_name or request.user.get_full_name() or request.user.username,
+                    business_email=profile.business_email or request.user.email
                 )
                 
                 descriptions = request.POST.getlist('item_description[]')
@@ -68,12 +78,13 @@ def invoice_create(request):
                 prices = request.POST.getlist('item_price[]')
                 
                 for desc, qty, price in zip(descriptions, quantities, prices):
-                    LineItem.objects.create(
-                        invoice=invoice,
-                        description=desc,
-                        quantity=Decimal(qty),
-                        unit_price=Decimal(price)
-                    )
+                    if desc and qty and price:
+                        LineItem.objects.create(
+                            invoice=invoice,
+                            description=desc,
+                            quantity=Decimal(qty),
+                            unit_price=Decimal(price)
+                        )
                 
                 messages.success(request, "Invoice created successfully!")
                 return redirect('invoices_list')
