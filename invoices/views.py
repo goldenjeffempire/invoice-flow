@@ -7,18 +7,25 @@ from decimal import Decimal
 from .models import Invoice, UserProfile, LineItem
 from django.db.models import Sum, Count, Q
 
+def home(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, "pages/home-light.html")
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, "pages/home-light.html")
+
+def signup(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, "pages/home-light.html")
+
 @login_required
 def dashboard(request):
     user_invoices = Invoice.objects.filter(user=request.user)
     
-    stats = user_invoices.aggregate(
-        total_count=Count('id'),
-        paid_revenue=Sum('line_items__quantity', filter=Q(status='paid')) * Sum('line_items__unit_price', filter=Q(status='paid')), # Simplified for stub, property is better but SQL needs aggregation
-        outstanding=Sum('line_items__quantity', filter=Q(status='unpaid')) * Sum('line_items__unit_price', filter=Q(status='unpaid')),
-        overdue=Sum('line_items__quantity', filter=Q(status='overdue')) * Sum('line_items__unit_price', filter=Q(status='overdue'))
-    )
-    
-    # Better to calculate properly since properties can't be used in aggregate directly
     total_revenue = Decimal('0.00')
     total_outstanding = Decimal('0.00')
     total_overdue = Decimal('0.00')
@@ -59,7 +66,6 @@ def invoice_create(request):
     if request.method == "POST":
         try:
             with transaction.atomic():
-                # Ensure profile exists
                 profile, created = UserProfile.objects.get_or_create(user=request.user)
                 
                 invoice = Invoice.objects.create(
@@ -92,6 +98,22 @@ def invoice_create(request):
             messages.error(request, f"Error creating invoice: {str(e)}")
             
     return render(request, "pages/invoice_create.html", {"active": "invoices"})
+
+@login_required
+def invoice_detail(request, invoice_id):
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
+    if request.method == "POST":
+        new_status = request.POST.get('status')
+        if new_status in dict(Invoice.Status.choices):
+            invoice.status = new_status
+            invoice.save()
+            messages.success(request, f"Invoice {invoice_id} status updated to {invoice.get_status_display()}.")
+            return redirect('invoice_detail', invoice_id=invoice_id)
+            
+    return render(request, "pages/invoice_detail.html", {
+        "invoice": invoice,
+        "active": "invoices"
+    })
 
 def logout_view(request):
     logout(request)

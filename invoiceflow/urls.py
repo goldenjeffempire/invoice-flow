@@ -14,4 +14,5 @@ urlpatterns = [
     path("dashboard/", views.dashboard, name="dashboard"),
     path("invoices/", views.invoices_list, name="invoices_list"),
     path("invoices/create/", views.invoice_create, name="invoice_create"),
+    path("invoices/<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
 ]
