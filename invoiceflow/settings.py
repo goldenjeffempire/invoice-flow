@@ -481,10 +481,10 @@ LOGGING = {
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'", "https:"),
-        "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https:"),
-        "style-src": ("'self'", "'unsafe-inline'", "https:"),
+        "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "https://unpkg.com"),
+        "style-src": ("'self'", "'unsafe-inline'", "https:", "https://fonts.googleapis.com"),
         "img-src": ("'self'", "data:", "https:"),
-        "font-src": ("'self'", "data:", "https:"),
+        "font-src": ("'self'", "data:", "https:", "https://fonts.gstatic.com"),
         "connect-src": ("'self'", "https:"),
         "frame-src": ("'self'", "https:"),
         "object-src": ("'none'",),
