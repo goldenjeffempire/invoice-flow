@@ -97,6 +97,60 @@
                 Create & Save Invoice
             </button>
         </div>
-    </form>
-</div>
+{% block extra_js %}
+<script>
+    const container = document.getElementById('line-items');
+    const addButton = document.getElementById('add-item');
+    const taxInput = document.querySelector('input[name="tax_rate"]');
+    
+    function calculateTotals() {
+        let subtotal = 0;
+        document.querySelectorAll('.line-item').forEach(item => {
+            const qty = parseFloat(item.querySelector('.qty-input').value) || 0;
+            const price = parseFloat(item.querySelector('.price-input').value) || 0;
+            subtotal += qty * price;
+        });
+        
+        const taxRate = parseFloat(taxInput.value) || 0;
+        const taxAmount = (subtotal * taxRate) / 100;
+        const total = subtotal + taxAmount;
+        
+        document.getElementById('subtotal-display').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('tax-display').textContent = `$${taxAmount.toFixed(2)}`;
+        document.getElementById('total-display').textContent = `$${total.toFixed(2)}`;
+    }
+
+    addButton.addEventListener('click', () => {
+        const newItem = container.firstElementChild.cloneNode(true);
+        newItem.querySelectorAll('input').forEach(input => input.value = '');
+        newItem.querySelector('.remove-item').addEventListener('click', () => {
+            if (container.children.length > 1) {
+                newItem.remove();
+                calculateTotals();
+            }
+        });
+        container.appendChild(newItem);
+        attachListeners(newItem);
+    });
+
+    function attachListeners(element) {
+        element.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', calculateTotals);
+        });
+    }
+
+    document.querySelectorAll('.line-item').forEach(attachListeners);
+    taxInput.addEventListener('input', calculateTotals);
+    
+    document.querySelectorAll('.remove-item').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (container.children.length > 1) {
+                e.currentTarget.closest('.line-item').remove();
+                calculateTotals();
+            }
+        });
+    });
+</script>
 {% endblock %}
+</body>
+</html>
