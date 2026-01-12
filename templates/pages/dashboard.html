@@ -117,11 +117,28 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    <tr class="animate-pulse">
+                    {% for invoice in recent_invoices %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">{{ invoice.invoice_id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ invoice.client_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{{ invoice.currency }} {{ invoice.total }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if invoice.status == 'paid' %}bg-green-100 text-green-800
+                                {% elif invoice.status == 'overdue' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ invoice.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ invoice.invoice_date|date:"M d, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
                         <td colspan="5" class="px-6 py-12 text-center text-gray-400">
-                            Dashboard charts initialized. Loading real-time data...
+                            No recent invoices found. <a href="#" class="text-indigo-600 hover:underline">Create your first one</a>.
                         </td>
                     </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
