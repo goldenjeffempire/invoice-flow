@@ -115,6 +115,52 @@ def invoice_detail(request, invoice_id):
         "active": "invoices"
     })
 
+@login_required
+def analytics(request):
+    user_invoices = Invoice.objects.filter(user=request.user)
+    
+    # Revenue by month
+    revenue_data = user_invoices.filter(status='paid').extra(
+        select={'month': "EXTRACT(MONTH FROM created_at)"}
+    ).values('month').annotate(total=Sum('total')).order_by('month')
+    
+    # Payment status distribution
+    status_counts = user_invoices.values('status').annotate(count=Count('id'))
+    
+    return render(request, "pages/analytics.html", {
+        "revenue_data": list(revenue_data),
+        "status_counts": list(status_counts),
+        "active": "analytics"
+    })
+
+@login_required
+def clients(request):
+    clients_list = Invoice.objects.filter(user=request.user).values(
+        'client_name', 'client_email'
+    ).annotate(
+        total_invoiced=Sum('total'),
+        invoice_count=Count('id')
+    ).order_by('client_name')
+    
+    return render(request, "pages/clients.html", {
+        "clients": clients_list,
+        "active": "clients"
+    })
+
+@login_required
+def settings_view(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    if request.method == "POST":
+        profile.company_name = request.POST.get('company_name', '')
+        profile.business_email = request.POST.get('business_email', '')
+        profile.save()
+        messages.success(request, "Settings updated successfully!")
+        
+    return render(request, "pages/settings.html", {
+        "profile": profile,
+        "active": "settings"
+    })
+
 def logout_view(request):
     logout(request)
     return redirect("home")
