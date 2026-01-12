@@ -47,9 +47,40 @@ def dashboard(request):
     })
 
 @login_required
-def invoices_list(request):
-    invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, "pages/invoices_list.html", {"invoices": invoices, "active": "invoices"})
+def invoice_create(request):
+    if request.method == "POST":
+        # Basic form handling
+        try:
+            with transaction.atomic():
+                invoice = Invoice.objects.create(
+                    user=request.user,
+                    client_name=request.POST.get('client_name'),
+                    client_email=request.POST.get('client_email'),
+                    due_date=request.POST.get('due_date'),
+                    currency=request.POST.get('currency'),
+                    tax_rate=Decimal(request.POST.get('tax_rate', '0')),
+                    business_name=request.user.profile.company_name or request.user.get_full_name(),
+                    business_email=request.user.email
+                )
+                
+                descriptions = request.POST.getlist('item_description[]')
+                quantities = request.POST.getlist('item_quantity[]')
+                prices = request.POST.getlist('item_price[]')
+                
+                for desc, qty, price in zip(descriptions, quantities, prices):
+                    LineItem.objects.create(
+                        invoice=invoice,
+                        description=desc,
+                        quantity=Decimal(qty),
+                        unit_price=Decimal(price)
+                    )
+                
+                messages.success(request, "Invoice created successfully!")
+                return redirect('invoices_list')
+        except Exception as e:
+            messages.error(request, f"Error creating invoice: {str(e)}")
+            
+    return render(request, "pages/invoice_create.html", {"active": "invoices"})
 
 def logout_view(request):
     logout(request)
