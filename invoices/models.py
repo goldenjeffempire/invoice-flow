@@ -27,6 +27,8 @@ class Waitlist(models.Model):
     )
     subscribed_at = models.DateTimeField(auto_now_add=True)
     is_notified = models.BooleanField(default=False)
+    
+    objects = models.Manager()
 
     class Meta:
         ordering = ["-subscribed_at"]
@@ -131,6 +133,8 @@ class UserProfile(models.Model):
     notify_password_changes = models.BooleanField(default=True)
 
     email_verified = models.BooleanField(default=False)
+    
+    objects = models.Manager()
 
     # Payment Gateways (Stripe/Paystack)
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
@@ -264,6 +268,8 @@ class Invoice(models.Model):
     status = models.CharField(
         max_length=10, choices=Status.choices, default=Status.UNPAID, db_index=True
     )
+    
+    objects = models.Manager()
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -399,6 +405,8 @@ class ReminderRule(models.Model):
     subject_template = models.CharField(max_length=255, blank=True)
     body_template = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    
+    objects = models.Manager()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -446,6 +454,8 @@ class ReminderLog(models.Model):
     opened_at = models.DateTimeField(null=True, blank=True)
     clicked_at = models.DateTimeField(null=True, blank=True)
     success = models.BooleanField(default=True)
+    
+    objects = models.Manager()
 
 
 class InAppNotification(models.Model):
@@ -455,6 +465,8 @@ class InAppNotification(models.Model):
     title = models.CharField(max_length=255)
     message = models.TextField()
     is_read = models.BooleanField(default=False)
+    
+    objects = models.Manager()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
