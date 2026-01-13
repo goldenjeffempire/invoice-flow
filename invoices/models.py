@@ -26,7 +26,7 @@ class Waitlist(models.Model):
         max_length=20, choices=Feature.choices, default=Feature.GENERAL
     )
     subscribed_at = models.DateTimeField(auto_now_add=True)
-    is_notified = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_notified = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["-subscribed_at"]
@@ -122,22 +122,22 @@ class UserProfile(models.Model):
     invoice_prefix = models.CharField(max_length=10, default="INV")
     timezone = models.CharField(max_length=63, default="UTC")
 
-    notify_invoice_created = models.BooleanField(default=True)  # type: ignore[assignment]
-    notify_payment_received = models.BooleanField(default=True)  # type: ignore[assignment]
-    notify_invoice_viewed = models.BooleanField(default=True)  # type: ignore[assignment]
-    notify_invoice_overdue = models.BooleanField(default=True)  # type: ignore[assignment]
-    notify_weekly_summary = models.BooleanField(default=False)  # type: ignore[assignment]
-    notify_security_alerts = models.BooleanField(default=True)  # type: ignore[assignment]
-    notify_password_changes = models.BooleanField(default=True)  # type: ignore[assignment]
+    notify_invoice_created = models.BooleanField(default=True)
+    notify_payment_received = models.BooleanField(default=True)
+    notify_invoice_viewed = models.BooleanField(default=True)
+    notify_invoice_overdue = models.BooleanField(default=True)
+    notify_weekly_summary = models.BooleanField(default=False)
+    notify_security_alerts = models.BooleanField(default=True)
+    notify_password_changes = models.BooleanField(default=True)
 
-    email_verified = models.BooleanField(default=False)  # type: ignore[assignment]
+    email_verified = models.BooleanField(default=False)
 
     # Payment Gateways (Stripe/Paystack)
     stripe_account_id = models.CharField(max_length=100, blank=True, null=True)
-    stripe_enabled = models.BooleanField(default=False)  # type: ignore[assignment]
-    paystack_enabled = models.BooleanField(default=False)  # type: ignore[assignment]
+    stripe_enabled = models.BooleanField(default=False)
+    paystack_enabled = models.BooleanField(default=False)
     paystack_subaccount_code = models.CharField(max_length=100, blank=True, null=True)
-    paystack_subaccount_active = models.BooleanField(default=False)  # type: ignore[assignment]
+    paystack_subaccount_active = models.BooleanField(default=False)
 
     # Tax Settings
     tax_id = models.CharField(max_length=100, blank=True, null=True)
@@ -181,7 +181,7 @@ class InvoiceTemplate(models.Model):
     currency = models.CharField(max_length=3, default="USD")
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # type: ignore[assignment]
 
-    is_default = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -489,7 +489,7 @@ class EmailVerificationToken(models.Model):
     token_type = models.CharField(max_length=20, choices=TokenType.choices)
     email = models.EmailField()
 
-    is_used = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_used = models.BooleanField(default=False)
     expires_at = models.DateTimeField()
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -516,7 +516,7 @@ class LoginAttempt(models.Model):
     username = models.CharField(max_length=150)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
-    success = models.BooleanField(default=False)  # type: ignore[assignment]
+    success = models.BooleanField(default=False)
     failure_reason = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -544,7 +544,7 @@ class MFAProfile(models.Model):
     )
     secret_key = models.CharField(max_length=32, blank=True)
     recovery_codes = models.JSONField(default=list, blank=True)
-    is_enabled = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_enabled = models.BooleanField(default=False)
     backup_phone = models.CharField(max_length=20, blank=True, null=True)
     last_used = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -570,7 +570,7 @@ class UserSession(models.Model):
     user_agent = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     last_seen = models.DateTimeField(auto_now=True)
-    is_revoked = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_revoked = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -771,7 +771,7 @@ class PaymentRecipient(models.Model):
     phone = models.CharField(max_length=50, blank=True)
 
     is_primary = models.BooleanField(default=False)  # type: ignore[assignment]
-    is_default = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)  # type: ignore[assignment]
 
     recipient_code = models.CharField(max_length=100, blank=True)
@@ -805,7 +805,7 @@ class PaymentCard(models.Model):
     exp_month = models.PositiveIntegerField()
     exp_year = models.PositiveIntegerField()
 
-    is_default = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_default = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)  # type: ignore[assignment]
     is_primary = models.BooleanField(default=False)  # type: ignore[assignment]
     
@@ -1288,7 +1288,7 @@ class PublicInvoiceToken(models.Model):
     token = models.CharField(max_length=64, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
-    is_revoked = models.BooleanField(default=False)  # type: ignore[assignment]
+    is_revoked = models.BooleanField(default=False)
     access_count = models.PositiveIntegerField(default=0)  # type: ignore[assignment]
     max_accesses = models.PositiveIntegerField(null=True, blank=True)
     
