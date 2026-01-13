@@ -42,32 +42,43 @@
         <!-- Featured Dashboard Mockup -->
         <div class="mt-20 max-w-5xl mx-auto" data-aos="zoom-in-up" data-aos-delay="300">
             <div class="relative group">
-                <div class="absolute -inset-4 bg-gradient-to-r from-indigo-500/20 to-blue-500/20 rounded-[3rem] blur-2xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
-                <img src="/static/stock_images/modern_business_dash_7958f118.jpg" alt="InvoiceFlow Dashboard" class="relative rounded-[2.5rem] shadow-2xl border border-slate-200 hover:scale-[1.01] transition-transform duration-500">
+                <div class="absolute -inset-4 bg-gradient-to-r from-indigo-500/30 to-blue-500/30 rounded-[3rem] blur-3xl opacity-50 group-hover:opacity-100 transition duration-1000"></div>
+                <div class="relative overflow-hidden rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-slate-200/60 bg-white p-2">
+                    <img src="/static/stock_images/modern_business_dash_7958f118.jpg" alt="InvoiceFlow Dashboard" class="w-full h-auto rounded-[2rem] hover:scale-[1.01] transition-transform duration-700 ease-out">
+                    <div class="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none"></div>
+                </div>
             </div>
         </div>
     </div>
 </section>
 
 <!-- Stats Section -->
-<section class="py-20 bg-slate-50 border-y border-slate-100">
+<section class="py-24 bg-white relative z-10">
     <div class="max-w-7xl mx-auto px-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
-            <div class="text-center" data-aos="fade-up">
-                <div class="text-4xl md:text-5xl font-black text-slate-900 mb-2 counter" data-target="500">$0M+</div>
-                <div class="text-sm font-bold text-slate-500 uppercase tracking-widest">Invoiced Yearly</div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-12">
+            <div class="text-center group" data-aos="fade-up">
+                <div class="text-5xl md:text-6xl font-black text-slate-900 mb-3 tracking-tighter transition-transform group-hover:scale-110 duration-500">
+                    <span class="text-indigo-600">$</span><span class="counter" data-target="500">0</span><span class="text-indigo-600">M+</span>
+                </div>
+                <div class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Invoiced Yearly</div>
             </div>
-            <div class="text-center" data-aos="fade-up" data-aos-delay="100">
-                <div class="text-4xl md:text-5xl font-black text-slate-900 mb-2">99.9%</div>
-                <div class="text-sm font-bold text-slate-500 uppercase tracking-widest">Uptime Record</div>
+            <div class="text-center group" data-aos="fade-up" data-aos-delay="100">
+                <div class="text-5xl md:text-6xl font-black text-slate-900 mb-3 tracking-tighter transition-transform group-hover:scale-110 duration-500">
+                    <span class="counter" data-target="99">0</span><span class="text-indigo-600">.9%</span>
+                </div>
+                <div class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Uptime Record</div>
             </div>
-            <div class="text-center" data-aos="fade-up" data-aos-delay="200">
-                <div class="text-4xl md:text-5xl font-black text-slate-900 mb-2 counter" data-target="50">0k+</div>
-                <div class="text-sm font-bold text-slate-500 uppercase tracking-widest">Active Users</div>
+            <div class="text-center group" data-aos="fade-up" data-aos-delay="200">
+                <div class="text-5xl md:text-6xl font-black text-slate-900 mb-3 tracking-tighter transition-transform group-hover:scale-110 duration-500">
+                    <span class="counter" data-target="50">0</span><span class="text-indigo-600">k+</span>
+                </div>
+                <div class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Active Users</div>
             </div>
-            <div class="text-center" data-aos="fade-up" data-aos-delay="300">
-                <div class="text-4xl md:text-5xl font-black text-slate-900 mb-2 counter" data-target="15">0+</div>
-                <div class="text-sm font-bold text-slate-500 uppercase tracking-widest">Countries</div>
+            <div class="text-center group" data-aos="fade-up" data-aos-delay="300">
+                <div class="text-5xl md:text-6xl font-black text-slate-900 mb-3 tracking-tighter transition-transform group-hover:scale-110 duration-500">
+                    <span class="counter" data-target="15">0</span><span class="text-indigo-600">+</span>
+                </div>
+                <div class="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Countries</div>
             </div>
         </div>
     </div>
@@ -467,27 +478,14 @@
     const animateCounters = () => {
         counters.forEach(counter => {
             const target = +counter.getAttribute('data-target');
-            const count = +counter.innerText.replace(/[^\d]/g, '');
-            const increment = target / 50;
+            const current = +counter.innerText;
+            const increment = target / 30; // Faster animation
 
-            if (count < target) {
-                const newValue = Math.ceil(count + increment);
-                if (counter.innerText.includes('$')) {
-                    counter.innerText = `$${newValue}M+`;
-                } else if (counter.innerText.includes('k')) {
-                    counter.innerText = `${newValue}k+`;
-                } else {
-                    counter.innerText = `${newValue}+`;
-                }
-                setTimeout(animateCounters, 20);
+            if (current < target) {
+                counter.innerText = Math.ceil(current + increment);
+                setTimeout(animateCounters, 30);
             } else {
-                if (counter.innerText.includes('$')) {
-                    counter.innerText = `$${target}M+`;
-                } else if (counter.innerText.includes('k')) {
-                    counter.innerText = `${target}k+`;
-                } else {
-                    counter.innerText = `${target}+`;
-                }
+                counter.innerText = target;
             }
         });
     };
