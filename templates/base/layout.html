@@ -5,36 +5,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}InvoiceFlow{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" />
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        .dark { color-scheme: dark; }
+        body { transition: background-color 0.3s, color 0.3s; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .dark .glass { background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .hover-lift { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; }
+        .hover-lift:hover { transform: translateY(-8px); }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
-    <nav class="bg-white border-b border-gray-200">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col font-sans">
+    <nav class="glass sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <a href="{% url 'invoices:home' %}" class="text-2xl font-bold text-indigo-600">InvoiceFlow</a>
-                    </div>
+            <div class="flex justify-between h-20 items-center">
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'invoices:home' %}" class="text-2xl font-black tracking-tight text-primary-600 dark:text-primary-400">Invoice<span class="text-slate-900 dark:text-white">Flow</span></a>
                 </div>
-                <div class="flex items-center space-x-6">
-                    <a href="{% url 'invoices:home' %}#features" class="text-gray-600 hover:text-indigo-600 text-sm font-medium">Features</a>
-                    <a href="{% url 'invoices:pricing' %}" class="text-gray-600 hover:text-indigo-600 text-sm font-medium">Pricing</a>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="{% url 'invoices:home' %}#features" class="text-slate-600 dark:text-slate-400 hover:text-primary-600 font-semibold transition-colors">Features</a>
+                    <button id="theme-toggle" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                    </button>
                     {% if user.is_authenticated %}
-                        <a href="{% url 'invoices:dashboard' %}" class="{% if active == 'dashboard' %}text-indigo-600 font-semibold{% else %}text-gray-600{% endif %} hover:text-gray-900">Dashboard</a>
-                        <a href="{% url 'invoices:invoices_list' %}" class="{% if active == 'invoices' %}text-indigo-600 font-semibold{% else %}text-gray-600{% endif %} hover:text-gray-900">Invoices</a>
-                        <form action="{% url 'invoices:logout' %}" method="post" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" class="text-gray-600 hover:text-gray-900">Logout</button>
-                        </form>
+                        <a href="{% url 'invoices:dashboard' %}" class="bg-primary-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20">Dashboard</a>
                     {% else %}
-                        <a href="{% url 'invoices:login' %}" class="text-gray-600 hover:text-gray-900">Login</a>
-                        <a href="{% url 'invoices:signup' %}" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Get Started</a>
+                        <a href="{% url 'invoices:login' %}" class="text-slate-600 dark:text-slate-400 font-bold">Login</a>
+                        <a href="{% url 'invoices:signup' %}" class="bg-primary-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20">Sign Up</a>
                     {% endif %}
                 </div>
             </div>
@@ -101,6 +132,23 @@
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
+            }
+            AOS.init({
+                duration: 800,
+                once: true,
+                offset: 100
+            });
+
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                });
+            }
+
+            if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
             }
         });
     </script>
