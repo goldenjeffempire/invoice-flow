@@ -343,8 +343,6 @@ class Payment(models.Model):
         FAILED = "failed", "Failed"
         REFUNDED = "refunded", "Refunded"
 
-    id = models.CharField(primary_key=True, max_length=255)
-
     invoice = models.ForeignKey(
         Invoice, on_delete=models.CASCADE, related_name="payments"
     )
@@ -379,6 +377,56 @@ class Payment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.reference} ({self.status})"
+
+
+# ============================================================================
+# WEBHOOK DEDUPLICATION
+# ============================================================================
+
+class ProcessedWebhook(models.Model):
+    """Tracks processed payment webhooks to prevent replay handling."""
+
+    event_id = models.CharField(
+        max_length=100,
+        unique=True,
+        db_index=True,
+        help_text="Unique event identifier from payment provider",
+    )
+    provider = models.CharField(
+        max_length=50,
+        default="paystack",
+        help_text="Payment provider (paystack, stripe, etc)",
+    )
+    event_type = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Event type (charge.success, etc)",
+    )
+    reference = models.CharField(
+        max_length=100,
+        blank=True,
+        db_index=True,
+        help_text="Transaction reference",
+    )
+    payload_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="SHA256 hash of payload for integrity verification",
+    )
+    processed_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["-processed_at"]
+        indexes = [
+            models.Index(fields=["provider", "event_id"]),
+            models.Index(fields=["-processed_at"]),
+        ]
+        verbose_name = "Processed Webhook"
+        verbose_name_plural = "Processed Webhooks"
+
+    def __str__(self) -> str:
+        return f"{self.provider}:{self.event_id}"
 
 
 # ============================================================================
