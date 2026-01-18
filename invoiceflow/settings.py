@@ -280,15 +280,15 @@ WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0
 WHITENOISE_KEEP_ONLY_HASHED_FILES = not DEBUG
 WHITENOISE_MANIFEST_STRICT = not DEBUG
 # =============================================================================
+import dj_database_url
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("PGDATABASE"),
-        "USER": os.environ.get("PGUSER"),
-        "PASSWORD": os.environ.get("PGPASSWORD"),
-        "HOST": os.environ.get("PGHOST"),
-        "PORT": os.environ.get("PGPORT"),
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+        engine='django.db.backends.postgresql',
+    )
 }
 
 # =============================================================================
