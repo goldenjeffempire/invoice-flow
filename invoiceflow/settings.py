@@ -280,15 +280,11 @@ WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0
 WHITENOISE_KEEP_ONLY_HASHED_FILES = not DEBUG
 WHITENOISE_MANIFEST_STRICT = not DEBUG
 # =============================================================================
-import dj_database_url
-
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-        engine='django.db.backends.postgresql',
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 # =============================================================================
