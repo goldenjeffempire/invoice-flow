@@ -202,21 +202,42 @@ class SendGridEmailService:
             subject=f"Invoice #{invoice.invoice_id} - Payment Received",
         )
 
-    def send_invoice_email(self, invoice, recipient_email=None, template_id=None, subject_override=None, body_override=None):
+    def send_invoice_email(
+        self,
+        invoice,
+        recipient_email=None,
+        template_id=None,
+        subject_override=None,
+        body_override=None,
+        attach_pdf: bool = True,
+        reply_to: str | None = None,
+        sender_name: str | None = None,
+    ):
         """Generic method to send invoice email with possible overrides."""
         recipient_email = recipient_email or invoice.client_email
-        
+
         if subject_override and body_override:
-            # Send simple HTML email with custom content
+            html_body = "<div style='font-family: sans-serif;'>" + body_override.replace("\n", "<br>") + "</div>"
             return self._send_html_email(
                 to_email=recipient_email,
                 subject=subject_override,
                 plain_text=body_override,
-                html_content="<div style='font-family: sans-serif;'>" + body_override.replace('\n', '<br>') + "</div>"
+                html_content=html_body,
+                reply_to=reply_to or invoice.business_email,
+                from_name=sender_name or invoice.business_name,
+                attachment_bytes=self._generate_invoice_pdf(invoice) if attach_pdf else None,
+                attachment_name=f"Invoice_{invoice.invoice_id}.pdf" if attach_pdf else None,
             )
-        
+
         # Fallback to standard reminder template
-        return self.send_payment_reminder(invoice, recipient_email, template_id)
+        return self.send_payment_reminder(
+            invoice,
+            recipient_email,
+            template_id,
+            attach_pdf=attach_pdf,
+            sender_name=sender_name,
+            reply_to=reply_to,
+        )
 
     @staticmethod
     def send_invoice_email_static(invoice, recipient_email=None, subject_override=None, body_override=None):
@@ -348,6 +369,78 @@ The InvoiceFlow Team"""
             subject="Password Reset Request",
             plain_text=plain_text,
             html_content=html_content,
+        )
+
+    def send_payment_reminder(
+        self,
+        invoice,
+        recipient_email=None,
+        template_id=None,
+        attach_pdf: bool = True,
+        sender_name: str | None = None,
+        reply_to: str | None = None,
+    ):
+        """Send payment reminder email with invoice context."""
+        recipient_email = recipient_email or invoice.client_email
+        template_id = template_id or self.TEMPLATE_IDS.get("payment_reminder")
+
+        days_overdue = self._calculate_days_overdue(invoice)
+        subject = f"Payment Reminder: Invoice #{invoice.invoice_id}"
+
+        template_data = {
+            "invoice_id": invoice.invoice_id,
+            "client_name": invoice.client_name,
+            "business_name": invoice.business_name,
+            "business_email": invoice.business_email,
+            "currency": invoice.currency,
+            "total_amount": f"{invoice.currency} {invoice.total:.2f}",
+            "due_date": invoice.due_date.strftime("%B %d, %Y") if invoice.due_date else "N/A",
+            "days_overdue": days_overdue,
+            "invoice_url": self._get_invoice_view_url(invoice),
+        }
+
+        if not template_id:
+            plain_text = (
+                f"Hello {invoice.client_name},\n\n"
+                f"This is a reminder that invoice #{invoice.invoice_id} "
+                f"for {template_data['total_amount']} is due on {template_data['due_date']}.\n"
+                f"View invoice: {template_data['invoice_url']}\n\n"
+                "If you have already sent payment, please disregard this message.\n\n"
+                f"Thanks,\n{invoice.business_name}"
+            )
+            html_content = (
+                "<div style=\"font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto;\">"
+                f"<h2 style=\"color:#6366f1;\">Payment Reminder</h2>"
+                f"<p>Hello {invoice.client_name},</p>"
+                f"<p>This is a reminder that invoice <strong>#{invoice.invoice_id}</strong> "
+                f"for <strong>{template_data['total_amount']}</strong> is due on "
+                f"<strong>{template_data['due_date']}</strong>.</p>"
+                f"<p><a href=\"{template_data['invoice_url']}\" "
+                "style=\"display:inline-block;background:#6366f1;color:#fff;padding:12px 20px;"
+                "border-radius:8px;text-decoration:none;font-weight:600;\">View invoice</a></p>"
+                "<p style=\"color:#6b7280;font-size:14px;\">If you have already paid, you can ignore this reminder.</p>"
+                f"<p style=\"color:#111827;font-weight:600;\">{invoice.business_name}</p>"
+                "</div>"
+            )
+            return self._send_html_email(
+                to_email=recipient_email,
+                subject=subject,
+                plain_text=plain_text,
+                html_content=html_content,
+                reply_to=reply_to or invoice.business_email,
+                from_name=sender_name or invoice.business_name,
+                attachment_bytes=self._generate_invoice_pdf(invoice) if attach_pdf else None,
+                attachment_name=f"Invoice_{invoice.invoice_id}.pdf" if attach_pdf else None,
+            )
+
+        return self._send_email(
+            user_business_email=reply_to or invoice.business_email,
+            from_name=sender_name or invoice.business_name,
+            to_email=recipient_email,
+            template_id=template_id,
+            template_data=template_data,
+            subject=subject,
+            invoice=invoice if attach_pdf else None,
         )
 
     # ============ ADMIN EMAILS ============
@@ -496,7 +589,17 @@ The InvoiceFlow Team"""
             logger.error(f"❌ SendGrid API Error: {error_detail}")
             return {"status": "error", "message": error_detail, "code": status_code}
 
-    def _send_html_email(self, to_email, subject, plain_text, html_content):
+    def _send_html_email(
+        self,
+        to_email,
+        subject,
+        plain_text,
+        html_content,
+        reply_to: str | None = None,
+        from_name: str | None = None,
+        attachment_bytes: bytes | None = None,
+        attachment_name: str | None = None,
+    ):
         """Send an HTML email with plain text fallback."""
         if not self.is_configured:
             error_msg = "SendGrid API key not configured. Email sending is disabled."
@@ -505,12 +608,23 @@ The InvoiceFlow Team"""
 
         try:
             message = Mail(
-                from_email=From(self.from_email, "InvoiceFlow"),
+                from_email=From(self.from_email, from_name or "InvoiceFlow"),
                 to_emails=To(to_email),
                 subject=subject,
                 plain_text_content=plain_text,
                 html_content=html_content,
             )
+
+            if reply_to:
+                message.reply_to = ReplyTo(reply_to)
+
+            if attachment_bytes and attachment_name:
+                attachment = Attachment(
+                    FileContent(base64.b64encode(attachment_bytes).decode()),
+                    FileName(attachment_name),
+                    FileType("application/pdf"),
+                )
+                message.attachment = attachment
 
             if self.client is None:
                 return {"status": "error", "message": "SendGrid client not initialized"}
@@ -607,7 +721,7 @@ The InvoiceFlow Team"""
 
     def _get_invoice_view_url(self, invoice):
         """Get invoice view URL for email links."""
-        return f"{self._get_base_url()}/invoices/invoice/{invoice.id}/"
+        return f"{self._get_base_url()}/invoices/{invoice.invoice_id}/"
 
     def _get_dashboard_url(self):
         """Get dashboard URL."""

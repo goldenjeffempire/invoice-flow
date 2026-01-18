@@ -11,7 +11,6 @@ from .models import (
     Waitlist,
     Payment,
     MFAProfile,
-    SocialAccount,
 )
 
 
@@ -99,13 +98,6 @@ class MFAProfileAdmin(admin.ModelAdmin):
     list_filter = ("is_enabled", "created_at")
     search_fields = ("user__username", "user__email")
     readonly_fields = ("created_at", "updated_at")
-
-
-@admin.register(SocialAccount)
-class SocialAccountAdmin(admin.ModelAdmin):
-    list_display = ("user", "provider", "created_at")
-    list_filter = ("provider", "created_at")
-    search_fields = ("user__username", "user__email")
 
 
 @admin.register(RecurringInvoice)

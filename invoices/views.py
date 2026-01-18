@@ -1,27 +1,207 @@
 import os
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db import transaction
 from decimal import Decimal
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.csrf import csrf_protect
+
 from .models import Invoice, UserProfile, LineItem
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, DecimalField, F, Value, Q
+from django.db.models.functions import Coalesce
+from .auth_services import AuthenticationService, RegistrationService, PasswordService
+from .forms import LoginForm, SignUpForm, EmailOnlyForm, PasswordResetConfirmForm
+from .sendgrid_service import SendGridEmailService
+from .services import AnalyticsService, PDFService
 
 def home(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     return render(request, "pages/home-light.html")
 
+@csrf_protect
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
-    return render(request, "pages/home-light.html")
+        return redirect("invoices:dashboard")
 
+    next_url = request.POST.get("next") or request.GET.get("next", "")
+    if next_url and not url_has_allowed_host_and_scheme(next_url, {request.get_host()}):
+        next_url = ""
+
+    form = LoginForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        username_input = form.cleaned_data["username"].strip()
+        password = form.cleaned_data["password"]
+
+        username = username_input
+        if "@" in username_input:
+            user = User.objects.filter(email__iexact=username_input).first()
+            if user:
+                username = user.username
+
+        user, error_message = AuthenticationService.authenticate_user(
+            request=request,
+            username=username,
+            password=password,
+        )
+
+        if user is None:
+            if "inactive" in error_message.lower():
+                messages.error(
+                    request,
+                    "Your account is inactive. Please verify your email. "
+                    "You can request a new verification link below.",
+                )
+            else:
+                messages.error(request, error_message)
+        else:
+            result = AuthenticationService.login_user(request, user)
+
+            if form.cleaned_data.get("remember_me"):
+                request.session.set_expiry(60 * 60 * 24 * 30)
+            else:
+                request.session.set_expiry(0)
+
+            if not result.get("email_verified"):
+                messages.warning(
+                    request,
+                    "Please verify your email to unlock all features.",
+                )
+
+            return redirect(next_url or "invoices:dashboard")
+
+    return render(
+        request,
+        "pages/auth/login.html",
+        {
+            "form": form,
+            "next_url": next_url,
+        },
+    )
+
+@csrf_protect
 def signup(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
-    return render(request, "pages/home-light.html")
+        return redirect("invoices:dashboard")
+
+    form = SignUpForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        user, error_message, token = RegistrationService.create_user(
+            username=data["username"],
+            email=data["email"],
+            password=data["password1"],
+            first_name=data.get("first_name", ""),
+            last_name=data.get("last_name", ""),
+            require_email_verification=True,
+        )
+
+        if user is None:
+            messages.error(request, error_message)
+        else:
+            if token:
+                try:
+                    SendGridEmailService().send_verification_email(user, token.token)
+                    messages.success(
+                        request,
+                        "Account created! Please check your inbox to verify your email.",
+                    )
+                except Exception:
+                    messages.warning(
+                        request,
+                        "Account created, but we could not send a verification email. "
+                        "Please contact support.",
+                    )
+            return redirect("invoices:verification_sent")
+
+    return render(request, "pages/auth/signup.html", {"form": form})
+
+
+def verification_sent(request):
+    return render(request, "pages/auth/verification_sent.html")
+
+
+@csrf_protect
+def resend_verification(request):
+    form = EmailOnlyForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        email = form.cleaned_data["email"]
+        success, message, token = RegistrationService.resend_verification_email(email)
+        if success and token:
+            try:
+                user = token.user
+                SendGridEmailService().send_verification_email(user, token.token)
+                messages.success(request, message)
+                return redirect("invoices:verification_sent")
+            except Exception:
+                messages.warning(
+                    request,
+                    "Verification email could not be sent. Please contact support.",
+                )
+        else:
+            messages.error(request, message)
+
+    return render(request, "pages/auth/resend_verification.html", {"form": form})
+
+
+def verify_email(request, token: str):
+    success, message = RegistrationService.verify_email(token)
+    if success:
+        messages.success(request, message)
+        return redirect("invoices:login")
+    messages.error(request, message)
+    return render(request, "pages/auth/verification_failed.html")
+
+
+@csrf_protect
+def password_reset_request(request):
+    form = EmailOnlyForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        email = form.cleaned_data["email"]
+        success, message, token = PasswordService.request_password_reset(email)
+        if success and token:
+            try:
+                SendGridEmailService().send_password_reset_email(token.user, token.token)
+            except Exception:
+                messages.warning(
+                    request,
+                    "We couldn't send the reset email. Please contact support if needed.",
+                )
+        messages.success(request, message)
+        return redirect("invoices:password_reset_done")
+
+    return render(request, "pages/auth/password_reset.html", {"form": form})
+
+
+def password_reset_done(request):
+    return render(request, "pages/auth/password_reset_done.html")
+
+
+@csrf_protect
+def password_reset_confirm(request, token: str):
+    is_valid, user, error_message = PasswordService.validate_reset_token(token)
+    if not is_valid or user is None:
+        messages.error(request, error_message)
+        return render(request, "pages/auth/password_reset_invalid.html")
+
+    form = PasswordResetConfirmForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        success, message = PasswordService.reset_password(token, form.cleaned_data["new_password"])
+        if success:
+            messages.success(request, message)
+            return redirect("invoices:login")
+        messages.error(request, message)
+
+    return render(
+        request,
+        "pages/auth/password_reset_confirm.html",
+        {
+            "form": form,
+            "token": token,
+        },
+    )
 
 def pricing_view(request):
     return render(request, "pages/pricing.html")
@@ -91,29 +271,44 @@ def submit_feedback(request):
 
 @login_required
 def dashboard(request):
-    user_invoices = Invoice.objects.filter(user=request.user)
-    
-    total_revenue = Decimal('0.00')
-    total_outstanding = Decimal('0.00')
-    total_overdue = Decimal('0.00')
-    
-    for inv in user_invoices:
-        if inv.status == 'paid':
-            total_revenue += inv.total
-        elif inv.status == 'unpaid':
-            total_outstanding += inv.total
-        elif inv.status == 'overdue':
-            total_overdue += inv.total
+    stats = AnalyticsService.get_user_dashboard_stats(request.user)
+
+    totals = LineItem.objects.filter(invoice__user=request.user).aggregate(
+        outstanding_total=Coalesce(
+            Sum(
+                F("quantity") * F("unit_price"),
+                filter=Q(invoice__status="unpaid"),
+            ),
+            Value(Decimal("0")),
+            output_field=DecimalField(max_digits=15, decimal_places=2),
+        ),
+        overdue_total=Coalesce(
+            Sum(
+                F("quantity") * F("unit_price"),
+                filter=Q(invoice__status="overdue"),
+            ),
+            Value(Decimal("0")),
+            output_field=DecimalField(max_digits=15, decimal_places=2),
+        ),
+    )
 
     formatted_stats = {
-        'total_count': user_invoices.count(),
-        'revenue': '{:,.2f}'.format(total_revenue),
-        'outstanding': '{:,.2f}'.format(total_outstanding),
-        'overdue': '{:,.2f}'.format(total_overdue),
+        "total_count": stats["total_invoices"],
+        "revenue": "{:,.2f}".format(stats["total_revenue"]),
+        "outstanding": "{:,.2f}".format(totals["outstanding_total"]),
+        "overdue": "{:,.2f}".format(totals["overdue_total"]),
+        "paid_count": stats["paid_count"],
+        "unpaid_count": stats["unpaid_count"],
+        "unique_clients": stats["unique_clients"],
     }
 
-    recent_invoices = user_invoices.order_by('-created_at')[:5]
-    
+    recent_invoices = (
+        Invoice.objects.filter(user=request.user)
+        .order_by("-created_at")
+        .select_related()
+        [:5]
+    )
+
     return render(request, "pages/dashboard.html", {
         "stats": formatted_stats, 
         "recent_invoices": recent_invoices,
@@ -228,44 +423,29 @@ def settings_view(request):
         "active": "settings"
     })
 
-from django.http import HttpResponse
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+from django.http import FileResponse
+from io import BytesIO
 
 @login_required
 def download_invoice_pdf(request, invoice_id):
-    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
-    
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="invoice_{invoice_id}.pdf"'
-    
-    p = canvas.Canvas(response, pagesize=letter)
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(100, 750, f"INVOICE: {invoice.invoice_id}")
-    
-    p.setFont("Helvetica", 12)
-    p.drawString(100, 720, f"Date: {invoice.created_at.strftime('%Y-%m-%d')}")
-    p.drawString(100, 705, f"Due Date: {invoice.due_date.strftime('%Y-%m-%d')}")
-    p.drawString(100, 680, f"Client: {invoice.client_name}")
-    p.drawString(100, 665, f"Email: {invoice.client_email}")
-    
-    p.line(100, 650, 500, 650)
-    
-    y = 630
-    p.drawString(100, y, "Items:")
-    y -= 20
-    for item in invoice.items.all():
-        p.drawString(120, y, f"{item.description} - {item.quantity} x ${item.unit_price} = ${item.total_price}")
-        y -= 15
-        
-    p.line(100, y, 500, y)
-    y -= 20
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, y, f"Total Amount: ${invoice.total}")
-    
-    p.showPage()
-    p.save()
-    return response
+    invoice = get_object_or_404(
+        Invoice.objects.prefetch_related("line_items"),
+        invoice_id=invoice_id,
+        user=request.user,
+    )
+    try:
+        pdf_bytes = PDFService.generate_pdf_bytes(invoice)
+    except Exception as exc:
+        messages.error(request, f"Unable to generate PDF: {exc}")
+        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
+
+    filename = f"invoice_{invoice.invoice_id}.pdf"
+    return FileResponse(
+        BytesIO(pdf_bytes),
+        as_attachment=True,
+        filename=filename,
+        content_type="application/pdf",
+    )
 
 @login_required
 def delete_invoice(request, invoice_id):
@@ -279,12 +459,9 @@ def delete_invoice(request, invoice_id):
 def custom_404(request, exception):
     return render(request, "pages/home-light.html", status=404)
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-
 def logout_view(request):
-    logout(request)
-    return redirect("home")
+    AuthenticationService.logout_user(request)
+    return redirect("invoices:home")
 
 def custom_500(request):
     return render(request, "pages/home-light.html", status=500)
@@ -293,15 +470,12 @@ def custom_500(request):
 def send_reminder(request, invoice_id):
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
     try:
-        message = Mail(
-            from_email='noreply@invoiceflow.com',
-            to_emails=invoice.client_email,
-            subject=f'Payment Reminder: Invoice {invoice.invoice_id}',
-            html_content=f'<p>Hello {invoice.client_name},</p><p>This is a reminder that payment for invoice {invoice.invoice_id} of ${invoice.total} is due on {invoice.due_date}.</p>'
-        )
-        sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-        sg.send(message)
-        messages.success(request, f"Reminder sent to {invoice.client_email}")
+        service = SendGridEmailService()
+        result = service.send_payment_reminder(invoice, invoice.client_email)
+        if result.get("status") == "sent":
+            messages.success(request, f"Reminder sent to {invoice.client_email}")
+        else:
+            messages.error(request, f"Failed to send reminder: {result.get('message')}")
     except Exception as e:
         messages.error(request, f"Failed to send reminder: {str(e)}")
     return redirect('invoice_detail', invoice_id=invoice_id)

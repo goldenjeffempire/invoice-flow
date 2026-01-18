@@ -5,26 +5,33 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-6 py-12" data-aos="fade-up">
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-        <div>
-            <h1 class="text-4xl font-black text-slate-900 mb-2">Financial Hub</h1>
-            <p class="text-slate-500">Your business vitals, live and analyzed.</p>
-        </div>
-        <div class="flex gap-4 w-full md:w-auto">
-            <a href="{% url 'invoices:invoice_create' %}" class="flex-1 md:flex-none bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/20 hover:scale-105 transition-all">
-                <i data-lucide="plus" class="w-6 h-6"></i> Create Invoice
-            </a>
+    <div class="bg-gradient-to-br from-indigo-600 to-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-indigo-500/20 mb-12">
+        <div class="flex flex-col lg:flex-row gap-10 items-start lg:items-center justify-between">
+            <div>
+                <p class="text-sm uppercase tracking-[0.3em] text-indigo-200 font-semibold">Dashboard</p>
+                <h1 class="text-4xl md:text-5xl font-black mt-3">Financial Hub</h1>
+                <p class="text-indigo-100 mt-4 max-w-xl">Track revenue, monitor outstanding balances, and keep invoices moving without losing momentum.</p>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4 w-full lg:w-auto">
+                <a href="{% url 'invoices:invoice_create' %}" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-6 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition">
+                    <i data-lucide="plus" class="w-5 h-5"></i> New invoice
+                </a>
+                <a href="{% url 'invoices:invoices_list' %}" class="bg-white text-slate-900 px-6 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/20 hover:scale-105 transition">
+                    <i data-lucide="layout-list" class="w-5 h-5"></i> View invoices
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- KPI Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
             <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6">
                 <i data-lucide="file-text"></i>
             </div>
-            <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Total Volume</p>
+            <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Invoices</p>
             <h3 class="text-3xl font-black">{{ stats.total_count }}</h3>
+            <p class="text-sm text-slate-500 mt-2">{{ stats.paid_count }} paid • {{ stats.unpaid_count }} open</p>
         </div>
         <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
             <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-6">
@@ -32,6 +39,7 @@
             </div>
             <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Revenue</p>
             <h3 class="text-3xl font-black">${{ stats.revenue }}</h3>
+            <p class="text-sm text-slate-500 mt-2">Collected so far</p>
         </div>
         <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
             <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-6">
@@ -39,6 +47,7 @@
             </div>
             <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Outstanding</p>
             <h3 class="text-3xl font-black">${{ stats.outstanding }}</h3>
+            <p class="text-sm text-slate-500 mt-2">Awaiting payment</p>
         </div>
         <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
             <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-6">
@@ -46,6 +55,26 @@
             </div>
             <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Overdue</p>
             <h3 class="text-3xl font-black">${{ stats.overdue }}</h3>
+            <p class="text-sm text-slate-500 mt-2">Needs follow-up</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">Active clients</p>
+            <h3 class="text-2xl font-black text-slate-900">{{ stats.unique_clients }}</h3>
+            <p class="text-sm text-slate-500 mt-2">Clients invoiced this quarter</p>
+        </div>
+        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">Follow ups</p>
+            <h3 class="text-2xl font-black text-slate-900">{{ stats.unpaid_count }}</h3>
+            <p class="text-sm text-slate-500 mt-2">Open invoices requiring action</p>
+        </div>
+        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+            <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-2">Team focus</p>
+            <h3 class="text-2xl font-black text-slate-900">Automations</h3>
+            <p class="text-sm text-slate-500 mt-2">Set reminders to accelerate payments</p>
+            <a href="{% url 'invoices:settings' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 mt-4">Review settings <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
         </div>
     </div>
 
@@ -63,6 +92,7 @@
                         <th class="pb-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Client</th>
                         <th class="pb-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Amount</th>
                         <th class="pb-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Status</th>
+                        <th class="pb-4 font-bold text-slate-400 text-xs uppercase tracking-widest text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-50">
@@ -79,10 +109,13 @@
                                 {{ invoice.get_status_display }}
                             </span>
                         </td>
+                        <td class="py-5 text-right">
+                            <a href="{% url 'invoices:invoice_detail' invoice.invoice_id %}" class="text-sm font-semibold text-indigo-600 hover:text-indigo-700">Open</a>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="py-12 text-center text-slate-400">No activity yet.</td>
+                        <td colspan="5" class="py-12 text-center text-slate-400">No activity yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
