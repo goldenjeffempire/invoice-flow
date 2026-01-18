@@ -4,7 +4,7 @@ from decimal import Decimal
 import pytest
 from django.core.exceptions import ValidationError
 
-from invoices.models import Invoice, Payment, PaymentReconciliation
+from invoices.models import Invoice, Payment
 from invoices.paystack_service import finalize_payment_from_verification
 from tests.factories import InvoiceFactory, InvoiceTemplateFactory, LineItemFactory, UserFactory
 
@@ -125,5 +125,3 @@ class TestPaymentFinalization:
         payment.refresh_from_db()
         assert payment.status == Payment.Status.SUCCESS
         assert invoice.status == Invoice.Status.PAID
-        reconciliation = PaymentReconciliation.objects.get(payment=payment)
-        assert reconciliation.status == PaymentReconciliation.ReconciliationStatus.VERIFIED

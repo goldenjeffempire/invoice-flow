@@ -13,13 +13,7 @@ from typing import Any, Optional
 import requests
 from django.utils import timezone
 
-from .models import (
-    IdempotencyKey,
-    Invoice,
-    Payment,
-    PaymentReconciliation,
-    ProcessedWebhook,
-)
+from .models import IdempotencyKey, Invoice, Payment, ProcessedWebhook
 
 
 PAYSTACK_BASE_URL = "https://api.paystack.co"
@@ -421,21 +415,6 @@ def finalize_payment_from_verification(
         "status",
         "paid_at",
     ])
-
-    reconciliation_status = (
-        PaymentReconciliation.ReconciliationStatus.VERIFIED
-        if payment.status == Payment.Status.SUCCESS
-        else PaymentReconciliation.ReconciliationStatus.FAILED
-    )
-    record_reconciliation(
-        payment=payment,
-        status=reconciliation_status,
-        paystack_status=str(verification.get("raw", {}).get("status", "")),
-        amount_match=True,
-        currency_match=True,
-        status_match=payment.status == Payment.Status.SUCCESS,
-        error="",
-    )
 
     invoice = payment.invoice
     if invoice and payment.status == Payment.Status.SUCCESS:
