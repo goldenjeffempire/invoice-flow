@@ -39,9 +39,9 @@ urlpatterns = [
     path("create/", views.invoice_create, name="invoice_create"),
     path("list/", views.invoices_list, name="invoices_list"),
     path("<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
-    path("<int:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
-    path("<int:invoice_id>/delete/", views.invoice_delete, name="invoice_delete"),
-    path("<int:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf"),
+    path("<str:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
+    path("<str:invoice_id>/delete/", views.invoice_delete, name="invoice_delete_legacy"),
+    path("<str:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf_legacy"),
     
     path("settings/", views.settings_page, name="settings"),
     path("settings/profile/", views.profile_update_ajax, name="settings_profile_update"),
