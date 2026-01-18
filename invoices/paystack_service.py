@@ -425,6 +425,37 @@ def finalize_payment_from_verification(
     return payment
 
 
+def record_reconciliation(
+    *,
+    payment: Payment,
+    status: str,
+    paystack_status: str,
+    amount_match: bool,
+    currency_match: bool,
+    status_match: bool,
+    error: str,
+) -> PaymentReconciliation:
+    reconciliation, _ = PaymentReconciliation.objects.get_or_create(
+        payment=payment,
+        defaults={
+            "user": payment.user,
+            "local_status": payment.status,
+        },
+    )
+    reconciliation.status = status
+    reconciliation.paystack_status = paystack_status
+    reconciliation.local_status = payment.status
+    reconciliation.amount_match = amount_match
+    reconciliation.currency_match = currency_match
+    reconciliation.status_match = status_match
+    reconciliation.last_error = error
+    reconciliation.last_attempt = timezone.now()
+    if status == PaymentReconciliation.ReconciliationStatus.VERIFIED:
+        reconciliation.verified_at = timezone.now()
+    reconciliation.save()
+    return reconciliation
+
+
 # -------------------------------------------------------------------------
 # FACTORY FUNCTION
 # -------------------------------------------------------------------------
