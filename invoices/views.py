@@ -10,6 +10,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
 
 from .models import Invoice, UserProfile
 from django.db.models import Sum, Count
@@ -254,6 +255,7 @@ def invoice_edit(request, invoice_id):
     )
 
 @login_required
+@require_POST
 def invoice_delete(request, invoice_id):
     return delete_invoice(request, invoice_id)
 
@@ -490,13 +492,12 @@ def download_invoice_pdf(request, invoice_id):
     return response
 
 @login_required
+@require_POST
 def delete_invoice(request, invoice_id):
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
-    if request.method == "POST":
-        invoice.delete()
-        messages.success(request, f"Invoice {invoice_id} deleted.")
-        return redirect("invoices:invoices_list")
-    return redirect("invoices:invoice_detail", invoice_id=invoice_id)
+    invoice.delete()
+    messages.success(request, f"Invoice {invoice_id} deleted.")
+    return redirect("invoices:invoices_list")
 
 def custom_404(request, exception):
     return render(request, "pages/home-light.html", status=404)
@@ -512,6 +513,7 @@ def custom_500(request):
     return render(request, "pages/home-light.html", status=500)
 
 @login_required
+@require_POST
 def send_reminder(request, invoice_id):
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
     try:
