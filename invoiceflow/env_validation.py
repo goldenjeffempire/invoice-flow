@@ -30,8 +30,6 @@ def validate_env():
         return  # Already validated in this process
     
     is_production = os.getenv("PRODUCTION") == "true"
-    is_replit = bool(os.getenv("REPL_ID") or os.getenv("REPLIT"))
-    
     missing = []
     for var in REQUIRED_PRODUCTION_ENV_VARS:
         if not os.getenv(var):
@@ -54,9 +52,6 @@ def validate_env():
             error_msg = "CRITICAL: ENCRYPTION_SALT must be properly set in production"
             logger.critical(error_msg)
             raise ImproperlyConfigured(error_msg)
-    
-    if is_replit:
-        logger.info("Running in Replit environment with relaxed validation")
     
     logger.info("Environment validation passed successfully")
     _validation_completed = True
