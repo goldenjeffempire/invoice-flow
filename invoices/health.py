@@ -300,35 +300,33 @@ def detailed_health(request):
     db_pool_stats = _get_db_pool_stats()
     rate_limiter_config = _get_rate_limiter_config()
 
-    return JsonResponse(
-        {
-            "status": "healthy" if all_healthy else "degraded",
-            "version": APP_VERSION,
-            "environment": "production" if not settings.DEBUG else "development",
-            "timestamp": timezone.now().isoformat(),
-            "uptime": uptime,
-            "checks": checks,
-            "details": details,
-            "environment_status": env_status,
-            "system": {
-                "python_version": sys.version.split()[0],
-                "python_implementation": platform.python_implementation(),
-                "platform": platform.platform(),
-                "django_version": django.get_version(),
-                "os": platform.system(),
-                "machine": platform.machine(),
-            },
-            "metrics": system_metrics,
-            "database": db_pool_stats,
-            "rate_limiting": rate_limiter_config,
-            "config": {
-                "debug": settings.DEBUG,
-                "mfa_enabled": getattr(settings, "MFA_ENABLED", False),
-                "allowed_hosts": settings.ALLOWED_HOSTS[:3] if settings.ALLOWED_HOSTS else [],
-                "time_zone": settings.TIME_ZONE,
-            },
-            "cache_warming": CacheWarmingService.get_cache_stats(),
-            "async_tasks": AsyncTaskService.get_task_stats(),
-        }
-    )
+    health_data = {
+        "status": "healthy" if all_healthy else "degraded",
+        "version": APP_VERSION,
+        "environment": "production" if not settings.DEBUG else "development",
+        "timestamp": timezone.now().isoformat(),
+        "uptime": uptime,
+        "checks": checks,
+        "details": details,
+        "environment_status": env_status,
+        "system": {
+            "python_version": sys.version.split()[0],
+            "python_implementation": platform.python_implementation(),
+            "platform": platform.platform(),
+            "django_version": django.get_version(),
+            "os": platform.system(),
+            "machine": platform.machine(),
+        },
+        "metrics": system_metrics,
+        "database": db_pool_stats,
+        "rate_limiting": rate_limiter_config,
+        "config": {
+            "debug": settings.DEBUG,
+            "mfa_enabled": getattr(settings, "MFA_ENABLED", False),
+            "allowed_hosts": settings.ALLOWED_HOSTS[:3] if settings.ALLOWED_HOSTS else [],
+            "time_zone": settings.TIME_ZONE,
+        },
+        "cache_warming": CacheWarmingService.get_cache_stats(),
+        "async_tasks": AsyncTaskService.get_task_stats(),
+    }
     return detailed_health_impl(health_data)
