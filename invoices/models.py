@@ -422,6 +422,21 @@ class Payment(models.Model):
     def is_successful(self) -> bool:
         return self.status == self.Status.SUCCESS
 
+    @transaction.atomic
+    def mark_as_success(self, paid_at: Optional[datetime] = None) -> None:
+        """Atomically mark payment as successful and update invoice."""
+        if self.status == self.Status.SUCCESS:
+            return
+            
+        self.status = self.Status.SUCCESS
+        self.paid_at = paid_at or timezone.now()
+        self.save(update_fields=["status", "paid_at", "updated_at"])
+        
+        # Update invoice status
+        if self.invoice.status != Invoice.Status.PAID:
+            self.invoice.status = Invoice.Status.PAID
+            self.invoice.save(update_fields=["status", "updated_at"])
+
     def __str__(self) -> str:
         return f"{self.reference} ({self.status})"
 

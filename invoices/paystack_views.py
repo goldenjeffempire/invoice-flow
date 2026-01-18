@@ -170,26 +170,36 @@ def paystack_webhook(request):
     signature = request.headers.get("X-Paystack-Signature", "")
     payload = request.body
 
-    # Verify webhook signature (hardened: use constant-time comparison)
+    # Signature verification (stateless/fast)
     if not service.verify_webhook_signature(payload, signature):
-        logger.warning("Invalid webhook signature")
-        return HttpResponse(status=400)
+        logger.warning(f"Invalid Paystack signature: {signature[:10]}...")
+        return HttpResponse(status=401)
 
     try:
         event = json.loads(payload.decode("utf-8"))
     except json.JSONDecodeError:
-        logger.error("Invalid webhook payload JSON")
-        return HttpResponse(status=400)
+        logger.error("Invalid Paystack webhook payload JSON")
+        return HttpResponse("Invalid JSON", status=400)
 
     event_id = str(event.get("data", {}).get("id", ""))
     if not event_id:
-        logger.warning("Missing event ID in webhook")
-        return HttpResponse(status=400)
+        # Some Paystack events use a different structure or top-level ID
+        event_id = str(event.get("id", ""))
+        
+    if not event_id:
+        logger.warning("Missing event ID in Paystack webhook")
+        return HttpResponse("Missing event ID", status=400)
 
     # Idempotency check (prevent replay attacks)
     if service.is_webhook_processed(event_id):
-        logger.debug(f"Webhook {event_id} already processed")
-        return HttpResponse(status=200)
+        logger.info(f"Paystack webhook {event_id} already processed. Skipping.")
+        return HttpResponse("Already processed", status=200)
+
+    event_type = event.get("event")
+    # We only care about success for now to avoid noise
+    if event_type != "charge.success":
+        logger.info(f"Ignoring Paystack event type: {event_type}")
+        return HttpResponse("Event ignored", status=200)
 
     reference = event.get("data", {}).get("reference", "")
     if not reference:
