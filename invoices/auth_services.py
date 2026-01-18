@@ -246,13 +246,13 @@ class RegistrationService:
         first_name: str = "",
         last_name: str = "",
         require_email_verification: bool = True,
-    ) -> tuple[User | None, str]:
-        """Create a new user account. Returns (user, error_message)."""
+    ) -> tuple[User | None, str, EmailVerificationToken | None]:
+        """Create a new user account. Returns (user, error_message, token)."""
         if User.objects.filter(username__iexact=username).exists():
-            return None, "This username is already taken."
+            return None, "This username is already taken.", None
 
         if User.objects.filter(email__iexact=email).exists():
-            return None, "An account with this email already exists."
+            return None, "An account with this email already exists.", None
 
         user = User.objects.create_user(
             username=username,
@@ -264,9 +264,10 @@ class RegistrationService:
         )
 
         UserProfile.objects.create(user=user)
+        token = None
 
         if require_email_verification:
-            EmailVerificationToken.create_verification_token(
+            token = EmailVerificationToken.create_verification_token(
                 user=user,
                 email=email,
                 token_type="signup",
@@ -274,7 +275,7 @@ class RegistrationService:
             )
 
         logger.info(f"New user registered: {username} ({email})")
-        return user, ""
+        return user, "", token
 
     @classmethod
     def verify_email(cls, token: str) -> tuple[bool, str]:
@@ -291,27 +292,35 @@ class RegistrationService:
         user.is_active = True
         user.save(update_fields=["is_active"])
 
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        if not profile.email_verified:
+            profile.email_verified = True
+            profile.save(update_fields=["email_verified"])
+
         email_token.mark_used()
 
         logger.info(f"Email verified for user: {user.username}")
         return True, "Your email has been verified. You can now log in."
 
     @classmethod
-    def resend_verification_email(cls, email: str) -> tuple[bool, str]:
-        """Resend verification email. Returns (success, message)."""
+    def resend_verification_email(
+        cls,
+        email: str,
+    ) -> tuple[bool, str, EmailVerificationToken | None]:
+        """Resend verification email. Returns (success, message, token)."""
         try:
             user = User.objects.get(email__iexact=email, is_active=False)
         except User.DoesNotExist:
-            return False, "No pending verification found for this email."
+            return False, "No pending verification found for this email.", None
 
-        EmailVerificationToken.create_verification_token(
+        token = EmailVerificationToken.create_verification_token(
             user=user,
             email=email,
             token_type="signup",
             expires_hours=24,
         )
 
-        return True, "Verification email has been resent."
+        return True, "Verification email has been resent.", token
 
 
 class PasswordService:
@@ -396,20 +405,18 @@ class SessionService:
     @classmethod
     def get_user_sessions(cls, user: User, current_session_key: str = "") -> list[dict[str, Any]]:
         """Get all active sessions for a user."""
-        sessions = UserSession.objects.filter(user=user).order_by("-last_activity")
+        sessions = UserSession.objects.filter(user=user).order_by("-last_seen")
 
         result = []
         for session in sessions:
             result.append({
                 "id": session.id,
-                "device_type": session.device_type,
-                "browser": session.browser,
-                "os": session.os,
                 "ip_address": session.ip_address,
-                "location": session.location,
-                "last_activity": session.last_activity,
+                "user_agent": session.user_agent,
+                "last_seen": session.last_seen,
                 "created_at": session.created_at,
                 "is_current": session.session_key == current_session_key,
+                "is_revoked": session.is_revoked,
             })
 
         return result

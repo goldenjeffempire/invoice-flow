@@ -12,6 +12,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.shortcuts import redirect
+from django.utils import timezone
 from django.urls import reverse
 from oauthlib.oauth2 import WebApplicationClient
 
@@ -47,7 +48,7 @@ def github_login(request):
             request,
             "GitHub login is not configured. Please contact support."
         )
-        return redirect("login")
+        return redirect("invoices:login")
     
     try:
         client = WebApplicationClient(GITHUB_CLIENT_ID)
@@ -71,14 +72,14 @@ def github_login(request):
             request,
             "An error occurred. Please try again."
         )
-        return redirect("login")
+        return redirect("invoices:login")
 
 
 def github_callback(request):
     """Handle GitHub OAuth callback and create/login user."""
     if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
         messages.error(request, "GitHub login is not configured.")
-        return redirect("login")
+        return redirect("invoices:login")
     
     code = request.GET.get("code")
     state = request.GET.get("state")
@@ -86,16 +87,16 @@ def github_callback(request):
     
     if error:
         messages.error(request, "GitHub login was cancelled or failed.")
-        return redirect("login")
+        return redirect("invoices:login")
     
     if not code:
         messages.error(request, "Invalid response from GitHub.")
-        return redirect("login")
+        return redirect("invoices:login")
     
     stored_state = request.session.pop("github_oauth_state", None)
     if not stored_state or stored_state != state:
         messages.error(request, "Invalid security token. Please try again.")
-        return redirect("login")
+        return redirect("invoices:login")
     
     try:
         token_response = requests.post(
@@ -112,14 +113,14 @@ def github_callback(request):
         
         if token_response.status_code != 200:
             messages.error(request, "Failed to verify with GitHub. Please try again.")
-            return redirect("login")
+            return redirect("invoices:login")
         
         token_data = token_response.json()
         access_token = token_data.get("access_token")
         
         if not access_token:
             messages.error(request, "Failed to get access token from GitHub.")
-            return redirect("login")
+            return redirect("invoices:login")
         
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -130,7 +131,7 @@ def github_callback(request):
         
         if user_response.status_code != 200:
             messages.error(request, "Failed to get user info from GitHub.")
-            return redirect("login")
+            return redirect("invoices:login")
         
         userinfo = user_response.json()
         
@@ -155,30 +156,39 @@ def github_callback(request):
         
         if not github_id or not email:
             messages.error(request, "Could not retrieve your information from GitHub. Please ensure your email is public or verified.")
-            return redirect("login")
+            return redirect("invoices:login")
         
         social_account = SocialAccount.objects.filter(
             provider="github",
-            provider_id=github_id
+            provider_id=github_id,
         ).first()
         
         if social_account:
             user = social_account.user
-            social_account.email = email
-            social_account.name = name
-            social_account.extra_data = userinfo
+            social_account.access_token = access_token or social_account.access_token
+            social_account.token_scopes = token_data.get("scope", "")
+            social_account.avatar_url = userinfo.get("avatar_url", "")
+            social_account.last_synced = timezone.now()
             social_account.save()
         else:
             user = User.objects.filter(email=email).first()
             
             if user:
+                if not user.is_active:
+                    messages.error(request, "This account is inactive. Please verify your email.")
+                    return redirect("invoices:login")
+                profile, _ = UserProfile.objects.get_or_create(user=user)
+                if not profile.email_verified:
+                    profile.email_verified = True
+                    profile.save(update_fields=["email_verified"])
                 SocialAccount.objects.create(
                     user=user,
                     provider="github",
                     provider_id=github_id,
-                    email=email,
-                    name=name,
-                    extra_data=userinfo,
+                    access_token=access_token or "",
+                    token_scopes=token_data.get("scope", ""),
+                    avatar_url=userinfo.get("avatar_url", ""),
+                    last_synced=timezone.now(),
                 )
             else:
                 base_username = login_username or email.split("@")[0]
@@ -203,16 +213,20 @@ def github_callback(request):
                 )
                 user.is_active = True
                 user.save()
-                
-                UserProfile.objects.get_or_create(user=user)
+
+                profile, _ = UserProfile.objects.get_or_create(user=user)
+                if not profile.email_verified:
+                    profile.email_verified = True
+                    profile.save(update_fields=["email_verified"])
                 
                 SocialAccount.objects.create(
                     user=user,
                     provider="github",
                     provider_id=github_id,
-                    email=email,
-                    name=name,
-                    extra_data=userinfo,
+                    access_token=access_token or "",
+                    token_scopes=token_data.get("scope", ""),
+                    avatar_url=userinfo.get("avatar_url", ""),
+                    last_synced=timezone.now(),
                 )
         
         login(request, user)
@@ -233,11 +247,11 @@ def github_callback(request):
             pass
         
         messages.success(request, f"Welcome, {user.first_name or user.username}!")
-        return redirect("dashboard")
+        return redirect("invoices:dashboard")
     
     except requests.RequestException:
         messages.error(request, "Could not connect to GitHub. Please try again later.")
-        return redirect("login")
+        return redirect("invoices:login")
     except Exception:
         messages.error(request, "An error occurred during login. Please try again.")
-        return redirect("login")
+        return redirect("invoices:login")

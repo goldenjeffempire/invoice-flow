@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
 
 from .models import (
     ContactSubmission,
@@ -52,7 +53,7 @@ class SignUpForm(UserCreationForm):
         validators=[validate_email_domain],
         widget=forms.EmailInput(
             attrs={
-                "class": "input-field",
+                "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
                 "placeholder": "your.email@example.com",
                 "autocomplete": "email",
             }
@@ -63,7 +64,7 @@ class SignUpForm(UserCreationForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "input-field",
+                "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
                 "placeholder": "First Name",
                 "autocomplete": "given-name",
             }
@@ -74,7 +75,7 @@ class SignUpForm(UserCreationForm):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "input-field",
+                "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
                 "placeholder": "Last Name",
                 "autocomplete": "family-name",
             }
@@ -87,12 +88,25 @@ class SignUpForm(UserCreationForm):
         widgets = {
             "username": forms.TextInput(
                 attrs={
-                    "class": "input-field",
+                    "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
                     "placeholder": "Username",
                     "autocomplete": "username",
                 }
             ),
         }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        for field_name in ["password1", "password2"]:
+            field = self.fields.get(field_name)
+            if field:
+                field.widget.attrs.update(
+                    {
+                        "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
+                        "placeholder": "Password" if field_name == "password1" else "Confirm password",
+                        "autocomplete": "new-password",
+                    }
+                )
 
     def save(self, commit: bool = True) -> User:
         user = super().save(commit=False)
@@ -118,7 +132,7 @@ class LoginForm(forms.Form):
         required=True,
         widget=forms.TextInput(
             attrs={
-                "class": "auth-form-input",
+                "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
                 "placeholder": "Email or Username",
                 "autocomplete": "username",
                 "autofocus": True,
@@ -130,7 +144,7 @@ class LoginForm(forms.Form):
         required=True,
         widget=forms.PasswordInput(
             attrs={
-                "class": "auth-form-input",
+                "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
                 "placeholder": "Enter your password",
                 "autocomplete": "current-password",
                 "aria-label": "Password",
@@ -141,7 +155,7 @@ class LoginForm(forms.Form):
         required=False,
         widget=forms.CheckboxInput(
             attrs={
-                "class": "auth-checkbox-input",
+                "class": "h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500",
             }
         ),
         label="Remember me for 30 days",
@@ -157,6 +171,59 @@ class LoginForm(forms.Form):
         if not password:
             self.add_error('password', 'Password is required.')
         
+        return cleaned_data
+
+
+class EmailOnlyForm(forms.Form):
+    email = forms.EmailField(
+        required=True,
+        validators=[validate_email_domain],
+        widget=forms.EmailInput(
+            attrs={
+                "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
+                "placeholder": "you@example.com",
+                "autocomplete": "email",
+                "aria-label": "Email address",
+            }
+        ),
+    )
+
+
+class PasswordResetConfirmForm(forms.Form):
+    new_password = forms.CharField(
+        required=True,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
+                "placeholder": "New password",
+                "autocomplete": "new-password",
+                "aria-label": "New password",
+            }
+        ),
+    )
+    confirm_password = forms.CharField(
+        required=True,
+        widget=forms.PasswordInput(
+            attrs={
+                "class": "w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500",
+                "placeholder": "Confirm new password",
+                "autocomplete": "new-password",
+                "aria-label": "Confirm new password",
+            }
+        ),
+    )
+
+    def clean_new_password(self) -> str:
+        password = self.cleaned_data.get("new_password") or ""
+        validate_password(password)
+        return password
+
+    def clean(self) -> dict[str, Any]:
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get("new_password")
+        confirm_password = cleaned_data.get("confirm_password")
+        if new_password and confirm_password and new_password != confirm_password:
+            self.add_error("confirm_password", "Passwords do not match.")
         return cleaned_data
 
 
