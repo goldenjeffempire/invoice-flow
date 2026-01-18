@@ -336,21 +336,36 @@ class Invoice(models.Model):
     @property
     def total(self) -> Decimal:
         """Calculates the grand total of the invoice."""
-        return (self.subtotal - self.discount_amount + self.tax_amount).quantize(Decimal("0.01"))
+        total = self.subtotal - self.discount_amount + self.tax_amount
+        return total.quantize(Decimal("0.01"))
 
+    @transaction.atomic
     def mark_as_paid(self) -> None:
-        """Updates the invoice status to PAID and logs the transition."""
+        """Updates the invoice status to PAID and handles associated business logic."""
+        if self.status == self.Status.PAID:
+            return
+
+        self.status = self.Status.PAID
+        self.save(update_fields=["status", "updated_at"])
+
+        # Update associated payments
+        self.payments.filter(status="pending").update(
+            status="success", 
+            paid_at=timezone.now(),
+            updated_at=timezone.now()
+        )
+
+        # Integration point for analytics/notification services
         from .services import AnalyticsService
         from .sendgrid_service import SendGridEmailService
-        if self.status != self.Status.PAID:
-            self.status = self.Status.PAID
-            self.save(update_fields=["status", "updated_at"])
-            # Integration point for analytics/notification services
-            AnalyticsService.invalidate_user_cache(self.user_id)
-            try:
-                SendGridEmailService().send_invoice_paid(self, self.client_email)
-            except Exception as e:
-                logger.error(f"Failed to send payment confirmation: {e}")
+        
+        AnalyticsService.invalidate_user_cache(self.user_id)
+        try:
+            SendGridEmailService().send_invoice_paid(self, self.client_email)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send payment confirmation: {e}")
 
     def mark_as_overdue(self) -> None:
         """Updates the invoice status to OVERDUE."""

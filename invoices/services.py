@@ -94,20 +94,29 @@ class InvoiceService:
         if not invoice_form.is_valid():
             return None, invoice_form
 
-        invoice = invoice_form.save(commit=False)
-        invoice.save()
-        invoice.line_items.all().delete()
-
+        invoice = invoice_form.save()
+        
+        # Efficiently update line items
+        existing_items = {item.id: item for item in invoice.line_items.all()}
+        new_items = []
+        
         for item_data in line_items_data:
-            if not item_data.get("description"):
+            desc = item_data.get("description")
+            if not desc:
                 continue
             
-            LineItem.objects.create(
+            qty = Decimal(str(item_data.get("quantity", 1)))
+            price = Decimal(str(item_data.get("unit_price", 0)))
+            
+            new_items.append(LineItem(
                 invoice=invoice,
-                description=item_data["description"],
-                quantity=Decimal(str(item_data.get("quantity", 1))),
-                unit_price=Decimal(str(item_data.get("unit_price", 0))),
-            )
+                description=desc,
+                quantity=qty,
+                unit_price=price
+            ))
+
+        invoice.line_items.all().delete()
+        LineItem.objects.bulk_create(new_items)
 
         AnalyticsService.invalidate_user_cache(invoice.user_id)
         return invoice, invoice_form

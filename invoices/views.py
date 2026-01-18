@@ -506,9 +506,9 @@ def dashboard(request):
     recent_invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')[:5]
     
     formatted_stats = {
-        'total_count': stats['total_invoices'],
-        'revenue': '{:,.2f}'.format(stats['total_revenue']),
-        'outstanding': '{:,.2f}'.format(stats['unpaid_count']), # Simplified for now
+        'total_count': stats.get('total_invoices', 0),
+        'revenue': '{:,.2f}'.format(stats.get('total_revenue', Decimal('0'))),
+        'outstanding': '{:,.2f}'.format(stats.get('unpaid_count', 0)),
         'overdue': '0.00',
     }
 
