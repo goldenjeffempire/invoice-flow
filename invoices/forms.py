@@ -26,8 +26,49 @@ class LineItemForm(forms.ModelForm):
             "unit_price": forms.NumberInput(attrs={"class": "input-modern", "step": "0.01", "placeholder": "0.00"}),
         }
 
+    def clean_quantity(self) -> Any:
+        quantity = self.cleaned_data.get("quantity")
+        if quantity is not None and quantity <= 0:
+            raise forms.ValidationError("Quantity must be greater than 0.")
+        return quantity
+
+    def clean_unit_price(self) -> Any:
+        unit_price = self.cleaned_data.get("unit_price")
+        if unit_price is not None and unit_price <= 0:
+            raise forms.ValidationError("Unit price must be greater than 0.")
+        return unit_price
+
+
+class BaseLineItemFormSet(forms.BaseInlineFormSet):
+    def clean(self) -> None:
+        super().clean()
+        has_item = False
+        for form in self.forms:
+            if self.can_delete and self._should_delete_form(form):
+                continue
+            if not form.cleaned_data:
+                continue
+            description = form.cleaned_data.get("description")
+            quantity = form.cleaned_data.get("quantity")
+            unit_price = form.cleaned_data.get("unit_price")
+            if description and quantity is not None and unit_price is not None:
+                has_item = True
+                continue
+            if any([description, quantity, unit_price]):
+                raise forms.ValidationError(
+                    "Each line item must include description, quantity, and unit price."
+                )
+        if not has_item:
+            raise forms.ValidationError("Add at least one line item.")
+
+
 LineItemFormSet = forms.inlineformset_factory(
-    Invoice, LineItem, form=LineItemForm, extra=1, can_delete=True
+    Invoice,
+    LineItem,
+    form=LineItemForm,
+    formset=BaseLineItemFormSet,
+    extra=1,
+    can_delete=True,
 )
 from .validators import (
     InvoiceBusinessRules,
@@ -295,6 +336,14 @@ class InvoiceForm(forms.ModelForm):
             if discount < 0 or discount > 100:
                 raise forms.ValidationError("Discount must be between 0 and 100.")
         return discount
+
+    def clean(self) -> dict[str, Any]:
+        cleaned_data = super().clean()
+        invoice_date = cleaned_data.get("invoice_date")
+        due_date = cleaned_data.get("due_date")
+        if invoice_date and due_date and due_date < invoice_date:
+            self.add_error("due_date", "Due date cannot be earlier than the invoice date.")
+        return cleaned_data
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

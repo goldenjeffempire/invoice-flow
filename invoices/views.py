@@ -1,17 +1,28 @@
 import os
 from decimal import Decimal
+from typing import Dict
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
 
-from .models import Invoice, UserProfile, LineItem
+from .models import Invoice, UserProfile
 from django.db.models import Sum, Count
 from .auth_services import AuthenticationService, RegistrationService, PasswordService
-from .forms import LoginForm, SignUpForm, EmailOnlyForm, PasswordResetConfirmForm
+from .forms import (
+    LoginForm,
+    SignUpForm,
+    EmailOnlyForm,
+    PasswordResetConfirmForm,
+    InvoiceForm,
+    LineItemFormSet,
+)
 from .sendgrid_service import SendGridEmailService
 
 def home(request):
@@ -213,14 +224,44 @@ def payment_history(request):
 def payment_detail(request, payment_id):
     return redirect('invoices:dashboard')
 
+@login_required
 def invoice_edit(request, invoice_id):
-    return redirect('invoices:invoice_detail', invoice_id=invoice_id)
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
+    if request.method == "POST":
+        form = InvoiceForm(request.POST, instance=invoice)
+        formset = LineItemFormSet(request.POST, instance=invoice)
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                form.save()
+                formset.save()
+            messages.success(request, "Invoice updated successfully.")
+            return redirect("invoices:invoice_detail", invoice_id=invoice.invoice_id)
+        messages.error(request, "Please correct the errors below.")
+    else:
+        form = InvoiceForm(instance=invoice)
+        formset = LineItemFormSet(instance=invoice)
+    return render(
+        request,
+        "pages/invoice_create.html",
+        {
+            "form": form,
+            "formset": formset,
+            "form_title": f"Edit Invoice {invoice.invoice_id}",
+            "form_description": "Update invoice details and line items.",
+            "submit_label": "Save Changes",
+            "active": "invoices",
+            "invoice": invoice,
+        },
+    )
 
+@login_required
+@require_POST
 def invoice_delete(request, invoice_id):
-    return redirect('invoices:invoices_list')
+    return delete_invoice(request, invoice_id)
 
+@login_required
 def invoice_pdf(request, invoice_id):
-    return redirect('invoices:invoice_detail', invoice_id=invoice_id)
+    return download_invoice_pdf(request, invoice_id)
 
 def settings_page(request):
     return redirect('invoices:settings')
@@ -308,41 +349,35 @@ def invoices_list(request):
 
 @login_required
 def invoice_create(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
     if request.method == "POST":
-        try:
+        form = InvoiceForm(request.POST)
+        formset = LineItemFormSet(request.POST)
+        if form.is_valid() and formset.is_valid():
             with transaction.atomic():
-                profile, created = UserProfile.objects.get_or_create(user=request.user)
-                
-                invoice = Invoice.objects.create(
-                    user=request.user,
-                    client_name=request.POST.get('client_name'),
-                    client_email=request.POST.get('client_email'),
-                    due_date=request.POST.get('due_date'),
-                    currency=request.POST.get('currency', 'USD'),
-                    tax_rate=Decimal(request.POST.get('tax_rate', '0')),
-                    business_name=profile.company_name or request.user.get_full_name() or request.user.username,
-                    business_email=profile.business_email or request.user.email
-                )
-                
-                descriptions = request.POST.getlist('item_description[]')
-                quantities = request.POST.getlist('item_quantity[]')
-                prices = request.POST.getlist('item_price[]')
-                
-                for desc, qty, price in zip(descriptions, quantities, prices):
-                    if desc and qty and price:
-                        LineItem.objects.create(
-                            invoice=invoice,
-                            description=desc,
-                            quantity=Decimal(qty),
-                            unit_price=Decimal(price)
-                        )
-                
-                messages.success(request, "Invoice created successfully!")
-                return redirect('invoices_list')
-        except Exception as e:
-            messages.error(request, f"Error creating invoice: {str(e)}")
-            
-    return render(request, "pages/invoice_create.html", {"active": "invoices"})
+                invoice = form.save(commit=False)
+                invoice.user = request.user
+                invoice.save()
+                formset.instance = invoice
+                formset.save()
+            messages.success(request, "Invoice created successfully!")
+            return redirect("invoices:invoice_detail", invoice_id=invoice.invoice_id)
+        messages.error(request, "Please correct the errors below.")
+    else:
+        form = InvoiceForm(initial=_get_invoice_initial(profile))
+        formset = LineItemFormSet()
+    return render(
+        request,
+        "pages/invoice_create.html",
+        {
+            "form": form,
+            "formset": formset,
+            "form_title": "New Invoice",
+            "form_description": "Create a professional invoice in minutes.",
+            "submit_label": "Generate Invoice",
+            "active": "invoices",
+        },
+    )
 
 @login_required
 def invoice_detail(request, invoice_id):
@@ -353,12 +388,17 @@ def invoice_detail(request, invoice_id):
             invoice.status = new_status
             invoice.save()
             messages.success(request, f"Invoice {invoice_id} status updated to {invoice.get_status_display()}.")
-            return redirect('invoice_detail', invoice_id=invoice_id)
+            return redirect("invoices:invoice_detail", invoice_id=invoice_id)
             
-    return render(request, "pages/invoice_detail.html", {
-        "invoice": invoice,
-        "active": "invoices"
-    })
+    return render(
+        request,
+        "pages/invoice_detail.html",
+        {
+            "invoice": invoice,
+            "status_choices": Invoice.Status.choices,
+            "active": "invoices",
+        },
+    )
 
 @login_required
 def analytics(request):
@@ -422,37 +462,42 @@ def download_invoice_pdf(request, invoice_id):
     p.drawString(100, 750, f"INVOICE: {invoice.invoice_id}")
     
     p.setFont("Helvetica", 12)
-    p.drawString(100, 720, f"Date: {invoice.created_at.strftime('%Y-%m-%d')}")
-    p.drawString(100, 705, f"Due Date: {invoice.due_date.strftime('%Y-%m-%d')}")
-    p.drawString(100, 680, f"Client: {invoice.client_name}")
-    p.drawString(100, 665, f"Email: {invoice.client_email}")
+    p.drawString(100, 720, f"Date: {invoice.invoice_date.strftime('%Y-%m-%d')}")
+    due_date = invoice.due_date.strftime("%Y-%m-%d") if invoice.due_date else "N/A"
+    p.drawString(100, 705, f"Due Date: {due_date}")
+    p.drawString(100, 690, f"Client: {invoice.client_name}")
+    p.drawString(100, 675, f"Email: {invoice.client_email}")
     
     p.line(100, 650, 500, 650)
     
     y = 630
     p.drawString(100, y, "Items:")
     y -= 20
-    for item in invoice.items.all():
-        p.drawString(120, y, f"{item.description} - {item.quantity} x ${item.unit_price} = ${item.total_price}")
+    for item in invoice.line_items.all():
+        line_total = item.total
+        p.drawString(
+            120,
+            y,
+            f"{item.description} - {item.quantity} x {invoice.currency} {item.unit_price} = {invoice.currency} {line_total}",
+        )
         y -= 15
         
     p.line(100, y, 500, y)
     y -= 20
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, y, f"Total Amount: ${invoice.total}")
+    p.drawString(100, y, f"Total Amount: {invoice.currency} {invoice.total}")
     
     p.showPage()
     p.save()
     return response
 
 @login_required
+@require_POST
 def delete_invoice(request, invoice_id):
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
-    if request.method == "POST":
-        invoice.delete()
-        messages.success(request, f"Invoice {invoice_id} deleted.")
-        return redirect('invoices_list')
-    return redirect('invoice_detail', invoice_id=invoice_id)
+    invoice.delete()
+    messages.success(request, f"Invoice {invoice_id} deleted.")
+    return redirect("invoices:invoices_list")
 
 def custom_404(request, exception):
     return render(request, "pages/home-light.html", status=404)
@@ -468,19 +513,40 @@ def custom_500(request):
     return render(request, "pages/home-light.html", status=500)
 
 @login_required
+@require_POST
 def send_reminder(request, invoice_id):
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
     try:
+        due_date = invoice.due_date.strftime("%Y-%m-%d") if invoice.due_date else "N/A"
         message = Mail(
             from_email='noreply@invoiceflow.com',
             to_emails=invoice.client_email,
             subject=f'Payment Reminder: Invoice {invoice.invoice_id}',
-            html_content=f'<p>Hello {invoice.client_name},</p><p>This is a reminder that payment for invoice {invoice.invoice_id} of ${invoice.total} is due on {invoice.due_date}.</p>'
+            html_content=(
+                f"<p>Hello {invoice.client_name},</p>"
+                f"<p>This is a reminder that payment for invoice {invoice.invoice_id} "
+                f"of {invoice.currency} {invoice.total} is due on {due_date}.</p>"
+            ),
         )
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         sg.send(message)
         messages.success(request, f"Reminder sent to {invoice.client_email}")
     except Exception as e:
         messages.error(request, f"Failed to send reminder: {str(e)}")
-    return redirect('invoice_detail', invoice_id=invoice_id)
-    return render(request, "pages/home-light.html", status=500)
+    return redirect("invoices:invoice_detail", invoice_id=invoice_id)
+
+
+def _get_invoice_initial(profile: UserProfile) -> Dict[str, object]:
+    default_name = profile.company_name or ""
+    default_email = profile.business_email or ""
+    default_phone = profile.business_phone or ""
+    default_address = profile.business_address or ""
+    return {
+        "business_name": default_name,
+        "business_email": default_email,
+        "business_phone": default_phone,
+        "business_address": default_address,
+        "currency": profile.default_currency or "USD",
+        "tax_rate": profile.default_tax_rate or Decimal("0.00"),
+        "invoice_date": timezone.localdate(),
+    }
