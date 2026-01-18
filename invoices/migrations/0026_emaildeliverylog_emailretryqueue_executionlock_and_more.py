@@ -544,10 +544,6 @@ class Migration(migrations.Migration):
             model_name='processedwebhook',
             name='reference',
         ),
-        migrations.AlterUniqueTogether(
-            name='socialaccount',
-            unique_together={('provider', 'provider_id')},
-        ),
         migrations.RemoveField(
             model_name='usersession',
             name='browser',
@@ -1099,10 +1095,6 @@ class Migration(migrations.Migration):
         migrations.RemoveField(
             model_name='socialaccount',
             name='name',
-        ),
-        migrations.RemoveField(
-            model_name='socialaccount',
-            name='provider_id',
         ),
         migrations.RemoveField(
             model_name='socialaccount',

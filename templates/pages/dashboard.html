@@ -1,4 +1,4 @@
-{% extends "base/layout.html" %}
+{% extends "base/layout_app.html" %}
 {% load static %}
 
 {% block title %}Dashboard | InvoiceFlow{% endblock %}
@@ -25,6 +25,7 @@
             </div>
             <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Total Volume</p>
             <h3 class="text-3xl font-black">{{ stats.total_count }}</h3>
+            <p class="text-xs text-slate-400 mt-2">All invoices created to date.</p>
         </div>
         <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
             <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-6">
@@ -32,6 +33,7 @@
             </div>
             <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Revenue</p>
             <h3 class="text-3xl font-black">${{ stats.revenue }}</h3>
+            <p class="text-xs text-slate-400 mt-2">Paid invoices this period.</p>
         </div>
         <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
             <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-6">
@@ -39,6 +41,7 @@
             </div>
             <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Outstanding</p>
             <h3 class="text-3xl font-black">${{ stats.outstanding }}</h3>
+            <p class="text-xs text-slate-400 mt-2">Open invoices awaiting payment.</p>
         </div>
         <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
             <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-6">
@@ -46,6 +49,7 @@
             </div>
             <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Overdue</p>
             <h3 class="text-3xl font-black">${{ stats.overdue }}</h3>
+            <p class="text-xs text-slate-400 mt-2">Past due invoices to chase.</p>
         </div>
     </div>
 
@@ -56,7 +60,8 @@
             <a href="{% url 'invoices:invoices_list' %}" class="text-indigo-600 font-bold text-sm">View All</a>
         </div>
         <div class="overflow-x-auto">
-            <table class="w-full text-left">
+            <table class="w-full text-left" aria-describedby="recent-activity-caption">
+                <caption id="recent-activity-caption" class="sr-only">Recent invoices and their payment status.</caption>
                 <thead>
                     <tr class="border-b border-slate-50">
                         <th class="pb-4 font-bold text-slate-400 text-xs uppercase tracking-widest">ID</th>
@@ -82,7 +87,13 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="py-12 text-center text-slate-400">No activity yet.</td>
+                        <td colspan="4" class="py-12 text-center text-slate-400">
+                            <div class="flex flex-col items-center gap-3">
+                                <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+                                <p class="font-semibold">No activity yet.</p>
+                                <a href="{% url 'invoices:invoice_create' %}" class="text-indigo-600 font-bold text-sm">Create your first invoice</a>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

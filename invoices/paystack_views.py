@@ -66,7 +66,9 @@ def initialize_payment(request):
     if not invoice_id:
         return JsonResponse({"error": "Invalid payment request"}, status=400)
 
-    invoice = get_object_or_404(Invoice, pk=invoice_id, user=user)
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=user)
+    if invoice.status == Invoice.Status.PAID:
+        return JsonResponse({"error": "Invoice already paid"}, status=400)
     try:
         requested_amount = Decimal(request.POST.get("amount", str(invoice.total)))
     except (InvalidOperation, ValueError):
@@ -96,8 +98,16 @@ def initialize_payment(request):
     if not idempotency_key:
         return JsonResponse({"error": "Idempotency key required"}, status=400)
 
-    reference = f"inv_{invoice_id}_{user.id}"
-    request_data = {"invoice_id": invoice_id, "amount": str(amount)}
+    service = get_paystack_service()
+    if not service.is_configured:
+        return JsonResponse({"error": "Payment gateway not configured"}, status=503)
+
+    reference = f"inv_{invoice.invoice_id}_{user.id}_{uuid.uuid4().hex[:8]}"
+    request_data = {
+        "invoice_id": invoice_id,
+        "amount": str(amount),
+        "currency": invoice.currency,
+    }
 
     def process_payment():
         """Process the payment and return response."""
@@ -106,22 +116,23 @@ def initialize_payment(request):
                 reference=reference,
                 defaults={
                     "user": user,
-                    "invoice_id": invoice_id,
+                    "invoice": invoice,
                     "amount": amount,
+                    "currency": invoice.currency,
                 },
             )
 
             if not created:
                 return {"error": "Payment already initialized"}, 400
 
-            service = PaystackService()
             result = service.initialize_payment(
                 email=user.email,
                 amount=amount,
                 reference=reference,
+                currency=invoice.currency,
                 callback_url=settings.PAYSTACK_CALLBACK_URL,
                 metadata={
-                    "invoice_id": invoice_id,
+                    "invoice_id": invoice.invoice_id,
                     "user_id": user.id,
                 },
             )
@@ -135,7 +146,6 @@ def initialize_payment(request):
             logger.error(f"Payment initialization error: {e}")
             return {"error": "Payment processing failed"}, 500
 
-    service = PaystackService()
     result, status_code, is_cached = service.get_or_create_idempotency_response(
         user_id=user.id,
         idempotency_key=idempotency_key,
@@ -281,7 +291,7 @@ def paystack_webhook(request):
 @require_POST
 def initiate_invoice_payment(request, invoice_id):
     """Initiate payment for an invoice (logged-in user)."""
-    invoice = get_object_or_404(Invoice, pk=invoice_id, user=request.user)
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
     
     if invoice.status == "paid":
         return JsonResponse({"error": "Invoice already paid"}, status=400)
@@ -290,7 +300,7 @@ def initiate_invoice_payment(request, invoice_id):
     if not service.is_configured:
         return JsonResponse({"error": "Payment gateway not configured"}, status=503)
     
-    reference = f"inv_{invoice_id}_{request.user.id}_{uuid.uuid4().hex[:8]}"
+    reference = f"inv_{invoice.invoice_id}_{request.user.id}_{uuid.uuid4().hex[:8]}"
     
     payment, created = Payment.objects.get_or_create(
         invoice=invoice,
@@ -299,6 +309,7 @@ def initiate_invoice_payment(request, invoice_id):
         defaults={
             "reference": reference,
             "amount": invoice.total,
+            "currency": invoice.currency,
         },
     )
     
@@ -307,15 +318,18 @@ def initiate_invoice_payment(request, invoice_id):
     elif not created:
         return JsonResponse({"error": "Payment already processed"}, status=400)
     
-    callback_url = request.build_absolute_uri(f"/payments/callback/{invoice_id}/")
+    callback_url = request.build_absolute_uri(
+        f"/payments/callback/{invoice.invoice_id}/"
+    )
     
     result = service.initialize_payment(
         email=request.user.email,
         amount=invoice.total,
         reference=reference,
+        currency=invoice.currency,
         callback_url=callback_url,
         metadata={
-            "invoice_id": invoice_id,
+            "invoice_id": invoice.invoice_id,
             "user_id": request.user.id,
         },
     )
@@ -340,12 +354,15 @@ def payment_callback(request, invoice_id):
     reference = request.GET.get("reference")
     
     if not reference:
-        return redirect("dashboard")
+        return redirect("invoices:dashboard")
     
     try:
         payment = Payment.objects.get(reference=reference, user=request.user)
     except Payment.DoesNotExist:
-        return redirect("dashboard")
+        return redirect("invoices:dashboard")
+
+    if not payment.invoice or payment.invoice.invoice_id != invoice_id:
+        return redirect("invoices:dashboard")
     
     if payment.status == Payment.Status.SUCCESS:
         return redirect("invoices:invoice_detail", invoice_id=invoice_id)
@@ -372,7 +389,7 @@ def payment_callback(request, invoice_id):
 @require_GET
 def payment_status(request, invoice_id):
     """Get payment status for an invoice."""
-    invoice = get_object_or_404(Invoice, pk=invoice_id, user=request.user)
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
     
     try:
         payment = Payment.objects.filter(invoice=invoice).latest("created_at")
@@ -393,7 +410,7 @@ def payment_status(request, invoice_id):
 @require_GET
 def public_invoice_view(request, invoice_id):
     """View invoice for public payment (no login required)."""
-    invoice = get_object_or_404(Invoice, pk=invoice_id)
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id)
     
     if invoice.status == "paid":
         return render(request, "payments/invoice_paid.html", {"invoice": invoice})
@@ -424,7 +441,7 @@ def public_invoice_view(request, invoice_id):
 @require_POST
 def public_initiate_payment(request, invoice_id):
     """Initiate payment for a public invoice (no login required)."""
-    invoice = get_object_or_404(Invoice, pk=invoice_id)
+    invoice = get_object_or_404(Invoice, invoice_id=invoice_id)
     
     if invoice.status == "paid":
         return JsonResponse({"error": "Invoice already paid"}, status=400)
@@ -437,25 +454,29 @@ def public_initiate_payment(request, invoice_id):
     if not email:
         return JsonResponse({"error": "Email address required"}, status=400)
     
-    reference = f"pub_{invoice_id}_{uuid.uuid4().hex[:8]}"
+    reference = f"pub_{invoice.invoice_id}_{uuid.uuid4().hex[:8]}"
     
     payment = Payment.objects.create(
         invoice=invoice,
         user=invoice.user,
         reference=reference,
         amount=invoice.total,
+        currency=invoice.currency,
         status=Payment.Status.PENDING,
     )
     
-    callback_url = request.build_absolute_uri(f"/pay/{invoice_id}/callback/")
+    callback_url = request.build_absolute_uri(
+        f"/pay/{invoice.invoice_id}/callback/"
+    )
     
     result = service.initialize_payment(
         email=email,
         amount=invoice.total,
         reference=reference,
+        currency=invoice.currency,
         callback_url=callback_url,
         metadata={
-            "invoice_id": invoice_id,
+            "invoice_id": invoice.invoice_id,
             "public_payment": True,
         },
     )
@@ -487,6 +508,9 @@ def public_payment_callback(request, invoice_id):
     try:
         payment = Payment.objects.get(reference=reference)
     except Payment.DoesNotExist:
+        return redirect("public_invoice", invoice_id=invoice_id)
+
+    if not payment.invoice or payment.invoice.invoice_id != invoice_id:
         return redirect("public_invoice", invoice_id=invoice_id)
     
     if payment.status == Payment.Status.SUCCESS:

@@ -1,89 +1,207 @@
-{% extends "base/layout.html" %}
+{% extends "base/layout_app.html" %}
 
-{% block title %}Create Invoice | InvoiceFlow{% endblock %}
+{% block title %}{{ form_title }} | InvoiceFlow{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-6 py-12" data-aos="fade-up">
+<div class="max-w-6xl mx-auto px-6 py-12" data-aos="fade-up">
     <div class="mb-12">
-        <h1 class="text-4xl font-black text-slate-900 mb-2">New Invoice</h1>
-        <p class="text-slate-500">Craft a professional billing document.</p>
+        <h1 class="text-4xl font-black text-slate-900 mb-2">{{ form_title }}</h1>
+        <p class="text-slate-500">{{ form_description }}</p>
     </div>
 
     <form method="post" class="space-y-12 bg-white p-12 rounded-[3rem] border border-slate-100 shadow-xl">
         {% csrf_token %}
-        
-        <div class="space-y-8">
-            <h3 class="text-xl font-black">Client Information</h3>
+        {% if form.non_field_errors or formset.non_form_errors %}
+            <div class="rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-sm text-rose-700" role="alert" aria-live="assertive">
+                <p class="font-bold mb-2">We need a few fixes before you can continue:</p>
+                {{ form.non_field_errors }}
+                {{ formset.non_form_errors }}
+            </div>
+        {% endif %}
+
+        <fieldset class="space-y-8">
+            <legend class="text-xl font-black">Business Information</legend>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Business Name</label>
+                    {{ form.business_name }}
+                    {{ form.business_name.errors }}
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Business Email</label>
+                    {{ form.business_email }}
+                    {{ form.business_email.errors }}
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Business Phone</label>
+                    {{ form.business_phone }}
+                    {{ form.business_phone.errors }}
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Business Address</label>
+                    {{ form.business_address }}
+                    {{ form.business_address.errors }}
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="space-y-8 pt-12 border-t border-slate-50">
+            <legend class="text-xl font-black">Client Information</legend>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="space-y-3">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
-                    <input type="text" name="client_name" required class="w-full bg-slate-50 px-6 py-4 rounded-2xl border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    {{ form.client_name }}
+                    {{ form.client_name.errors }}
                 </div>
                 <div class="space-y-3">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
-                    <input type="email" name="client_email" required class="w-full bg-slate-50 px-6 py-4 rounded-2xl border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    {{ form.client_email }}
+                    {{ form.client_email.errors }}
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Phone</label>
+                    {{ form.client_phone }}
+                    {{ form.client_phone.errors }}
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Address</label>
+                    {{ form.client_address }}
+                    {{ form.client_address.errors }}
                 </div>
             </div>
-        </div>
+        </fieldset>
 
-        <div class="space-y-8 pt-12 border-t border-slate-50">
-            <h3 class="text-xl font-black">Invoice Settings</h3>
+        <fieldset class="space-y-8 pt-12 border-t border-slate-50">
+            <legend class="text-xl font-black">Invoice Settings</legend>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Invoice Date</label>
+                    {{ form.invoice_date }}
+                    {{ form.invoice_date.errors }}
+                </div>
+                <div class="space-y-3">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Due Date</label>
-                    <input type="date" name="due_date" required class="w-full bg-slate-50 px-6 py-4 rounded-2xl border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    {{ form.due_date }}
+                    {{ form.due_date.errors }}
                 </div>
                 <div class="space-y-3">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Currency</label>
-                    <select name="currency" class="w-full bg-slate-50 px-6 py-4 rounded-2xl border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-                        <option value="USD">USD ($)</option>
-                        <option value="EUR">EUR (€)</option>
-                        <option value="GBP">GBP (£)</option>
-                        <option value="NGN">NGN (₦)</option>
-                    </select>
+                    {{ form.currency }}
+                    {{ form.currency.errors }}
                 </div>
                 <div class="space-y-3">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Tax Rate (%)</label>
-                    <input type="number" step="0.01" name="tax_rate" value="0" class="w-full bg-slate-50 px-6 py-4 rounded-2xl border-transparent focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                    {{ form.tax_rate }}
+                    {{ form.tax_rate.errors }}
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Discount (%)</label>
+                    {{ form.discount }}
+                    {{ form.discount.errors }}
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Automated Reminders</label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        {{ form.automated_reminders_enabled }}
+                        <span class="ml-3 text-sm font-semibold text-slate-600">Enable reminder emails</span>
+                    </label>
+                    <p class="text-xs text-slate-400">Trigger reminders based on due dates and rules.</p>
+                    {{ form.automated_reminders_enabled.errors }}
                 </div>
             </div>
-        </div>
+        </fieldset>
 
-        <div class="space-y-8 pt-12 border-t border-slate-50">
-            <div class="flex justify-between items-center">
-                <h3 class="text-xl font-black">Line Items</h3>
+        <fieldset class="space-y-8 pt-12 border-t border-slate-50">
+            <legend class="text-xl font-black">Line Items</legend>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <p class="text-sm text-slate-500">Add each product or service with its price.</p>
+                </div>
                 <button type="button" id="add-item" class="text-sm font-black text-indigo-600 flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-all">
                     <i data-lucide="plus" class="w-4 h-4"></i> Add Item
                 </button>
             </div>
-            
-            <div id="line-items" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end bg-slate-50 p-6 rounded-[2rem] line-item">
+
+            {{ formset.management_form }}
+            <div id="line-items" data-prefix="{{ formset.prefix }}" class="space-y-4">
+                {% for item_form in formset %}
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end bg-slate-50 p-6 rounded-[2rem] line-item" data-form-index="{{ forloop.counter0 }}" data-has-instance="{% if item_form.instance.pk %}true{% else %}false{% endif %}">
+                        {{ item_form.id.as_hidden }}
+                        {{ item_form.DELETE.as_hidden }}
+                        <div class="md:col-span-6 space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</label>
+                            {{ item_form.description }}
+                            {{ item_form.description.errors }}
+                        </div>
+                        <div class="md:col-span-2 space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Qty</label>
+                            {{ item_form.quantity }}
+                            {{ item_form.quantity.errors }}
+                        </div>
+                        <div class="md:col-span-3 space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</label>
+                            {{ item_form.unit_price }}
+                            {{ item_form.unit_price.errors }}
+                        </div>
+                        <div class="md:col-span-1 pb-1">
+                            <button type="button" class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-rose-500 remove-item transition-colors" aria-label="Remove line item">
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <template id="line-item-template">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-end bg-slate-50 p-6 rounded-[2rem] line-item" data-form-index="__prefix__" data-has-instance="false">
+                    {{ formset.empty_form.id.as_hidden }}
+                    {{ formset.empty_form.DELETE.as_hidden }}
                     <div class="md:col-span-6 space-y-2">
                         <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</label>
-                        <input type="text" name="item_description[]" required class="w-full bg-white px-4 py-3 rounded-xl border-slate-100 outline-none text-sm">
+                        {{ formset.empty_form.description }}
                     </div>
                     <div class="md:col-span-2 space-y-2">
                         <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Qty</label>
-                        <input type="number" step="0.01" name="item_quantity[]" value="1" required class="w-full bg-white px-4 py-3 rounded-xl border-slate-100 outline-none text-sm qty-input">
+                        {{ formset.empty_form.quantity }}
                     </div>
                     <div class="md:col-span-3 space-y-2">
                         <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</label>
-                        <input type="number" step="0.01" name="item_price[]" required class="w-full bg-white px-4 py-3 rounded-xl border-slate-100 outline-none text-sm price-input">
+                        {{ formset.empty_form.unit_price }}
                     </div>
                     <div class="md:col-span-1 pb-1">
-                        <button type="button" class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-rose-500 remove-item transition-colors">
+                        <button type="button" class="w-10 h-10 flex items-center justify-center text-slate-300 hover:text-rose-500 remove-item transition-colors" aria-label="Remove line item">
                             <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </template>
+        </fieldset>
 
-        <div class="pt-12 flex justify-between items-center">
+        <fieldset class="space-y-6 pt-12 border-t border-slate-50">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="rounded-2xl border border-slate-100 px-6 py-5">
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Subtotal</p>
+                    <p class="text-2xl font-black text-slate-900" id="subtotal-display">0.00</p>
+                </div>
+                <div class="rounded-2xl border border-slate-100 px-6 py-5">
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Tax</p>
+                    <p class="text-2xl font-black text-slate-900" id="tax-display">0.00</p>
+                </div>
+                <div class="rounded-2xl border border-slate-100 px-6 py-5">
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-400">Total</p>
+                    <p class="text-2xl font-black text-slate-900" id="total-display">0.00</p>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest">Notes</label>
+                {{ form.notes }}
+                {{ form.notes.errors }}
+            </div>
+        </fieldset>
+
+        <div class="pt-12 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6">
             <a href="{% url 'invoices:invoices_list' %}" class="text-slate-400 font-bold hover:text-slate-600 transition-colors">Cancel</a>
             <button type="submit" class="bg-slate-900 text-white px-12 py-5 rounded-2xl font-black text-lg hover:scale-105 transition-all shadow-xl">
-                Generate Invoice
+                {{ submit_label }}
             </button>
         </div>
     </form>
@@ -92,21 +210,70 @@
 <script>
     const container = document.getElementById('line-items');
     const addButton = document.getElementById('add-item');
-    
-    addButton.addEventListener('click', () => {
-        const newItem = container.firstElementChild.cloneNode(true);
-        newItem.querySelectorAll('input').forEach(input => input.value = input.name === 'item_quantity[]' ? '1' : '');
-        newItem.querySelector('.remove-item').addEventListener('click', () => {
-            if (container.children.length > 1) newItem.remove();
+    const template = document.getElementById('line-item-template');
+    const prefix = container.dataset.prefix;
+    const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+
+    const updateTotals = () => {
+        const rows = container.querySelectorAll('.line-item');
+        let subtotal = 0;
+        rows.forEach(row => {
+            if (row.querySelector('[name$="-DELETE"]')?.checked) {
+                return;
+            }
+            const qty = parseFloat(row.querySelector('input[name$="-quantity"]')?.value || 0);
+            const price = parseFloat(row.querySelector('input[name$="-unit_price"]')?.value || 0);
+            subtotal += qty * price;
         });
-        container.appendChild(newItem);
+        const taxRate = parseFloat(document.getElementById('id_tax_rate')?.value || 0);
+        const discountRate = parseFloat(document.getElementById('id_discount')?.value || 0);
+        const discountAmount = subtotal * (discountRate / 100);
+        const taxedAmount = (subtotal - discountAmount) * (taxRate / 100);
+        const total = subtotal - discountAmount + taxedAmount;
+
+        document.getElementById('subtotal-display').textContent = subtotal.toFixed(2);
+        document.getElementById('tax-display').textContent = taxedAmount.toFixed(2);
+        document.getElementById('total-display').textContent = total.toFixed(2);
+    };
+
+    const attachRemoveHandler = (button) => {
+        button.addEventListener('click', (event) => {
+            const item = event.currentTarget.closest('.line-item');
+            const deleteField = item.querySelector('input[name$="-DELETE"]');
+            if (item.dataset.hasInstance === 'true') {
+                if (deleteField) {
+                    deleteField.checked = true;
+                }
+                item.classList.add('hidden');
+            } else {
+                item.remove();
+            }
+            updateTotals();
+        });
+    };
+
+    addButton.addEventListener('click', () => {
+        const formIndex = parseInt(totalForms.value, 10);
+        const newFormHtml = template.innerHTML.replace(/__prefix__/g, formIndex);
+        container.insertAdjacentHTML('beforeend', newFormHtml);
+        totalForms.value = formIndex + 1;
+        const newItem = container.querySelector(`.line-item[data-form-index="${formIndex}"]`);
+        if (newItem) {
+            attachRemoveHandler(newItem.querySelector('.remove-item'));
+        }
         lucide.createIcons();
+        updateTotals();
     });
 
-    document.querySelectorAll('.remove-item').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            if (container.children.length > 1) e.currentTarget.closest('.line-item').remove();
-        });
+    container.querySelectorAll('.remove-item').forEach(attachRemoveHandler);
+    container.addEventListener('input', (event) => {
+        if (event.target.matches('input')) {
+            updateTotals();
+        }
     });
+    document.getElementById('id_tax_rate')?.addEventListener('input', updateTotals);
+    document.getElementById('id_discount')?.addEventListener('input', updateTotals);
+
+    updateTotals();
 </script>
 {% endblock %}
