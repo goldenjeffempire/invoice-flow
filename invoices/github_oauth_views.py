@@ -30,9 +30,6 @@ GITHUB_EMAILS_API_URL = "https://api.github.com/user/emails"
 
 def get_github_redirect_uri(request):
     """Build the OAuth callback redirect URI for GitHub."""
-    if os.environ.get("REPLIT_DEV_DOMAIN"):
-        return f'https://{os.environ["REPLIT_DEV_DOMAIN"]}/oauth/github/callback/'
-    
     scheme = "https" if request.is_secure() else "http"
     host = request.get_host()
     if "localhost" not in host and "127.0.0.1" not in host:
