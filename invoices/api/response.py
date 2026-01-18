@@ -6,6 +6,9 @@ from typing import Any, Optional
 from rest_framework.response import Response
 
 
+from typing import Any, Optional, Dict
+from rest_framework.response import Response
+
 class APIResponse:
     """Standardized API response format."""
     
@@ -15,20 +18,11 @@ class APIResponse:
         message: str = "Success",
         status_code: int = 200,
         meta: Optional[dict] = None,
+        success: bool = True
     ) -> Response:
-        """
-        Return a successful API response.
-        
-        Format:
-        {
-            "success": true,
-            "message": "Success",
-            "data": {...},
-            "meta": {...}
-        }
-        """
+        """Return a successful API response."""
         response_data = {
-            "success": True,
+            "success": success,
             "message": message,
         }
         if data is not None:
@@ -44,19 +38,7 @@ class APIResponse:
         details: Optional[Any] = None,
         status_code: int = 400,
     ) -> Response:
-        """
-        Return an error API response.
-        
-        Format:
-        {
-            "success": false,
-            "error": {
-                "code": "ERROR_CODE",
-                "message": "Error message",
-                "details": {...}
-            }
-        }
-        """
+        """Return an error API response."""
         response_data = {
             "success": False,
             "error": {
@@ -78,7 +60,7 @@ class APIResponse:
         status_code: int = 200,
     ) -> Response:
         """Return paginated response with metadata."""
-        total_pages = (total + page_size - 1) // page_size
+        total_pages = (total + page_size - 1) // page_size if page_size > 0 else 1
         response_data = {
             "success": True,
             "message": message,

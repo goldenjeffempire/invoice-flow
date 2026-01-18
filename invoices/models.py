@@ -321,17 +321,19 @@ class Invoice(models.Model):
 
     @property
     def subtotal(self) -> Decimal:
-        return sum((item.total for item in self.line_items.all()), Decimal("0"))  # type: ignore[attr-defined]
+        return sum((item.total for item in self.line_items.all()), Decimal("0"))
+
+    @property
+    def discount_amount(self) -> Decimal:
+        return (self.subtotal * Decimal(str(self.discount))) / Decimal("100")
 
     @property
     def tax_amount(self) -> Decimal:
-        discount_amount = (self.subtotal * Decimal(str(self.discount))) / Decimal("100")
-        return ((self.subtotal - discount_amount) * Decimal(str(self.tax_rate))) / Decimal("100")
+        return ((self.subtotal - self.discount_amount) * Decimal(str(self.tax_rate))) / Decimal("100")
 
     @property
     def total(self) -> Decimal:
-        discount_amount = (self.subtotal * Decimal(str(self.discount))) / Decimal("100")
-        return self.subtotal - discount_amount + self.tax_amount
+        return self.subtotal - self.discount_amount + self.tax_amount
 
     def __str__(self) -> str:
         return f"{self.invoice_id} - {self.client_name}"

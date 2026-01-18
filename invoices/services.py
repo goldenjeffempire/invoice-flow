@@ -72,11 +72,19 @@ class InvoiceService:
         for item_data in line_items_data:
             if not item_data.get("description"):
                 continue
-            LineItem.objects.create(  # type: ignore[attr-defined]
+            
+            quantity = Decimal(str(item_data.get("quantity", 1)))
+            unit_price = Decimal(str(item_data.get("unit_price", 0)))
+            
+            # Ensure positive values
+            quantity = max(Decimal("0.01"), quantity)
+            unit_price = max(Decimal("0.00"), unit_price)
+            
+            LineItem.objects.create(
                 invoice=invoice,
                 description=item_data["description"],
-                quantity=Decimal(str(item_data.get("quantity", 1))),
-                unit_price=Decimal(str(item_data.get("unit_price", 0))),
+                quantity=quantity,
+                unit_price=unit_price,
             )
 
         AnalyticsService.invalidate_user_cache(user.id)
@@ -101,17 +109,27 @@ class InvoiceService:
         if not invoice_form.is_valid():
             return None, invoice_form
 
-        user_id = invoice.user_id  # type: ignore[attr-defined]
+        user_id = invoice.user_id
         invoice = invoice_form.save(commit=False)
         invoice.save()
-        invoice.line_items.all().delete()  # type: ignore[attr-defined]
+        invoice.line_items.all().delete()
 
         for item_data in line_items_data:
-            LineItem.objects.create(  # type: ignore[attr-defined]
+            if not item_data.get("description"):
+                continue
+                
+            quantity = Decimal(str(item_data.get("quantity", 1)))
+            unit_price = Decimal(str(item_data.get("unit_price", 0)))
+            
+            # Ensure positive values
+            quantity = max(Decimal("0.01"), quantity)
+            unit_price = max(Decimal("0.00"), unit_price)
+            
+            LineItem.objects.create(
                 invoice=invoice,
                 description=item_data["description"],
-                quantity=Decimal(item_data["quantity"]),
-                unit_price=Decimal(item_data["unit_price"]),
+                quantity=quantity,
+                unit_price=unit_price,
             )
 
         AnalyticsService.invalidate_user_cache(user_id)
