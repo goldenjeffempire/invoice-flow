@@ -400,27 +400,13 @@ def finalize_payment_from_verification(
     verification: dict[str, Any],
 ) -> Payment:
     """
-    Apply verified Paystack data to Payment model.
+    Apply verified Paystack data to Payment model using atomic transitions.
     """
-
     if verification.get("verified"):
-        payment.status = Payment.Status.SUCCESS
-        # payment.verified = True  # Verified is not in model, status=success implies verification
-        payment.paid_at = timezone.now()
-        # payment.verified_at = timezone.now() # Verified_at is not in model
+        payment.mark_as_success(paid_at=verification.get("paid_at"))
     else:
         payment.status = Payment.Status.FAILED
-
-    payment.save(update_fields=[
-        "status",
-        "paid_at",
-    ])
-
-    invoice = payment.invoice
-    if invoice and payment.status == Payment.Status.SUCCESS:
-        if invoice.status != Invoice.Status.PAID:
-            invoice.status = Invoice.Status.PAID
-            invoice.save(update_fields=["status"])
+        payment.save(update_fields=["status", "updated_at"])
 
     return payment
 

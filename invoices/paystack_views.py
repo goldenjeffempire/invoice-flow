@@ -225,12 +225,14 @@ def paystack_webhook(request):
 
         if verification.get("status") == "error":
             logger.error(f"Paystack verification error for {reference}: {verification.get('message')}")
-            return HttpResponse(status=503)
+            return HttpResponse("Provider verification error", status=503)
+
+        payload_hash = hashlib.sha256(payload).hexdigest()
 
         if not verification.get("verified"):
             logger.warning(f"Payment verification failed for {reference}")
             payment.status = Payment.Status.FAILED
-            payment.save(update_fields=["status"])
+            payment.save(update_fields=["status", "updated_at"])
             record_reconciliation(
                 payment=payment,
                 status=PaymentReconciliation.ReconciliationStatus.FAILED,
@@ -240,22 +242,21 @@ def paystack_webhook(request):
                 status_match=False,
                 error="Verification failed",
             )
-            payload_hash = hashlib.sha256(payload).hexdigest()
             service.mark_webhook_processed(
                 event_id,
                 provider="paystack",
-                event_type=event.get("event", ""),
+                event_type=event_type,
                 reference=reference,
                 payload_hash=payload_hash,
                 ip_address=request.META.get("REMOTE_ADDR"),
             )
-            return HttpResponse(status=200)
+            return HttpResponse("Verified as failed", status=200)
 
         # Amount validation (prevent tampering)
         if verification["amount"] != payment.amount:
             logger.error(f"Amount mismatch for {reference}: {verification['amount']} != {payment.amount}")
             payment.status = Payment.Status.FAILED
-            payment.save(update_fields=["status"])
+            payment.save(update_fields=["status", "updated_at"])
             record_reconciliation(
                 payment=payment,
                 status=PaymentReconciliation.ReconciliationStatus.MISMATCH,
@@ -265,22 +266,21 @@ def paystack_webhook(request):
                 status_match=False,
                 error="Amount mismatch",
             )
-            payload_hash = hashlib.sha256(payload).hexdigest()
             service.mark_webhook_processed(
                 event_id,
                 provider="paystack",
-                event_type=event.get("event", ""),
+                event_type=event_type,
                 reference=reference,
                 payload_hash=payload_hash,
                 ip_address=request.META.get("REMOTE_ADDR"),
             )
-            return HttpResponse(status=400)
+            return HttpResponse("Amount mismatch", status=400)
 
         # Currency validation
         if verification.get("currency", "").upper() != payment.currency.upper():
             logger.error(f"Currency mismatch for {reference}: {verification.get('currency')} != {payment.currency}")
             payment.status = Payment.Status.FAILED
-            payment.save(update_fields=["status"])
+            payment.save(update_fields=["status", "updated_at"])
             record_reconciliation(
                 payment=payment,
                 status=PaymentReconciliation.ReconciliationStatus.MISMATCH,
@@ -290,22 +290,20 @@ def paystack_webhook(request):
                 status_match=False,
                 error="Currency mismatch",
             )
-            payload_hash = hashlib.sha256(payload).hexdigest()
             service.mark_webhook_processed(
                 event_id,
                 provider="paystack",
-                event_type=event.get("event", ""),
+                event_type=event_type,
                 reference=reference,
                 payload_hash=payload_hash,
                 ip_address=request.META.get("REMOTE_ADDR"),
             )
-            return HttpResponse(status=400)
+            return HttpResponse("Currency mismatch", status=400)
 
-        payload_hash = hashlib.sha256(payload).hexdigest()
         service.mark_webhook_processed(
             event_id,
             provider="paystack",
-            event_type=event.get("event", ""),
+            event_type=event_type,
             reference=reference,
             payload_hash=payload_hash,
             ip_address=request.META.get("REMOTE_ADDR"),
