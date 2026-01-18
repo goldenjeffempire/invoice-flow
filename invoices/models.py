@@ -340,6 +340,8 @@ class Invoice(models.Model):
 
     def mark_as_paid(self) -> None:
         """Updates the invoice status to PAID and logs the transition."""
+        from .services import AnalyticsService
+        from .sendgrid_service import SendGridEmailService
         if self.status != self.Status.PAID:
             self.status = self.Status.PAID
             self.save(update_fields=["status", "updated_at"])

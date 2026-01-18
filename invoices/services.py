@@ -21,7 +21,7 @@ from django.template.loader import render_to_string
 from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
 
-from .models import Invoice, LineItem
+from .models import Invoice, LineItem, UserProfile
 
 if TYPE_CHECKING:
     from .forms import InvoiceForm

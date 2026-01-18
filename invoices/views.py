@@ -531,8 +531,6 @@ def invoice_create(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     if request.method == "POST":
         line_items_data = []
-        # Extract line items from POST data manually for service layer
-        # This is a bit simplified, ideally would use a formset or structured payload
         i = 0
         while f"line_items-{i}-description" in request.POST:
             line_items_data.append({
@@ -553,7 +551,7 @@ def invoice_create(request):
             return redirect("invoices:invoice_detail", invoice_id=invoice.invoice_id)
         messages.error(request, "Please correct the errors below.")
     else:
-        from .views import _get_invoice_initial # Assuming it exists as per previous read
+        from .utils import _get_invoice_initial
         form = InvoiceForm(initial=_get_invoice_initial(profile))
         formset = LineItemFormSet()
     return render(
