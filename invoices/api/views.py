@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from invoices.models import Invoice, InvoiceTemplate
 from invoices.services import AnalyticsService, PDFService
 
+from .response import APIResponse
 from .serializers import (
     InvoiceCreateSerializer,
     InvoiceDetailSerializer,
@@ -131,7 +132,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         invoice.status = validated_data["status"]
         invoice.save()
         AnalyticsService.invalidate_user_cache(request.user.id)
-        return Response(InvoiceDetailSerializer(invoice).data)
+        return APIResponse.success(
+            data=InvoiceDetailSerializer(invoice).data,
+            message="Invoice status updated.",
+        )
 
     @extend_schema(
         summary="Generate PDF",
@@ -157,7 +161,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="stats")
     def stats(self, request: Request, version: Optional[str] = None) -> Response:
         stats = AnalyticsService.get_user_dashboard_stats(request.user)
-        return Response(stats)
+        return APIResponse.success(
+            data=stats,
+            message="Dashboard statistics loaded.",
+        )
 
 
 # ------------------------------
@@ -205,4 +212,3 @@ class InvoiceTemplateViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-

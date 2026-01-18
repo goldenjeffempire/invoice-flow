@@ -18,11 +18,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from .auth_services import require_verified_email
-from .models import Invoice, Payment
+from .models import Invoice, Payment, PaymentReconciliation
 from .paystack_service import (
     PaystackService,
     finalize_payment_from_verification,
     get_paystack_service,
+    record_reconciliation,
 )
 
 logger = logging.getLogger(__name__)
@@ -220,6 +221,15 @@ def paystack_webhook(request):
             logger.warning(f"Payment verification failed for {reference}")
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status"])
+            record_reconciliation(
+                payment=payment,
+                status=PaymentReconciliation.ReconciliationStatus.FAILED,
+                paystack_status=str(verification.get("raw", {}).get("status", "")),
+                amount_match=True,
+                currency_match=True,
+                status_match=False,
+                error="Verification failed",
+            )
             payload_hash = hashlib.sha256(payload).hexdigest()
             service.mark_webhook_processed(
                 event_id,
@@ -236,6 +246,15 @@ def paystack_webhook(request):
             logger.error(f"Amount mismatch for {reference}: {verification['amount']} != {payment.amount}")
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status"])
+            record_reconciliation(
+                payment=payment,
+                status=PaymentReconciliation.ReconciliationStatus.MISMATCH,
+                paystack_status=str(verification.get("raw", {}).get("status", "")),
+                amount_match=False,
+                currency_match=True,
+                status_match=False,
+                error="Amount mismatch",
+            )
             payload_hash = hashlib.sha256(payload).hexdigest()
             service.mark_webhook_processed(
                 event_id,
@@ -252,6 +271,15 @@ def paystack_webhook(request):
             logger.error(f"Currency mismatch for {reference}: {verification.get('currency')} != {payment.currency}")
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status"])
+            record_reconciliation(
+                payment=payment,
+                status=PaymentReconciliation.ReconciliationStatus.MISMATCH,
+                paystack_status=str(verification.get("raw", {}).get("status", "")),
+                amount_match=True,
+                currency_match=False,
+                status_match=False,
+                error="Currency mismatch",
+            )
             payload_hash = hashlib.sha256(payload).hexdigest()
             service.mark_webhook_processed(
                 event_id,
@@ -372,11 +400,16 @@ def payment_callback(request, invoice_id):
     
     if verification.get("verified"):
         finalize_payment_from_verification(payment=payment, verification=verification)
-        
-        invoice = payment.invoice
-        if invoice:
-            invoice.status = "paid"
-            invoice.save(update_fields=["status"])
+    else:
+        record_reconciliation(
+            payment=payment,
+            status=PaymentReconciliation.ReconciliationStatus.FAILED,
+            paystack_status=str(verification.get("raw", {}).get("status", "")),
+            amount_match=True,
+            currency_match=True,
+            status_match=False,
+            error=verification.get("message", "Verification failed"),
+        )
     
     return redirect("invoices:invoice_detail", invoice_id=invoice_id)
 
@@ -521,12 +554,16 @@ def public_payment_callback(request, invoice_id):
     
     if verification.get("verified"):
         finalize_payment_from_verification(payment=payment, verification=verification)
-        
-        invoice = payment.invoice
-        if invoice:
-            invoice.status = "paid"
-            invoice.save(update_fields=["status"])
-        
-        return render(request, "payments/payment_success.html", {"invoice": invoice})
+        return render(request, "payments/payment_success.html", {"invoice": payment.invoice})
+    
+    record_reconciliation(
+        payment=payment,
+        status=PaymentReconciliation.ReconciliationStatus.FAILED,
+        paystack_status=str(verification.get("raw", {}).get("status", "")),
+        amount_match=True,
+        currency_match=True,
+        status_match=False,
+        error=verification.get("message", "Verification failed"),
+    )
     
     return render(request, "payments/payment_failed.html", {"invoice": payment.invoice})

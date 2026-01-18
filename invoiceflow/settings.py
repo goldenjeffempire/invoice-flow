@@ -29,11 +29,10 @@ validate_env()
 # =============================================================================
 # ENVIRONMENT DETECTION
 # =============================================================================
-IS_REPLIT: bool = bool(os.getenv("REPL_ID") or os.getenv("REPLIT"))
 IS_RENDER: bool = bool(os.getenv("RENDER"))
 IS_PRODUCTION: bool = os.getenv("PRODUCTION") == "true"
 
-DEBUG: bool = False if IS_PRODUCTION else env.bool("DEBUG", IS_REPLIT)
+DEBUG: bool = False if IS_PRODUCTION else env.bool("DEBUG", False)
 
 # =============================================================================
 # DOMAIN
@@ -63,8 +62,6 @@ _default_hosts: list[str] = (
         f".{PRODUCTION_DOMAIN}",
         f"www.{PRODUCTION_DOMAIN}",
         "*.onrender.com",
-        "*.replit.dev",
-        "*.repl.co",
         "invoiceflow.com.ng",
     ]
     if IS_PRODUCTION
@@ -79,15 +76,7 @@ CSRF_TRUSTED_ORIGINS: list[str] = [
 
 if not IS_PRODUCTION:
     CSRF_TRUSTED_ORIGINS += [
-        "https://*.replit.dev",
-        "https://*.repl.co",
         "https://*.onrender.com",
-        "https://*.kirk.replit.dev",
-        f"https://{os.getenv('REPLIT_DEV_DOMAIN')}",
-        f"https://{os.getenv('REPLIT_DEV_DOMAIN')}:5000",
-        "https://d8dffb1d-9362-4982-990e-d46d5c7e2be1-00-2ipkuysg1w0hg.kirk.replit.dev:5000",
-        "https://087fbd41-1414-4106-a74e-ef4286b6c475-00-2lljvyorb3buk.spock.replit.dev:5000",
-        "https://087fbd41-1414-4106-a74e-ef4286b6c475-00-2lljvyorb3buk.spock.replit.dev",
     ]
 else:
     CSRF_TRUSTED_ORIGINS += [
