@@ -505,6 +505,7 @@ def custom_404(request, exception):
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+@require_POST
 def logout_view(request):
     AuthenticationService.logout_user(request)
     return redirect("invoices:home")
