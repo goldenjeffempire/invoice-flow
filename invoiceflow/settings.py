@@ -342,6 +342,16 @@ LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "home"
 
 # =============================================================================
+# ACCOUNT LOCKOUT / MFA
+# =============================================================================
+ACCOUNT_LOCKOUT_THRESHOLD = env.int("ACCOUNT_LOCKOUT_THRESHOLD", 5)
+ACCOUNT_LOCKOUT_DURATION = env.int("ACCOUNT_LOCKOUT_DURATION", 900)
+
+MFA_ENABLED = env.bool("MFA_ENABLED", False)
+MFA_ISSUER_NAME = env.str("MFA_ISSUER_NAME", "InvoiceFlow")
+MFA_RECOVERY_CODES_COUNT = env.int("MFA_RECOVERY_CODES_COUNT", 10)
+
+# =============================================================================
 # SESSION SECURITY
 # =============================================================================
 SESSION_ENGINE = "django.contrib.sessions.backends.db"

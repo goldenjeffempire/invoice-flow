@@ -1,27 +1,205 @@
 import os
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout, authenticate
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.db import transaction
 from decimal import Decimal
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.csrf import csrf_protect
+
 from .models import Invoice, UserProfile, LineItem
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count
+from .auth_services import AuthenticationService, RegistrationService, PasswordService
+from .forms import LoginForm, SignUpForm, EmailOnlyForm, PasswordResetConfirmForm
+from .sendgrid_service import SendGridEmailService
 
 def home(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     return render(request, "pages/home-light.html")
 
+@csrf_protect
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
-    return render(request, "pages/home-light.html")
+        return redirect("invoices:dashboard")
 
+    next_url = request.POST.get("next") or request.GET.get("next", "")
+    if next_url and not url_has_allowed_host_and_scheme(next_url, {request.get_host()}):
+        next_url = ""
+
+    form = LoginForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        username_input = form.cleaned_data["username"].strip()
+        password = form.cleaned_data["password"]
+
+        username = username_input
+        if "@" in username_input:
+            user = User.objects.filter(email__iexact=username_input).first()
+            if user:
+                username = user.username
+
+        user, error_message = AuthenticationService.authenticate_user(
+            request=request,
+            username=username,
+            password=password,
+        )
+
+        if user is None:
+            if "inactive" in error_message.lower():
+                messages.error(
+                    request,
+                    "Your account is inactive. Please verify your email. "
+                    "You can request a new verification link below.",
+                )
+            else:
+                messages.error(request, error_message)
+        else:
+            result = AuthenticationService.login_user(request, user)
+
+            if form.cleaned_data.get("remember_me"):
+                request.session.set_expiry(60 * 60 * 24 * 30)
+            else:
+                request.session.set_expiry(0)
+
+            if not result.get("email_verified"):
+                messages.warning(
+                    request,
+                    "Please verify your email to unlock all features.",
+                )
+
+            return redirect(next_url or "invoices:dashboard")
+
+    return render(
+        request,
+        "pages/auth/login.html",
+        {
+            "form": form,
+            "next_url": next_url,
+        },
+    )
+
+@csrf_protect
 def signup(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
-    return render(request, "pages/home-light.html")
+        return redirect("invoices:dashboard")
+
+    form = SignUpForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        data = form.cleaned_data
+        user, error_message, token = RegistrationService.create_user(
+            username=data["username"],
+            email=data["email"],
+            password=data["password1"],
+            first_name=data.get("first_name", ""),
+            last_name=data.get("last_name", ""),
+            require_email_verification=True,
+        )
+
+        if user is None:
+            messages.error(request, error_message)
+        else:
+            if token:
+                try:
+                    SendGridEmailService().send_verification_email(user, token.token)
+                    messages.success(
+                        request,
+                        "Account created! Please check your inbox to verify your email.",
+                    )
+                except Exception:
+                    messages.warning(
+                        request,
+                        "Account created, but we could not send a verification email. "
+                        "Please contact support.",
+                    )
+            return redirect("invoices:verification_sent")
+
+    return render(request, "pages/auth/signup.html", {"form": form})
+
+
+def verification_sent(request):
+    return render(request, "pages/auth/verification_sent.html")
+
+
+@csrf_protect
+def resend_verification(request):
+    form = EmailOnlyForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        email = form.cleaned_data["email"]
+        success, message, token = RegistrationService.resend_verification_email(email)
+        if success and token:
+            try:
+                user = token.user
+                SendGridEmailService().send_verification_email(user, token.token)
+                messages.success(request, message)
+                return redirect("invoices:verification_sent")
+            except Exception:
+                messages.warning(
+                    request,
+                    "Verification email could not be sent. Please contact support.",
+                )
+        else:
+            messages.error(request, message)
+
+    return render(request, "pages/auth/resend_verification.html", {"form": form})
+
+
+def verify_email(request, token: str):
+    success, message = RegistrationService.verify_email(token)
+    if success:
+        messages.success(request, message)
+        return redirect("invoices:login")
+    messages.error(request, message)
+    return render(request, "pages/auth/verification_failed.html")
+
+
+@csrf_protect
+def password_reset_request(request):
+    form = EmailOnlyForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        email = form.cleaned_data["email"]
+        success, message, token = PasswordService.request_password_reset(email)
+        if success and token:
+            try:
+                SendGridEmailService().send_password_reset_email(token.user, token.token)
+            except Exception:
+                messages.warning(
+                    request,
+                    "We couldn't send the reset email. Please contact support if needed.",
+                )
+        messages.success(request, message)
+        return redirect("invoices:password_reset_done")
+
+    return render(request, "pages/auth/password_reset.html", {"form": form})
+
+
+def password_reset_done(request):
+    return render(request, "pages/auth/password_reset_done.html")
+
+
+@csrf_protect
+def password_reset_confirm(request, token: str):
+    is_valid, user, error_message = PasswordService.validate_reset_token(token)
+    if not is_valid or user is None:
+        messages.error(request, error_message)
+        return render(request, "pages/auth/password_reset_invalid.html")
+
+    form = PasswordResetConfirmForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        success, message = PasswordService.reset_password(token, form.cleaned_data["new_password"])
+        if success:
+            messages.success(request, message)
+            return redirect("invoices:login")
+        messages.error(request, message)
+
+    return render(
+        request,
+        "pages/auth/password_reset_confirm.html",
+        {
+            "form": form,
+            "token": token,
+        },
+    )
 
 def pricing_view(request):
     return render(request, "pages/pricing.html")
@@ -283,8 +461,8 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 def logout_view(request):
-    logout(request)
-    return redirect("home")
+    AuthenticationService.logout_user(request)
+    return redirect("invoices:home")
 
 def custom_500(request):
     return render(request, "pages/home-light.html", status=500)

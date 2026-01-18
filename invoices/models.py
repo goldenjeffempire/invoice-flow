@@ -567,6 +567,30 @@ class EmailVerificationToken(models.Model):
     def generate_token(cls) -> str:
         return secrets.token_urlsafe(48)
 
+    @classmethod
+    def create_verification_token(
+        cls,
+        user: settings.AUTH_USER_MODEL,
+        email: str,
+        token_type: str,
+        expires_hours: int = 24,
+    ) -> "EmailVerificationToken":
+        cls.objects.filter(
+            user=user,
+            token_type=token_type,
+            is_used=False,
+        ).update(is_used=True, used_at=timezone.now())
+
+        token = cls.generate_token()
+        expires_at = timezone.now() + timedelta(hours=expires_hours)
+        return cls.objects.create(
+            user=user,
+            email=email,
+            token=token,
+            token_type=token_type,
+            expires_at=expires_at,
+        )
+
 
 # ============================================================================
 # LOGIN ATTEMPT (SECURITY TRACKING)
@@ -642,6 +666,25 @@ class UserSession(models.Model):
 
     def __str__(self) -> str:
         return f"Session for {getattr(self.user, 'username', 'Unknown')}"
+
+    def revoke(self) -> None:
+        self.is_revoked = True
+        self.save(update_fields=["is_revoked"])
+
+    @classmethod
+    def create_session(
+        cls,
+        user: settings.AUTH_USER_MODEL,
+        session_key: str,
+        ip_address: str = "",
+        user_agent: str = "",
+    ) -> "UserSession":
+        return cls.objects.create(
+            user=user,
+            session_key=session_key,
+            ip_address=ip_address or None,
+            user_agent=user_agent or "",
+        )
 
 
 # ============================================================================

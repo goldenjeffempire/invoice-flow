@@ -13,6 +13,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.shortcuts import redirect
+from django.utils import timezone
 from django.urls import reverse
 from oauthlib.oauth2 import WebApplicationClient
 
@@ -45,7 +46,7 @@ def google_login(request):
             request,
             "Google login is not configured. Please contact support."
         )
-        return redirect("login")
+        return redirect("invoices:login")
     
     try:
         client = WebApplicationClient(GOOGLE_CLIENT_ID)
@@ -72,20 +73,20 @@ def google_login(request):
             request,
             "Could not connect to Google. Please try again later."
         )
-        return redirect("login")
+        return redirect("invoices:login")
     except Exception:
         messages.error(
             request,
             "An error occurred. Please try again."
         )
-        return redirect("login")
+        return redirect("invoices:login")
 
 
 def google_callback(request):
     """Handle Google OAuth callback and create/login user."""
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
         messages.error(request, "Google login is not configured.")
-        return redirect("login")
+        return redirect("invoices:login")
     
     code = request.GET.get("code")
     state = request.GET.get("state")
@@ -93,16 +94,16 @@ def google_callback(request):
     
     if error:
         messages.error(request, "Google login was cancelled or failed.")
-        return redirect("login")
+        return redirect("invoices:login")
     
     if not code:
         messages.error(request, "Invalid response from Google.")
-        return redirect("login")
+        return redirect("invoices:login")
     
     stored_state = request.session.pop("oauth_state", None)
     if not stored_state or stored_state != state:
         messages.error(request, "Invalid security token. Please try again.")
-        return redirect("login")
+        return redirect("invoices:login")
     
     try:
         client = WebApplicationClient(GOOGLE_CLIENT_ID)
@@ -133,9 +134,11 @@ def google_callback(request):
         
         if token_response.status_code != 200:
             messages.error(request, "Failed to verify with Google. Please try again.")
-            return redirect("login")
-        
-        client.parse_request_body_response(json.dumps(token_response.json()))
+            return redirect("invoices:login")
+
+        token_payload = token_response.json()
+        access_token = token_payload.get("access_token")
+        client.parse_request_body_response(json.dumps(token_payload))
         
         userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
         uri, headers, body = client.add_token(userinfo_endpoint)
@@ -143,7 +146,7 @@ def google_callback(request):
         
         if userinfo_response.status_code != 200:
             messages.error(request, "Failed to get user info from Google.")
-            return redirect("login")
+            return redirect("invoices:login")
         
         userinfo = userinfo_response.json()
         
@@ -152,7 +155,7 @@ def google_callback(request):
                 request,
                 "Your Google email is not verified. Please verify your email with Google first."
             )
-            return redirect("login")
+            return redirect("invoices:login")
         
         google_id = userinfo.get("sub")
         email = userinfo.get("email")
@@ -161,30 +164,39 @@ def google_callback(request):
         
         if not google_id or not email:
             messages.error(request, "Could not retrieve your information from Google.")
-            return redirect("login")
+            return redirect("invoices:login")
         
         social_account = SocialAccount.objects.filter(
             provider="google",
-            provider_id=google_id
+            provider_id=google_id,
         ).first()
         
         if social_account:
             user = social_account.user
-            social_account.email = email
-            social_account.name = name
-            social_account.extra_data = userinfo
+            social_account.access_token = access_token or social_account.access_token
+            social_account.token_scopes = token_payload.get("scope", "")
+            social_account.avatar_url = userinfo.get("picture", "")
+            social_account.last_synced = timezone.now()
             social_account.save()
         else:
             user = User.objects.filter(email=email).first()
             
             if user:
+                if not user.is_active:
+                    messages.error(request, "This account is inactive. Please verify your email.")
+                    return redirect("invoices:login")
+                profile, _ = UserProfile.objects.get_or_create(user=user)
+                if not profile.email_verified:
+                    profile.email_verified = True
+                    profile.save(update_fields=["email_verified"])
                 SocialAccount.objects.create(
                     user=user,
                     provider="google",
                     provider_id=google_id,
-                    email=email,
-                    name=name,
-                    extra_data=userinfo,
+                    access_token=access_token or "",
+                    token_scopes=token_payload.get("scope", ""),
+                    avatar_url=userinfo.get("picture", ""),
+                    last_synced=timezone.now(),
                 )
             else:
                 base_username = email.split("@")[0]
@@ -202,16 +214,20 @@ def google_callback(request):
                 )
                 user.is_active = True
                 user.save()
-                
-                UserProfile.objects.get_or_create(user=user)
+
+                profile, _ = UserProfile.objects.get_or_create(user=user)
+                if not profile.email_verified:
+                    profile.email_verified = True
+                    profile.save(update_fields=["email_verified"])
                 
                 SocialAccount.objects.create(
                     user=user,
                     provider="google",
                     provider_id=google_id,
-                    email=email,
-                    name=name,
-                    extra_data=userinfo,
+                    access_token=access_token or "",
+                    token_scopes=token_payload.get("scope", ""),
+                    avatar_url=userinfo.get("picture", ""),
+                    last_synced=timezone.now(),
                 )
         
         login(request, user)
@@ -232,11 +248,11 @@ def google_callback(request):
             pass
         
         messages.success(request, f"Welcome, {user.first_name or user.username}!")
-        return redirect("dashboard")
+        return redirect("invoices:dashboard")
     
     except requests.RequestException:
         messages.error(request, "Could not connect to Google. Please try again later.")
-        return redirect("login")
+        return redirect("invoices:login")
     except Exception:
         messages.error(request, "An error occurred during login. Please try again.")
-        return redirect("login")
+        return redirect("invoices:login")
