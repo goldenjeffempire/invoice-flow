@@ -61,7 +61,7 @@ _default_hosts: list[str] = (
         PRODUCTION_DOMAIN,
         f".{PRODUCTION_DOMAIN}",
         f"www.{PRODUCTION_DOMAIN}",
-        "*.onrender.com",
+        ".onrender.com",
         "invoiceflow.com.ng",
     ]
     if IS_PRODUCTION

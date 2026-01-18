@@ -27,7 +27,7 @@ from .sendgrid_service import SendGridEmailService
 
 def home(request):
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect("invoices:dashboard")
     return render(request, "pages/home-light.html")
 
 @csrf_protect
