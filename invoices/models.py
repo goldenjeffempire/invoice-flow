@@ -343,6 +343,12 @@ class Invoice(models.Model):
         if self.status != self.Status.PAID:
             self.status = self.Status.PAID
             self.save(update_fields=["status", "updated_at"])
+            # Integration point for analytics/notification services
+            AnalyticsService.invalidate_user_cache(self.user_id)
+            try:
+                SendGridEmailService().send_invoice_paid(self, self.client_email)
+            except Exception as e:
+                logger.error(f"Failed to send payment confirmation: {e}")
 
     def mark_as_overdue(self) -> None:
         """Updates the invoice status to OVERDUE."""
