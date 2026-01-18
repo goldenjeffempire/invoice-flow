@@ -19,11 +19,6 @@ class Migration(migrations.Migration):
             name='socialaccount',
             options={'ordering': ['-created_at']},
         ),
-        migrations.AddField(
-            model_name='socialaccount',
-            name='provider_id',
-            field=models.CharField(db_index=True, default='', max_length=255),
-        ),
         migrations.AlterField(
             model_name='invoice',
             name='client_email',

@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import paystack_views, views
 
 
 app_name = "invoices"
@@ -39,9 +39,9 @@ urlpatterns = [
     path("create/", views.invoice_create, name="invoice_create"),
     path("list/", views.invoices_list, name="invoices_list"),
     path("<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
-    path("<int:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
-    path("<int:invoice_id>/delete/", views.invoice_delete, name="invoice_delete"),
-    path("<int:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf"),
+    path("<str:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
+    path("<str:invoice_id>/delete/", views.invoice_delete, name="invoice_delete_legacy"),
+    path("<str:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf_legacy"),
     
     path("settings/", views.settings_page, name="settings"),
     path("settings/profile/", views.profile_update_ajax, name="settings_profile_update"),
@@ -69,4 +69,16 @@ urlpatterns = [
     
     path("api/engagement/record/", views.record_engagement, name="record_engagement"),
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),
+
+    # ------------------------------------------------------------------
+    # PAYMENTS (PAYSTACK)
+    # ------------------------------------------------------------------
+    path("payments/initialize/", paystack_views.initialize_payment, name="payment_initialize"),
+    path("payments/webhooks/paystack/", paystack_views.paystack_webhook, name="paystack_webhook"),
+    path("payments/invoices/<str:invoice_id>/initiate/", paystack_views.initiate_invoice_payment, name="invoice_payment_initiate"),
+    path("payments/callback/<str:invoice_id>/", paystack_views.payment_callback, name="payment_callback"),
+    path("payments/<str:invoice_id>/status/", paystack_views.payment_status, name="payment_status"),
+    path("pay/<str:invoice_id>/", paystack_views.public_invoice_view, name="public_invoice"),
+    path("pay/<str:invoice_id>/init/", paystack_views.public_initiate_payment, name="public_initiate_payment"),
+    path("pay/<str:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
 ]
