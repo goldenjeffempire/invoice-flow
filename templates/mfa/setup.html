@@ -1,0 +1,44 @@
+{% extends "base/layout_app.html" %}
+
+{% block title %}Set up MFA · InvoiceFlow{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-6 py-12 space-y-8">
+    <header class="space-y-2">
+        <h1 class="text-3xl font-extrabold text-slate-900">Set up Multi-Factor Authentication</h1>
+        <p class="text-slate-600">Scan the QR code with your authenticator app and enter the verification code.</p>
+    </header>
+
+    {% if messages %}
+        <div class="space-y-3">
+            {% for message in messages %}
+                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="grid gap-6 lg:grid-cols-2 items-start">
+        <div class="card-glass rounded-2xl p-6 space-y-4">
+            <h2 class="text-xl font-bold text-slate-900">Scan this QR code</h2>
+            <img src="data:image/png;base64,{{ qr_code }}" alt="MFA QR code" class="w-64 h-64 rounded-xl border border-slate-200" />
+            <div class="text-sm text-slate-600">
+                <p class="font-semibold text-slate-700">Manual entry key</p>
+                <p class="font-mono break-all">{{ secret }}</p>
+            </div>
+        </div>
+        <div class="card-glass rounded-2xl p-6 space-y-4">
+            <h2 class="text-xl font-bold text-slate-900">Verify your code</h2>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <label class="text-sm font-semibold text-slate-600">Verification code</label>
+                <input class="input-modern" name="code" placeholder="123 456" />
+                <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-bold hover:scale-[1.01] transition">
+                    Enable MFA
+                </button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

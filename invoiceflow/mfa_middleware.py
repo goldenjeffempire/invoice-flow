@@ -91,7 +91,7 @@ class MFAEnforcementMiddleware:
                         status=403,
                     )
 
-                return redirect("mfa_verify")
+                return redirect("invoices:mfa_verify")
 
         except MFAProfile.DoesNotExist:
             pass

@@ -1,0 +1,124 @@
+{% extends "base/layout_app.html" %}
+
+{% block title %}Reminder Rules · InvoiceFlow{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-6 py-12 space-y-8">
+    <header class="space-y-2">
+        <h1 class="text-3xl font-extrabold text-slate-900">Reminder Rules</h1>
+        <p class="text-slate-600">Automate payment follow-ups with personalized reminder rules.</p>
+    </header>
+
+    {% if messages %}
+        <div class="space-y-3">
+            {% for message in messages %}
+                <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="grid gap-8 lg:grid-cols-2">
+        <section class="card-glass rounded-2xl p-6 space-y-6">
+            <h2 class="text-xl font-bold text-slate-900">Create a new rule</h2>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-semibold text-slate-600">Name</label>
+                        {{ form.name }}
+                        {{ form.name.errors }}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-slate-600">Trigger type</label>
+                        {{ form.trigger_type }}
+                        {{ form.trigger_type.errors }}
+                    </div>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-semibold text-slate-600">Days delta</label>
+                        {{ form.days_delta }}
+                        {{ form.days_delta.errors }}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-slate-600">Channel</label>
+                        {{ form.channel }}
+                        {{ form.channel.errors }}
+                    </div>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2 text-sm font-medium text-slate-600">
+                    <label class="flex items-center gap-2">
+                        {{ form.exclude_weekends }} Exclude weekends
+                    </label>
+                    <label class="flex items-center gap-2">
+                        {{ form.retry_on_failure }} Retry on failure
+                    </label>
+                    <label class="flex items-center gap-2">
+                        {{ form.is_active }} Active
+                    </label>
+                    <label class="flex items-center gap-2">
+                        {{ form.attach_pdf }} Attach PDF
+                    </label>
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-semibold text-slate-600">Max retries</label>
+                        {{ form.max_retries }}
+                        {{ form.max_retries.errors }}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-slate-600">Reply-to email</label>
+                        {{ form.reply_to_email }}
+                        {{ form.reply_to_email.errors }}
+                    </div>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-600">Subject template</label>
+                    {{ form.subject_template }}
+                    {{ form.subject_template.errors }}
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-600">Body template</label>
+                    {{ form.body_template }}
+                    {{ form.body_template.errors }}
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-slate-600">Custom sender name</label>
+                    {{ form.custom_sender_name }}
+                    {{ form.custom_sender_name.errors }}
+                </div>
+                <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-bold hover:scale-[1.01] transition">
+                    Save rule
+                </button>
+            </form>
+        </section>
+
+        <section class="card-glass rounded-2xl p-6 space-y-6">
+            <h2 class="text-xl font-bold text-slate-900">Existing rules</h2>
+            <div class="space-y-4">
+                {% if rules %}
+                    {% for rule in rules %}
+                        <div class="border border-slate-100 rounded-xl p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold text-slate-800">{{ rule.name }}</p>
+                                    <p class="text-xs text-slate-500">{{ rule.get_trigger_type_display }} · {{ rule.days_delta }} days</p>
+                                </div>
+                                <span class="text-xs font-semibold {% if rule.is_active %}text-emerald-600{% else %}text-slate-400{% endif %}">
+                                    {% if rule.is_active %}Active{% else %}Paused{% endif %}
+                                </span>
+                            </div>
+                            <p class="text-sm text-slate-600 mt-2">{{ rule.subject_template|default:"Default subject template" }}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-sm text-slate-500">No rules yet. Create your first rule to automate reminders.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}
