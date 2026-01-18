@@ -226,6 +226,15 @@ def paystack_webhook(request):
             logger.error(f"Amount mismatch for {reference}: {verification['amount']} != {payment.amount}")
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status"])
+            payload_hash = hashlib.sha256(payload).hexdigest()
+            service.mark_webhook_processed(
+                event_id,
+                provider="paystack",
+                event_type=event.get("event", ""),
+                reference=reference,
+                payload_hash=payload_hash,
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
             return HttpResponse(status=400)
 
         # Currency validation
@@ -233,6 +242,15 @@ def paystack_webhook(request):
             logger.error(f"Currency mismatch for {reference}: {verification.get('currency')} != {payment.currency}")
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status"])
+            payload_hash = hashlib.sha256(payload).hexdigest()
+            service.mark_webhook_processed(
+                event_id,
+                provider="paystack",
+                event_type=event.get("event", ""),
+                reference=reference,
+                payload_hash=payload_hash,
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
             return HttpResponse(status=400)
 
         payload_hash = hashlib.sha256(payload).hexdigest()
