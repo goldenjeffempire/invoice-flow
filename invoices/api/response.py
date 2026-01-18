@@ -1,11 +1,3 @@
-"""
-Standardized API response wrapper for all endpoints.
-Ensures consistent response format across entire API.
-"""
-from typing import Any, Optional
-from rest_framework.response import Response
-
-
 from typing import Any, Optional, Dict
 from rest_framework.response import Response
 
