@@ -1,4 +1,4 @@
-{% extends "base/layout_app.html" %}
+{% extends "base/layout.html" %}
 
 {% block title %}Invoice {{ invoice.invoice_id }} | InvoiceFlow{% endblock %}
 
@@ -8,17 +8,7 @@
         <div>
             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Invoice</p>
             <h1 class="text-4xl font-black text-slate-900">#{{ invoice.invoice_id }}</h1>
-            <div class="flex flex-wrap items-center gap-3 text-sm text-slate-500">
-                <span>Issued {{ invoice.invoice_date|date:"M d, Y" }}</span>
-                <span>•</span>
-                <span>Due {{ invoice.due_date|date:"M d, Y"|default:"N/A" }}</span>
-                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase
-                    {% if invoice.status == 'paid' %}bg-emerald-100 text-emerald-700
-                    {% elif invoice.status == 'overdue' %}bg-rose-100 text-rose-700
-                    {% else %}bg-amber-100 text-amber-700{% endif %}">
-                    {{ invoice.get_status_display }}
-                </span>
-            </div>
+            <p class="text-slate-500">Issued {{ invoice.invoice_date|date:"M d, Y" }} • Due {{ invoice.due_date|date:"M d, Y"|default:"N/A" }}</p>
         </div>
         <div class="flex flex-wrap gap-3">
             <a href="{% url 'invoices:invoice_edit' invoice.invoice_id %}" class="px-5 py-3 rounded-2xl border border-slate-200 text-slate-700 font-bold hover:border-indigo-500 hover:text-indigo-600 transition-colors">Edit Invoice</a>
@@ -54,8 +44,7 @@
             <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10">
                 <h2 class="text-xl font-black text-slate-900 mb-6">Line Items</h2>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left" aria-describedby="line-items-caption">
-                        <caption id="line-items-caption" class="sr-only">Line items for this invoice.</caption>
+                    <table class="w-full text-left">
                         <thead class="border-b border-slate-100">
                             <tr class="text-xs uppercase tracking-widest text-slate-400">
                                 <th class="pb-4">Description</th>
@@ -74,13 +63,7 @@
                                 </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="4" class="py-8 text-center text-slate-400">
-                                        <div class="flex flex-col items-center gap-3">
-                                            <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
-                                            <p class="font-semibold">No line items found.</p>
-                                            <a href="{% url 'invoices:invoice_edit' invoice.invoice_id %}" class="text-indigo-600 font-bold text-sm">Add line items</a>
-                                        </div>
-                                    </td>
+                                    <td colspan="4" class="py-8 text-center text-slate-400">No line items found.</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -123,8 +106,7 @@
                 <h3 class="text-lg font-black text-slate-900 mb-4">Invoice Status</h3>
                 <form method="post" class="space-y-4">
                     {% csrf_token %}
-                    <label for="invoice-status" class="text-xs font-bold uppercase tracking-widest text-slate-400">Status</label>
-                    <select id="invoice-status" name="status" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-700">
+                    <select name="status" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-slate-700">
                         {% for value, label in status_choices %}
                             <option value="{{ value }}" {% if invoice.status == value %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}

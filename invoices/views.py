@@ -11,7 +11,6 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
-from django.views.decorators.http import require_POST
 
 from .models import Invoice, UserProfile
 from django.db.models import Sum, Count
