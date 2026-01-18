@@ -13,7 +13,7 @@ from typing import Any, Optional
 import requests
 from django.utils import timezone
 
-from .models import IdempotencyKey, Payment, ProcessedWebhook
+from .models import IdempotencyKey, Invoice, Payment, ProcessedWebhook
 
 
 PAYSTACK_BASE_URL = "https://api.paystack.co"
@@ -415,6 +415,12 @@ def finalize_payment_from_verification(
         "status",
         "paid_at",
     ])
+
+    invoice = payment.invoice
+    if invoice and payment.status == Payment.Status.SUCCESS:
+        if invoice.status != Invoice.Status.PAID:
+            invoice.status = Invoice.Status.PAID
+            invoice.save(update_fields=["status"])
 
     return payment
 
