@@ -85,7 +85,7 @@ def mfa_setup(request):
         
         if not secret:
             messages.error(request, "Session expired. Please start MFA setup again.")
-            return redirect("mfa_setup")
+            return redirect("invoices:mfa_setup")
         
         if verify_totp(secret, code):
             recovery_codes = generate_recovery_codes()
@@ -103,7 +103,7 @@ def mfa_setup(request):
             })
         else:
             messages.error(request, "Invalid verification code. Please try again.")
-            return redirect("mfa_setup")
+            return redirect("invoices:mfa_setup")
     
     secret = generate_secret()
     request.session["mfa_setup_secret"] = secret
@@ -157,11 +157,11 @@ def mfa_disable(request):
         mfa_profile = MFAProfile.objects.get(user=request.user)
     except MFAProfile.DoesNotExist:
         messages.error(request, "MFA is not configured.")
-        return redirect("settings_security")
+        return redirect("invoices:settings")
     
     if not mfa_profile.is_enabled:
         messages.info(request, "MFA is already disabled.")
-        return redirect("settings_security")
+        return redirect("invoices:settings")
     
     if verify_totp(mfa_profile.secret, code):
         mfa_profile.is_enabled = False
@@ -170,10 +170,10 @@ def mfa_disable(request):
         mfa_profile.save()
         
         messages.success(request, "Two-factor authentication has been disabled.")
-        return redirect("settings_security")
+        return redirect("invoices:settings")
     
     messages.error(request, "Invalid verification code.")
-    return redirect("settings_security")
+    return redirect("invoices:settings")
 
 
 @login_required

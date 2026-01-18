@@ -61,7 +61,7 @@ _default_hosts: list[str] = (
         PRODUCTION_DOMAIN,
         f".{PRODUCTION_DOMAIN}",
         f"www.{PRODUCTION_DOMAIN}",
-        "*.onrender.com",
+        ".onrender.com",
         "invoiceflow.com.ng",
     ]
     if IS_PRODUCTION
@@ -518,3 +518,4 @@ HCAPTCHA_ENABLED: bool = bool(HCAPTCHA_SITEKEY and HCAPTCHA_SECRET)
 # =============================================================================
 API_BASE_URL: str = env.str("API_BASE_URL", PRODUCTION_URL)
 WEBHOOK_BASE_URL: str = env.str("WEBHOOK_BASE_URL", PRODUCTION_URL)
+SITE_URL: str = env.str("SITE_URL", PRODUCTION_URL)

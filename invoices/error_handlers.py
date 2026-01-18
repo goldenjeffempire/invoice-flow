@@ -49,39 +49,39 @@ def handle_invoice_errors(view_func: Callable) -> Callable:
         except InvoicePermissionError:
             logger.warning(f"Permission denied for user {request.user.id}")
             messages.error(request, "You don't have permission to access this invoice.")
-            return redirect('invoices:invoice_list')
+            return redirect("invoices:invoices_list")
         
         except InvoiceNotFoundError:
             logger.warning(f"Invoice not found for user {request.user.id}")
             messages.error(request, "Invoice not found. It may have been deleted.")
-            return redirect('invoices:invoice_list')
+            return redirect("invoices:invoices_list")
         
         except InvalidInvoiceDataError as e:
             logger.error(f"Invalid invoice data: {str(e)}")
             messages.error(request, f"Invalid data: {str(e)}")
-            return redirect('invoices:invoice_list')
+            return redirect("invoices:invoices_list")
         
         except ValidationError as e:
             logger.error(f"Validation error: {str(e)}")
             messages.error(request, f"Validation error: {str(e)}")
             if request.path.startswith('/api/'):
                 return JsonResponse({'error': str(e)}, status=400)
-            return redirect('invoices:invoice_list')
+            return redirect("invoices:invoices_list")
         
         except PermissionDenied:
             logger.warning(f"Permission denied for user {request.user.id}")
             messages.error(request, "You don't have permission to perform this action.")
-            return redirect('dashboard')
+            return redirect("invoices:dashboard")
         
         except ObjectDoesNotExist as e:
             logger.error(f"Object not found: {str(e)}")
             messages.error(request, "The requested resource was not found.")
-            return redirect('invoices:invoice_list')
+            return redirect("invoices:invoices_list")
         
         except Exception as e:
             logger.exception(f"Unexpected error in {view_func.__name__}: {str(e)}")
             messages.error(request, "An unexpected error occurred. Please try again later.")
-            return redirect('invoices:invoice_list')
+            return redirect("invoices:invoices_list")
     
     return wrapper
 
