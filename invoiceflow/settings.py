@@ -77,10 +77,14 @@ CSRF_TRUSTED_ORIGINS: list[str] = [
 if not IS_PRODUCTION:
     CSRF_TRUSTED_ORIGINS += [
         "https://*.onrender.com",
+        "https://*.replit.dev",
+        "https://*.repl.co",
     ]
 else:
     CSRF_TRUSTED_ORIGINS += [
         "https://*.onrender.com",
+        "https://*.replit.dev",
+        "https://*.repl.co",
     ]
 
 csrf_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS")
@@ -326,9 +330,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "invoiceflow.password_validators.BreachedPasswordValidator"},
 ]
 
-LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"
-LOGOUT_REDIRECT_URL = "home"
+LOGIN_URL = "invoices:login"
+LOGIN_REDIRECT_URL = "invoices:dashboard"
+LOGOUT_REDIRECT_URL = "invoices:home"
 
 # =============================================================================
 # ACCOUNT LOCKOUT / MFA
