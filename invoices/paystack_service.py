@@ -356,22 +356,27 @@ class PaystackService:
         If not, execute callback and cache the response.
         Returns: (response_data, http_status, is_cached)
         """
+        request_hash = hashlib.sha256(
+            json.dumps(request_data, sort_keys=True).encode()
+        ).hexdigest()
+
         try:
             cached = IdempotencyKey.objects.get(
                 key=idempotency_key,
                 user_id=user_id,
             )
             if cached.is_valid():
+                if cached.request_hash != request_hash:
+                    return {
+                        "error": "Idempotency key reuse with different payload.",
+                        "code": "IDEMPOTENCY_MISMATCH",
+                    }, 409, True
                 return cached.response_data, cached.http_status, True
             cached.delete()
         except IdempotencyKey.DoesNotExist:
             pass
 
         response_data, http_status = response_callback()
-
-        request_hash = hashlib.sha256(
-            json.dumps(request_data, sort_keys=True).encode()
-        ).hexdigest()
 
         IdempotencyKey.objects.create(
             user_id=user_id,
