@@ -5,8 +5,9 @@ Handles payment initiation, callbacks, webhooks, and public invoice payments.
 
 import json
 import logging
+import hashlib
 import uuid
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -16,10 +17,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
-from invoiceflow.mfa import require_mfa
-
 from .auth_services import require_verified_email
-from .models import IdempotencyKey, Invoice, Payment, ProcessedWebhook
+from .models import Invoice, Payment
 from .paystack_service import (
     PaystackService,
     finalize_payment_from_verification,
@@ -61,10 +60,21 @@ def initialize_payment(request):
             "code": "MFA_NOT_VERIFIED"
         }, status=403)
     
+    invoice_id = request.POST.get("invoice_id")
+    idempotency_key = request.POST.get("idempotency_key")
+
+    if not invoice_id:
+        return JsonResponse({"error": "Invalid payment request"}, status=400)
+
+    invoice = get_object_or_404(Invoice, pk=invoice_id, user=user)
+    try:
+        requested_amount = Decimal(request.POST.get("amount", str(invoice.total)))
+    except (InvalidOperation, ValueError):
+        return JsonResponse({"error": "Invalid payment amount"}, status=400)
+
+    amount = invoice.total
     # ENFORCE: Identity verification for high-value payments
     from .models import UserIdentityVerification
-    amount = Decimal(request.POST.get("amount", "0"))
-    
     if amount > 100000:  # Threshold for KYC
         try:
             verification = UserIdentityVerification.objects.get(user=user)
@@ -78,12 +88,10 @@ def initialize_payment(request):
                 "error": "Identity verification required for large payments",
                 "code": "IDENTITY_NOT_VERIFIED"
             }, status=403)
-
-    invoice_id = request.POST.get("invoice_id")
-    idempotency_key = request.POST.get("idempotency_key")
-
-    if not invoice_id or amount <= 0:
-        return JsonResponse({"error": "Invalid payment request"}, status=400)
+    if amount <= 0:
+        return JsonResponse({"error": "Invalid payment amount"}, status=400)
+    if requested_amount != amount:
+        return JsonResponse({"error": "Payment amount mismatch"}, status=400)
 
     if not idempotency_key:
         return JsonResponse({"error": "Idempotency key required"}, status=400)
@@ -117,6 +125,9 @@ def initialize_payment(request):
                     "user_id": user.id,
                 },
             )
+
+            if result.get("configured") is False:
+                return {"error": "Payment gateway not configured"}, 503
 
             status_code = 200 if result.get("status") == "success" else 400
             return result, status_code
@@ -175,9 +186,6 @@ def paystack_webhook(request):
         return HttpResponse(status=400)
 
     with transaction.atomic():
-        # Mark as processed FIRST to prevent race conditions
-        service.mark_webhook_processed(event_id)
-
         try:
             payment = Payment.objects.select_for_update().get(
                 reference=reference
@@ -194,10 +202,23 @@ def paystack_webhook(request):
         # Verify transaction with Paystack (server-to-server)
         verification = service.verify_transaction(reference)
 
+        if verification.get("status") == "error":
+            logger.error(f"Paystack verification error for {reference}: {verification.get('message')}")
+            return HttpResponse(status=503)
+
         if not verification.get("verified"):
             logger.warning(f"Payment verification failed for {reference}")
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status"])
+            payload_hash = hashlib.sha256(payload).hexdigest()
+            service.mark_webhook_processed(
+                event_id,
+                provider="paystack",
+                event_type=event.get("event", ""),
+                reference=reference,
+                payload_hash=payload_hash,
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
             return HttpResponse(status=200)
 
         # Amount validation (prevent tampering)
@@ -213,6 +234,16 @@ def paystack_webhook(request):
             payment.status = Payment.Status.FAILED
             payment.save(update_fields=["status"])
             return HttpResponse(status=400)
+
+        payload_hash = hashlib.sha256(payload).hexdigest()
+        service.mark_webhook_processed(
+            event_id,
+            provider="paystack",
+            event_type=event.get("event", ""),
+            reference=reference,
+            payload_hash=payload_hash,
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
 
         # Finalize payment
         finalize_payment_from_verification(
@@ -236,6 +267,10 @@ def initiate_invoice_payment(request, invoice_id):
     
     if invoice.status == "paid":
         return JsonResponse({"error": "Invoice already paid"}, status=400)
+
+    service = get_paystack_service()
+    if not service.is_configured:
+        return JsonResponse({"error": "Payment gateway not configured"}, status=503)
     
     reference = f"inv_{invoice_id}_{request.user.id}_{uuid.uuid4().hex[:8]}"
     
@@ -254,7 +289,6 @@ def initiate_invoice_payment(request, invoice_id):
     elif not created:
         return JsonResponse({"error": "Payment already processed"}, status=400)
     
-    service = get_paystack_service()
     callback_url = request.build_absolute_uri(f"/payments/callback/{invoice_id}/")
     
     result = service.initialize_payment(
@@ -347,7 +381,8 @@ def public_invoice_view(request, invoice_id):
         return render(request, "payments/invoice_paid.html", {"invoice": invoice})
     
     # If platform integrated, we use the master public key
-    paystack_public_key = getattr(settings, 'PAYSTACK_PUBLIC_KEY', 'pk_test_placeholder')
+    paystack_public_key = getattr(settings, "PAYSTACK_PUBLIC_KEY", "")
+    paystack_configured = bool(paystack_public_key)
     
     # Check for payment preferences
     from .models import PaymentSettings
@@ -355,7 +390,7 @@ def public_invoice_view(request, invoice_id):
     
     context = {
         "invoice": invoice,
-        "paystack_configured": True,
+        "paystack_configured": paystack_configured,
         "paystack_public_key": paystack_public_key,
         "payment_settings": payment_settings,
     }
@@ -375,6 +410,10 @@ def public_initiate_payment(request, invoice_id):
     
     if invoice.status == "paid":
         return JsonResponse({"error": "Invoice already paid"}, status=400)
+
+    service = get_paystack_service()
+    if not service.is_configured:
+        return JsonResponse({"error": "Payment gateway not configured"}, status=503)
     
     email = request.POST.get("email") or invoice.client_email
     if not email:
@@ -390,7 +429,6 @@ def public_initiate_payment(request, invoice_id):
         status=Payment.Status.PENDING,
     )
     
-    service = get_paystack_service()
     callback_url = request.build_absolute_uri(f"/pay/{invoice_id}/callback/")
     
     result = service.initialize_payment(

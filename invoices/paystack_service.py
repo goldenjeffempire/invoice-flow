@@ -98,16 +98,21 @@ class PaystackService:
         if not self.is_configured:
             return {"status": "error", "configured": False}
 
-        response = requests.get(
-            f"{PAYSTACK_BASE_URL}/transaction/verify/{reference}",
-            headers=self.headers,
-            timeout=30,
-        )
-
-        data = response.json()
+        try:
+            response = requests.get(
+                f"{PAYSTACK_BASE_URL}/transaction/verify/{reference}",
+                headers=self.headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as exc:
+            return {"status": "error", "verified": False, "message": f"Connection error: {exc}"}
+        except ValueError:
+            return {"status": "error", "verified": False, "message": "Invalid response format from Paystack"}
 
         if response.status_code != 200 or not data.get("status"):
-            return {"status": "error", "verified": False}
+            return {"status": "error", "verified": False, "message": data.get("message", "Verification failed")}
 
         tx = data["data"]
 
@@ -133,14 +138,19 @@ class PaystackService:
         if not self.is_configured:
             return {"status": "error", "configured": False, "verified": False}
 
-        response = requests.get(
-            f"{PAYSTACK_BASE_URL}/bank/resolve",
-            params={"account_number": bvn},
-            headers=self.headers,
-            timeout=30,
-        )
-
-        data = response.json()
+        try:
+            response = requests.get(
+                f"{PAYSTACK_BASE_URL}/bank/resolve",
+                params={"account_number": bvn},
+                headers=self.headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as exc:
+            return {"status": "error", "configured": True, "verified": False, "message": f"Connection error: {exc}"}
+        except ValueError:
+            return {"status": "error", "configured": True, "verified": False, "message": "Invalid response format from Paystack"}
 
         if response.status_code == 200 and data.get("status"):
             return {
@@ -160,14 +170,19 @@ class PaystackService:
         if not self.is_configured:
             return {"status": "error", "banks": []}
 
-        response = requests.get(
-            f"{PAYSTACK_BASE_URL}/bank",
-            params={"country": country},
-            headers=self.headers,
-            timeout=30,
-        )
-
-        data = response.json()
+        try:
+            response = requests.get(
+                f"{PAYSTACK_BASE_URL}/bank",
+                params={"country": country},
+                headers=self.headers,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as exc:
+            return {"status": "error", "banks": [], "message": f"Connection error: {exc}"}
+        except ValueError:
+            return {"status": "error", "banks": [], "message": "Invalid response format from Paystack"}
 
         if response.status_code == 200 and data.get("status"):
             return {
@@ -186,16 +201,18 @@ class PaystackService:
         if not self.is_configured:
             return {"status": "error", "verified": False}
 
-        response = requests.get(
-            f"{PAYSTACK_BASE_URL}/bank/resolve",
-            params={"account_number": account_number, "bank_code": bank_code},
-            headers=self.headers,
-            timeout=30,
-        )
-
         try:
+            response = requests.get(
+                f"{PAYSTACK_BASE_URL}/bank/resolve",
+                params={"account_number": account_number, "bank_code": bank_code},
+                headers=self.headers,
+                timeout=30,
+            )
+            response.raise_for_status()
             data = response.json()
-        except Exception:
+        except requests.exceptions.RequestException as exc:
+            return {"status": "error", "verified": False, "message": f"Connection error: {exc}"}
+        except ValueError:
             return {"status": "error", "verified": False, "message": "Invalid response from Paystack"}
 
         if response.status_code == 200 and data.get("status"):
@@ -218,13 +235,19 @@ class PaystackService:
         if not self.is_configured:
             return {"status": "error", "configured": False}
 
-        response = requests.put(
-            f"{PAYSTACK_BASE_URL}/subaccount/{subaccount_code}",
-            headers=self.headers,
-            json=kwargs,
-            timeout=30,
-        )
-        return response.json()
+        try:
+            response = requests.put(
+                f"{PAYSTACK_BASE_URL}/subaccount/{subaccount_code}",
+                headers=self.headers,
+                json=kwargs,
+                timeout=30,
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as exc:
+            return {"status": "error", "configured": True, "message": f"Connection error: {exc}"}
+        except ValueError:
+            return {"status": "error", "configured": True, "message": "Invalid response format from Paystack"}
 
     def create_subaccount(
         self,
@@ -252,14 +275,19 @@ class PaystackService:
         if primary_contact_phone:
             payload["primary_contact_phone"] = primary_contact_phone
 
-        response = requests.post(
-            f"{PAYSTACK_BASE_URL}/subaccount",
-            headers=self.headers,
-            json=payload,
-            timeout=30,
-        )
-
-        data = response.json()
+        try:
+            response = requests.post(
+                f"{PAYSTACK_BASE_URL}/subaccount",
+                headers=self.headers,
+                json=payload,
+                timeout=30,
+            )
+            response.raise_for_status()
+            data = response.json()
+        except requests.exceptions.RequestException as exc:
+            return {"status": "error", "configured": True, "message": f"Connection error: {exc}"}
+        except ValueError:
+            return {"status": "error", "configured": True, "message": "Invalid response format from Paystack"}
 
         if response.status_code == 201 and data.get("status"):
             subaccount_data = data.get("data", {})
@@ -293,8 +321,24 @@ class PaystackService:
     def is_webhook_processed(self, event_id: str) -> bool:
         return ProcessedWebhook.objects.filter(event_id=event_id).exists()
 
-    def mark_webhook_processed(self, event_id: str) -> None:
-        ProcessedWebhook.objects.create(event_id=event_id)
+    def mark_webhook_processed(
+        self,
+        event_id: str,
+        *,
+        provider: str = "paystack",
+        event_type: str = "",
+        reference: str = "",
+        payload_hash: str = "",
+        ip_address: Optional[str] = None,
+    ) -> None:
+        ProcessedWebhook.objects.create(
+            event_id=event_id,
+            provider=provider,
+            event_type=event_type,
+            reference=reference,
+            payload_hash=payload_hash,
+            ip_address=ip_address,
+        )
 
     # -------------------------------------------------------------------------
     # IDEMPOTENCY KEY HANDLING
