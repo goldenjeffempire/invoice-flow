@@ -13,7 +13,13 @@ from typing import Any, Optional
 import requests
 from django.utils import timezone
 
-from .models import IdempotencyKey, Payment, ProcessedWebhook
+from .models import (
+    IdempotencyKey,
+    Invoice,
+    Payment,
+    PaymentReconciliation,
+    ProcessedWebhook,
+)
 
 
 PAYSTACK_BASE_URL = "https://api.paystack.co"
@@ -416,7 +422,59 @@ def finalize_payment_from_verification(
         "paid_at",
     ])
 
+    reconciliation_status = (
+        PaymentReconciliation.ReconciliationStatus.VERIFIED
+        if payment.status == Payment.Status.SUCCESS
+        else PaymentReconciliation.ReconciliationStatus.FAILED
+    )
+    record_reconciliation(
+        payment=payment,
+        status=reconciliation_status,
+        paystack_status=str(verification.get("raw", {}).get("status", "")),
+        amount_match=True,
+        currency_match=True,
+        status_match=payment.status == Payment.Status.SUCCESS,
+        error="",
+    )
+
+    invoice = payment.invoice
+    if invoice and payment.status == Payment.Status.SUCCESS:
+        if invoice.status != Invoice.Status.PAID:
+            invoice.status = Invoice.Status.PAID
+            invoice.save(update_fields=["status"])
+
     return payment
+
+
+def record_reconciliation(
+    *,
+    payment: Payment,
+    status: str,
+    paystack_status: str,
+    amount_match: bool,
+    currency_match: bool,
+    status_match: bool,
+    error: str,
+) -> PaymentReconciliation:
+    reconciliation, _ = PaymentReconciliation.objects.get_or_create(
+        payment=payment,
+        defaults={
+            "user": payment.user,
+            "local_status": payment.status,
+        },
+    )
+    reconciliation.status = status
+    reconciliation.paystack_status = paystack_status
+    reconciliation.local_status = payment.status
+    reconciliation.amount_match = amount_match
+    reconciliation.currency_match = currency_match
+    reconciliation.status_match = status_match
+    reconciliation.last_error = error
+    reconciliation.last_attempt = timezone.now()
+    if status == PaymentReconciliation.ReconciliationStatus.VERIFIED:
+        reconciliation.verified_at = timezone.now()
+    reconciliation.save()
+    return reconciliation
 
 
 # -------------------------------------------------------------------------

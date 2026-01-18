@@ -61,6 +61,8 @@ class TestInvoiceAPI:
             f"/api/v1/invoices/{invoice.pk}/status/", {"status": "paid"}, format="json"
         )
         assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"] is True
+        assert response.data["data"]["status"] == "paid"
 
         invoice.refresh_from_db()
         assert invoice.status == "paid"
@@ -73,7 +75,8 @@ class TestInvoiceAPI:
 
         response = authenticated_api_client.get("/api/v1/invoices/stats/")
         assert response.status_code == status.HTTP_200_OK
-        assert "total_invoices" in response.data
+        assert response.data["success"] is True
+        assert "total_invoices" in response.data["data"]
 
 
 @pytest.mark.django_db
