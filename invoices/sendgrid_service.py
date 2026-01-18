@@ -27,7 +27,7 @@ from weasyprint.text.fonts import FontConfiguration
 
 
 class SendGridEmailService:
-    """Service for sending emails using SendGrid dynamic templates with Replit integration support.
+    """Service for sending emails using SendGrid dynamic templates.
 
     Smart Direct Sending:
     - Emails send FROM platform owner's verified email (technical requirement)
@@ -47,65 +47,19 @@ class SendGridEmailService:
     }
 
     def __init__(self):
-        # Try to get credentials from Replit integration first, fall back to environment variables
         self.api_key = None
         self.from_email = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@invoiceflow.com.ng")
         self.PLATFORM_FROM_EMAIL = self.from_email  # Alias for backward compatibility
         self.platform_from_name = "InvoiceFlow"
 
-        # Try Replit integration if available
-        if self._try_replit_integration():
-            self.is_configured = True
-        else:
-            # Fall back to environment variables
-            self.api_key = os.environ.get("SENDGRID_API_KEY")
-            self.is_configured = bool(self.api_key)
+        self.api_key = os.environ.get("SENDGRID_API_KEY")
+        self.is_configured = bool(self.api_key)
 
         if self.is_configured and self.api_key:
             self.client: SendGridAPIClient | None = SendGridAPIClient(self.api_key)
         else:
             self.client: SendGridAPIClient | None = None
 
-    def _try_replit_integration(self) -> bool:
-        """Try to get SendGrid credentials from Replit integration connector."""
-        try:
-            # Check if we're in Replit environment
-            hostname = os.environ.get("REPLIT_CONNECTORS_HOSTNAME")
-            token = os.environ.get("REPL_IDENTITY") or os.environ.get("WEB_REPL_RENEWAL")
-
-            if not hostname or not token:
-                return False
-
-            # Prepare token header
-            token_header = f"repl {token}" if "REPL_IDENTITY" in os.environ else f"depl {token}"
-
-            # For synchronous operation, we'll try async operations
-            import json
-            import urllib.request
-
-            url = f"https://{hostname}/api/v2/connection?include_secrets=true&connector_names=sendgrid"
-            headers = {
-                "Accept": "application/json",
-                "X_REPLIT_TOKEN": token_header
-            }
-            
-            import requests
-            response = requests.get(url, headers=headers, timeout=5)
-            response.raise_for_status()
-            data = response.json()
-            connection = data.get("items", [{}])[0]
-            settings = connection.get("settings", {})
-
-            if settings.get("api_key") and settings.get("from_email"):
-                self.api_key = settings["api_key"]
-                self.from_email = settings["from_email"]
-                return True
-        except Exception:
-            # Silently fall back to environment variables
-            pass
-
-        return False
-    
     def _get_api_with_validation(self, url: str, headers: dict, timeout: int = 5) -> dict | None:
         """Safely get API response with proper URL validation."""
         try:

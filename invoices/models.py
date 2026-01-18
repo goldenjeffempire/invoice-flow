@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import secrets
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Dict, List, Optional, Type, Callable, Union
 from datetime import datetime, timedelta
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.apps import apps
+
+from .validators import InvoiceBusinessRules, validate_positive_decimal, validate_tax_rate
 
 
 # ============================================================================
@@ -277,6 +280,29 @@ class Invoice(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+    def clean(self) -> None:
+        errors = {}
+        try:
+            validate_tax_rate(self.tax_rate)
+        except ValidationError as exc:
+            errors["tax_rate"] = exc.messages
+
+        try:
+            discount_value = Decimal(str(self.discount))
+        except (InvalidOperation, ValueError):
+            errors["discount"] = ["Discount must be a valid number."]
+        else:
+            if discount_value < 0 or discount_value > 100:
+                errors["discount"] = ["Discount must be between 0 and 100 percent."]
+
+        try:
+            InvoiceBusinessRules.validate_due_date(self.invoice_date, self.due_date)
+        except ValidationError as exc:
+            errors["due_date"] = exc.messages
+
+        if errors:
+            raise ValidationError(errors)
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.full_clean()
         if not self.invoice_id:
@@ -323,6 +349,25 @@ class LineItem(models.Model):
     description = models.CharField(max_length=500)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('1.00'))
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def clean(self) -> None:
+        errors = {}
+        try:
+            validate_positive_decimal(self.quantity)
+        except ValidationError as exc:
+            errors["quantity"] = exc.messages
+
+        try:
+            validate_positive_decimal(self.unit_price)
+        except ValidationError as exc:
+            errors["unit_price"] = exc.messages
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     @property
     def total(self) -> Decimal:
