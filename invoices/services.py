@@ -47,69 +47,53 @@ class AutomatedReminderService:
 
 
 class InvoiceService:
-    """Handles invoice creation and updates with atomic transactions."""
+    """Centralized service for Invoice lifecycle management."""
 
     @staticmethod
     @transaction.atomic
-    def create_invoice(
-        user: Any, invoice_data: Any, files_data: Any, line_items_data: List[Dict[str, Any]]
-    ) -> Tuple[Optional[Invoice], InvoiceForm]:
-        """Create invoice with line items in atomic transaction.
-
-        Returns: (invoice, form) tuple where invoice is the created Invoice or None,
-                 and form is the bound form (for displaying errors if invalid).
-        """
+    def create_invoice(user, invoice_data, line_items_data):
         from .forms import InvoiceForm
+        form = InvoiceForm(invoice_data)
+        if not form.is_valid():
+            return None, form
 
-        invoice_form = InvoiceForm(invoice_data, files_data)
-        if not invoice_form.is_valid():
-            return None, invoice_form
-
-        invoice = invoice_form.save(commit=False)
+        invoice = form.save(commit=False)
         invoice.user = user
         invoice.save()
 
-        for item_data in line_items_data:
-            if not item_data.get("description"):
-                continue
-            
-            quantity = Decimal(str(item_data.get("quantity", 1)))
-            unit_price = Decimal(str(item_data.get("unit_price", 0)))
-            
-            # Ensure positive values
-            quantity = max(Decimal("0.01"), quantity)
-            unit_price = max(Decimal("0.00"), unit_price)
-            
-            LineItem.objects.create(
-                invoice=invoice,
-                description=item_data["description"],
-                quantity=quantity,
-                unit_price=unit_price,
-            )
-
+        for item in line_items_data:
+            if item.get("description"):
+                LineItem.objects.create(
+                    invoice=invoice,
+                    description=item["description"],
+                    quantity=Decimal(str(item.get("quantity", 1))),
+                    unit_price=Decimal(str(item.get("unit_price", 0)))
+                )
+        
         AnalyticsService.invalidate_user_cache(user.id)
-        return invoice, invoice_form
+        return invoice, form
+
+    @staticmethod
+    def delete_invoice(user, invoice_id):
+        invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=user)
+        invoice.delete()
+        AnalyticsService.invalidate_user_cache(user.id)
+        return True
 
     @staticmethod
     @transaction.atomic
     def update_invoice(
         invoice: Invoice,
         invoice_data: Any,
-        files_data: Any,
         line_items_data: List[Dict[str, Any]],
     ) -> Tuple[Optional[Invoice], InvoiceForm]:
-        """Update invoice with line items in atomic transaction.
-
-        Returns: (invoice, form) tuple where invoice is the updated Invoice or None,
-                 and form is the bound form (for displaying errors if invalid).
-        """
+        """Update invoice with line items in atomic transaction."""
         from .forms import InvoiceForm
 
-        invoice_form = InvoiceForm(invoice_data, files_data, instance=invoice)
+        invoice_form = InvoiceForm(invoice_data, instance=invoice)
         if not invoice_form.is_valid():
             return None, invoice_form
 
-        user_id = invoice.user_id
         invoice = invoice_form.save(commit=False)
         invoice.save()
         invoice.line_items.all().delete()
@@ -117,22 +101,15 @@ class InvoiceService:
         for item_data in line_items_data:
             if not item_data.get("description"):
                 continue
-                
-            quantity = Decimal(str(item_data.get("quantity", 1)))
-            unit_price = Decimal(str(item_data.get("unit_price", 0)))
-            
-            # Ensure positive values
-            quantity = max(Decimal("0.01"), quantity)
-            unit_price = max(Decimal("0.00"), unit_price)
             
             LineItem.objects.create(
                 invoice=invoice,
                 description=item_data["description"],
-                quantity=quantity,
-                unit_price=unit_price,
+                quantity=Decimal(str(item_data.get("quantity", 1))),
+                unit_price=Decimal(str(item_data.get("unit_price", 0))),
             )
 
-        AnalyticsService.invalidate_user_cache(user_id)
+        AnalyticsService.invalidate_user_cache(invoice.user_id)
         return invoice, invoice_form
 
 

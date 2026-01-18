@@ -325,15 +325,30 @@ class Invoice(models.Model):
 
     @property
     def discount_amount(self) -> Decimal:
+        """Calculates the absolute discount value."""
         return (self.subtotal * Decimal(str(self.discount))) / Decimal("100")
 
     @property
     def tax_amount(self) -> Decimal:
+        """Calculates the tax amount based on subtotal minus discount."""
         return ((self.subtotal - self.discount_amount) * Decimal(str(self.tax_rate))) / Decimal("100")
 
     @property
     def total(self) -> Decimal:
-        return self.subtotal - self.discount_amount + self.tax_amount
+        """Calculates the grand total of the invoice."""
+        return (self.subtotal - self.discount_amount + self.tax_amount).quantize(Decimal("0.01"))
+
+    def mark_as_paid(self) -> None:
+        """Updates the invoice status to PAID and logs the transition."""
+        if self.status != self.Status.PAID:
+            self.status = self.Status.PAID
+            self.save(update_fields=["status", "updated_at"])
+
+    def mark_as_overdue(self) -> None:
+        """Updates the invoice status to OVERDUE."""
+        if self.status == self.Status.UNPAID:
+            self.status = self.Status.OVERDUE
+            self.save(update_fields=["status", "updated_at"])
 
     def __str__(self) -> str:
         return f"{self.invoice_id} - {self.client_name}"
