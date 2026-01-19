@@ -105,6 +105,7 @@ SESSION_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("SESSION_COOKIE_SEC
 CSRF_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("CSRF_COOKIE_SECURE", IS_PRODUCTION)
 
 # HttpOnly always enabled (no JavaScript access to cookies)
+SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
 SECURE_HSTS_SECONDS = 0 if RUNNING_TESTS else env.int("SECURE_HSTS_SECONDS", 31536000 if IS_PRODUCTION else 0)
@@ -239,6 +240,7 @@ USE_ETAGS = False
 # Cache Headers Control
 # In development (DEBUG=True), we disable aggressive caching to allow immediate updates
 # In production, we use 1 year for immutable assets
+WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0
 # Static asset handling optimization
 WHITENOISE_KEEP_ONLY_HASHED_FILES = not DEBUG
 WHITENOISE_MANIFEST_STRICT = not DEBUG
