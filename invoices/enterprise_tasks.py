@@ -143,6 +143,7 @@ class TaskQueue:
         if invoice_id and recipient:
             invoice = Invoice.objects.get(id=invoice_id)
             EmailService.send_invoice(invoice, recipient)
+            task.result = {"status": "sent", "recipient": recipient}
     
     @staticmethod
     def _handle_generate_pdf(task: BackgroundTask):
@@ -152,17 +153,24 @@ class TaskQueue:
         invoice_id = task.data.get("invoice_id")
         if invoice_id:
             invoice = Invoice.objects.get(id=invoice_id)
-            PDFService.generate_pdf_bytes(invoice)
+            pdf_bytes = PDFService.generate_pdf_bytes(invoice)
+            task.result = {"status": "generated", "size": len(pdf_bytes)}
     
     @staticmethod
     def _handle_export_data(task: BackgroundTask):
         """Handle data export task."""
+        import csv
+        import io
         from .models import Invoice
         user_id = task.data.get("user_id")
         if user_id:
             invoices = Invoice.objects.filter(user_id=user_id)
-            # Implementation logic for exporting invoices as CSV/JSON
-            pass
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerow(['Invoice ID', 'Client Name', 'Total', 'Status', 'Date'])
+            for inv in invoices:
+                writer.writerow([inv.invoice_id, inv.client_name, inv.total, inv.status, inv.invoice_date])
+            task.result = {"status": "exported", "row_count": invoices.count(), "data": output.getvalue()[:1000]}
 
 
 class ScheduledTask(models.Model):

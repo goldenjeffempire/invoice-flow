@@ -129,22 +129,10 @@ class EmailService:
 
     @staticmethod
     def send_receipt(payment: Payment) -> bool:
-        from django.template.loader import render_to_string
-        from django.core.mail import EmailMessage
+        from .sendgrid_service import SendGridEmailService
         try:
             recipient = payment.invoice.client_email
-            subject = f"Receipt for Invoice {payment.invoice.invoice_id}"
-            context = {
-                "payment": payment,
-                "invoice": payment.invoice,
-                "base_url": settings.SITE_URL if hasattr(settings, 'SITE_URL') else '',
-            }
-            html_content = render_to_string("invoices/email/receipt.html", context)
-            
-            msg = EmailMessage(subject, html_content, settings.DEFAULT_FROM_EMAIL, [recipient])
-            msg.content_subtype = "html"
-            msg.send()
-            return True
+            return SendGridEmailService().send_invoice_paid(payment.invoice, recipient)
         except Exception as e:
             logger.error(f"Failed to send receipt email: {e}")
             return False
