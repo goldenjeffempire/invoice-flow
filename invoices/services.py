@@ -132,9 +132,10 @@ class EmailService:
         from .sendgrid_service import SendGridEmailService
         try:
             recipient = payment.invoice.client_email
+            # Redact email in logs
             return SendGridEmailService().send_invoice_paid(payment.invoice, recipient)
         except Exception as e:
-            logger.error(f"Failed to send receipt email: {e}")
+            logger.error("Failed to send receipt email")
             return False
 
 

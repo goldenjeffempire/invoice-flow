@@ -524,6 +524,8 @@ def submit_feedback(request):
     page_url = payload.get("page_url")
     if not page_url:
         return JsonResponse({"success": False, "message": "Page URL is required."}, status=400)
+    
+    # Redact PII from user agent if needed, but here we just ensure we don't log it raw if we were logging
     user_agent = request.META.get("HTTP_USER_AGENT", "")
     is_mobile = payload.get("is_mobile")
     if is_mobile is None:
