@@ -213,12 +213,8 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "csp",
-    "tailwind",
-    "theme",
     "invoices.apps.InvoicesConfig",
 ]
-
-TAILWIND_APP_NAME = 'theme'
 
 INTERNAL_IPS = ["127.0.0.1"]
 
