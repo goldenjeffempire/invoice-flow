@@ -14,8 +14,8 @@ class PerformanceMonitoringMiddleware(MiddlewareMixin):
             path = request.path
             status = response.status_code
             
-            # Log slow requests (> 1s) or errors
-            if duration > 1.0 or status >= 400:
+            # Log slow requests (> 2.5s) or errors
+            if duration > 2.5 or status >= 400:
                 logger.warning(f"SLOW_REQ: {request.method} {path} - {status} - {duration:.2f}s")
             else:
                 logger.info(f"REQ: {request.method} {path} - {status} - {duration:.2f}s")

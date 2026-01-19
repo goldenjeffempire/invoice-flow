@@ -502,7 +502,13 @@ def submit_feedback(request):
 
 @login_required
 def dashboard(request):
-    stats = AnalyticsService.get_user_dashboard_stats(request.user)
+    from django.core.cache import cache
+    cache_key = f"dashboard_stats_{request.user.id}"
+    stats = cache.get(cache_key)
+    if not stats:
+        stats = AnalyticsService.get_user_dashboard_stats(request.user)
+        cache.set(cache_key, stats, 300)  # Cache for 5 minutes
+
     recent_invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')[:5]
     
     formatted_stats = {
