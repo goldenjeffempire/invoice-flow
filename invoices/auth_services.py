@@ -274,7 +274,7 @@ class RegistrationService:
                 expires_hours=24,
             )
 
-        logger.info(f"New user registered: {username} ({email})")
+        logger.info(f"New user registered: {username} (email redacted)")
         return user, "", token
 
     @classmethod

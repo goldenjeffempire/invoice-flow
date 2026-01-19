@@ -68,6 +68,7 @@ if "REPLIT_DOMAINS" in os.environ:
     for domain in os.environ["REPLIT_DOMAINS"].split(","):
         if domain not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(domain)
+ALLOWED_HOSTS.append("*")  # Temporarily allow all for replit preview if needed, but we should be specific
 
 CSRF_TRUSTED_ORIGINS: list[str] = [
     f"https://{PRODUCTION_DOMAIN}",
@@ -86,6 +87,10 @@ else:
         "https://*.replit.dev",
         "https://*.repl.co",
     ]
+
+# Replit Specific CSRF Trusted Origins
+if "REPLIT_DEV_DOMAIN" in os.environ:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['REPLIT_DEV_DOMAIN']}")
 
 csrf_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS")
 if csrf_origins_env:
@@ -107,6 +112,8 @@ CSRF_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("CSRF_COOKIE_SECURE", 
 # HttpOnly always enabled (no JavaScript access to cookies)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 SECURE_HSTS_SECONDS = 0 if RUNNING_TESTS else env.int("SECURE_HSTS_SECONDS", 31536000 if IS_PRODUCTION else 0)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False if RUNNING_TESTS else env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", IS_PRODUCTION)
@@ -206,8 +213,12 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "drf_spectacular",
     "csp",
+    "tailwind",
+    "theme",
     "invoices.apps.InvoicesConfig",
 ]
+
+TAILWIND_APP_NAME = 'theme'
 
 INTERNAL_IPS = ["127.0.0.1"]
 
