@@ -181,6 +181,33 @@ pip install -r requirements.txt && npm install && npm run build:css && python ma
 gunicorn invoiceflow.wsgi -b 0.0.0.0:5000 --workers 2
 ```
 
+### Local Development
+
+1. Copy environment file and enable debug:
+```bash
+cp .env.example .env
+```
+2. Set `DEBUG=True`, `SECRET_KEY`, and `ENCRYPTION_SALT`.
+3. Use SQLite by default or set `DATABASE_URL` for PostgreSQL.
+4. Run migrations and start the server:
+```bash
+python manage.py migrate
+python manage.py runserver 0.0.0.0:5000
+```
+
+### Staging
+
+1. Use the same steps as production but with staging domains and credentials.
+2. Required env vars: `SECRET_KEY`, `DATABASE_URL`, `ENCRYPTION_SALT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `REDIS_URL`.
+3. Recommended: `SENTRY_DSN`, `ALLOWED_HOSTS=staging.yourdomain.com`.
+4. Run migrations on each deploy and validate `health/ready` before traffic.
+
+### Production
+
+1. Set `PRODUCTION=true`, `DEBUG=False`, `SESSION_COOKIE_SECURE=True`, `ALLOWED_HOSTS` for your domain.
+2. Configure `REDIS_URL` for shared caching and run `python manage.py migrate`.
+3. Enable autoscaling on Render and monitor `/health/ready/` and `/health/live/` endpoints.
+
 ### Heroku
 
 ```bash
@@ -229,6 +256,14 @@ git push heroku main
 
 - 📖 [.env.example](.env.example) - Configuration reference
 - 🔧 [.pre-commit-config.yaml](.pre-commit-config.yaml) - Code quality tools
+
+---
+
+## 🛠️ Troubleshooting & Known Limitations
+
+**Email receipts:** Receipts are sent through the SendGrid workflow. Ensure `SENDGRID_API_KEY` (or SMTP credentials) are configured and sender authentication is complete, or receipts will be skipped or fail.  
+**Payment verification:** Paystack webhook handling validates signatures and verifies transactions; confirm your Paystack keys and webhook secret are configured.  
+**Testing gaps:** Payment initialization and webhook processing have limited dedicated tests today—add unit tests when extending payment providers or refactoring services.
 
 ---
 

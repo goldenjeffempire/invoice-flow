@@ -141,6 +141,12 @@ class InvoiceService:
         invoice.user = user
         invoice.save()
 
+        try:
+            InvoiceBusinessRules.validate_line_items(line_items_data)
+        except Exception as exc:
+            form.add_error(None, str(exc))
+            return None, form
+
         for item in line_items_data:
             if item.get("description"):
                 LineItem.objects.create(
@@ -174,6 +180,12 @@ class InvoiceService:
 
         invoice_form = InvoiceForm(invoice_data, instance=invoice)
         if not invoice_form.is_valid():
+            return None, invoice_form
+
+        try:
+            InvoiceBusinessRules.validate_line_items(line_items_data)
+        except Exception as exc:
+            invoice_form.add_error(None, str(exc))
             return None, invoice_form
 
         invoice = invoice_form.save()
