@@ -336,7 +336,13 @@ class Invoice(models.Model):
     @property
     def total(self) -> Decimal:
         """Calculates the grand total of the invoice."""
-        total = self.subtotal - self.discount_amount + self.tax_amount
+        # Ensure discount is applied to subtotal before tax calculation
+        # Most tax jurisdictions apply tax after discounts
+        discountable_amount = self.subtotal - self.discount_amount
+        taxable_amount = discountable_amount
+        tax_total = (taxable_amount * Decimal(str(self.tax_rate))) / Decimal("100")
+        
+        total = discountable_amount + tax_total
         return total.quantize(Decimal("0.01"))
 
     @transaction.atomic

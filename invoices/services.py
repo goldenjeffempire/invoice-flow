@@ -30,20 +30,85 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AutomatedReminderService:
-    """Handles automated invoice reminders."""
+class PaymentService:
+    """Centralized service for payment processing and reconciliation."""
 
     @staticmethod
-    def schedule_reminders_for_invoice(invoice: Invoice) -> None:
-        """Schedule reminders using the new ReminderSchedulingService."""
-        from .reminder_service import ReminderSchedulingService
-        ReminderSchedulingService.schedule_reminders_for_invoice(invoice)
+    @transaction.atomic
+    def process_payment(invoice: Invoice, amount: Decimal, reference: str, provider: str = "paystack") -> Tuple[Payment, bool]:
+        """Record a payment and update invoice status if successful."""
+        payment, created = Payment.objects.get_or_create(
+            reference=reference,
+            defaults={
+                "invoice": invoice,
+                "user": invoice.user,
+                "amount": amount,
+                "status": Payment.Status.PENDING,
+            }
+        )
+        
+        # In a real scenario, we'd verify with the provider here
+        # For now, we assume this is called by a webhook or verified process
+        payment.mark_as_success()
+        AnalyticsService.invalidate_user_cache(invoice.user_id)
+        return payment, created
 
     @staticmethod
-    def process_pending_reminders():
-        """Process reminders using the new ReminderSchedulingService."""
-        from .reminder_service import ReminderSchedulingService
-        return ReminderSchedulingService.process_pending_reminders()
+    def handle_webhook(payload: Dict[str, Any], provider: str) -> bool:
+        """Process incoming webhooks with deduplication."""
+        event_id = payload.get("id") or payload.get("event_id")
+        if not event_id:
+            return False
+
+        if ProcessedWebhook.objects.filter(event_id=event_id, provider=provider).exists():
+            logger.info(f"Duplicate webhook received: {provider}:{event_id}")
+            return True
+
+        with transaction.atomic():
+            # Process specific event types
+            event_type = payload.get("event")
+            if event_type == "charge.success":
+                data = payload.get("data", {})
+                reference = data.get("reference")
+                amount = Decimal(str(data.get("amount", 0))) / 100 # Assuming kobo/cents
+                
+                try:
+                    payment = Payment.objects.get(reference=reference)
+                    payment.mark_as_success()
+                except Payment.DoesNotExist:
+                    logger.error(f"Payment not found for reference: {reference}")
+                    return False
+
+            ProcessedWebhook.objects.create(
+                event_id=event_id,
+                provider=provider,
+                event_type=event_type or "unknown",
+                reference=payload.get("data", {}).get("reference", ""),
+            )
+        return True
+
+
+class EmailService:
+    """Standardized email delivery service."""
+    
+    @staticmethod
+    def send_invoice(invoice: Invoice, recipient: str) -> bool:
+        from .sendgrid_service import SendGridEmailService
+        try:
+            return SendGridEmailService().send_invoice(invoice, recipient)
+        except Exception as e:
+            logger.error(f"Failed to send invoice email: {e}")
+            return False
+
+    @staticmethod
+    def send_receipt(payment: Payment) -> bool:
+        from .sendgrid_service import SendGridEmailService
+        try:
+            # Placeholder for actual receipt sending logic
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send receipt email: {e}")
+            return False
 
 
 class InvoiceService:
