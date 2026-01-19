@@ -574,6 +574,23 @@ class NotificationPreferencesForm(forms.ModelForm):
         return instance
 
 
+class PaymentRecipientForm(forms.ModelForm):
+    """Form for setting up payment recipient details (e.g., Paystack subaccounts)."""
+    class Meta:
+        model = PaymentSettings
+        fields = ["account_number", "bank_code", "percentage_charge"]
+        widgets = {
+            "account_number": forms.TextInput(attrs={"class": "input-modern", "placeholder": "0123456789"}),
+            "bank_code": forms.Select(attrs={"class": "input-modern"}),
+            "percentage_charge": forms.NumberInput(attrs={"class": "input-modern", "step": "0.1"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Bank codes would ideally be fetched from Paystack API
+        self.fields["bank_code"].choices = [("", "Select Bank"), ("058", "GTBank"), ("011", "First Bank")]
+
+
 class PasswordChangeForm(forms.Form):
     current_password = forms.CharField(
         widget=forms.PasswordInput(
