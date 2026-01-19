@@ -81,6 +81,10 @@
 - Node.js 18+
 - PostgreSQL (recommended)
 
+**Optional dependencies (install when needed):**
+- `weasyprint` and its system dependencies for PDF generation.
+- `requests` for the Have I Been Pwned password validator.
+
 ### Installation (2 minutes)
 
 ```bash
