@@ -13,6 +13,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import HttpResponse, JsonResponse
+from django.core.cache import cache
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
@@ -166,6 +167,15 @@ def initialize_payment(request):
 def paystack_webhook(request):
     """Handle Paystack webhook with hardened security."""
     service = PaystackService()
+    client_ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", "unknown")).split(",")[0].strip()
+    rate_key = f"paystack_webhook_rate:{client_ip}"
+    rate_limit = getattr(settings, "PAYSTACK_WEBHOOK_RATE_LIMIT", 120)
+    rate_window = getattr(settings, "PAYSTACK_WEBHOOK_RATE_WINDOW", 60)
+    current_count = cache.get(rate_key, 0)
+    if current_count >= rate_limit:
+        logger.warning("Paystack webhook rate limit exceeded for IP: %s", client_ip)
+        return HttpResponse(status=429)
+    cache.set(rate_key, current_count + 1, rate_window)
 
     signature = request.headers.get("X-Paystack-Signature", "")
     payload = request.body

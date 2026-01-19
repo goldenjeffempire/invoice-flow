@@ -2,6 +2,7 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from invoices.models import Invoice, InvoiceTemplate, LineItem
+from invoices.validators import InvoiceBusinessRules
 
 
 class LineItemSerializer(serializers.ModelSerializer):
@@ -107,14 +108,20 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_line_items(self, value):
-        if not value:
-            raise serializers.ValidationError("At least one line item is required.")
+        try:
+            InvoiceBusinessRules.validate_line_items(value)
+        except Exception as exc:
+            raise serializers.ValidationError(str(exc)) from exc
         return value
 
     def validate(self, attrs):
-        if attrs.get("due_date") and attrs.get("invoice_date"):
-            if attrs["due_date"] < attrs["invoice_date"]:
-                raise serializers.ValidationError("Due date must be after invoice date.")
+        try:
+            InvoiceBusinessRules.validate_due_date(
+                attrs.get("invoice_date"),
+                attrs.get("due_date"),
+            )
+        except Exception as exc:
+            raise serializers.ValidationError(str(exc)) from exc
         return attrs
 
     def create(self, validated_data):

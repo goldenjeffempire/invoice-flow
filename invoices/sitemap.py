@@ -19,7 +19,7 @@ class HomeSitemap(Sitemap):
         return ["home"]
 
     def location(self, item: str) -> str:
-        return reverse(item)
+        return reverse(f"invoices:{item}")
 
 
 class CorePagesSitemap(Sitemap):
@@ -32,11 +32,10 @@ class CorePagesSitemap(Sitemap):
         return [
             "features",
             "pricing",
-            "templates",
         ]
 
     def location(self, item: str) -> str:
-        return reverse(item)
+        return reverse(f"invoices:{item}")
 
 
 class CompanyPagesSitemap(Sitemap):
@@ -54,7 +53,7 @@ class CompanyPagesSitemap(Sitemap):
         ]
 
     def location(self, item: str) -> str:
-        return reverse(item)
+        return reverse(f"invoices:{item}")
 
 
 class SupportPagesSitemap(Sitemap):
@@ -67,13 +66,10 @@ class SupportPagesSitemap(Sitemap):
         return [
             "faq",
             "support",
-            "api",
-            "changelog",
-            "status",
         ]
 
     def location(self, item: str) -> str:
-        return reverse(item)
+        return reverse(f"invoices:{item}")
 
 
 class LegalPagesSitemap(Sitemap):
@@ -90,7 +86,7 @@ class LegalPagesSitemap(Sitemap):
         ]
 
     def location(self, item: str) -> str:
-        return reverse(item)
+        return reverse(f"invoices:{item}")
 
 
 sitemaps = {
