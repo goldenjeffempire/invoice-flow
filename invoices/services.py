@@ -123,18 +123,29 @@ class InvoiceService:
 
 
 class PDFService:
-    """Handles PDF generation."""
+    """Handles PDF generation with a unified rendering pipeline."""
 
     @staticmethod
     def generate_pdf_bytes(invoice: Invoice) -> bytes:
-        """Generate PDF bytes for invoice."""
-        html_string = render_to_string("invoices/invoice_pdf.html", {"invoice": invoice})
+        """Generate PDF bytes for invoice using a standardized template."""
+        from django.template.loader import render_to_string
+        from weasyprint import HTML
+        from weasyprint.text.fonts import FontConfiguration
+
+        context = {
+            "invoice": invoice,
+            "base_url": settings.SITE_URL,
+            "branding_color": "#4f46e5",
+        }
+        html_string = render_to_string("invoices/invoice_pdf.html", context)
         font_config = FontConfiguration()
-        html = HTML(string=html_string)
-        result = html.write_pdf(font_config=font_config)
-        if result is None:
-            raise ValueError("Failed to generate PDF")
-        return result
+        html = HTML(string=html_string, base_url=settings.SITE_URL)
+        
+        try:
+            return html.write_pdf(font_config=font_config)
+        except Exception as e:
+            logger.error(f"PDF generation failed for invoice {invoice.invoice_id}: {e}")
+            raise ValueError(f"Failed to generate PDF: {e}")
 
 
 class AnalyticsService:

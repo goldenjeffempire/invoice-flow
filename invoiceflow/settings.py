@@ -196,9 +196,12 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "csp",
-
+    "tailwind",
     "invoices.apps.InvoicesConfig",
 ]
+
+TAILWIND_APP_NAME = "theme"
+INTERNAL_IPS = ["127.0.0.1"]
 
 # =============================================================================
 # MIDDLEWARE

@@ -4,56 +4,51 @@
 {% block title %}Dashboard | InvoiceFlow{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-6 py-12" data-aos="fade-up">
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-12">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8" data-aos="fade-up">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
         <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-500">Overview</p>
-            <h1 class="text-4xl md:text-5xl font-black text-slate-900 mb-2">Financial Hub</h1>
-            <p class="text-slate-500 max-w-xl">Monitor invoice performance, cash flow, and outstanding balances in one clean workspace.</p>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Financial Overview</h1>
+            <p class="text-slate-500 mt-1">Manage your invoices and track your performance.</p>
         </div>
-        <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-            <a href="{% url 'invoices:invoice_create' %}" class="flex-1 lg:flex-none bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-2 shadow-xl shadow-indigo-500/20 hover:scale-105 transition-all">
-                <i data-lucide="plus" class="w-6 h-6"></i> Create Invoice
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <a href="{% url 'invoices:invoice_create' %}" class="flex-1 md:flex-none bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-indigo-700 transition-colors shadow-sm">
+                <i data-lucide="plus" class="w-4 h-4"></i> New Invoice
             </a>
-            <a href="{% url 'invoices:analytics' %}" class="flex-1 lg:flex-none bg-white text-slate-900 px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-2 border border-slate-200 hover:border-indigo-200 hover:text-indigo-600 transition-all">
-                <i data-lucide="line-chart" class="w-6 h-6"></i> View Analytics
+            <a href="{% url 'invoices:analytics' %}" class="flex-1 md:flex-none bg-white text-slate-700 px-5 py-2.5 rounded-lg font-semibold border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-center gap-2">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Reports
             </a>
         </div>
     </div>
 
-    <!-- KPI Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-        <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
-            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
-                <i data-lucide="file-text"></i>
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+        <div class="bg-white p-6 rounded-xl border border-slate-200/60 shadow-sm hover-lift">
+            <p class="text-slate-500 font-medium text-sm">Total Volume</p>
+            <div class="flex items-baseline gap-2 mt-2">
+                <h3 class="text-2xl font-bold text-slate-900">{{ stats.total_invoices }}</h3>
+                <span class="text-xs font-semibold text-indigo-600">Issued</span>
             </div>
-            <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Total Volume</p>
-            <h3 class="text-3xl font-black">{{ stats.total_count }}</h3>
-            <p class="text-xs text-slate-400 mt-2">All invoices created to date.</p>
         </div>
-        <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
-            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
-                <i data-lucide="dollar-sign"></i>
+        <div class="bg-white p-6 rounded-xl border border-slate-200/60 shadow-sm hover-lift">
+            <p class="text-slate-500 font-medium text-sm">Revenue</p>
+            <div class="flex items-baseline gap-2 mt-2">
+                <h3 class="text-2xl font-bold text-slate-900">${{ stats.total_revenue|floatformat:2 }}</h3>
+                <span class="text-xs font-semibold text-emerald-600">Collected</span>
             </div>
-            <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Revenue</p>
-            <h3 class="text-3xl font-black">${{ stats.revenue }}</h3>
-            <p class="text-xs text-slate-400 mt-2">Paid invoices this period.</p>
         </div>
-        <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
-            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
-                <i data-lucide="clock"></i>
+        <div class="bg-white p-6 rounded-xl border border-slate-200/60 shadow-sm hover-lift">
+            <p class="text-slate-500 font-medium text-sm">Unpaid</p>
+            <div class="flex items-baseline gap-2 mt-2">
+                <h3 class="text-2xl font-bold text-slate-900">${{ stats.outstanding_amount|floatformat:2 }}</h3>
+                <span class="text-xs font-semibold text-amber-600">Pending</span>
             </div>
-            <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Outstanding</p>
-            <h3 class="text-3xl font-black">${{ stats.outstanding }}</h3>
-            <p class="text-xs text-slate-400 mt-2">Open invoices awaiting payment.</p>
         </div>
-        <div class="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm hover-lift">
-            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
-                <i data-lucide="alert-triangle"></i>
+        <div class="bg-white p-6 rounded-xl border border-slate-200/60 shadow-sm hover-lift">
+            <p class="text-slate-500 font-medium text-sm">Active Clients</p>
+            <div class="flex items-baseline gap-2 mt-2">
+                <h3 class="text-2xl font-bold text-slate-900">{{ stats.unique_clients }}</h3>
+                <span class="text-xs font-semibold text-slate-500">Partners</span>
             </div>
-            <p class="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">Overdue</p>
-            <h3 class="text-3xl font-black">${{ stats.overdue }}</h3>
-            <p class="text-xs text-slate-400 mt-2">Past due invoices to chase.</p>
         </div>
     </div>
 
