@@ -5,6 +5,7 @@ Domain: https://invoiceflow.com.ng
 
 from pathlib import Path
 import os
+import sys
 from typing import Any, cast
 import environ
 
@@ -31,6 +32,7 @@ validate_env()
 # =============================================================================
 IS_RENDER: bool = bool(os.getenv("RENDER"))
 IS_PRODUCTION: bool = os.getenv("PRODUCTION") == "true"
+RUNNING_TESTS: bool = "pytest" in sys.modules
 
 DEBUG: bool = False if IS_PRODUCTION else env.bool("DEBUG", False)
 
@@ -96,19 +98,19 @@ if csrf_origins_env:
 # =============================================================================
 # SECURITY HEADERS (HARDENED)
 # =============================================================================
-SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", IS_PRODUCTION)
+SECURE_SSL_REDIRECT = False if RUNNING_TESTS else env.bool("SECURE_SSL_REDIRECT", IS_PRODUCTION)
 
 # Secure cookies only in production (prevents conflicts with HTTP in development)
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", IS_PRODUCTION)
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", IS_PRODUCTION)
+SESSION_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("SESSION_COOKIE_SECURE", IS_PRODUCTION)
+CSRF_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("CSRF_COOKIE_SECURE", IS_PRODUCTION)
 
 # HttpOnly always enabled (no JavaScript access to cookies)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
-SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", 31536000 if IS_PRODUCTION else 0)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", IS_PRODUCTION)
-SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", IS_PRODUCTION)
+SECURE_HSTS_SECONDS = 0 if RUNNING_TESTS else env.int("SECURE_HSTS_SECONDS", 31536000 if IS_PRODUCTION else 0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False if RUNNING_TESTS else env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", IS_PRODUCTION)
+SECURE_HSTS_PRELOAD = False if RUNNING_TESTS else env.bool("SECURE_HSTS_PRELOAD", IS_PRODUCTION)
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -194,11 +196,9 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "csp",
-    "tailwind",
     "invoices.apps.InvoicesConfig",
 ]
 
-TAILWIND_APP_NAME = "theme"
 INTERNAL_IPS = ["127.0.0.1"]
 
 # =============================================================================

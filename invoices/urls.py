@@ -7,6 +7,17 @@ app_name = "invoices"
 
 urlpatterns = [
     path("", views.home, name="home"),
+    path("features/", views.features_view, name="features"),
+    path("pricing/", views.pricing_view, name="pricing"),
+    path("about/", views.about_view, name="about"),
+    path("contact/", views.contact_view, name="contact"),
+    path("terms/", views.terms_view, name="terms"),
+    path("privacy/", views.privacy_view, name="privacy"),
+    path("security/", views.security_view, name="security"),
+    path("faq/", views.faq_view, name="faq"),
+    path("support/", views.support_view, name="support"),
+    path("careers/", views.careers_view, name="careers"),
+    path("blog/", views.blog_view, name="blog"),
     path("login/", views.login_view, name="login"),
     path("signup/", views.signup, name="signup"),
     path("logout/", views.logout_view, name="logout"),
@@ -31,17 +42,11 @@ urlpatterns = [
     path("payments/history/", views.payment_history, name="payment_history"),
     path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
 
-    path("invoices/create/", views.invoice_create, name="invoices_create_legacy"),
-    path("invoices/<str:invoice_id>/", views.invoice_detail, name="invoice_detail_legacy"),
-    
     path("dashboard/", views.dashboard, name="dashboard"),
     path("analytics/", views.analytics, name="analytics"),
     path("create/", views.invoice_create, name="invoice_create"),
     path("list/", views.invoices_list, name="invoices_list"),
-    path("<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
-    path("<str:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
-    path("<str:invoice_id>/delete/", views.invoice_delete, name="invoice_delete_legacy"),
-    path("<str:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf_legacy"),
+    path("invoice/<str:invoice_id>/", views.invoice_detail, name="invoice_detail_by_pk"),
     
     path("settings/", views.settings_page, name="settings"),
     path("settings/profile/", views.profile_update_ajax, name="settings_profile_update"),
@@ -65,7 +70,6 @@ urlpatterns = [
     path("mfa/verify/", views.mfa_verify, name="mfa_verify"),
     path("mfa/disable/", views.mfa_disable, name="mfa_disable"),
     path("mfa/backup-codes/", views.mfa_backup_codes, name="mfa_backup_codes"),
-    path("pricing/", views.pricing_view, name="pricing"),
     
     path("api/engagement/record/", views.record_engagement, name="record_engagement"),
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),
@@ -81,4 +85,11 @@ urlpatterns = [
     path("pay/<str:invoice_id>/", paystack_views.public_invoice_view, name="public_invoice"),
     path("pay/<str:invoice_id>/init/", paystack_views.public_initiate_payment, name="public_initiate_payment"),
     path("pay/<str:invoice_id>/callback/", paystack_views.public_payment_callback, name="public_payment_callback"),
+
+    path("invoices/create/", views.invoice_create, name="invoices_create_legacy"),
+    path("invoices/<str:invoice_id>/", views.invoice_detail, name="invoice_detail_legacy"),
+    path("<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
+    path("<str:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
+    path("<str:invoice_id>/delete/", views.invoice_delete, name="invoice_delete_legacy"),
+    path("<str:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf_legacy"),
 ]
