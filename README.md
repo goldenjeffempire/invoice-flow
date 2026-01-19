@@ -218,7 +218,6 @@ git push heroku main
 - `ENCRYPTION_SALT`
 - `EMAIL_HOST_USER`
 - `EMAIL_HOST_PASSWORD`
-- `REDIS_URL`
 
 **Production (recommended):**
 - `SENTRY_DSN`
