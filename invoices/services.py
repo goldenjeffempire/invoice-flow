@@ -67,7 +67,17 @@ class PaymentService:
             if not raw_payload or not signature:
                 logger.warning("Missing Paystack webhook signature or payload.")
                 return False
-            if not PaystackService().verify_webhook_signature(raw_payload, signature):
+            
+            # HMAC signature verification
+            import hmac
+            import hashlib
+            secret = getattr(settings, "PAYSTACK_SECRET_KEY", "")
+            if not secret:
+                logger.error("PAYSTACK_SECRET_KEY not configured")
+                return False
+                
+            hash_obj = hmac.new(secret.encode('utf-8'), raw_payload, hashlib.sha512)
+            if not hmac.compare_digest(hash_obj.hexdigest(), signature):
                 logger.warning("Invalid Paystack webhook signature.")
                 return False
 

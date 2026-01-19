@@ -136,21 +136,33 @@ class TaskQueue:
     @staticmethod
     def _handle_send_email(task: BackgroundTask):
         """Handle email sending task."""
-        from .sendgrid_service import SendGridEmailService
-        service = SendGridEmailService()
-        # Implementation would send email with task.data parameters
+        from .services import EmailService
+        from .models import Invoice
+        invoice_id = task.data.get("invoice_id")
+        recipient = task.data.get("recipient")
+        if invoice_id and recipient:
+            invoice = Invoice.objects.get(id=invoice_id)
+            EmailService.send_invoice(invoice, recipient)
     
     @staticmethod
     def _handle_generate_pdf(task: BackgroundTask):
         """Handle PDF generation task."""
         from .services import PDFService
-        # Implementation would generate PDF with task.data parameters
+        from .models import Invoice
+        invoice_id = task.data.get("invoice_id")
+        if invoice_id:
+            invoice = Invoice.objects.get(id=invoice_id)
+            PDFService.generate_pdf_bytes(invoice)
     
     @staticmethod
     def _handle_export_data(task: BackgroundTask):
         """Handle data export task."""
-        # Implementation would export data with task.data parameters
-        pass
+        from .models import Invoice
+        user_id = task.data.get("user_id")
+        if user_id:
+            invoices = Invoice.objects.filter(user_id=user_id)
+            # Implementation logic for exporting invoices as CSV/JSON
+            pass
 
 
 class ScheduledTask(models.Model):
