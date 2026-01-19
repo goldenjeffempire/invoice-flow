@@ -69,10 +69,13 @@ gunicorn --bind 0.0.0.0:5000 invoiceflow.wsgi:application
 ```
 
 ## Recent Changes
-- 2026-01-18: Initial Replit setup
-  - Configured PostgreSQL database
-  - Installed Python 3.11 and dependencies
-  - Added Replit domain to CSRF_TRUSTED_ORIGINS
-  - Fixed missing PaymentReconciliation import in paystack_service.py
-  - Ran all database migrations
+- 2026-01-19: Cleanup and production readiness
+  - Fixed Python version mismatch issues (linked dependencies to Python 3.12)
+  - Deduplicated and cleaned up requirements.txt
+  - Audited settings.py: removed duplicates, improved environment variable handling
+  - Hardened security: implemented HMAC signature verification for Paystack webhooks
+  - Implemented stubbed background tasks in enterprise_tasks.py
+  - Fleshed out placeholder forms (PaymentRecipientForm)
+  - Improved analytics cache invalidation logic
+  - Applied all pending database migrations
   - Set up development workflow on port 5000

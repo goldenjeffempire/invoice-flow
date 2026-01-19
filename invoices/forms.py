@@ -44,7 +44,7 @@ class BaseLineItemFormSet(forms.BaseInlineFormSet):
         super().clean()
         has_item = False
         for form in self.forms:
-            if self.can_delete and self._should_delete_form(form):
+            if self._should_delete_form(form):
                 continue
             if not form.cleaned_data:
                 continue
@@ -577,18 +577,17 @@ class NotificationPreferencesForm(forms.ModelForm):
 class PaymentRecipientForm(forms.ModelForm):
     """Form for setting up payment recipient details (e.g., Paystack subaccounts)."""
     class Meta:
-        model = PaymentSettings
-        fields = ["account_number", "bank_code", "percentage_charge"]
+        model = UserProfile
+        fields = ["paystack_subaccount_code", "paystack_enabled"]
         widgets = {
-            "account_number": forms.TextInput(attrs={"class": "input-modern", "placeholder": "0123456789"}),
-            "bank_code": forms.Select(attrs={"class": "input-modern"}),
-            "percentage_charge": forms.NumberInput(attrs={"class": "input-modern", "step": "0.1"}),
+            "paystack_subaccount_code": forms.TextInput(attrs={"class": "form-input", "placeholder": "ACCT_..."}),
+            "paystack_enabled": forms.CheckboxInput(attrs={"class": "form-checkbox"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Bank codes would ideally be fetched from Paystack API
-        self.fields["bank_code"].choices = [("", "Select Bank"), ("058", "GTBank"), ("011", "First Bank")]
+        self.fields["paystack_subaccount_code"].label = "Paystack Subaccount Code"
+        self.fields["paystack_enabled"].label = "Enable Paystack"
 
 
 class PasswordChangeForm(forms.Form):

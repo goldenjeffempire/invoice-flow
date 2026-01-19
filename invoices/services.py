@@ -24,6 +24,8 @@ from weasyprint.text.fonts import FontConfiguration
 from .models import Invoice, LineItem, Payment, ProcessedWebhook, UserProfile
 from .paystack_service import PaystackService
 
+from .validators import InvoiceBusinessRules
+
 if TYPE_CHECKING:
     from .forms import InvoiceForm
     from django.db.models.query import QuerySet
@@ -127,7 +129,6 @@ class EmailService:
 
     @staticmethod
     def send_receipt(payment: Payment) -> bool:
-        from .sendgrid_service import SendGridEmailService
         from django.template.loader import render_to_string
         from django.core.mail import EmailMessage
         try:
@@ -140,14 +141,10 @@ class EmailService:
             }
             html_content = render_to_string("invoices/email/receipt.html", context)
             
-            # Use SendGrid if configured, otherwise fallback to Django core mail
-            try:
-                return SendGridEmailService().send_invoice_paid(payment.invoice, recipient)
-            except Exception:
-                msg = EmailMessage(subject, html_content, settings.DEFAULT_FROM_EMAIL, [recipient])
-                msg.content_subtype = "html"
-                msg.send()
-                return True
+            msg = EmailMessage(subject, html_content, settings.DEFAULT_FROM_EMAIL, [recipient])
+            msg.content_subtype = "html"
+            msg.send()
+            return True
         except Exception as e:
             logger.error(f"Failed to send receipt email: {e}")
             return False

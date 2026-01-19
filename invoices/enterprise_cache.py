@@ -47,9 +47,23 @@ class CacheHelper:
     @staticmethod
     def invalidate_pattern(pattern: str) -> None:
         """Invalidate cache keys matching pattern."""
-        # Note: Django cache doesn't support pattern deletion
-        # This would need custom cache backend for production
-        pass
+        from django.core.cache import caches
+        try:
+            # Try to get analytics cache, fallback to default
+            try:
+                cache_backend = caches["analytics"]
+            except Exception:
+                from django.core.cache import cache as cache_backend
+            
+            if hasattr(cache_backend, "delete_pattern"):
+                cache_backend.delete_pattern(pattern)
+            elif hasattr(cache_backend, "_cache"):
+                # Fallback for locmem
+                keys_to_delete = [k for k in cache_backend._cache.keys() if pattern in k]
+                for k in keys_to_delete:
+                    cache_backend.delete(k)
+        except Exception:
+            pass
 
 
 class UserCacheManager:

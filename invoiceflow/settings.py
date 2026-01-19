@@ -30,7 +30,7 @@ IS_RENDER: bool = bool(os.getenv("RENDER"))
 IS_PRODUCTION: bool = os.getenv("PRODUCTION") == "true"
 RUNNING_TESTS: bool = "pytest" in sys.modules
 
-DEBUG: bool = False if IS_PRODUCTION else env.bool("DEBUG", False)
+DEBUG: bool = env.bool("DEBUG", False) if not IS_PRODUCTION else False
 
 # =============================================================================
 # DOMAIN
