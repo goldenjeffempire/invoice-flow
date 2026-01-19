@@ -245,13 +245,10 @@ git push heroku main
 - `ENCRYPTION_SALT`
 - `EMAIL_HOST_USER`
 - `EMAIL_HOST_PASSWORD`
-- `REDIS_URL`
 
 **Production (recommended):**
 - `SENTRY_DSN`
 - `ALLOWED_HOSTS` (never use `*` in production-like environments)
-- Store secrets in a managed secrets service (AWS/GCP/Azure/Render) and rotate `SECRET_KEY`/`ENCRYPTION_SALT` regularly.
-- Tune cache and rate-limit settings with `CACHE_TIMEOUT_*`, `RATE_LIMIT_*`, and `PAYSTACK_WEBHOOK_RATE_*` as needed.
 
 ---
 
