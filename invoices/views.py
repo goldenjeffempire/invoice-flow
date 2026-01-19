@@ -35,6 +35,7 @@ from .forms import (
     ReminderRuleForm,
 )
 from .sendgrid_service import SendGridEmailService
+from .services import AnalyticsService
 
 def _parse_request_payload(request) -> dict:
     if request.content_type and "application/json" in request.content_type:
@@ -233,6 +234,43 @@ def password_reset_confirm(request, token: str):
 
 def pricing_view(request):
     return render(request, "pages/pricing.html")
+
+def _render_public_page(request, template_name="pages/home-light.html"):
+    return render(request, template_name)
+
+def features_view(request):
+    return _render_public_page(request)
+
+def about_view(request):
+    return _render_public_page(request)
+
+def contact_view(request):
+    return _render_public_page(request)
+
+def terms_view(request):
+    return _render_public_page(request)
+
+def privacy_view(request):
+    return _render_public_page(request)
+
+def security_view(request):
+    return _render_public_page(request)
+
+def faq_view(request):
+    return _render_public_page(request)
+
+def support_view(request):
+    return _render_public_page(request)
+
+def careers_view(request):
+    return _render_public_page(request)
+
+def blog_view(request):
+    return _render_public_page(request)
+
+def robots_txt(request):
+    content = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
+    return HttpResponse(content, content_type="text/plain")
 
 def waitlist_subscribe(request):
     return redirect('invoices:home')
@@ -575,7 +613,12 @@ def invoice_create(request):
 
 @login_required
 def invoice_detail(request, invoice_id):
-    invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
+    lookup: dict[str, object]
+    if str(invoice_id).isdigit():
+        lookup = {"pk": invoice_id}
+    else:
+        lookup = {"invoice_id": invoice_id}
+    invoice = get_object_or_404(Invoice, user=request.user, **lookup)
     if request.method == "POST":
         new_status = request.POST.get('status')
         if new_status in dict(Invoice.Status.choices):
@@ -752,7 +795,6 @@ except ImportError:
     SendGridAPIClient = None
     Mail = None
 
-@require_POST
 def logout_view(request):
     AuthenticationService.logout_user(request)
     return redirect("invoices:home")
