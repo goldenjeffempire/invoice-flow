@@ -304,6 +304,8 @@ class Invoice(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        if not self.business_email and getattr(self, "user", None):
+            self.business_email = self.user.email or ""
         self.full_clean()
         if not self.invoice_id:
             self.invoice_id = self._generate_invoice_id()
@@ -434,6 +436,7 @@ class Payment(models.Model):
         FAILED = "failed", "Failed"
         REFUNDED = "refunded", "Refunded"
 
+    id = models.BigAutoField(primary_key=True)
     invoice = models.ForeignKey(
         Invoice, on_delete=models.CASCADE, related_name="payments"
     )
@@ -446,6 +449,7 @@ class Payment(models.Model):
     reference = models.CharField(max_length=255, unique=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3, default="NGN")
+    customer_email = models.EmailField(blank=True)
 
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING

@@ -25,10 +25,10 @@ def staff_required(view_func):
     def wrapper(request, *args, **kwargs):
         if not request.user.is_authenticated:
             messages.error(request, "Please log in.")
-            return redirect("login")
+            return redirect("invoices:login")
         if not (request.user.is_active and request.user.is_staff):
             messages.error(request, "Admin access required.")
-            return redirect("home")
+            return redirect("invoices:home")
         return view_func(request, *args, **kwargs)
     return wrapper
 
@@ -117,7 +117,7 @@ def admin_users(request):
 @require_GET
 def admin_payments(request):
     """Monitor payment transactions and gateway activity."""
-    payments = Payment.objects.select_related("invoice", "user").order_by("-created_at")[:100]
+    payments = Payment.objects.select_related("invoice", "user").order_by("-created_at")
     
     status_filter = request.GET.get("status", "")
     if status_filter:
@@ -132,7 +132,7 @@ def admin_payments(request):
     }
     
     context = {
-        "payments": payments,
+        "payments": payments[:100],
         "stats": stats,
         "status_filter": status_filter,
     }
@@ -143,7 +143,7 @@ def admin_payments(request):
 @require_GET
 def admin_invoices(request):
     """Monitor invoices across all users."""
-    invoices = Invoice.objects.select_related("user").prefetch_related("line_items").order_by("-created_at")[:100]
+    invoices = Invoice.objects.select_related("user").prefetch_related("line_items").order_by("-created_at")
     
     status_filter = request.GET.get("status", "")
     if status_filter:
@@ -157,7 +157,7 @@ def admin_invoices(request):
     }
     
     context = {
-        "invoices": invoices,
+        "invoices": invoices[:100],
         "stats": stats,
         "status_filter": status_filter,
     }
@@ -196,7 +196,7 @@ def update_contact_status(request, submission_id):
     submission = get_object_or_404(ContactSubmission, id=submission_id)
     new_status = request.POST.get("status", "new")
     
-    if new_status in dict(ContactSubmission.STATUS_CHOICES):
+    if new_status in dict(ContactSubmission.Status.choices):
         submission.status = new_status
         submission.save()
         messages.success(request, f"Contact status updated to {submission.get_status_display()}.")
