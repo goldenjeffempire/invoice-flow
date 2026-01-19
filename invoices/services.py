@@ -22,7 +22,6 @@ from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
 
 from .models import Invoice, LineItem, Payment, ProcessedWebhook, UserProfile
-from .validators import InvoiceBusinessRules
 from .paystack_service import PaystackService
 
 if TYPE_CHECKING:

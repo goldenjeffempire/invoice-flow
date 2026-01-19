@@ -245,13 +245,10 @@ git push heroku main
 - `ENCRYPTION_SALT`
 - `EMAIL_HOST_USER`
 - `EMAIL_HOST_PASSWORD`
-- `REDIS_URL`
 
 **Production (recommended):**
 - `SENTRY_DSN`
 - `ALLOWED_HOSTS` (never use `*` in production-like environments)
-- Store secrets in a managed secrets service (AWS/GCP/Azure/Render) and rotate `SECRET_KEY`/`ENCRYPTION_SALT` regularly.
-- Tune cache and rate-limit settings with `CACHE_TIMEOUT_*`, `RATE_LIMIT_*`, and `PAYSTACK_WEBHOOK_RATE_*` as needed.
 
 ---
 
@@ -260,6 +257,14 @@ git push heroku main
 - 📖 [.env.example](.env.example) - Configuration reference
 - 🔧 [.pre-commit-config.yaml](.pre-commit-config.yaml) - Code quality tools
 - 🧭 [REFRACTOR_PLAN.md](docs/REFRACTOR_PLAN.md) - Architecture and refactor milestones
+
+---
+
+## 🛠️ Troubleshooting & Known Limitations
+
+**Email receipts:** Receipts are sent through the SendGrid workflow. Ensure `SENDGRID_API_KEY` (or SMTP credentials) are configured and sender authentication is complete, or receipts will be skipped or fail.  
+**Payment verification:** Paystack webhook handling validates signatures and verifies transactions; confirm your Paystack keys and webhook secret are configured.  
+**Testing gaps:** Payment initialization and webhook processing have limited dedicated tests today—add unit tests when extending payment providers or refactoring services.
 
 ---
 
