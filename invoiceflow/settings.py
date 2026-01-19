@@ -5,6 +5,7 @@ Domain: https://invoiceflow.com.ng
 
 from pathlib import Path
 import os
+import sys
 from typing import Any, cast
 import environ
 
@@ -31,6 +32,7 @@ validate_env()
 # =============================================================================
 IS_RENDER: bool = bool(os.getenv("RENDER"))
 IS_PRODUCTION: bool = os.getenv("PRODUCTION") == "true"
+RUNNING_TESTS: bool = "pytest" in sys.modules
 
 DEBUG: bool = False if IS_PRODUCTION else env.bool("DEBUG", False)
 
@@ -56,7 +58,11 @@ if IS_PRODUCTION:
 # =============================================================================
 # ALLOWED HOSTS / CSRF
 # =============================================================================
-_default_hosts: list[str] = ["*", "127.0.0.1", "localhost", "0.0.0.0", ".replit.dev"]
+_default_hosts: list[str]
+if IS_PRODUCTION:
+    _default_hosts = [PRODUCTION_DOMAIN, f"www.{PRODUCTION_DOMAIN}"]
+else:
+    _default_hosts = ["127.0.0.1", "localhost", "0.0.0.0", ".replit.dev"]
 ALLOWED_HOSTS: list[str] = env.list("ALLOWED_HOSTS", default=_default_hosts)  # type: ignore[arg-type]
 
 # Ensure we support both the internal and external Replit domain formats
@@ -96,19 +102,19 @@ if csrf_origins_env:
 # =============================================================================
 # SECURITY HEADERS (HARDENED)
 # =============================================================================
-SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", IS_PRODUCTION)
+SECURE_SSL_REDIRECT = False if RUNNING_TESTS else env.bool("SECURE_SSL_REDIRECT", IS_PRODUCTION)
 
 # Secure cookies only in production (prevents conflicts with HTTP in development)
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", IS_PRODUCTION)
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", IS_PRODUCTION)
+SESSION_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("SESSION_COOKIE_SECURE", IS_PRODUCTION)
+CSRF_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("CSRF_COOKIE_SECURE", IS_PRODUCTION)
 
 # HttpOnly always enabled (no JavaScript access to cookies)
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
-SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", 31536000 if IS_PRODUCTION else 0)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", IS_PRODUCTION)
-SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", IS_PRODUCTION)
+SECURE_HSTS_SECONDS = 0 if RUNNING_TESTS else env.int("SECURE_HSTS_SECONDS", 31536000 if IS_PRODUCTION else 0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False if RUNNING_TESTS else env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", IS_PRODUCTION)
+SECURE_HSTS_PRELOAD = False if RUNNING_TESTS else env.bool("SECURE_HSTS_PRELOAD", IS_PRODUCTION)
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -145,6 +151,8 @@ PERMISSIONS_POLICY = {
 # CACHING (Optimized for Production)
 # =============================================================================
 _redis_url = env.str("REDIS_URL", "")
+if IS_PRODUCTION and not _redis_url:
+    raise RuntimeError("REDIS_URL must be set in production for shared caching.")
 if _redis_url:
     CACHES = {
         "default": {
@@ -192,13 +200,12 @@ INSTALLED_APPS = [
     "django.contrib.sitemaps",
 
     "rest_framework",
+    "rest_framework.authtoken",
     "drf_spectacular",
     "csp",
-    "tailwind",
     "invoices.apps.InvoicesConfig",
 ]
 
-TAILWIND_APP_NAME = "theme"
 INTERNAL_IPS = ["127.0.0.1"]
 
 # =============================================================================
@@ -233,45 +240,6 @@ SILENCED_SYSTEM_CHECKS = ["models.W001", "models.W036", "models.W035"]
 
 # Disable ETag generation to prevent 304 issues during development and ensure consistent production behavior
 USE_ETAGS = False
-
-# Logging Configuration
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "INFO",
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "invoiceflow": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-        "django.utils.autoreload": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-    },
-}
 
 # Cache Headers Control
 # In development (DEBUG=True), we disable aggressive caching to allow immediate updates
@@ -336,10 +304,17 @@ MFA_ISSUER_NAME = env.str("MFA_ISSUER_NAME", "InvoiceFlow")
 MFA_RECOVERY_CODES_COUNT = env.int("MFA_RECOVERY_CODES_COUNT", 10)
 
 # =============================================================================
+# RATE LIMITING
+# =============================================================================
+RATE_LIMIT_REQUESTS = env.int("RATE_LIMIT_REQUESTS", 120)
+RATE_LIMIT_WINDOW = env.int("RATE_LIMIT_WINDOW", 60)
+PAYSTACK_WEBHOOK_RATE_LIMIT = env.int("PAYSTACK_WEBHOOK_RATE_LIMIT", 120)
+PAYSTACK_WEBHOOK_RATE_WINDOW = env.int("PAYSTACK_WEBHOOK_RATE_WINDOW", 60)
+
+# =============================================================================
 # SESSION SECURITY
 # =============================================================================
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Strict"
 SESSION_COOKIE_NAME = "invoiceflow_session"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
@@ -359,9 +334,6 @@ WHITENOISE_AUTOREFRESH = DEBUG
 WHITENOISE_IMMUTABLE_FILE_SUPPORT = not DEBUG
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Cache Headers Control
-WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0 # 1 year in production
-
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -373,9 +345,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_FILTER_BACKENDS": [
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
@@ -441,6 +418,14 @@ os.makedirs(BASE_DIR / "logs", exist_ok=True)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "request_context": {
+            "()": "invoiceflow.logging_config.RequestContextFilter",
+        },
+        "pii_scrubber": {
+            "()": "invoiceflow.logging_config.PiiScrubberFilter",
+        },
+    },
     "formatters": {
         "verbose": {
             "format": "[{asctime}] {levelname} {name} {message}",
@@ -454,6 +439,7 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "json" if IS_PRODUCTION else "verbose",
+            "filters": ["request_context", "pii_scrubber"],
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
@@ -461,6 +447,7 @@ LOGGING = {
             "maxBytes": 1024 * 1024 * 10,
             "backupCount": 5,
             "formatter": "json",
+            "filters": ["request_context", "pii_scrubber"],
         },
     },
     "root": {

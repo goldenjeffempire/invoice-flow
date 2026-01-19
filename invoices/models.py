@@ -11,7 +11,12 @@ from django.db import models, transaction
 from django.utils import timezone
 from django.apps import apps
 
-from .validators import InvoiceBusinessRules, validate_positive_decimal, validate_tax_rate
+from .validators import (
+    InvoiceBusinessRules,
+    validate_payment_reference,
+    validate_positive_decimal,
+    validate_tax_rate,
+)
 
 
 # ============================================================================
@@ -304,6 +309,8 @@ class Invoice(models.Model):
             raise ValidationError(errors)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        if not self.business_email and getattr(self, "user", None):
+            self.business_email = self.user.email or ""
         self.full_clean()
         if not self.invoice_id:
             self.invoice_id = self._generate_invoice_id()
@@ -434,6 +441,7 @@ class Payment(models.Model):
         FAILED = "failed", "Failed"
         REFUNDED = "refunded", "Refunded"
 
+    id = models.BigAutoField(primary_key=True)
     invoice = models.ForeignKey(
         Invoice, on_delete=models.CASCADE, related_name="payments"
     )
@@ -446,6 +454,7 @@ class Payment(models.Model):
     reference = models.CharField(max_length=255, unique=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=3, default="NGN")
+    customer_email = models.EmailField(blank=True)
 
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING
@@ -461,6 +470,25 @@ class Payment(models.Model):
             models.Index(fields=["reference"]),
             models.Index(fields=["status", "-created_at"]),
         ]
+
+    def clean(self) -> None:
+        errors = {}
+        try:
+            validate_payment_reference(self.reference)
+        except ValidationError as exc:
+            errors["reference"] = exc.messages
+
+        try:
+            validate_positive_decimal(self.amount)
+        except ValidationError as exc:
+            errors["amount"] = exc.messages
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     @property
     def is_successful(self) -> bool:

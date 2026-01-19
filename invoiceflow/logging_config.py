@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 import threading
 import traceback
 from datetime import datetime, timezone
@@ -33,6 +34,38 @@ def get_request_context() -> dict[str, Any]:
         "user_id": getattr(_request_context, "user_id", None),
         "ip_address": getattr(_request_context, "ip_address", None),
     }
+
+
+def _scrub_value(value: Any) -> Any:
+    if isinstance(value, str):
+        scrubbed = value
+        scrubbed = re.sub(r"([A-Za-z0-9._%+-]+)@([A-Za-z0-9.-]+)", "***@***", scrubbed)
+        scrubbed = re.sub(r"\bINV-[A-F0-9]{8}\b", "INV-********", scrubbed)
+        scrubbed = re.sub(r"\bref_[A-Za-z0-9]+\b", "ref_********", scrubbed)
+        return scrubbed
+    if isinstance(value, list):
+        return [_scrub_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _scrub_value(val) for key, val in value.items()}
+    return value
+
+
+class PiiScrubberFilter(logging.Filter):
+    """Scrub sensitive values from log records."""
+
+    sensitive_keys = {"email", "client_email", "business_email", "reference", "invoice_id", "name"}
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if isinstance(record.msg, str):
+            record.msg = _scrub_value(record.msg)
+        if record.args:
+            record.args = tuple(_scrub_value(arg) for arg in record.args)
+        for key, value in list(record.__dict__.items()):
+            if key in self.sensitive_keys:
+                record.__dict__[key] = "***"
+            elif key == "extra" and isinstance(value, dict):
+                record.__dict__[key] = _scrub_value(value)
+        return True
 
 
 class JsonFormatter(logging.Formatter):

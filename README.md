@@ -81,6 +81,10 @@
 - Node.js 18+
 - PostgreSQL (recommended)
 
+**Optional dependencies (install when needed):**
+- `weasyprint` and its system dependencies for PDF generation.
+- `requests` for the Have I Been Pwned password validator.
+
 ### Installation (2 minutes)
 
 ```bash
@@ -164,6 +168,8 @@ pre-commit run --all-files  # Code quality checks
    - `DATABASE_URL=<postgres-connection>`
    - `ENCRYPTION_SALT=<generated-salt>`
    - `SENTRY_DSN=<sentry-url>`
+   - `ALLOWED_HOSTS=invoiceflow.com.ng,www.invoiceflow.com.ng`
+   - `SESSION_COOKIE_SECURE=True`
 
 3. Build command:
 ```bash
@@ -199,6 +205,26 @@ git push heroku main
 - [ ] Test recurring invoice generation
 - [ ] Configure backup strategy
 
+### Environment Variables
+
+**Development (minimum):**
+- `SECRET_KEY`
+- `ENCRYPTION_SALT`
+- `DEBUG=True`
+
+**Production (required):**
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `ENCRYPTION_SALT`
+- `EMAIL_HOST_USER`
+- `EMAIL_HOST_PASSWORD`
+- `REDIS_URL`
+
+**Production (recommended):**
+- `SENTRY_DSN`
+- `ALLOWED_HOSTS` (never use `*` in production-like environments)
+- Store secrets in a managed secrets service (AWS/GCP/Azure/Render) and rotate `SECRET_KEY`/`ENCRYPTION_SALT` regularly.
+
 ---
 
 ## 📚 Documentation
@@ -218,6 +244,7 @@ git push heroku main
 | **API Security** | Rate limiting, SQL injection prevention, XSS protection |
 | **Headers** | CSP, HSTS, X-Frame-Options, X-XSS-Protection |
 | **Monitoring** | Sentry error tracking, debug logging |
+| **MFA Coverage** | MFA enforcement applies to authenticated API and web requests when enabled |
 
 ---
 
