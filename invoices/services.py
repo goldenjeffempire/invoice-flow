@@ -131,15 +131,16 @@ class PDFService:
         from django.template.loader import render_to_string
         from weasyprint import HTML
         from weasyprint.text.fonts import FontConfiguration
+        from django.conf import settings
 
         context = {
             "invoice": invoice,
-            "base_url": settings.SITE_URL,
+            "base_url": settings.SITE_URL if hasattr(settings, 'SITE_URL') else '',
             "branding_color": "#4f46e5",
         }
         html_string = render_to_string("invoices/invoice_pdf.html", context)
         font_config = FontConfiguration()
-        html = HTML(string=html_string, base_url=settings.SITE_URL)
+        html = HTML(string=html_string, base_url=settings.SITE_URL if hasattr(settings, 'SITE_URL') else '')
         
         try:
             return html.write_pdf(font_config=font_config)
