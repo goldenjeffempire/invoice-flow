@@ -242,6 +242,7 @@ git push heroku main
 | **API Security** | Rate limiting, SQL injection prevention, XSS protection |
 | **Headers** | CSP, HSTS, X-Frame-Options, X-XSS-Protection |
 | **Monitoring** | Sentry error tracking, debug logging |
+| **MFA Coverage** | MFA enforcement applies to authenticated API and web requests when enabled |
 
 ---
 

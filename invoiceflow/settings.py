@@ -304,6 +304,14 @@ MFA_ISSUER_NAME = env.str("MFA_ISSUER_NAME", "InvoiceFlow")
 MFA_RECOVERY_CODES_COUNT = env.int("MFA_RECOVERY_CODES_COUNT", 10)
 
 # =============================================================================
+# RATE LIMITING
+# =============================================================================
+RATE_LIMIT_REQUESTS = env.int("RATE_LIMIT_REQUESTS", 120)
+RATE_LIMIT_WINDOW = env.int("RATE_LIMIT_WINDOW", 60)
+PAYSTACK_WEBHOOK_RATE_LIMIT = env.int("PAYSTACK_WEBHOOK_RATE_LIMIT", 120)
+PAYSTACK_WEBHOOK_RATE_WINDOW = env.int("PAYSTACK_WEBHOOK_RATE_WINDOW", 60)
+
+# =============================================================================
 # SESSION SECURITY
 # =============================================================================
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
@@ -410,6 +418,14 @@ os.makedirs(BASE_DIR / "logs", exist_ok=True)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "request_context": {
+            "()": "invoiceflow.logging_config.RequestContextFilter",
+        },
+        "pii_scrubber": {
+            "()": "invoiceflow.logging_config.PiiScrubberFilter",
+        },
+    },
     "formatters": {
         "verbose": {
             "format": "[{asctime}] {levelname} {name} {message}",
@@ -423,6 +439,7 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "json" if IS_PRODUCTION else "verbose",
+            "filters": ["request_context", "pii_scrubber"],
         },
         "file": {
             "class": "logging.handlers.RotatingFileHandler",
@@ -430,6 +447,7 @@ LOGGING = {
             "maxBytes": 1024 * 1024 * 10,
             "backupCount": 5,
             "formatter": "json",
+            "filters": ["request_context", "pii_scrubber"],
         },
     },
     "root": {
