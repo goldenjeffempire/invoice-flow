@@ -45,12 +45,6 @@ def _parse_request_payload(request) -> dict:
             return {}
     return request.POST.dict()
 
-def home(request):
-    if request.user.is_authenticated:
-        return redirect("invoices:dashboard")
-    return render(request, "pages/home-light.html")
-
-@csrf_protect
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("invoices:dashboard")
