@@ -160,7 +160,7 @@ if _redis_url:
         },
         "analytics": {
             "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": _redis_url,
+            "LOCATION": f"{_redis_url}/1",
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
             },
@@ -179,6 +179,13 @@ else:
             "TIMEOUT": 300,
         }
     }
+
+# =============================================================================
+# RATE LIMITING
+# =============================================================================
+RATELIMIT_ENABLE = env.bool("RATELIMIT_ENABLE", True)
+RATELIMIT_USE_CACHE = "default"
+RATELIMIT_DEFAULT_LIMIT = env.str("RATELIMIT_DEFAULT_LIMIT", "100/m")
 CACHE_TIMEOUT_DASHBOARD = env.int("CACHE_TIMEOUT_DASHBOARD", 300)
 CACHE_TIMEOUT_ANALYTICS = env.int("CACHE_TIMEOUT_ANALYTICS", 600)
 CACHE_TIMEOUT_TOP_CLIENTS = env.int("CACHE_TIMEOUT_TOP_CLIENTS", 1800)

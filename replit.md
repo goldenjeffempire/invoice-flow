@@ -79,3 +79,5 @@ gunicorn --bind 0.0.0.0:5000 invoiceflow.wsgi:application
   - Improved analytics cache invalidation logic
   - Applied all pending database migrations
   - Set up development workflow on port 5000
+  - Hardened data integrity with explicit domain methods and consolidated validation
+  - Optimized production caching with Redis support and tuned rate-limiting

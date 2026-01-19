@@ -308,6 +308,39 @@ class Invoice(models.Model):
         if errors:
             raise ValidationError(errors)
 
+    @transaction.atomic
+    def mark_as_paid(self) -> None:
+        """Updates the invoice status to PAID and handles associated business logic."""
+        if self.status == self.Status.PAID:
+            return
+
+        self.status = self.Status.PAID
+        self.save(update_fields=["status", "updated_at"])
+
+        # Update associated payments
+        self.payments.filter(status="pending").update(
+            status="success", 
+            paid_at=timezone.now(),
+            updated_at=timezone.now()
+        )
+
+        # Integration point for analytics/notification services
+        from .services import AnalyticsService, EmailService
+        
+        AnalyticsService.invalidate_user_cache(self.user_id)
+        try:
+            EmailService.send_receipt(self.payments.filter(status="success").latest('paid_at'))
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send payment confirmation: {e}")
+
+    def mark_as_overdue(self) -> None:
+        """Updates the invoice status to OVERDUE."""
+        if self.status == self.Status.UNPAID:
+            self.status = self.Status.OVERDUE
+            self.save(update_fields=["status", "updated_at"])
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         if not self.business_email and getattr(self, "user", None):
             self.business_email = self.user.email or ""
@@ -351,43 +384,6 @@ class Invoice(models.Model):
         
         total = discountable_amount + tax_total
         return total.quantize(Decimal("0.01"))
-
-    @transaction.atomic
-    def mark_as_paid(self) -> None:
-        """Updates the invoice status to PAID and handles associated business logic."""
-        if self.status == self.Status.PAID:
-            return
-
-        self.status = self.Status.PAID
-        self.save(update_fields=["status", "updated_at"])
-
-        # Update associated payments
-        self.payments.filter(status="pending").update(
-            status="success", 
-            paid_at=timezone.now(),
-            updated_at=timezone.now()
-        )
-
-        # Integration point for analytics/notification services
-        from .services import AnalyticsService
-        from .sendgrid_service import SendGridEmailService
-        
-        AnalyticsService.invalidate_user_cache(self.user_id)
-        try:
-            SendGridEmailService().send_invoice_paid(self, self.client_email)
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to send payment confirmation: {e}")
-
-    def mark_as_overdue(self) -> None:
-        """Updates the invoice status to OVERDUE."""
-        if self.status == self.Status.UNPAID:
-            self.status = self.Status.OVERDUE
-            self.save(update_fields=["status", "updated_at"])
-
-    def __str__(self) -> str:
-        return f"{self.invoice_id} - {self.client_name}"
 
 
 # ============================================================================
