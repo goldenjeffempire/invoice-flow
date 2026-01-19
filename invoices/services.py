@@ -21,7 +21,8 @@ from django.template.loader import render_to_string
 from weasyprint import HTML
 from weasyprint.text.fonts import FontConfiguration
 
-from .models import Invoice, LineItem, UserProfile
+from .models import Invoice, LineItem, Payment, ProcessedWebhook, UserProfile
+from .paystack_service import PaystackService
 
 if TYPE_CHECKING:
     from .forms import InvoiceForm
@@ -54,8 +55,22 @@ class PaymentService:
         return payment, created
 
     @staticmethod
-    def handle_webhook(payload: Dict[str, Any], provider: str) -> bool:
-        """Process incoming webhooks with deduplication."""
+    def handle_webhook(
+        payload: Dict[str, Any],
+        provider: str,
+        *,
+        signature: str = "",
+        raw_payload: bytes | None = None,
+    ) -> bool:
+        """Process incoming webhooks with deduplication and signature validation."""
+        if provider == "paystack":
+            if not raw_payload or not signature:
+                logger.warning("Missing Paystack webhook signature or payload.")
+                return False
+            if not PaystackService().verify_webhook_signature(raw_payload, signature):
+                logger.warning("Invalid Paystack webhook signature.")
+                return False
+
         event_id = payload.get("id") or payload.get("event_id")
         if not event_id:
             return False
@@ -104,8 +119,8 @@ class EmailService:
     def send_receipt(payment: Payment) -> bool:
         from .sendgrid_service import SendGridEmailService
         try:
-            # Placeholder for actual receipt sending logic
-            return True
+            recipient = payment.customer_email or payment.invoice.client_email
+            return SendGridEmailService().send_invoice_paid(payment.invoice, recipient)
         except Exception as e:
             logger.error(f"Failed to send receipt email: {e}")
             return False

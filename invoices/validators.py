@@ -184,6 +184,33 @@ def validate_email_domain(value):
         )
 
 
+def validate_payment_reference(value):
+    """
+    Validate payment reference format.
+
+    Args:
+        value: Payment reference string
+
+    Raises:
+        ValidationError: If reference is invalid
+    """
+    if not value:
+        raise ValidationError(_("Payment reference is required."), code="missing_reference")
+
+    if len(value) < 3 or len(value) > 255:
+        raise ValidationError(
+            _("Payment reference must be between 3 and 255 characters."),
+            code="invalid_reference_length",
+        )
+
+    pattern = r"^[A-Za-z0-9._-]+$"
+    if not re.match(pattern, value):
+        raise ValidationError(
+            _("Payment reference may only contain letters, numbers, dots, underscores, and hyphens."),
+            code="invalid_reference_format",
+        )
+
+
 class InvoiceBusinessRules:
     """
     Business rule validators for invoices.
