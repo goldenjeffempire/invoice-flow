@@ -70,11 +70,13 @@ class InvoiceService:
                     unit_price=Decimal(str(item.get("unit_price", 0)))
                 )
         
+        # Ensure totals are calculated correctly at model level via properties
         AnalyticsService.invalidate_user_cache(user.id)
         return invoice, form
 
     @staticmethod
     def delete_invoice(user, invoice_id):
+        from django.shortcuts import get_object_or_404
         invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=user)
         invoice.delete()
         AnalyticsService.invalidate_user_cache(user.id)
@@ -86,7 +88,7 @@ class InvoiceService:
         invoice: Invoice,
         invoice_data: Any,
         line_items_data: List[Dict[str, Any]],
-    ) -> Tuple[Optional[Invoice], InvoiceForm]:
+    ) -> Tuple[Optional[Invoice], Any]:
         """Update invoice with line items in atomic transaction."""
         from .forms import InvoiceForm
 
@@ -97,9 +99,7 @@ class InvoiceService:
         invoice = invoice_form.save()
         
         # Efficiently update line items
-        existing_items = {item.id: item for item in invoice.line_items.all()}
         new_items = []
-        
         for item_data in line_items_data:
             desc = item_data.get("description")
             if not desc:
@@ -120,6 +120,23 @@ class InvoiceService:
 
         AnalyticsService.invalidate_user_cache(invoice.user_id)
         return invoice, invoice_form
+
+    @staticmethod
+    def transition_status(invoice: Invoice, new_status: str) -> bool:
+        """Safe status transition logic."""
+        if new_status not in dict(Invoice.Status.choices):
+            return False
+        
+        if new_status == Invoice.Status.PAID:
+            invoice.mark_as_paid()
+        elif new_status == Invoice.Status.OVERDUE:
+            invoice.mark_as_overdue()
+        else:
+            invoice.status = new_status
+            invoice.save(update_fields=["status", "updated_at"])
+        
+        AnalyticsService.invalidate_user_cache(invoice.user_id)
+        return True
 
 
 class PDFService:

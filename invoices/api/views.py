@@ -129,13 +129,14 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         serializer = InvoiceStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = cast(Dict[str, Any], serializer.validated_data)
-        invoice.status = validated_data["status"]
-        invoice.save()
-        AnalyticsService.invalidate_user_cache(request.user.id)
-        return APIResponse.success(
-            data=InvoiceDetailSerializer(invoice).data,
-            message="Invoice status updated.",
-        )
+        
+        from invoices.services import InvoiceService
+        if InvoiceService.transition_status(invoice, validated_data["status"]):
+            return APIResponse.success(
+                data=InvoiceDetailSerializer(invoice).data,
+                message="Invoice status updated.",
+            )
+        return APIResponse.error(message="Invalid status transition.", status=400)
 
     @extend_schema(
         summary="Generate PDF",
