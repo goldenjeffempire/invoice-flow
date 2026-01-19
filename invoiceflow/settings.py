@@ -58,7 +58,11 @@ if IS_PRODUCTION:
 # =============================================================================
 # ALLOWED HOSTS / CSRF
 # =============================================================================
-_default_hosts: list[str] = ["*", "127.0.0.1", "localhost", "0.0.0.0", ".replit.dev"]
+_default_hosts: list[str]
+if IS_PRODUCTION:
+    _default_hosts = [PRODUCTION_DOMAIN, f"www.{PRODUCTION_DOMAIN}"]
+else:
+    _default_hosts = ["127.0.0.1", "localhost", "0.0.0.0", ".replit.dev"]
 ALLOWED_HOSTS: list[str] = env.list("ALLOWED_HOSTS", default=_default_hosts)  # type: ignore[arg-type]
 
 # Ensure we support both the internal and external Replit domain formats
@@ -234,45 +238,6 @@ SILENCED_SYSTEM_CHECKS = ["models.W001", "models.W036", "models.W035"]
 # Disable ETag generation to prevent 304 issues during development and ensure consistent production behavior
 USE_ETAGS = False
 
-# Logging Configuration
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "INFO",
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "invoiceflow": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-        "django.utils.autoreload": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
-    },
-}
-
 # Cache Headers Control
 # In development (DEBUG=True), we disable aggressive caching to allow immediate updates
 # In production, we use 1 year for immutable assets
@@ -339,7 +304,6 @@ MFA_RECOVERY_CODES_COUNT = env.int("MFA_RECOVERY_CODES_COUNT", 10)
 # SESSION SECURITY
 # =============================================================================
 SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Strict"
 SESSION_COOKIE_NAME = "invoiceflow_session"
 SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
@@ -358,9 +322,6 @@ WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = DEBUG
 WHITENOISE_IMMUTABLE_FILE_SUPPORT = not DEBUG
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# Cache Headers Control
-WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0 # 1 year in production
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
