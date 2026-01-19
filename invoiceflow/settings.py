@@ -151,6 +151,8 @@ PERMISSIONS_POLICY = {
 # CACHING (Optimized for Production)
 # =============================================================================
 _redis_url = env.str("REDIS_URL", "")
+if IS_PRODUCTION and not _redis_url:
+    raise RuntimeError("REDIS_URL must be set in production for shared caching.")
 if _redis_url:
     CACHES = {
         "default": {
@@ -198,6 +200,7 @@ INSTALLED_APPS = [
     "django.contrib.sitemaps",
 
     "rest_framework",
+    "rest_framework.authtoken",
     "drf_spectacular",
     "csp",
     "invoices.apps.InvoicesConfig",
@@ -334,9 +337,14 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_FILTER_BACKENDS": [
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
     ],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,

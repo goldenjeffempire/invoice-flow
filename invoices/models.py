@@ -11,7 +11,12 @@ from django.db import models, transaction
 from django.utils import timezone
 from django.apps import apps
 
-from .validators import InvoiceBusinessRules, validate_positive_decimal, validate_tax_rate
+from .validators import (
+    InvoiceBusinessRules,
+    validate_payment_reference,
+    validate_positive_decimal,
+    validate_tax_rate,
+)
 
 
 # ============================================================================
@@ -465,6 +470,25 @@ class Payment(models.Model):
             models.Index(fields=["reference"]),
             models.Index(fields=["status", "-created_at"]),
         ]
+
+    def clean(self) -> None:
+        errors = {}
+        try:
+            validate_payment_reference(self.reference)
+        except ValidationError as exc:
+            errors["reference"] = exc.messages
+
+        try:
+            validate_positive_decimal(self.amount)
+        except ValidationError as exc:
+            errors["amount"] = exc.messages
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     @property
     def is_successful(self) -> bool:
