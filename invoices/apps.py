@@ -23,11 +23,12 @@ class InvoicesConfig(AppConfig):
         # 2. SAFE SHUTDOWN HANDLERS
         # ---------------------------------------------------------------------
         try:
-            from invoices.async_tasks import shutdown_executor
-            from invoices.services import CacheWarmingService
+            # from invoices.async_tasks import shutdown_executor
+            # from invoices.services import CacheWarmingService
 
-            atexit.register(shutdown_executor)
-            atexit.register(CacheWarmingService.shutdown_executor)
+            # atexit.register(shutdown_executor)
+            # atexit.register(CacheWarmingService.shutdown_executor)
+            pass
         except Exception as exc:
             logger.warning("Failed to register shutdown handlers: %s", exc)
 
@@ -67,17 +68,18 @@ class InvoicesConfig(AppConfig):
 
             try:
                 # Cache warmup (only runs once per cluster due to lock)
-                try:
-                    from invoices.services import CacheWarmingService
-                    CacheWarmingService.bump_cache_version()
-                    warmed = CacheWarmingService.warm_active_users_cache()
-                    if warmed > 0:
-                        logger.info(f"Startup cache warming completed: {warmed} users")
-                    # If 0 users, silence the log (debug instead)
-                    else:
-                        logger.debug("Startup cache warming completed: no active users")
-                except Exception as exc:
-                    logger.warning(f"Startup cache warmup failed: {exc}")
+                # try:
+                #    from invoices.services import CacheWarmingService
+                #    CacheWarmingService.bump_cache_version()
+                #    warmed = CacheWarmingService.warm_active_users_cache()
+                #    if warmed > 0:
+                #        logger.info(f"Startup cache warming completed: {warmed} users")
+                #    # If 0 users, silence the log (debug instead)
+                #    else:
+                #        logger.debug("Startup cache warming completed: no active users")
+                # except Exception as exc:
+                #    logger.warning(f"Startup cache warmup failed: {exc}")
+                pass
 
                 # Keep-alive (production only)
                 if os.environ.get("RENDER") and not settings.DEBUG:
