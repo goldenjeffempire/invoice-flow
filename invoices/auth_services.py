@@ -274,6 +274,7 @@ class RegistrationService:
                 expires_hours=24,
             )
 
+        # Redact email in logs
         logger.info(f"New user registered: {username} (email redacted)")
         return user, "", token
 

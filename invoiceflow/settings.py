@@ -106,14 +106,10 @@ if csrf_origins_env:
 SECURE_SSL_REDIRECT = False if RUNNING_TESTS else env.bool("SECURE_SSL_REDIRECT", IS_PRODUCTION)
 
 # Secure cookies only in production (prevents conflicts with HTTP in development)
-SESSION_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("SESSION_COOKIE_SECURE", IS_PRODUCTION)
-CSRF_COOKIE_SECURE = False if RUNNING_TESTS else env.bool("CSRF_COOKIE_SECURE", IS_PRODUCTION)
-
-# HttpOnly always enabled (no JavaScript access to cookies)
-SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 
