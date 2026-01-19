@@ -116,7 +116,7 @@ class UserProfile(models.Model):
     )
 
     company_name = models.CharField(max_length=200, blank=True)
-    company_logo = models.ImageField(upload_to="company_logos/", null=True, blank=True)
+    company_logo = models.FileField(upload_to="company_logos/", null=True, blank=True)
     business_email = models.EmailField(blank=True)
     business_phone = models.CharField(max_length=50, blank=True)
     business_address = models.TextField(blank=True)

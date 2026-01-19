@@ -8,22 +8,40 @@ import os
 from django.template.loader import render_to_string
 
 logger = logging.getLogger(__name__)
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import (
-    Attachment,
-    Content,
-    FileContent,
-    FileName,
-    FileType,
-    From,
-    Mail,
-    Personalization,
-    ReplyTo,
-    TemplateId,
-    To,
-)
-from weasyprint import HTML
-from weasyprint.text.fonts import FontConfiguration
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import (
+        Attachment,
+        Content,
+        FileContent,
+        FileName,
+        FileType,
+        From,
+        Mail,
+        Personalization,
+        ReplyTo,
+        TemplateId,
+        To,
+    )
+except ImportError:
+    SendGridAPIClient = None
+    Attachment = None
+    Content = None
+    FileContent = None
+    FileName = None
+    FileType = None
+    From = None
+    Mail = None
+    Personalization = None
+    ReplyTo = None
+    TemplateId = None
+    To = None
+try:
+    from weasyprint import HTML
+    from weasyprint.text.fonts import FontConfiguration
+except ImportError:
+    HTML = None
+    FontConfiguration = None
 
 
 class SendGridEmailService:
@@ -523,7 +541,7 @@ The InvoiceFlow Team"""
         try:
             from .services import PDFService
             return PDFService.generate_pdf_bytes(invoice)
-        except Exception as e:
+        except (ImportError, ValueError) as e:
             logger.error(f"Failed to generate PDF for email attachment: {e}")
             return None
 

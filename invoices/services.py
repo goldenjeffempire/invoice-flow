@@ -210,9 +210,17 @@ class PDFService:
     @staticmethod
     def generate_pdf_bytes(invoice: Invoice) -> bytes:
         """Generate PDF bytes for invoice using a standardized template."""
-        from django.template.loader import render_to_string
-        from weasyprint import HTML
-        from weasyprint.text.fonts import FontConfiguration
+        try:
+            from django.template.loader import render_to_string
+            from weasyprint import HTML
+            from weasyprint.text.fonts import FontConfiguration
+        except ImportError:
+            HTML = None
+            FontConfiguration = None
+
+        if HTML is None:
+            raise ValueError("PDF generation is currently unavailable due to missing system dependencies (weasyprint/cffi).")
+
         from django.conf import settings
 
         context = {
@@ -228,7 +236,7 @@ class PDFService:
             return html.write_pdf(font_config=font_config)
         except Exception as e:
             logger.error(f"PDF generation failed for invoice {invoice.invoice_id}: {e}")
-            raise ValueError(f"Failed to generate PDF: {e}")
+            raise ValueError(f"Failed to generate PDF. System dependencies (cffi/weasyprint) might be missing.")
 
 
 class AnalyticsService:

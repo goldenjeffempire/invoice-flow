@@ -56,17 +56,7 @@ if IS_PRODUCTION:
 # =============================================================================
 # ALLOWED HOSTS / CSRF
 # =============================================================================
-_default_hosts: list[str] = (
-    [
-        PRODUCTION_DOMAIN,
-        f".{PRODUCTION_DOMAIN}",
-        f"www.{PRODUCTION_DOMAIN}",
-        ".onrender.com",
-        "invoiceflow.com.ng",
-    ]
-    if IS_PRODUCTION
-    else ["*"]
-)
+_default_hosts: list[str] = ["*", "127.0.0.1", "localhost", "0.0.0.0"]
 ALLOWED_HOSTS: list[str] = env.list("ALLOWED_HOSTS", default=_default_hosts)  # type: ignore[arg-type]
 
 CSRF_TRUSTED_ORIGINS: list[str] = [

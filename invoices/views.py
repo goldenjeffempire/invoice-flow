@@ -683,13 +683,20 @@ def settings_view(request):
         },
     )
 
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+try:
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import letter
+except ImportError:
+    canvas = None
+    letter = None
 
 @login_required
 def download_invoice_pdf(request, invoice_id):
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
     
+    if canvas is None:
+        return HttpResponse("PDF generation is currently unavailable due to missing system dependencies.", status=503)
+
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="invoice_{invoice_id}.pdf"'
     
@@ -738,8 +745,12 @@ def delete_invoice(request, invoice_id):
 def custom_404(request, exception):
     return render(request, "pages/home-light.html", status=404)
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+try:
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail
+except ImportError:
+    SendGridAPIClient = None
+    Mail = None
 
 @require_POST
 def logout_view(request):
