@@ -373,7 +373,7 @@ class Invoice(models.Model):
         AnalyticsService.invalidate_user_cache(self.user_id)
         try:
             # Send receipt for the latest successful payment
-            successful_payment = self.payments.filter(status="success").order_id('-paid_at').first()
+            successful_payment = self.payments.filter(status="success").order_by('-paid_at').first()
             if successful_payment:
                 EmailService.send_receipt(successful_payment)
         except Exception as e:
