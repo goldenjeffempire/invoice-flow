@@ -343,8 +343,7 @@ class Invoice(models.Model):
     @property
     def total(self) -> Decimal:
         """Calculates the grand total of the invoice."""
-        # Ensure discount is applied to subtotal before tax calculation
-        # Most tax jurisdictions apply tax after discounts
+        # Standardize total calculation across model and analytics
         discountable_amount = self.subtotal - self.discount_amount
         taxable_amount = discountable_amount
         tax_total = (taxable_amount * Decimal(str(self.tax_rate))) / Decimal("100")
@@ -352,21 +351,21 @@ class Invoice(models.Model):
         total = discountable_amount + tax_total
         return total.quantize(Decimal("0.01"))
 
-    @transaction.atomic
     def mark_as_paid(self) -> None:
         """Updates the invoice status to PAID and handles associated business logic."""
         if self.status == self.Status.PAID:
             return
 
-        self.status = self.Status.PAID
-        self.save(update_fields=["status", "updated_at"])
+        with transaction.atomic():
+            self.status = self.Status.PAID
+            self.save(update_fields=["status", "updated_at"])
 
-        # Update associated payments
-        self.payments.filter(status="pending").update(
-            status="success", 
-            paid_at=timezone.now(),
-            updated_at=timezone.now()
-        )
+            # Update associated payments
+            self.payments.filter(status="pending").update(
+                status="success", 
+                paid_at=timezone.now(),
+                updated_at=timezone.now()
+            )
 
         # Integration point for analytics/notification services
         from .services import AnalyticsService, EmailService
@@ -374,7 +373,7 @@ class Invoice(models.Model):
         AnalyticsService.invalidate_user_cache(self.user_id)
         try:
             # Send receipt for the latest successful payment
-            successful_payment = self.payments.filter(status="success").order_by('-paid_at').first()
+            successful_payment = self.payments.filter(status="success").order_id('-paid_at').first()
             if successful_payment:
                 EmailService.send_receipt(successful_payment)
         except Exception as e:

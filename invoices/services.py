@@ -360,23 +360,26 @@ class AnalyticsService:
             unique_clients=Count("client_email", distinct=True),
         )
 
-        total_revenue = LineItem.objects.filter(  # type: ignore[attr-defined]
-            invoice__user=user, invoice__status="paid"
-        ).aggregate(
-            total=Coalesce(
-                Sum(F("quantity") * F("unit_price")),
+        # Optimization: Calculate revenue for paid and unpaid in fewer queries
+        revenue_data = LineItem.objects.filter(invoice__user=user).aggregate(
+            paid_revenue=Coalesce(
+                Sum(F("quantity") * F("unit_price"), filter=Q(invoice__status="paid")),
+                Value(Decimal("0")),
+                output_field=DecimalField(max_digits=15, decimal_places=2),
+            ),
+            unpaid_revenue=Coalesce(
+                Sum(F("quantity") * F("unit_price"), filter=Q(invoice__status="unpaid")),
                 Value(Decimal("0")),
                 output_field=DecimalField(max_digits=15, decimal_places=2),
             )
-        )[
-            "total"
-        ]
+        )
 
         result = {
             "total_invoices": stats["total_invoices"] or 0,
             "paid_count": stats["paid_count"] or 0,
             "unpaid_count": stats["unpaid_count"] or 0,
-            "total_revenue": total_revenue or Decimal("0"),
+            "total_revenue": revenue_data["paid_revenue"],
+            "unpaid_revenue": revenue_data["unpaid_revenue"],
             "unique_clients": stats["unique_clients"] or 0,
         }
 

@@ -546,19 +546,13 @@ def dashboard(request):
     stats = cache.get(cache_key)
     if not stats:
         stats = AnalyticsService.get_user_dashboard_stats(request.user)
-        cache.set(cache_key, stats, 300)  # Cache for 5 minutes
+        cache.set(cache_key, stats, 300)
 
     recent_invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')[:5]
     
-    formatted_stats = {
-        'total_count': stats.get('total_invoices', 0),
-        'revenue': '{:,.2f}'.format(stats.get('total_revenue', Decimal('0'))),
-        'outstanding': '{:,.2f}'.format(stats.get('unpaid_count', 0)),
-        'overdue': '0.00',
-    }
-
+    # We use stats directly from AnalyticsService which already has the correct keys
     return render(request, "pages/dashboard.html", {
-        "stats": formatted_stats, 
+        "stats": stats, 
         "recent_invoices": recent_invoices,
         "active": "dashboard"
     })
