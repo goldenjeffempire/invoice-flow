@@ -297,6 +297,10 @@ class InvoiceForm(forms.ModelForm):
         validators=[validate_invoice_date],
         widget=forms.DateInput(attrs={"class": "input-modern", "type": "date"}),
     )
+    due_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"class": "input-modern", "type": "date"}),
+    )
 
     class Meta:
         model = Invoice
@@ -324,7 +328,6 @@ class InvoiceForm(forms.ModelForm):
             "client_name": forms.TextInput(attrs={"class": "input-modern", "placeholder": "Client Business Name"}),
             "client_email": forms.EmailInput(attrs={"class": "input-modern", "placeholder": "client@example.com"}),
             "client_address": forms.Textarea(attrs={"class": "input-modern", "rows": 2, "placeholder": "Client Address"}),
-            "due_date": forms.DateInput(attrs={"class": "input-modern", "type": "date"}),
             "discount": forms.NumberInput(attrs={"class": "input-modern", "step": "0.01", "placeholder": "0.00"}),
             "automated_reminders_enabled": forms.CheckboxInput(attrs={"class": "sr-only peer"}),
             "notes": forms.Textarea(attrs={"class": "input-modern", "rows": 3, "placeholder": "Terms and conditions or thank you note"}),

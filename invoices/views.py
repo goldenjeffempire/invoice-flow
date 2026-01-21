@@ -569,23 +569,17 @@ def invoices_list(request):
 def invoice_create(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     if request.method == "POST":
-        line_items_data = []
-        i = 0
-        while f"line_items-{i}-description" in request.POST:
-            line_items_data.append({
-                "description": request.POST.get(f"line_items-{i}-description"),
-                "quantity": request.POST.get(f"line_items-{i}-quantity", 1),
-                "unit_price": request.POST.get(f"line_items-{i}-unit_price", 0),
-            })
-            i += 1
-            
-        invoice, form = InvoiceService.create_invoice(
-            user=request.user,
-            invoice_data=request.POST,
-            line_items_data=line_items_data
-        )
+        form = InvoiceForm(request.POST)
+        formset = LineItemFormSet(request.POST)
         
-        if invoice:
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                invoice = form.save(commit=False)
+                invoice.user = request.user
+                invoice.save()
+                formset.instance = invoice
+                formset.save()
+                AnalyticsService.invalidate_user_cache(request.user.id)
             messages.success(request, "Invoice created successfully!")
             return redirect("invoices:invoice_detail", invoice_id=invoice.invoice_id)
         messages.error(request, "Please correct the errors below.")
