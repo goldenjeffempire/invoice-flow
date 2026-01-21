@@ -258,7 +258,10 @@ WHITENOISE_KEEP_ONLY_HASHED_FILES = not DEBUG
 WHITENOISE_MANIFEST_STRICT = not DEBUG
 # =============================================================================
 DATABASES = {
-    'default': env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR}/db.sqlite3")
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 # =============================================================================
