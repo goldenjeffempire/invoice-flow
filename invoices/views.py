@@ -782,7 +782,7 @@ def delete_invoice(request, invoice_id):
     return redirect("invoices:invoices_list")
 
 def custom_404(request, exception):
-    return render(request, "pages/home-light.html", status=404)
+    return render(request, "pages/landing.html", status=404)
 
 try:
     from sendgrid import SendGridAPIClient
@@ -792,11 +792,12 @@ except ImportError:
     Mail = None
 
 def logout_view(request):
+    from .services import AuthenticationService
     AuthenticationService.logout_user(request)
     return redirect("invoices:home")
 
 def custom_500(request):
-    return render(request, "pages/home-light.html", status=500)
+    return render(request, "pages/landing.html", status=500)
 
 @login_required
 @require_POST
