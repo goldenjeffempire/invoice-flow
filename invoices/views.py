@@ -579,6 +579,10 @@ def invoice_create(request):
                 invoice.save()
                 formset.instance = invoice
                 formset.save()
+                
+                # Schedule reminders for the new invoice
+                InvoiceService.schedule_reminders(invoice)
+                
                 AnalyticsService.invalidate_user_cache(request.user.id)
             messages.success(request, "Invoice created successfully!")
             return redirect("invoices:invoice_detail", invoice_id=invoice.invoice_id)

@@ -616,8 +616,55 @@ class CacheWarmingService:
         except Exception as e:
             logger.warning(f"Failed to submit cache warming task: {e}")
 
-    @classmethod
-    def _warm_user_cache_sync(cls, user_id: int) -> None:
+    @staticmethod
+    def schedule_reminders(invoice: Invoice) -> None:
+        """Schedule future reminders for an invoice based on user rules."""
+        if not invoice.automated_reminders_enabled:
+            return
+
+        from .models import ScheduledReminder, ReminderRule
+        from django.utils import timezone
+        
+        rules = ReminderRule.objects.filter(user=invoice.user, is_active=True)
+        for rule in rules:
+            scheduled_date = None
+            if rule.trigger_type == ReminderRule.TriggerType.BEFORE_DUE and invoice.due_date:
+                scheduled_date = datetime.combine(invoice.due_date, datetime.min.time()) - timedelta(days=rule.days_delta)
+            elif rule.trigger_type == ReminderRule.TriggerType.ON_DUE and invoice.due_date:
+                scheduled_date = datetime.combine(invoice.due_date, datetime.min.time())
+            elif rule.trigger_type == ReminderRule.TriggerType.AFTER_DUE and invoice.due_date:
+                scheduled_date = datetime.combine(invoice.due_date, datetime.min.time()) + timedelta(days=rule.days_delta)
+            elif rule.trigger_type == ReminderRule.TriggerType.UPON_CREATION:
+                scheduled_date = timezone.now()
+
+            if scheduled_date:
+                ScheduledReminder.objects.get_or_create(
+                    invoice=invoice,
+                    rule=rule,
+                    defaults={'scheduled_for': scheduled_date}
+                )
+
+    @staticmethod
+    def process_scheduled_reminders() -> int:
+        """Process and send all reminders due for delivery."""
+        from .models import ScheduledReminder
+        from django.utils import timezone
+        
+        pending = ScheduledReminder.objects.filter(
+            status=ScheduledReminder.Status.PENDING,
+            scheduled_for__lte=timezone.now(),
+            invoice__status=Invoice.Status.UNPAID
+        )
+        
+        sent_count = 0
+        for reminder in pending:
+            # Placeholder for actual background task/email sending
+            reminder.status = ScheduledReminder.Status.SENT
+            reminder.last_attempt = timezone.now()
+            reminder.attempts += 1
+            reminder.save()
+            sent_count += 1
+        return sent_count
         """
         Synchronously warm cache for a user (runs in background thread).
         Properly manages database connections for threaded execution.
