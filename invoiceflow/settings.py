@@ -152,9 +152,20 @@ PERMISSIONS_POLICY = {
 # CACHING (Optimized for Production)
 # =============================================================================
 _redis_url = env.str("REDIS_URL", "")
-if IS_PRODUCTION and not _redis_url:
-    raise RuntimeError("REDIS_URL must be set in production for shared caching.")
-if _redis_url:
+# On Replit, we use local memory cache if Redis is not configured
+if not _redis_url:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+        },
+        "analytics": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "analytics-data",
+            "TIMEOUT": 300,
+        }
+    }
+else:
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
@@ -169,18 +180,6 @@ if _redis_url:
             "OPTIONS": {
                 "CLIENT_CLASS": "django_redis.client.DefaultClient",
             },
-            "TIMEOUT": 300,
-        }
-    }
-else:
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "unique-snowflake",
-        },
-        "analytics": {
-            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-            "LOCATION": "analytics-data",
             "TIMEOUT": 300,
         }
     }
