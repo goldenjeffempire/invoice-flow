@@ -27,7 +27,7 @@ validate_env()
 # ENVIRONMENT DETECTION
 # =============================================================================
 IS_RENDER: bool = bool(os.getenv("RENDER"))
-IS_PRODUCTION: bool = os.getenv("PRODUCTION") == "true"
+IS_PRODUCTION: bool = os.getenv("PRODUCTION") == "true" and not os.getenv("REPL_ID")
 RUNNING_TESTS: bool = "pytest" in sys.modules
 
 DEBUG: bool = env.bool("DEBUG", False) if not IS_PRODUCTION else False
