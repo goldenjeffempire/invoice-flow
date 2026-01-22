@@ -39,7 +39,9 @@ except ImportError:
 try:
     from weasyprint import HTML
     from weasyprint.text.fonts import FontConfiguration
-except ImportError:
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError, Exception):
+    WEASYPRINT_AVAILABLE = False
     HTML = None
     FontConfiguration = None
 

@@ -18,8 +18,14 @@ from django.db import transaction
 from django.db.models import Count, DecimalField, F, Q, Sum, Value, Manager
 from django.db.models.functions import Coalesce
 from django.template.loader import render_to_string
-from weasyprint import HTML
-from weasyprint.text.fonts import FontConfiguration
+try:
+    from weasyprint import HTML
+    from weasyprint.text.fonts import FontConfiguration
+    WEASYPRINT_AVAILABLE = True
+except (ImportError, OSError, Exception):
+    WEASYPRINT_AVAILABLE = False
+    HTML = None
+    FontConfiguration = None
 
 from .models import Invoice, LineItem, Payment, ProcessedWebhook, UserProfile
 from .paystack_service import PaystackService
@@ -252,7 +258,12 @@ class PDFService:
         """Generate PDF bytes for invoice using a standardized template."""
         try:
             from django.template.loader import render_to_string
-            from weasyprint import HTML
+            try:
+                from weasyprint import HTML
+                WEASYPRINT_AVAILABLE = True
+            except (ImportError, OSError, Exception):
+                WEASYPRINT_AVAILABLE = False
+                HTML = None
             from weasyprint.text.fonts import FontConfiguration
         except ImportError:
             HTML = None
