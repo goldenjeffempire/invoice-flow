@@ -1,618 +1,155 @@
+{% extends "base/layout.html" %}
 {% load static %}
-<!doctype html>
-<html lang="en" class="scroll-smooth">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>InvoiceFlow – Professional Invoicing for Modern Businesses</title>
-  <meta name="description" content="Streamline your billing workflow. Send beautiful invoices, automate reminders, and get paid faster with InvoiceFlow." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui'] },
-          colors: {
-            brand: {
-              50: '#f0f4ff', 100: '#e1e9ff', 200: '#c8d6ff', 300: '#a3baff', 400: '#7592ff', 500: '#4461ff', 600: '#2d3fff', 700: '#232ee6', 800: '#1d26bb', 900: '#1d2694'
-            },
-          },
-          boxShadow: {
-            'card': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          }
-        }
-      }
+
+{% block title %}InvoiceFlow – Professional Invoicing for Modern Businesses{% endblock %}
+
+{% block extra_head %}
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<style>
+    .text-gradient {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
-  </script>
-  <style>
-    .gradient-text { @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600; }
-    .hero-pattern { background-color: #ffffff; background-image: radial-gradient(#4461ff10 1px, transparent 1px); background-size: 24px 24px; }
-    .animate-float { animation: float 6s ease-in-out infinite; }
-    @keyframes float {
-      0% { transform: translateY(0px); }
-      50% { transform: translateY(-20px); }
-      100% { transform: translateY(0px); }
+    .hero-glow {
+        position: absolute;
+        top: -10%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+        pointer-events: none;
     }
-    .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
-    .reveal.active { opacity: 1; transform: translateY(0); }
-    .bg-grid { background-image: radial-gradient(circle, #4461ff20 1px, transparent 1px); background-size: 30px 30px; }
-  </style>
-</head>
-<body class="antialiased text-slate-900 bg-white font-sans selection:bg-brand-100 selection:text-brand-900">
+    .feature-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .feature-card:hover {
+        transform: translateY(-8px);
+    }
+</style>
+{% endblock %}
 
-  <!-- Navigation -->
-  <nav class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-20 items-center">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-200">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-          </div>
-          <span class="text-xl font-bold tracking-tight">Invoice<span class="text-brand-600">Flow</span></span>
+{% block content %}
+<div class="relative overflow-hidden bg-white">
+    <div class="hero-glow"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
+                    <i data-lucide="file-text" class="text-white w-6 h-6"></i>
+                </div>
+                <span class="text-2xl font-black tracking-tight text-slate-900">Invoice<span class="text-indigo-600">Flow</span></span>
+            </div>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition">Features</a>
+                <a href="#pricing" class="text-sm font-semibold text-slate-600 hover:text-indigo-600 transition">Pricing</a>
+                <div class="h-4 w-px bg-slate-200"></div>
+                <a href="{% url 'invoices:login' %}" class="text-sm font-semibold text-slate-900 hover:text-indigo-600">Log in</a>
+                <a href="{% url 'invoices:signup' %}" class="bg-indigo-600 text-white px-6 py-2.5 rounded-full text-sm font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition">Start Free</a>
+            </div>
         </div>
-        
-        <div class="hidden md:flex items-center gap-10">
-          <a href="#features" class="text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">Features</a>
-          <a href="#about" class="text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">About</a>
-          <div class="h-6 w-px bg-slate-200"></div>
-          <a href="{% url 'invoices:login' %}" class="text-sm font-medium text-slate-600 hover:text-brand-600 transition-colors">Sign in</a>
-          <a href="{% url 'invoices:signup' %}" class="bg-brand-600 text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-brand-700 transition-all shadow-md shadow-brand-100 hover:shadow-lg">Get Started</a>
-        </div>
+    </nav>
 
-        <button id="mobile-menu-button" class="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
-        </button>
-      </div>
-    </div>
-  </nav>
-
-  <!-- Mobile Menu -->
-  <div id="mobile-menu" class="fixed inset-0 z-[60] bg-white hidden md:hidden p-6">
-    <div class="flex justify-between items-center mb-10">
-      <span class="text-xl font-bold">Invoice<span class="text-brand-600">Flow</span></span>
-      <button id="close-menu" class="p-2 text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
-    </div>
-    <div class="flex flex-col gap-6 text-lg font-medium">
-      <a href="#features" class="hover:text-brand-600">Features</a>
-      <a href="#faq" class="hover:text-brand-600">FAQ</a>
-      <hr class="border-slate-100">
-      <a href="{% url 'invoices:login' %}" class="hover:text-brand-600">Sign in</a>
-      <a href="{% url 'invoices:signup' %}" class="bg-brand-600 text-white text-center py-4 rounded-2xl shadow-lg">Get Started for Free</a>
-    </div>
-  </div>
-
-  <main class="pt-20 bg-grid">
     <!-- Hero Section -->
-    <section class="relative overflow-hidden hero-pattern pb-20 lg:pb-32">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 lg:pt-24">
-        <div class="text-center max-w-3xl mx-auto mb-16 lg:mb-24">
-          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-50 text-brand-700 text-sm font-semibold mb-6 animate-fade-in">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-600"></span>
-            </span>
-            New: Intelligent Payment Matching
-          </div>
-          <h1 class="text-5xl lg:text-7xl font-extrabold tracking-tight mb-8">
-            Create Professional Invoices In <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600">Seconds </span>
-          </h1>
-          <p class="text-xl text-slate-600 mb-10 leading-relaxed">
-            Stop chasing payments. Create stunning invoices, automate your billing cycle, and get paid 2x faster with the most intuitive invoicing platform.
-          </p>
-          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="{% url 'invoices:signup' %}" class="w-full sm:w-auto px-8 py-4 bg-brand-600 text-white rounded-2xl font-bold text-lg hover:bg-brand-700 transition-all shadow-xl shadow-brand-200 hover:scale-105 active:scale-95">Start Your Free Trial</a>
-            <a href="#features" class="w-full sm:w-auto px-8 py-4 bg-white text-slate-700 border border-slate-200 rounded-2xl font-bold text-lg hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
-              See how it works
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-            </a>
-          </div>
-          <p class="mt-6 text-sm text-slate-500 font-medium">No credit card required • 14-day free trial • Cancel anytime</p>
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 px-6">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-8" data-aos="fade-up">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+                </span>
+                Now Powered by AI
+            </div>
+            <h1 class="text-6xl lg:text-8xl font-black text-slate-900 tracking-tight mb-8" data-aos="fade-up" data-aos-delay="100">
+                Invoicing that <br/> <span class="text-gradient">pays for itself.</span>
+            </h1>
+            <p class="text-xl text-slate-500 max-w-2xl mx-auto mb-12" data-aos="fade-up" data-aos-delay="200">
+                The modern operating system for your business billing. Create professional invoices, automate collections, and get paid 2x faster.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="300">
+                <a href="{% url 'invoices:signup' %}" class="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 shadow-2xl shadow-indigo-200 transition">Start Your Trial</a>
+                <a href="#features" class="px-8 py-4 bg-white text-slate-900 border border-slate-200 rounded-2xl font-bold text-lg hover:bg-slate-50 transition flex items-center justify-center gap-2">
+                    Live Demo <i data-lucide="play-circle" class="w-5 h-5"></i>
+                </a>
+            </div>
         </div>
-
-        <div class="relative max-w-6xl mx-auto">
-          <div class="absolute -inset-1 bg-gradient-to-r from-brand-600 to-indigo-600 rounded-[2.5rem] blur opacity-20"></div>
-          <div class="relative bg-white p-4 rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden">
-            <img src="{% static 'images/hero_dashboard.jpg' %}" alt="InvoiceFlow Dashboard" class="w-full rounded-[2rem] shadow-inner">
-          </div>
-        </div>
-      </div>
     </section>
 
-    <!-- Logo Cloud -->
-    <!-- Removed -->
-
-    <!-- Features Section -->
-    <section id="features" class="py-24 lg:py-32">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-3xl mx-auto mb-20 reveal">
-          <h2 class="text-brand-600 font-bold uppercase tracking-widest text-sm mb-4">Powerful Features</h2>
-          <p class="text-4xl lg:text-5xl font-extrabold tracking-tight mb-6">Everything you need to <span class="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600">manage billing</span></p>
-          <p class="text-lg text-slate-600">We've built the tools so you can focus on your craft. Invoicing has never been this seamless.</p>
+    <!-- Product Preview -->
+    <section class="px-6 pb-32" data-aos="fade-up" data-aos-delay="400">
+        <div class="max-w-6xl mx-auto relative">
+            <div class="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[3rem] blur-2xl opacity-10"></div>
+            <div class="relative bg-white p-2 rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden">
+                <img src="{% static 'images/hero_dashboard.jpg' %}" alt="Dashboard Preview" class="w-full rounded-[2rem]">
+            </div>
         </div>
+    </section>
 
-        <div class="grid lg:grid-cols-2 gap-20 items-center mb-32">
-          <div class="order-2 lg:order-1 reveal">
-            <div class="relative group">
-              <div class="absolute -inset-4 bg-brand-100 rounded-[3rem] -rotate-2 group-hover:rotate-0 transition-transform duration-500"></div>
-              <img src="{% static 'images/invoice_style.jpg' %}" alt="Professional Invoices" class="relative rounded-[2.5rem] shadow-2xl transform lg:-rotate-1 group-hover:rotate-0 transition-transform duration-500">
+    <!-- Features Grid -->
+    <section id="features" class="py-32 bg-slate-50 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-20">
+                <h2 class="text-4xl lg:text-5xl font-black text-slate-900 mb-6">Built for speed.</h2>
+                <p class="text-slate-500 text-lg">Every tool you need to manage your revenue lifecycle.</p>
             </div>
-          </div>
-          <div class="order-1 lg:order-2 space-y-10 reveal">
-            <div class="flex gap-6 group">
-              <div class="shrink-0 w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300">
-                <svg class="w-8 h-8 text-brand-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              </div>
-              <div>
-                <h3 class="text-2xl font-bold mb-3">60-Second Invoices</h3>
-                <p class="text-slate-600 leading-relaxed">Our intelligent builder predicts what you need. Create and send a professional PDF invoice in less than a minute.</p>
-              </div>
-            </div>
-            <div class="flex gap-6 group">
-              <div class="shrink-0 w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300">
-                <svg class="w-8 h-8 text-brand-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-              </div>
-              <div>
-                <h3 class="text-2xl font-bold mb-3">Automatic Reminders</h3>
-                <p class="text-slate-600 leading-relaxed">Let us handle the awkward "where's my payment?" conversations. Automated, polite nudges ensure you get paid on time.</p>
-              </div>
-            </div>
-            <div class="flex gap-6 group">
-              <div class="shrink-0 w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300">
-                <svg class="w-8 h-8 text-brand-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-              </div>
-              <div>
-                <h3 class="text-2xl font-bold mb-3">Real-time Analytics</h3>
-                <p class="text-slate-600 leading-relaxed">Track your business health with deep insights. See your outstanding revenue, average pay time, and monthly growth at a glance.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- New Workflow Section -->
-        <div class="grid lg:grid-cols-2 gap-20 items-center mb-32">
-          <div class="space-y-10 reveal">
-            <h2 class="text-4xl font-extrabold tracking-tight">The <span class="text-brand-600">Smartest Workflow</span> for Modern Creators</h2>
-            <p class="text-lg text-slate-600">From the first quote to the final payment, InvoiceFlow automates every step so you can focus on what you do best.</p>
             
-            <div class="space-y-6">
-              <div class="p-6 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-white hover:shadow-xl transition-all duration-300">
-                <div class="flex items-center gap-4 mb-2">
-                  <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold">1</div>
-                  <h4 class="font-bold text-lg">One-Click Quotes</h4>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="feature-card bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm" data-aos="fade-up">
+                    <div class="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 mb-8">
+                        <i data-lucide="zap" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Instant Creation</h3>
+                    <p class="text-slate-500 leading-relaxed">Create and send professional invoices in under 60 seconds with our smart builder.</p>
                 </div>
-                <p class="text-slate-500 ml-12">Turn approved quotes into professional invoices with a single click. No manual data entry required.</p>
-              </div>
-              <div class="p-6 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-white hover:shadow-xl transition-all duration-300">
-                <div class="flex items-center gap-4 mb-2">
-                  <div class="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold">2</div>
-                  <h4 class="font-bold text-lg">Instant Mobile Access</h4>
+                
+                <div class="feature-card bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 mb-8">
+                        <i data-lucide="bell-ring" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Auto-Reminders</h3>
+                    <p class="text-slate-500 leading-relaxed">Let our system handle the follow-ups. Automated nudges ensure you're never forgotten.</p>
                 </div>
-                <p class="text-slate-500 ml-12">Manage your entire business from your pocket. Send invoices and track status while you're on the move.</p>
-              </div>
+                
+                <div class="feature-card bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 mb-8">
+                        <i data-lucide="bar-chart-3" class="w-7 h-7"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Real-time Insights</h3>
+                    <p class="text-slate-500 leading-relaxed">Deep analytics into your cash flow, overdue payments, and projected growth.</p>
+                </div>
             </div>
-          </div>
-          <div class="relative reveal">
-            <div class="absolute -inset-10 bg-gradient-to-tr from-brand-100 to-indigo-50 rounded-full blur-3xl opacity-50"></div>
-            <img src="{% static 'images/mobile_invoice.jpg' %}" alt="Mobile App View" class="relative rounded-3xl shadow-2xl animate-float max-w-sm mx-auto border-8 border-slate-900">
-          </div>
         </div>
-
-        <!-- Analytics & Insights Section -->
-        <div class="grid lg:grid-cols-2 gap-20 items-center mb-32 reveal">
-          <div class="order-2 lg:order-1">
-            <div class="relative group">
-              <div class="absolute -inset-6 bg-gradient-to-r from-indigo-100 to-brand-100 rounded-[3rem] blur-2xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
-              <img src="{% static 'images/analytics_dashboard.jpg' %}" alt="Analytics Dashboard" class="relative rounded-[2.5rem] shadow-2xl border border-slate-100 transform group-hover:scale-[1.02] transition-transform duration-500">
-            </div>
-          </div>
-          <div class="order-1 lg:order-2 space-y-8">
-            <h2 class="text-4xl font-extrabold tracking-tight">Business Intelligence <span class="text-brand-600">at Your Fingertips</span></h2>
-            <p class="text-lg text-slate-600 leading-relaxed">Stop guessing and start growing. Our advanced analytics engine provides deep insights into your revenue streams, client behavior, and payment cycles.</p>
-            <div class="space-y-4">
-              <div class="flex items-start gap-4 p-4 rounded-2xl bg-white shadow-sm border border-slate-50">
-                <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-                </div>
-                <div>
-                  <h4 class="font-bold">Predictive Forecasting</h4>
-                  <p class="text-slate-500 text-sm">Visualize future cash flow based on historical payment patterns and recurring contracts.</p>
-                </div>
-              </div>
-              <div class="flex items-start gap-4 p-4 rounded-2xl bg-white shadow-sm border border-slate-50">
-                <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                </div>
-                <div>
-                  <h4 class="font-bold">Client Health Scores</h4>
-                  <p class="text-slate-500 text-sm">Identify your most valuable clients and those who might need additional attention to ensure on-time payments.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Automation & Efficiency Section -->
-        <div class="grid lg:grid-cols-2 gap-20 items-center mb-32 reveal">
-          <div class="space-y-8">
-            <h2 class="text-4xl font-extrabold tracking-tight">Put Your Billing on <span class="text-brand-600">Autopilot</span></h2>
-            <p class="text-lg text-slate-600 leading-relaxed">Eliminate repetitive tasks and manual errors. InvoiceFlow handles the busy work, from recurring subscriptions to tax calculations and multi-currency conversions.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div class="group cursor-default">
-                <div class="text-brand-600 mb-2 transition-transform group-hover:scale-110">
-                  <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                </div>
-                <h4 class="font-bold mb-1">Smart Recurring</h4>
-                <p class="text-slate-500 text-sm">Set it once and forget it. Perfect for retainer-based businesses and SaaS platforms.</p>
-              </div>
-              <div class="group cursor-default">
-                <div class="text-brand-600 mb-2 transition-transform group-hover:scale-110">
-                  <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                </div>
-                <h4 class="font-bold mb-1">Global Tax Engine</h4>
-                <p class="text-slate-500 text-sm">Automatically calculate VAT, GST, and Sales Tax based on your client's location.</p>
-              </div>
-            </div>
-          </div>
-          <div class="relative">
-            <div class="absolute -inset-10 bg-brand-50 rounded-full blur-3xl opacity-50 animate-pulse"></div>
-            <img src="{% static 'images/automation_concept.jpg' %}" alt="Automation Concept" class="relative rounded-3xl shadow-2xl border border-slate-100 transform -rotate-2 hover:rotate-0 transition-all duration-700">
-          </div>
-        </div>
-
-        <!-- Global Collaboration Section -->
-        <div class="bg-indigo-50 rounded-[3rem] p-8 lg:p-20 overflow-hidden relative reveal mb-32">
-          <div class="absolute -bottom-20 -right-20 w-80 h-80 bg-brand-200 rounded-full blur-3xl opacity-30"></div>
-          <div class="grid lg:grid-cols-2 gap-16 items-center relative z-10">
-            <div class="space-y-8">
-              <h2 class="text-4xl font-extrabold tracking-tight">Collaboration <span class="text-indigo-600">Without Boundaries</span></h2>
-              <p class="text-slate-600 text-lg leading-relaxed">Invite your team, accountants, or financial advisors with granular permission controls. Everyone stays on the same page, from anywhere in the world.</p>
-              <div class="flex flex-wrap gap-3">
-                <span class="px-4 py-2 rounded-full bg-white text-brand-600 text-sm font-bold shadow-sm">Role-based Access</span>
-                <span class="px-4 py-2 rounded-full bg-white text-brand-600 text-sm font-bold shadow-sm">Real-time Auditing</span>
-                <span class="px-4 py-2 rounded-full bg-white text-brand-600 text-sm font-bold shadow-sm">Shared Client Profiles</span>
-              </div>
-            </div>
-            <div class="relative">
-              <div class="absolute -inset-4 bg-white/50 backdrop-blur-sm rounded-[2.5rem] rotate-3"></div>
-              <img src="{% static 'images/collaboration.jpg' %}" alt="Team Collaboration" class="relative rounded-[2rem] shadow-xl border border-white">
-            </div>
-          </div>
-        </div>
-
-        <!-- Analytics & Insights Section -->
-        <div class="grid lg:grid-cols-2 gap-20 items-center mb-32 reveal">
-          <div class="order-2 lg:order-1">
-            <div class="relative group">
-              <div class="absolute -inset-6 bg-gradient-to-r from-indigo-100 to-brand-100 rounded-[3rem] blur-2xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
-              <img src="{% static 'images/analytics_dashboard.jpg' %}" alt="Analytics Dashboard" class="relative rounded-[2.5rem] shadow-2xl border border-slate-100 transform group-hover:scale-[1.02] transition-transform duration-500">
-            </div>
-          </div>
-          <div class="order-1 lg:order-2 space-y-8">
-            <h2 class="text-4xl font-extrabold tracking-tight">Business Intelligence <span class="text-brand-600">at Your Fingertips</span></h2>
-            <p class="text-lg text-slate-600 leading-relaxed">Stop guessing and start growing. Our advanced analytics engine provides deep insights into your revenue streams, client behavior, and payment cycles.</p>
-            <div class="space-y-4">
-              <div class="flex items-start gap-4 p-4 rounded-2xl bg-white shadow-sm border border-slate-50">
-                <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-                </div>
-                <div>
-                  <h4 class="font-bold">Predictive Forecasting</h4>
-                  <p class="text-slate-500 text-sm">Visualize future cash flow based on historical payment patterns and recurring contracts.</p>
-                </div>
-              </div>
-              <div class="flex items-start gap-4 p-4 rounded-2xl bg-white shadow-sm border border-slate-50">
-                <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center shrink-0">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                </div>
-                <div>
-                  <h4 class="font-bold">Client Health Scores</h4>
-                  <p class="text-slate-500 text-sm">Identify your most valuable clients and those who might need additional attention to ensure on-time payments.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Automation & Efficiency Section -->
-        <div class="grid lg:grid-cols-2 gap-20 items-center mb-32 reveal">
-          <div class="space-y-8">
-            <h2 class="text-4xl font-extrabold tracking-tight">Put Your Billing on <span class="text-brand-600">Autopilot</span></h2>
-            <p class="text-lg text-slate-600 leading-relaxed">Eliminate repetitive tasks and manual errors. InvoiceFlow handles the busy work, from recurring subscriptions to tax calculations and multi-currency conversions.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div class="group cursor-default">
-                <div class="text-brand-600 mb-2 transition-transform group-hover:scale-110">
-                  <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                </div>
-                <h4 class="font-bold mb-1">Smart Recurring</h4>
-                <p class="text-slate-500 text-sm">Set it once and forget it. Perfect for retainer-based businesses and SaaS platforms.</p>
-              </div>
-              <div class="group cursor-default">
-                <div class="text-brand-600 mb-2 transition-transform group-hover:scale-110">
-                  <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
-                </div>
-                <h4 class="font-bold mb-1">Global Tax Engine</h4>
-                <p class="text-slate-500 text-sm">Automatically calculate VAT, GST, and Sales Tax based on your client's location.</p>
-              </div>
-            </div>
-          </div>
-          <div class="relative">
-            <div class="absolute -inset-10 bg-brand-50 rounded-full blur-3xl opacity-50 animate-pulse"></div>
-            <img src="{% static 'images/automation_concept.jpg' %}" alt="Automation Concept" class="relative rounded-3xl shadow-2xl border border-slate-100 transform -rotate-2 hover:rotate-0 transition-all duration-700">
-          </div>
-        </div>
-
-        <!-- Global Collaboration Section -->
-        <div class="bg-indigo-50 rounded-[3rem] p-8 lg:p-20 overflow-hidden relative reveal mb-32">
-          <div class="absolute -bottom-20 -right-20 w-80 h-80 bg-brand-200 rounded-full blur-3xl opacity-30"></div>
-          <div class="grid lg:grid-cols-2 gap-16 items-center relative z-10">
-            <div class="space-y-8">
-              <h2 class="text-4xl font-extrabold tracking-tight">Collaboration <span class="text-indigo-600">Without Boundaries</span></h2>
-              <p class="text-slate-600 text-lg leading-relaxed">Invite your team, accountants, or financial advisors with granular permission controls. Everyone stays on the same page, from anywhere in the world.</p>
-              <div class="flex flex-wrap gap-3">
-                <span class="px-4 py-2 rounded-full bg-white text-brand-600 text-sm font-bold shadow-sm">Role-based Access</span>
-                <span class="px-4 py-2 rounded-full bg-white text-brand-600 text-sm font-bold shadow-sm">Real-time Auditing</span>
-                <span class="px-4 py-2 rounded-full bg-white text-brand-600 text-sm font-bold shadow-sm">Shared Client Profiles</span>
-              </div>
-            </div>
-            <div class="relative">
-              <div class="absolute -inset-4 bg-white/50 backdrop-blur-sm rounded-[2.5rem] rotate-3"></div>
-              <img src="{% static 'images/collaboration.jpg' %}" alt="Team Collaboration" class="relative rounded-[2rem] shadow-xl border border-white">
-            </div>
-          </div>
-        </div>
-
-        <!-- API & Integrations Section -->
-        <div class="grid lg:grid-cols-2 gap-20 items-center mb-32 reveal">
-          <div class="order-2 lg:order-1 reveal">
-            <div class="relative group">
-              <div class="absolute -inset-4 bg-slate-900 rounded-[3rem] rotate-2 group-hover:rotate-0 transition-transform"></div>
-              <img src="{% static 'images/api_integration.jpg' %}" alt="API Integration" class="relative rounded-[2.5rem] shadow-2xl transition-all duration-500">
-              <div class="absolute bottom-8 right-8 bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-slate-100 max-w-xs animate-float">
-                <code class="text-xs text-brand-600 font-mono">POST /api/v1/invoices</code>
-                <p class="text-slate-500 text-xs mt-2">Connect your existing tech stack with our robust, developer-first REST API.</p>
-              </div>
-            </div>
-          </div>
-          <div class="order-1 lg:order-2 space-y-8">
-            <h2 class="text-4xl font-extrabold tracking-tight">Designed for <span class="text-brand-600">Modern Connectivity</span></h2>
-            <p class="text-lg text-slate-600 leading-relaxed">InvoiceFlow isn't an island. It's the central hub for your financial operations, designed to play perfectly with the tools your team already loves.</p>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="p-4 rounded-2xl border border-slate-100 hover:border-brand-200 hover:bg-brand-50 transition-all">
-                <div class="font-bold text-brand-600 mb-1">Webhooks</div>
-                <p class="text-xs text-slate-500">Real-time event notifications for automated workflows.</p>
-              </div>
-              <div class="p-4 rounded-2xl border border-slate-100 hover:border-brand-200 hover:bg-brand-50 transition-all">
-                <div class="font-bold text-brand-600 mb-1">Zapier</div>
-                <p class="text-xs text-slate-500">Connect to 5,000+ apps without writing a single line of code.</p>
-              </div>
-              <div class="p-4 rounded-2xl border border-slate-100 hover:border-brand-200 hover:bg-brand-50 transition-all">
-                <div class="font-bold text-brand-600 mb-1">SDKs</div>
-                <p class="text-xs text-slate-500">Official libraries for Python, Node.js, and Go.</p>
-              </div>
-              <div class="p-4 rounded-2xl border border-slate-100 hover:border-brand-200 hover:bg-brand-50 transition-all">
-                <div class="font-bold text-brand-600 mb-1">Custom Export</div>
-                <p class="text-xs text-slate-500">Flexible JSON and CSV exports for any accounting software.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Customer Experience Section -->
-        <div class="relative py-20 reveal overflow-hidden">
-          <div class="absolute inset-0 bg-brand-600 skew-y-3 origin-right scale-110 -z-10"></div>
-          <div class="grid lg:grid-cols-2 gap-20 items-center text-white">
-            <div class="space-y-8">
-              <h2 class="text-4xl lg:text-5xl font-extrabold tracking-tight">Elevate Your <span class="text-brand-300">Client Experience</span></h2>
-              <p class="text-brand-100 text-lg leading-relaxed">Professionalism doesn't end when the work is done. Provide your clients with a premium, white-labeled payment experience that builds trust and ensures faster settlement.</p>
-              <div class="space-y-6">
-                <div class="flex gap-4">
-                  <div class="w-12 h-12 rounded-full bg-brand-500 flex items-center justify-center shrink-0 border border-brand-400">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                  </div>
-                  <div>
-                    <h4 class="font-bold text-xl mb-1">Self-Service Client Portal</h4>
-                    <p class="text-brand-200">Give your clients a central place to view history, download past invoices, and manage payment methods.</p>
-                  </div>
-                </div>
-                <div class="flex gap-4">
-                  <div class="w-12 h-12 rounded-full bg-brand-500 flex items-center justify-center shrink-0 border border-brand-400">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                  </div>
-                  <div>
-                    <h4 class="font-bold text-xl mb-1">In-Invoice Messaging</h4>
-                    <p class="text-brand-200">Resolve billing questions instantly with direct, contextual communication inside the invoice itself.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="relative reveal">
-              <div class="absolute -inset-10 bg-brand-400/20 rounded-full blur-3xl"></div>
-              <img src="{% static 'images/customer_success.jpg' %}" alt="Customer Success" class="relative rounded-[3rem] shadow-2xl border-4 border-white/20">
-            </div>
-          </div>
-        </div>
-
-        <!-- New Security/Payment Section -->
-        <div class="bg-slate-900 rounded-[3rem] p-8 lg:p-20 text-white overflow-hidden relative reveal">
-          <div class="absolute top-0 right-0 w-1/2 h-full opacity-10">
-            <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 0 L100 100 L100 0 Z" fill="currentColor"></path></svg>
-          </div>
-          <div class="grid lg:grid-cols-2 gap-16 items-center relative z-10">
-            <div class="order-2 lg:order-1">
-              <img src="{% static 'images/secure_payment.jpg' %}" alt="Secure Payments" class="rounded-2xl shadow-2xl border border-white/10 grayscale hover:grayscale-0 transition-all duration-700">
-            </div>
-            <div class="order-1 lg:order-2 space-y-8">
-              <h2 class="text-4xl font-extrabold tracking-tight">Bank-Grade <span class="text-brand-400">Security</span> & Faster Payments</h2>
-              <p class="text-slate-400 text-lg leading-relaxed">Accept payments via credit card, wire transfer, or digital wallets. Our secure portal ensures your clients' data is always protected.</p>
-              <ul class="space-y-4 text-slate-300">
-                <li class="flex items-center gap-3"><svg class="w-5 h-5 text-brand-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> PCI-DSS Compliant Infrastructure</li>
-                <li class="flex items-center gap-3"><svg class="w-5 h-5 text-brand-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> 256-bit AES Encryption at Rest</li>
-                <li class="flex items-center gap-3"><svg class="w-5 h-5 text-brand-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Real-time Fraud Monitoring</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <!-- Team Section Refined -->
-        <div class="grid lg:grid-cols-2 gap-20 items-center mt-32 reveal">
-          <div class="space-y-10">
-            <h2 class="text-4xl font-extrabold tracking-tight">Built for <span class="text-brand-600">teams that care</span> about their customers</h2>
-            <p class="text-lg text-slate-600">InvoiceFlow isn't just a tool; it's an extension of your brand. Customize every touchpoint to reflect your professional excellence.</p>
-            <div class="p-8 rounded-3xl bg-brand-50 border border-brand-100">
-              <div class="flex gap-4 items-start">
-                <div class="w-12 h-12 rounded-full bg-brand-600 flex items-center justify-center shrink-0">
-                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                </div>
-                <div>
-                  <h4 class="font-bold text-brand-900 mb-2">Professional Documentation</h4>
-                  <p class="text-brand-800/70">Access our comprehensive guides and developer resources to integrate InvoiceFlow with your existing stack.</p>
-                </div>
-              </div>
-            </div>
-            <a href="{% url 'invoices:signup' %}" class="inline-flex items-center gap-2 text-brand-600 font-bold text-lg group">
-              Join the waiting list
-              <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-            </a>
-          </div>
-          <div class="relative">
-            <div class="absolute -inset-10 bg-gradient-to-tr from-brand-100 to-indigo-50 rounded-full blur-3xl opacity-50"></div>
-            <img src="{% static 'images/workspace.jpg' %}" alt="Our Workspace" class="relative rounded-3xl shadow-2xl grayscale hover:grayscale-0 transition-all duration-700">
-          </div>
-        </div>
-      </div>
     </section>
 
-    <!-- FAQ Section -->
-    <section id="faq" class="py-24 lg:py-32">
-      <div class="max-w-4xl mx-auto px-4">
-        <h2 class="text-3xl lg:text-4xl font-extrabold text-center mb-16 tracking-tight">Frequently Asked Questions</h2>
-        <div class="space-y-6">
-          <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100">
-            <h3 class="text-lg font-bold mb-3">Is there really a free version?</h3>
-            <p class="text-slate-600 leading-relaxed">Yes! Our Starter plan is 100% free for up to 5 invoices per month. We want to support freelancers and small creators as they grow.</p>
-          </div>
-          <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100">
-            <h3 class="text-lg font-bold mb-3">Can I use my own logo and colors?</h3>
-            <p class="text-slate-600 leading-relaxed">Absolutely. Custom branding is available on all paid plans, allowing you to tailor the invoice design to perfectly match your company's identity.</p>
-          </div>
-          <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100">
-            <h3 class="text-lg font-bold mb-3">Is my data secure?</h3>
-            <p class="text-slate-600 leading-relaxed">We take security seriously. All data is encrypted at rest and in transit using bank-grade AES-256 encryption. Your financial information is safe with us.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Final CTA -->
-    <section class="py-20 lg:py-32 relative">
-      <div class="max-w-5xl mx-auto px-4 text-center">
-        <div class="bg-brand-600 rounded-[3rem] p-12 lg:p-24 text-white shadow-2xl shadow-brand-200 relative overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-br from-indigo-500 to-brand-700 opacity-50"></div>
-          <div class="relative z-10">
-            <h2 class="text-4xl lg:text-6xl font-extrabold mb-8 tracking-tight">Ready to master your billing?</h2>
-            <p class="text-xl text-brand-100 mb-12 max-w-2xl mx-auto">Join thousands of businesses who have already simplified their invoicing workflow with InvoiceFlow.</p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="{% url 'invoices:signup' %}" class="bg-white text-brand-600 px-10 py-5 rounded-2xl font-bold text-xl hover:bg-brand-50 transition-all shadow-xl shadow-brand-900/20">Get Started for Free</a>
-              <a href="mailto:hello@invoiceflow.com" class="bg-brand-500/30 backdrop-blur-md border border-brand-400/50 text-white px-10 py-5 rounded-2xl font-bold text-xl hover:bg-brand-500/50 transition-all">Talk to an expert</a>
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-100 py-20 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <i data-lucide="file-text" class="text-white w-5 h-5"></i>
+                </div>
+                <span class="text-xl font-bold text-slate-900">InvoiceFlow</span>
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="bg-slate-50 border-t border-slate-200 py-16 lg:py-24">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 lg:gap-8 mb-20">
-        <div class="col-span-2 lg:col-span-2">
-          <div class="flex items-center gap-3 mb-6">
-            <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <p class="text-slate-400 text-sm">© 2026 InvoiceFlow. Built for the future of work.</p>
+            <div class="flex gap-8">
+                <a href="#" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="twitter" class="w-5 h-5"></i></a>
+                <a href="#" class="text-slate-400 hover:text-indigo-600 transition"><i data-lucide="github" class="w-5 h-5"></i></a>
             </div>
-            <span class="text-xl font-bold tracking-tight">Invoice<span class="text-brand-600">Flow</span></span>
-          </div>
-          <p class="text-slate-500 max-w-sm mb-8 leading-relaxed">Helping businesses get paid faster since 2024. The world's most intuitive invoicing platform.</p>
-          <div class="flex gap-4">
-            <a href="#" class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-600 hover:text-white transition-all"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/></svg></a>
-            <a href="#" class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 hover:bg-brand-600 hover:text-white transition-all"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
-          </div>
         </div>
-        <div>
-          <h4 class="font-bold mb-6">Product</h4>
-          <ul class="space-y-4 text-sm text-slate-500 font-medium">
-            <li><a href="#features" class="hover:text-brand-600 transition-colors">Features</a></li>
-            <li><a href="#faq" class="hover:text-brand-600 transition-colors">FAQ</a></li>
-          </ul>
-        </div>
-        <div>
-          <h4 class="font-bold mb-6">Company</h4>
-          <ul class="space-y-4 text-sm text-slate-500 font-medium">
-            <li><a href="#" class="hover:text-brand-600 transition-colors">About</a></li>
-            <li><a href="#" class="hover:text-brand-600 transition-colors">Blog</a></li>
-            <li><a href="#" class="hover:text-brand-600 transition-colors">Contact</a></li>
-          </ul>
-        </div>
-        <div>
-          <h4 class="font-bold mb-6">Legal</h4>
-          <ul class="space-y-4 text-sm text-slate-500 font-medium">
-            <li><a href="#" class="hover:text-brand-600 transition-colors">Privacy</a></li>
-            <li><a href="#" class="hover:text-brand-600 transition-colors">Terms</a></li>
-            <li><a href="#" class="hover:text-brand-600 transition-colors">Security</a></li>
-          </ul>
-        </div>
-      </div>
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-200 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
-        <p class="text-sm text-slate-400 font-medium">© <span id="year"></span> InvoiceFlow. All rights reserved.</p>
-        <p class="text-xs text-slate-300">Made with ❤️ for modern businesses.</p>
-      </div>
-    </div>
-  </footer>
+    </footer>
+</div>
+{% endblock %}
 
-  <script>
-    // Mobile Menu Logic
-    const menuBtn = document.getElementById('mobile-menu-button');
-    const closeBtn = document.getElementById('close-menu');
-    const menu = document.getElementById('mobile-menu');
-
-    menuBtn.addEventListener('click', () => menu.classList.remove('hidden'));
-    closeBtn.addEventListener('click', () => menu.classList.add('hidden'));
-
-    // Set year
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // Smooth scroll offset
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-          window.scrollTo({
-            top: target.offsetTop - 80,
-            behavior: 'smooth'
-          });
-          menu.classList.add('hidden'); // Close mobile menu if open
-        }
-      });
+{% block extra_js %}
+<script>
+    AOS.init({
+        duration: 1000,
+        once: true,
+        easing: 'ease-out-cubic'
     });
-
-    // Intersection Observer for Reveal Animations
-    const observerOptions = {
-      threshold: 0.1
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('active');
-        }
-      });
-    }, observerOptions);
-
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-  </script>
-</body>
-</html>
+</script>
+{% endblock %}

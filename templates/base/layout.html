@@ -1,40 +1,89 @@
 {% load static %}
-<!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}InvoiceFlow{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui'] },
-                }
-            }
-        }
-    </script>
-    <style>
-        .text-gradient {
-            @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600;
-        }
-        .card-glass {
-            @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-xl;
-        }
-        .btn-primary {
-            @apply bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95;
-        }
-    </style>
-    {% block extra_head %}{% endblock %}
+<link rel="icon" href="{% static 'images/favicon.ico' %}" />
+<link rel="apple-touch-icon" href="{% static 'images/apple-touch-icon.png' %}" />
+<link rel="manifest" href="{% static 'site.webmanifest' %}" />
+
+
+<!-- Fonts & Tailwind -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {
+convert the FAQ into a fetchable JSON + render dynamically, or fontFamily: { sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui'] },
+colors: {
+brand: {
+50: '#f0f4ff', 100: '#e1e9ff', 200: '#c8d6ff', 300: '#a3baff', 400: '#7592ff', 500: '#4461ff', 600: '#2d3fff', 700: '#232ee6', 800: '#1d26bb', 900: '#1d2694'
+},
+},
+boxShadow: {
+'card': '0 2px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.05)',
+'card-hover': '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
+},
+keyframes: {
+float: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-12px)' } },
+fadeUp: { '0%': { opacity: 0, transform: 'translateY(24px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } }
+},
+animation: {
+float: 'float 6s ease-in-out infinite',
+fadeUp: 'fadeUp 700ms ease-out forwards'
+}
+}
+}
+}
+</script>
+
+
+<!-- Open Graph / Twitter -->
+<meta property="og:title" content="InvoiceFlow – Professional Invoicing for Modern Businesses" />
+<meta property="og:description" content="Create stunning invoices, automate reminders, and get paid faster." />
+<meta property="og:image" content="{% static 'images/og-hero.jpg' %}" />
+<meta name="twitter:card" content="summary_large_image" />
+
+
+<style>
+.text-gradient { @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600; }
+.card-glass { @apply bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl; }
+.btn-primary { @apply bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-200 transition-all active:scale-95; }
+.btn-ghost { @apply bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-800; }
+.bg-grid { background-image: radial-gradient(circle, rgba(68,97,255,0.12) 1px, transparent 1px); background-size: 28px 28px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+
+{% block extra_head %}{% endblock %}
+
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+"@context": "https://schema.org",
+"@type": "SoftwareApplication",
+"name": "InvoiceFlow",
+"applicationCategory": "BusinessApplication",
+"operatingSystem": "Web",
+"offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+}
+</script>
 </head>
-<body class="h-full font-sans antialiased text-slate-900">
-    {% block content %}{% endblock %}
-    <script>
-        lucide.createIcons();
-    </script>
-    {% block extra_js %}{% endblock %}
+<body class="h-full font-sans antialiased text-slate-900 dark:text-slate-100 selection:bg-brand-100 selection:text-brand-900">
+<script>
+// Dark mode boot (no flash)
+(function() {
+const stored = localStorage.getItem('theme');
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+if (stored === 'dark' || (!stored && prefersDark)) document.documentElement.classList.add('dark');
+})();
+</script>
+
+
+{% block content %}{% endblock %}
+
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>
