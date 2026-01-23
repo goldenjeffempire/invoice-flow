@@ -238,34 +238,34 @@ def _render_public_page(request, template_name="pages/landing.html"):
     return render(request, template_name)
 
 def features_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "Features"})
 
 def about_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "About Us"})
 
 def contact_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "Contact Us"})
 
 def terms_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "Terms of Service"})
 
 def privacy_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "Privacy Policy"})
 
 def security_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "Security"})
 
 def faq_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "FAQ"})
 
 def support_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "Support"})
 
 def careers_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "Careers"})
 
 def blog_view(request):
-    return _render_public_page(request)
+    return render(request, "pages/home-light.html", {"title": "Blog"})
 
 def robots_txt(request):
     content = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"

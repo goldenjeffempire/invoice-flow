@@ -256,12 +256,26 @@ WHITENOISE_MANIFEST_STRICT = not DEBUG
 # =============================================================================
 import dj_database_url
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.getenv('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
+
+_db_url = os.getenv('DATABASE_URL')
+if _db_url:
+    try:
+        # Check if we have a postgres driver
+        import psycopg2  # noqa: F401
+        DATABASES['default'] = dj_database_url.config(
+            default=_db_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    except ImportError:
+        # Fallback to sqlite if driver is missing to keep the app running
+        import logging
+        logging.getLogger(__name__).warning("PostgreSQL driver not found, falling back to SQLite")
 
 # =============================================================================
 # CSRF TRUSTED ORIGINS
