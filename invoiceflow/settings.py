@@ -8,6 +8,7 @@ import os
 import sys
 from typing import Any, cast
 import environ
+import dj_database_url
 
 from .env_validation import validate_env
 
