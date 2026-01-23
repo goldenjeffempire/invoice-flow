@@ -1,0 +1,67 @@
+{% extends "base/layout.html" %}
+{% load static %}
+
+{% block head %}
+<style>
+  .sidebar-link { transition: transform .12s ease, background-color .12s ease, color .12s ease; }
+  .sidebar-link:hover { transform: translateX(2px); }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-slate-50">
+  <!-- Top bar -->
+  <header class="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'invoices:dashboard' %}" class="flex items-center gap-2">
+          <div class="h-9 w-9 rounded-xl bg-slate-900 text-white grid place-items-center font-extrabold">IF</div>
+          <span class="font-bold tracking-tight">InvoiceFlow</span>
+        </a>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'invoices:settings' %}" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-sm font-semibold">Settings</a>
+        <a href="{% url 'invoices:logout' %}" class="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Sidebar -->
+    <aside class="lg:col-span-3">
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-soft p-4 sticky top-20">
+        <nav class="space-y-1">
+          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if request.path == '/dashboard/' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+             href="{% url 'invoices:dashboard' %}">Dashboard</a>
+          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/list/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+             href="{% url 'invoices:invoices_list' %}">Invoices</a>
+          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/create/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+             href="{% url 'invoices:invoice_create' %}">Create invoice</a>
+          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/payments/history/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+             href="{% url 'invoices:payment_history' %}">Payments</a>
+          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/analytics/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+             href="{% url 'invoices:analytics' %}">Analytics</a>
+          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/settings/reminders/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+             href="{% url 'invoices:reminder_dashboard' %}">Reminders</a>
+          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/settings/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
+             href="{% url 'invoices:settings' %}">Settings</a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main id="content" class="lg:col-span-9">
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for message in messages %}
+            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-soft text-sm">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}
