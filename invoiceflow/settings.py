@@ -252,251 +252,35 @@ WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0
 WHITENOISE_KEEP_ONLY_HASHED_FILES = not DEBUG
 WHITENOISE_MANIFEST_STRICT = not DEBUG
 # =============================================================================
+# DATABASE
+# =============================================================================
+import dj_database_url
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 # =============================================================================
-# TEMPLATES
+# CSRF TRUSTED ORIGINS
 # =============================================================================
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-                "csp.context_processors.nonce",
-                "invoiceflow.context_processors.assets_config",
-            ],
-        },
-    }
+CSRF_TRUSTED_ORIGINS: list[str] = [
+    f"https://{PRODUCTION_DOMAIN}",
+    f"https://www.{PRODUCTION_DOMAIN}",
 ]
 
-# =============================================================================
-# AUTH & PASSWORD SECURITY
-# =============================================================================
-AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
-    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-    {"NAME": "invoiceflow.password_validators.ComplexityValidator"},
-    {"NAME": "invoiceflow.password_validators.BreachedPasswordValidator"},
-]
+if not IS_PRODUCTION:
+    CSRF_TRUSTED_ORIGINS += [
+        "https://*.onrender.com",
+        "https://*.replit.dev",
+        "https://*.repl.co",
+    ]
 
-LOGIN_URL = "invoices:login"
-LOGIN_REDIRECT_URL = "invoices:dashboard"
-LOGOUT_REDIRECT_URL = "invoices:home"
-
-# =============================================================================
-# ACCOUNT LOCKOUT / MFA
-# =============================================================================
-ACCOUNT_LOCKOUT_THRESHOLD = env.int("ACCOUNT_LOCKOUT_THRESHOLD", 5)
-ACCOUNT_LOCKOUT_DURATION = env.int("ACCOUNT_LOCKOUT_DURATION", 900)
-
-MFA_ENABLED = env.bool("MFA_ENABLED", False)
-MFA_ISSUER_NAME = env.str("MFA_ISSUER_NAME", "InvoiceFlow")
-MFA_RECOVERY_CODES_COUNT = env.int("MFA_RECOVERY_CODES_COUNT", 10)
-
-# =============================================================================
-# RATE LIMITING
-# =============================================================================
-RATE_LIMIT_REQUESTS = env.int("RATE_LIMIT_REQUESTS", 120)
-RATE_LIMIT_WINDOW = env.int("RATE_LIMIT_WINDOW", 60)
-PAYSTACK_WEBHOOK_RATE_LIMIT = env.int("PAYSTACK_WEBHOOK_RATE_LIMIT", 120)
-PAYSTACK_WEBHOOK_RATE_WINDOW = env.int("PAYSTACK_WEBHOOK_RATE_WINDOW", 60)
-
-# =============================================================================
-# SESSION SECURITY
-# =============================================================================
-SESSION_ENGINE = "django.contrib.sessions.backends.db"
-SESSION_COOKIE_SAMESITE = "Strict"
-SESSION_COOKIE_NAME = "invoiceflow_session"
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 7
-SESSION_SAVE_EVERY_REQUEST = True
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-
-# =============================================================================
-# STATIC / MEDIA
-# =============================================================================
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
-
-# Enhanced WhiteNoise Configuration for Caching
-WHITENOISE_USE_FINDERS = True
-WHITENOISE_AUTOREFRESH = DEBUG
-WHITENOISE_IMMUTABLE_FILE_SUPPORT = not DEBUG
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-MEDIA_URL = "/media/"
-MEDIA_ROOT = BASE_DIR / "media"
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# =============================================================================
-# DJANGO REST FRAMEWORK
-# =============================================================================
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
-    "DEFAULT_FILTER_BACKENDS": [
-        "rest_framework.filters.SearchFilter",
-        "rest_framework.filters.OrderingFilter",
-    ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
-    "PAGE_SIZE": 20,
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-    ],
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_THROTTLE_CLASSES": [
-        "invoices.api.rate_limiting.AnonBurstThrottle",
-        "invoices.api.rate_limiting.UserBurstThrottle",
-    ],
-    "DEFAULT_THROTTLE_RATES": {
-        "user_burst": "100/hour",
-        "user_sustained": "1000/day",
-        "anon_burst": "20/hour",
-        "payment": "5/hour",
-        "public_invoice": "30/hour",
-    },
-    "EXCEPTION_HANDLER": "invoices.api.exception_handlers.custom_exception_handler",
-}
-
-# =============================================================================
-# DJANGO REST FRAMEWORK SPECTACULAR (API SCHEMA)
-# =============================================================================
-SPECTACULAR_SETTINGS = {
-    "TITLE": "InvoiceFlow API",
-    "DESCRIPTION": "Professional invoicing platform API",
-    "VERSION": "1.0.0",
-    "SKIP_VIEW_PERMISSIONS": True,
-    "SKIP_VALIDATION": True,
-    "COERCE_DECIMAL_TO_STRING": True,
-    "ENABLE_SPECTACULAR_DEFAULTS": True,
-    "PREFER_HTTPS": not DEBUG,
-    "ENUM_MAPPING_FAIL_SAFE": True,
-    "DISABLE_ENUM_COERCION": True,
-    "SCHEMA_PATH_PREFIX": "/api/v[0-9]",
-    "SCHEMA_EXEMPT_VIEWS": [
-        "django.views.static.serve",
-        "rest_framework.decorators.api_view",
-    ],
-    "ALLOWED_HOSTS": ALLOWED_HOSTS,
-    "AUTHENTICATION_FLOWS": {
-        "basicAuth": {
-            "type": "http",
-            "scheme": "basic",
-        },
-        "bearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-        },
-    },
-    "OPERATION_ID_BASE": "openapi_auto_schema",
-    "DEFAULT_GENERATOR_CLASS": "drf_spectacular.generators.SchemaGenerator",
-    "ENUM_NAME_OVERRIDES": {},
-    "POSTPROCESSING_HOOKS": ["invoiceflow.spectacular_hooks.postprocess_schema_enums"],
-}
-
-# =============================================================================
-# LOGGING
-# =============================================================================
-os.makedirs(BASE_DIR / "logs", exist_ok=True)
-
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "filters": {
-        "request_context": {
-            "()": "invoiceflow.logging_config.RequestContextFilter",
-        },
-        "pii_scrubber": {
-            "()": "invoiceflow.logging_config.PiiScrubberFilter",
-        },
-    },
-    "formatters": {
-        "verbose": {
-            "format": "[{asctime}] {levelname} {name} {message}",
-            "style": "{",
-        },
-        "json": {
-            "()": "invoiceflow.logging_config.JsonFormatter",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "json" if IS_PRODUCTION else "verbose",
-            "filters": ["request_context", "pii_scrubber"],
-        },
-        "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "filename": BASE_DIR / "logs/django.log",
-            "maxBytes": 1024 * 1024 * 10,
-            "backupCount": 5,
-            "formatter": "json",
-            "filters": ["request_context", "pii_scrubber"],
-        },
-    },
-    "root": {
-        "handlers": ["console", "file"],
-        "level": "INFO",
-    },
-}
-
-# =============================================================================
-# CONTENT SECURITY POLICY
-# =============================================================================
-CONTENT_SECURITY_POLICY = {
-    "DIRECTIVES": {
-        "default-src": ("'self'", "https:"),
-        "script-src": ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https:", "https://unpkg.com"),
-        "style-src": ("'self'", "'unsafe-inline'", "https:", "https://fonts.googleapis.com"),
-        "img-src": ("'self'", "data:", "https:"),
-        "font-src": ("'self'", "data:", "https:", "https://fonts.gstatic.com"),
-        "connect-src": ("'self'", "https:"),
-        "frame-src": ("'self'", "https:"),
-        "object-src": ("'none'",),
-    },
-    "INCLUDE_NONCE_IN": ["script-src", "style-src"],
-}
-
-# =============================================================================
-# EMAIL
-# =============================================================================
-EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST: str = env.str("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT: int = env.int("EMAIL_PORT", 587)
-EMAIL_USE_TLS: bool = True
-EMAIL_HOST_USER: str = env.str("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD: str = env.str("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL: str = f"noreply@{PRODUCTION_DOMAIN}"
-
-# =============================================================================
-# THIRD-PARTY
-# =============================================================================
-HCAPTCHA_SITEKEY: str = env.str("HCAPTCHA_SITEKEY", "")
-HCAPTCHA_SECRET: str = env.str("HCAPTCHA_SECRET", "")
-HCAPTCHA_ENABLED: bool = bool(HCAPTCHA_SITEKEY and HCAPTCHA_SECRET)
-
-# =============================================================================
-# API / WEBHOOKS
-# =============================================================================
-API_BASE_URL: str = env.str("API_BASE_URL", PRODUCTION_URL)
-WEBHOOK_BASE_URL: str = env.str("WEBHOOK_BASE_URL", PRODUCTION_URL)
-SITE_URL: str = env.str("SITE_URL", PRODUCTION_URL)
+# Replit Specific CSRF Trusted Origins (non-production only)
+if "REPLIT_DEV_DOMAIN" in os.environ:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['REPLIT_DEV_DOMAIN']}")
+if "REPLIT_DOMAINS" in os.environ:
+    for domain in os.environ["REPLIT_DOMAINS"].split(","):
+        CSRF_TRUSTED_ORIGINS.append(f"https://{domain}")
