@@ -8,7 +8,6 @@ import os
 import sys
 from typing import Any, cast
 import environ
-import dj_database_url
 
 from .env_validation import validate_env
 
@@ -69,7 +68,9 @@ if "REPLIT_DOMAINS" in os.environ:
     for domain in os.environ["REPLIT_DOMAINS"].split(","):
         if domain not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(domain)
-ALLOWED_HOSTS.append("*")  # Temporarily allow all for replit preview if needed, but we should be specific
+# Optional dev escape hatch (never enabled by default).
+if not IS_PRODUCTION and env.bool("ALLOW_ALL_HOSTS_DEV", default=False):
+    ALLOWED_HOSTS.append("*")
 
 CSRF_TRUSTED_ORIGINS: list[str] = [
     f"https://{PRODUCTION_DOMAIN}",
@@ -82,15 +83,9 @@ if not IS_PRODUCTION:
         "https://*.replit.dev",
         "https://*.repl.co",
     ]
-else:
-    CSRF_TRUSTED_ORIGINS += [
-        "https://*.onrender.com",
-        "https://*.replit.dev",
-        "https://*.repl.co",
-    ]
 
-# Replit Specific CSRF Trusted Origins
-if "REPLIT_DEV_DOMAIN" in os.environ:
+# Replit Specific CSRF Trusted Origins (non-production only)
+if not IS_PRODUCTION and "REPLIT_DEV_DOMAIN" in os.environ:
     CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['REPLIT_DEV_DOMAIN']}")
 
 csrf_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS")
