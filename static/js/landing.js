@@ -1,49 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Intro Slides Logic with Accessibility
-    const intro = document.getElementById('intro-slides');
-    const slides = document.querySelectorAll('.slide');
-    const nextButtons = document.querySelectorAll('.next-slide');
-    let currentSlide = 0;
-
-    const updateAria = () => {
-        slides.forEach((s, i) => {
-            s.setAttribute('aria-hidden', i !== currentSlide);
-        });
-    };
-
-    const skipIntro = () => {
-        intro.style.opacity = '0';
-        intro.style.visibility = 'hidden';
-        localStorage.setItem('production_landing_intro_seen', 'true');
-        setTimeout(() => intro.remove(), 1000);
-    };
-
-    if (localStorage.getItem('production_landing_intro_seen')) {
-        if (intro) intro.remove();
-    } else {
-        updateAria();
-        nextButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                slides[currentSlide].classList.remove('active');
-                currentSlide++;
-                if (currentSlide < slides.length) {
-                    slides[currentSlide].classList.add('active');
-                    updateAria();
-                } else {
-                    skipIntro();
-                }
-            });
-        });
-
-        // Keyboard Navigation for Slides
-        document.addEventListener('keydown', (e) => {
-            if (intro && e.key === 'Enter') {
-                const activeBtn = slides[currentSlide].querySelector('button');
-                if (activeBtn) activeBtn.click();
-            }
-        });
-    }
-
     // Nav Scroll Effect
     const nav = document.querySelector('nav');
     window.addEventListener('scroll', () => {
