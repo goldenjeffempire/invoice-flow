@@ -46,9 +46,7 @@ def _parse_request_payload(request) -> dict:
     return request.POST.dict()
 
 def landing_view(request):
-    if request.user.is_authenticated:
-        return redirect("invoices:dashboard")
-    return render(request, "pages/landing.html")
+    return redirect("invoices:login")
 
 def login_view(request):
     if request.user.is_authenticated:
