@@ -35,7 +35,7 @@ from .forms import (
     ReminderRuleForm,
 )
 from .sendgrid_service import SendGridEmailService
-from .services import AnalyticsService
+from .services import AnalyticsService, InvoiceService, _get_invoice_initial
 
 def _parse_request_payload(request) -> dict:
     if request.content_type and "application/json" in request.content_type:
@@ -44,6 +44,16 @@ def _parse_request_payload(request) -> dict:
         except json.JSONDecodeError:
             return {}
     return request.POST.dict()
+
+def robots_txt(request):
+    content = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
+    return HttpResponse(content.encode('utf-8'), content_type="text/plain")
+
+def custom_404(request, exception=None):
+    return render(request, "404.html", status=404)
+
+def custom_500(request):
+    return render(request, "500.html", status=500)
 
 def landing_view(request):
     if request.user.is_authenticated:

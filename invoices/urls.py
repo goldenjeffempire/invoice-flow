@@ -22,11 +22,6 @@ urlpatterns = [
     path("invoices/<str:invoice_id>/pdf/", views.download_invoice_pdf, name="invoice_pdf"),
     path("invoices/<str:invoice_id>/delete/", views.delete_invoice, name="delete_invoice"),
     path("invoices/<str:invoice_id>/reminder/", views.send_reminder, name="send_reminder"),
-    
-    # ------------------------------------------------------------------
-    # WAITLIST
-    # ------------------------------------------------------------------
-    path("waitlist/", views.waitlist_subscribe, name="waitlist_subscribe"),
 
     # ------------------------------------------------------------------
     # PAYMENTS
