@@ -151,8 +151,8 @@ DATABASES = {
 }
 
 # PostgreSQL connection using the provisioned DATABASE_URL
-# fallback to sqlite for development if psycopg issues persist in nix
-if os.getenv("DATABASE_URL") and IS_PRODUCTION:
+# Use PostgreSQL in both development and production when DATABASE_URL is available
+if os.getenv("DATABASE_URL"):
     DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=False)
 
 # =============================================================================
