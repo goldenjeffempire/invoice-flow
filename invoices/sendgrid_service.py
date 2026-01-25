@@ -351,6 +351,75 @@ The InvoiceFlow Team"""
             subject=f"Admin Alert: {alert_type}",
         )
 
+    def send_payment_reminder(self, invoice, recipient_email, template_id=None):
+        """Send payment reminder to client."""
+        template_id = template_id or self.TEMPLATE_IDS.get("payment_reminder")
+
+        template_data = {
+            "invoice_id": invoice.invoice_id,
+            "due_date": invoice.due_date.strftime("%B %d, %Y") if invoice.due_date else "N/A",
+            "client_name": invoice.client_name,
+            "business_name": invoice.business_name,
+            "currency": invoice.currency,
+            "total_amount": f"{invoice.currency} {invoice.total:.2f}",
+            "invoice_url": self._get_invoice_view_url(invoice),
+        }
+
+        if not template_id:
+            html_content = render_to_string("invoices/emails/payment_reminder.html", template_data)
+            text_content = render_to_string("invoices/emails/payment_reminder.txt", template_data)
+            return self._send_html_email(
+                to_email=recipient_email,
+                subject=f"Reminder: Invoice #{invoice.invoice_id} Payment Due",
+                plain_text=text_content,
+                html_content=html_content
+            )
+
+        return self._send_email(
+            user_business_email=invoice.business_email,
+            from_name=invoice.business_name,
+            to_email=recipient_email,
+            template_id=template_id,
+            template_data=template_data,
+            subject=f"Reminder: Invoice #{invoice.invoice_id} Payment Due",
+            invoice=invoice,
+        )
+
+    def _get_invoice_view_url(self, invoice):
+        """Generate public URL for the invoice."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/public/invoice/{invoice.invoice_id}/"
+
+    def _get_dashboard_url(self):
+        """Generate dashboard URL."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/dashboard/"
+
+    def _get_help_url(self):
+        """Generate help/FAQ URL."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/faq/"
+
+    def _get_verification_url(self, token):
+        """Generate email verification URL."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/verify-email/{token}/"
+
+    def _get_password_reset_url(self, token):
+        """Generate password reset URL."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/password-reset/confirm/{token}/"
+
     # ============ HELPER METHODS ============
 
     def _send_email(
@@ -380,6 +449,9 @@ The InvoiceFlow Team"""
         try:
             # Always send from platform owner's verified email for deliverability
             # But set Reply-To to user's business email for direct replies
+            
+            if not Mail or not From or not To:
+                return {"status": "error", "message": "SendGrid helper classes not available"}
 
             message = Mail(
                 from_email=From(self.from_email, from_name),
@@ -389,11 +461,11 @@ The InvoiceFlow Team"""
 
             # Set Reply-To header to user's business email
             # This allows customers to reply directly to the user without verification
-            if user_business_email:
+            if user_business_email and ReplyTo:
                 message.reply_to = ReplyTo(user_business_email)
 
             # Use dynamic template if ID is provided
-            if template_id:
+            if template_id and TemplateId and Personalization:
                 message.template_id = TemplateId(template_id)
                 personalization = Personalization()
                 personalization.add_to(To(to_email))
@@ -407,7 +479,7 @@ The InvoiceFlow Team"""
                 )
 
             # Add PDF attachment for invoice emails
-            if invoice:
+            if invoice and Attachment and FileContent and FileName and FileType:
                 pdf_data = self._generate_invoice_pdf(invoice)
                 if pdf_data:
                     attachment = Attachment(
@@ -447,6 +519,9 @@ The InvoiceFlow Team"""
             return {"status": "error", "message": error_msg, "configured": False}
 
         try:
+            if not Mail or not From or not To:
+                return {"status": "error", "message": "SendGrid helper classes not available"}
+
             # Create simple text content from template data
             plain_text = self._format_plain_text(data)
 
@@ -458,7 +533,7 @@ The InvoiceFlow Team"""
             )
 
             # Set Reply-To if provided
-            if reply_to_email:
+            if reply_to_email and ReplyTo:
                 message.reply_to = ReplyTo(reply_to_email)
 
             if self.client is None:
@@ -480,6 +555,9 @@ The InvoiceFlow Team"""
             return {"status": "error", "message": error_msg, "configured": False}
 
         try:
+            if not Mail or not From or not To:
+                return {"status": "error", "message": "SendGrid helper classes not available"}
+
             message = Mail(
                 from_email=From(self.from_email, "InvoiceFlow"),
                 to_emails=To(to_email),
