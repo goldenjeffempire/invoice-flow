@@ -4,8 +4,8 @@ from django.urls import path, include
 from invoices import admin_views, health, views
 from invoices.sitemap import sitemaps
 
-handler404 = "invoices.views.custom_404"
-handler500 = "invoices.views.custom_500"
+handler404 = "invoices.views.custom_404_view"
+handler500 = "invoices.views.custom_500_view"
 
 urlpatterns = [
     path("admin/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
@@ -20,7 +20,7 @@ urlpatterns = [
     path("health/ready/", health.readiness_check, name="readiness_check"),
     path("health/live/", health.liveness_check, name="liveness_check"),
     path("health/details/", health.detailed_health, name="detailed_health"),
-    path("robots.txt", views.robots_txt, name="robots_txt"),
+    path("robots.txt", views.robots_txt_view, name="robots_txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
     path("api/v1/", include("invoices.api.urls")),
     path("invoices/", include(("invoices.urls", "invoices"), namespace="invoices_legacy")),
