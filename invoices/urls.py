@@ -6,7 +6,10 @@ from . import paystack_views, views
 app_name = "invoices"
 
 urlpatterns = [
-    path("", views.login_view, name="home"),
+    path("", views.landing_view, name="home"),
+    path("features/", views.landing_view, name="features"),
+    path("about/", views.landing_view, name="about"),
+    path("contact/", views.landing_view, name="contact"),
     path("login/", views.login_view, name="login"),
     path("signup/", views.signup, name="signup"),
     path("logout/", views.logout_view, name="logout"),
