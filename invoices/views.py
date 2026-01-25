@@ -250,13 +250,13 @@ def _render_public_page(request, template_name="pages/landing.html"):
     return redirect('invoices:home')
 
 def features_view(request):
-    return redirect('invoices:home')
+    return render(request, "pages/features.html")
 
 def about_view(request):
-    return redirect('invoices:home')
+    return render(request, "pages/about.html")
 
 def contact_view(request):
-    return render(request, "pages/landing.html", {"scroll_to": "contact"})
+    return render(request, "pages/contact.html")
 
 def faq_api(request):
     faq_data = [

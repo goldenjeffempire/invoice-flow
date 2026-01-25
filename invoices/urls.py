@@ -7,8 +7,8 @@ app_name = "invoices"
 
 urlpatterns = [
     path("", views.landing_view, name="home"),
-    path("about/", views.landing_view, name="about"),
-    path("features/", views.landing_view, name="features"),
+    path("about/", views.about_view, name="about"),
+    path("features/", views.features_view, name="features"),
     path("contact/", views.contact_view, name="contact"),
     path("api/faq/", views.faq_api, name="faq_api"),
     path("login/", views.login_view, name="login"),
