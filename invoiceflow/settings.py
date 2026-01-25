@@ -60,7 +60,7 @@ if os.getenv("REPLIT_DEV_DOMAIN"):
 
 # Production Security Headers
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", True)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000 # 1 year
@@ -69,6 +69,8 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = "DENY"
+else:
+    SECURE_SSL_REDIRECT = False
 
 # =============================================================================
 # INSTALLED APPS
@@ -82,13 +84,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "invoices.apps.InvoicesConfig",
-    "tailwind",
-    "theme",
 ]
-
-# Tailwind Configuration
-TAILWIND_APP_NAME = 'theme'
-INTERNAL_IPS = ["127.0.0.1"]
 
 # Analytics Cache Settings
 CACHE_TIMEOUT_DASHBOARD = 60
@@ -113,6 +109,27 @@ MIDDLEWARE = [
     "invoiceflow.mfa_middleware.MFAEnforcementMiddleware",
 ]
 
+ROOT_URLCONF = "invoiceflow.urls"
+
+# =============================================================================
+# TEMPLATES
+# =============================================================================
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
+    }
+]
+
 # MFA Settings
 MFA_ENABLED = True
 MFA_ISSUER_NAME = "InvoiceFlow"
@@ -128,7 +145,8 @@ DATABASES = {
 }
 
 # PostgreSQL connection using the provisioned DATABASE_URL
-if os.getenv("DATABASE_URL"):
+# fallback to sqlite for development if psycopg issues persist in nix
+if os.getenv("DATABASE_URL") and IS_PRODUCTION:
     DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=False)
 
 # =============================================================================
