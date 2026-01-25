@@ -632,21 +632,8 @@ def invoice_detail(request, invoice_id):
 
 @login_required
 def analytics(request):
-    user_invoices = Invoice.objects.filter(user=request.user)
-    
-    # Revenue by month
-    revenue_data = user_invoices.filter(status='paid').extra(
-        select={'month': "EXTRACT(MONTH FROM created_at)"}
-    ).values('month').annotate(total=Sum('total')).order_by('month')
-    
-    # Payment status distribution
-    status_counts = user_invoices.values('status').annotate(count=Count('id'))
-    
-    return render(request, "pages/analytics.html", {
-        "revenue_data": list(revenue_data),
-        "status_counts": list(status_counts),
-        "active": "analytics"
-    })
+    stats = AnalyticsService.get_user_analytics_stats(request.user)
+    return render(request, "pages/analytics.html", stats)
 
 @login_required
 def clients(request):
@@ -730,45 +717,20 @@ except ImportError:
 def download_invoice_pdf(request, invoice_id):
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
     
-    if canvas is None:
-        return HttpResponse("PDF generation is currently unavailable due to missing system dependencies.", status=503)
-
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="invoice_{invoice_id}.pdf"'
-    
-    p = canvas.Canvas(response, pagesize=letter)
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(100, 750, f"INVOICE: {invoice.invoice_id}")
-    
-    p.setFont("Helvetica", 12)
-    p.drawString(100, 720, f"Date: {invoice.invoice_date.strftime('%Y-%m-%d')}")
-    due_date = invoice.due_date.strftime("%Y-%m-%d") if invoice.due_date else "N/A"
-    p.drawString(100, 705, f"Due Date: {due_date}")
-    p.drawString(100, 690, f"Client: {invoice.client_name}")
-    p.drawString(100, 675, f"Email: {invoice.client_email}")
-    
-    p.line(100, 650, 500, 650)
-    
-    y = 630
-    p.drawString(100, y, "Items:")
-    y -= 20
-    for item in invoice.line_items.all():
-        line_total = item.total
-        p.drawString(
-            120,
-            y,
-            f"{item.description} - {item.quantity} x {invoice.currency} {item.unit_price} = {invoice.currency} {line_total}",
-        )
-        y -= 15
+    try:
+        from django.template.loader import render_to_string
+        from weasyprint import HTML
         
-    p.line(100, y, 500, y)
-    y -= 20
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(100, y, f"Total Amount: {invoice.currency} {invoice.total}")
-    
-    p.showPage()
-    p.save()
-    return response
+        html_string = render_to_string('invoices/invoice_pdf.html', {'invoice': invoice})
+        html = HTML(string=html_string, base_url=request.build_absolute_uri())
+        pdf_file = html.write_pdf()
+        
+        response = HttpResponse(pdf_file, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_id}.pdf"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Error generating PDF: {str(e)}")
+        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
 
 @login_required
 @require_POST
