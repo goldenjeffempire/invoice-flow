@@ -344,12 +344,15 @@ class Invoice(models.Model):
     def total(self) -> Decimal:
         """Calculates the grand total of the invoice."""
         # Standardize total calculation across model and analytics
-        discountable_amount = self.subtotal - self.discount_amount
-        taxable_amount = discountable_amount
-        tax_total = (taxable_amount * Decimal(str(self.tax_rate))) / Decimal("100")
-        
-        total = discountable_amount + tax_total
-        return total.quantize(Decimal("0.01"))
+        try:
+            discountable_amount = self.subtotal - self.discount_amount
+            taxable_amount = max(Decimal("0.00"), discountable_amount)
+            tax_total = (taxable_amount * Decimal(str(self.tax_rate))) / Decimal("100")
+            
+            total = taxable_amount + tax_total
+            return total.quantize(Decimal("0.01"))
+        except (InvalidOperation, ValueError, TypeError):
+            return Decimal("0.00")
 
     def mark_as_paid(self) -> None:
         """Updates the invoice status to PAID and handles associated business logic."""

@@ -76,6 +76,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_csp.middleware.CSPMiddleware",
 ]
 
 ROOT_URLCONF = "invoiceflow.urls"
@@ -108,9 +109,16 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-# PostgreSQL is disabled for now due to environment driver issues
-# if os.getenv("DATABASE_URL"):
-#     DATABASES["default"] = dj_database_url.config(default=os.getenv("DATABASE_URL"))
+
+if os.getenv("DATABASE_URL"):
+    DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+elif os.getenv("PGHOST"):
+    # Fallback for Replit's discrete env vars if DATABASE_URL is missing
+    DATABASES["default"] = dj_database_url.parse(
+        f"postgres://{os.getenv('PGUSER')}:{os.getenv('PGPASSWORD')}@{os.getenv('PGHOST')}:{os.getenv('PGPORT')}/{os.getenv('PGDATABASE')}",
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 # =============================================================================
 # STATIC / MEDIA
