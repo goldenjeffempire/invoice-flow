@@ -75,10 +75,12 @@ class SendGridEmailService:
         self.api_key = os.environ.get("SENDGRID_API_KEY")
         self.is_configured = bool(self.api_key)
 
-        if self.is_configured and self.api_key:
+        if self.is_configured and self.api_key and SendGridAPIClient:
             self.client: SendGridAPIClient | None = SendGridAPIClient(self.api_key)
         else:
             self.client: SendGridAPIClient | None = None
+            if self.is_configured and not SendGridAPIClient:
+                logger.error("SendGridAPIClient is None but API key is configured. Is 'sendgrid' package installed?")
 
     def _get_api_with_validation(self, url: str, headers: dict, timeout: int = 5) -> dict | None:
         """Safely get API response with proper URL validation."""
