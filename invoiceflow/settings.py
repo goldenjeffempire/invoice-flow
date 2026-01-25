@@ -59,6 +59,11 @@ INSTALLED_APPS = [
     "invoices.apps.InvoicesConfig",
 ]
 
+# Analytics Cache Settings
+CACHE_TIMEOUT_DASHBOARD = 60
+CACHE_TIMEOUT_ANALYTICS = 120
+CACHE_TIMEOUT_TOP_CLIENTS = 300
+
 # =============================================================================
 # MIDDLEWARE
 # =============================================================================

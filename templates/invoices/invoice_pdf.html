@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice.invoice_id }}</title>
+    <style>
+        body { font-family: 'Helvetica', 'Arial', sans-serif; color: #334155; line-height: 1.5; padding: 40px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+        .invoice-title { font-size: 32px; font-weight: 900; color: #1e293b; }
+        .grid { display: flex; justify-content: space-between; margin-bottom: 40px; }
+        .col { width: 45%; }
+        .label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #94a3b8; margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+        th { text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; color: #94a3b8; border-bottom: 1px solid #e2e8f0; padding: 10px 0; }
+        td { padding: 15px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        .text-right { text-align: right; }
+        .totals { float: right; width: 250px; }
+        .total-row { display: flex; justify-content: space-between; padding: 10px 0; }
+        .grand-total { border-top: 2px solid #1e293b; font-weight: 900; font-size: 18px; color: #1e293b; margin-top: 10px; padding-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="invoice-title">INVOICE</div>
+            <p style="font-size: 14px; font-weight: 700;">#{{ invoice.invoice_id }}</p>
+        </div>
+        <div class="text-right">
+            <h2 style="margin: 0;">{{ invoice.business_name }}</h2>
+            <p style="font-size: 12px;">{{ invoice.business_email }}<br>{{ invoice.business_address|linebreaksbr }}</p>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="col">
+            <div class="label">Billed To</div>
+            <p><strong>{{ invoice.client_name }}</strong><br>{{ invoice.client_email }}<br>{{ invoice.client_address|linebreaksbr }}</p>
+        </div>
+        <div class="col text-right">
+            <div class="label">Invoice Date</div>
+            <p>{{ invoice.invoice_date|date:"F d, Y" }}</p>
+            <div class="label" style="margin-top: 20px;">Due Date</div>
+            <p>{{ invoice.due_date|date:"F d, Y" }}</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Unit Price</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.line_items.all %}
+            <tr>
+                <td>{{ item.description }}</td>
+                <td class="text-right">{{ item.quantity }}</td>
+                <td class="text-right">{{ invoice.currency }} {{ item.unit_price|floatformat:2 }}</td>
+                <td class="text-right">{{ invoice.currency }} {{ item.total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="total-row">
+            <span>Subtotal</span>
+            <span>{{ invoice.currency }} {{ invoice.subtotal|floatformat:2 }}</span>
+        </div>
+        <div class="total-row">
+            <span>Tax ({{ invoice.tax_rate }}%)</span>
+            <span>+ {{ invoice.currency }} {{ invoice.tax_amount|floatformat:2 }}</span>
+        </div>
+        {% if invoice.discount > 0 %}
+        <div class="total-row">
+            <span>Discount ({{ invoice.discount }}%)</span>
+            <span>- {{ invoice.currency }} {{ invoice.discount_amount|floatformat:2 }}</span>
+        </div>
+        {% endif %}
+        <div class="total-row grand-total">
+            <span>Total</span>
+            <span>{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</span>
+        </div>
+    </div>
+
+    {% if invoice.notes %}
+    <div style="margin-top: 100px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+        <div class="label">Notes</div>
+        <p style="font-size: 12px; color: #64748b;">{{ invoice.notes }}</p>
+    </div>
+    {% endif %}
+</body>
+</html>
