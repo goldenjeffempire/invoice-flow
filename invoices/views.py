@@ -244,40 +244,40 @@ def password_reset_confirm(request, token: str):
     )
 
 def pricing_view(request):
-    return render(request, "pages/pricing.html")
+    return redirect('invoices:home')
 
 def _render_public_page(request, template_name="pages/landing.html"):
-    return render(request, template_name)
+    return redirect('invoices:home')
 
 def features_view(request):
-    return render(request, "pages/home-light.html", {"title": "Features"})
+    return redirect('invoices:home')
 
 def about_view(request):
-    return render(request, "pages/home-light.html", {"title": "About Us"})
+    return redirect('invoices:home')
 
 def contact_view(request):
-    return render(request, "pages/home-light.html", {"title": "Contact Us"})
+    return redirect('invoices:home')
 
 def terms_view(request):
-    return render(request, "pages/home-light.html", {"title": "Terms of Service"})
+    return redirect('invoices:home')
 
 def privacy_view(request):
-    return render(request, "pages/home-light.html", {"title": "Privacy Policy"})
+    return redirect('invoices:home')
 
 def security_view(request):
-    return render(request, "pages/home-light.html", {"title": "Security"})
+    return redirect('invoices:home')
 
 def faq_view(request):
-    return render(request, "pages/home-light.html", {"title": "FAQ"})
+    return redirect('invoices:home')
 
 def support_view(request):
-    return render(request, "pages/home-light.html", {"title": "Support"})
+    return redirect('invoices:home')
 
 def careers_view(request):
-    return render(request, "pages/home-light.html", {"title": "Careers"})
+    return redirect('invoices:home')
 
 def blog_view(request):
-    return render(request, "pages/home-light.html", {"title": "Blog"})
+    return redirect('invoices:home')
 
 def robots_txt_view(request):
     content = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
