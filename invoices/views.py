@@ -56,9 +56,7 @@ def custom_500_view(request):
     return render(request, "500.html", status=500)
 
 def landing_view(request):
-    if request.user.is_authenticated:
-        return redirect("invoices:dashboard")
-    return render(request, "pages/landing/index.html")
+    return redirect("invoices:login")
 
 # Landing page views removed.
 
