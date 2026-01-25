@@ -7,17 +7,6 @@ app_name = "invoices"
 
 urlpatterns = [
     path("", views.login_view, name="home"),
-    path("features/", views.login_view, name="features"),
-    path("pricing/", views.login_view, name="pricing"),
-    path("about/", views.login_view, name="about"),
-    path("contact/", views.login_view, name="contact"),
-    path("terms/", views.login_view, name="terms"),
-    path("privacy/", views.login_view, name="privacy"),
-    path("security/", views.login_view, name="security"),
-    path("faq/", views.login_view, name="faq"),
-    path("support/", views.login_view, name="support"),
-    path("careers/", views.login_view, name="careers"),
-    path("blog/", views.login_view, name="blog"),
     path("login/", views.login_view, name="login"),
     path("signup/", views.signup, name="signup"),
     path("logout/", views.logout_view, name="logout"),

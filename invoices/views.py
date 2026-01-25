@@ -48,6 +48,8 @@ def _parse_request_payload(request) -> dict:
 def landing_view(request):
     return redirect("invoices:login")
 
+# Landing page views removed.
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("invoices:dashboard")
