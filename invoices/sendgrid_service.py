@@ -75,11 +75,11 @@ class SendGridEmailService:
         self.api_key = os.environ.get("SENDGRID_API_KEY")
         self.is_configured = bool(self.api_key)
 
-        if self.is_configured and self.api_key and SendGridAPIClient:
-            self.client: SendGridAPIClient | None = SendGridAPIClient(self.api_key)
+        if self.is_configured and self.api_key and SendGridAPIClient is not None:
+            self.client = SendGridAPIClient(self.api_key)
         else:
-            self.client: SendGridAPIClient | None = None
-            if self.is_configured and not SendGridAPIClient:
+            self.client = None
+            if self.is_configured and SendGridAPIClient is None:
                 logger.error("SendGridAPIClient is None but API key is configured. Is 'sendgrid' package installed?")
 
     def _get_api_with_validation(self, url: str, headers: dict, timeout: int = 5) -> dict | None:
@@ -96,6 +96,41 @@ class SendGridEmailService:
             return response.json()
         except Exception:
             return None
+
+    def _get_invoice_view_url(self, invoice):
+        """Generate public URL for the invoice."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/public/invoice/{invoice.invoice_id}/"
+
+    def _get_dashboard_url(self):
+        """Generate dashboard URL."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/dashboard/"
+
+    def _get_help_url(self):
+        """Generate help/FAQ URL."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/faq/"
+
+    def _get_verification_url(self, token):
+        """Generate email verification URL."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/verify-email/{token}/"
+
+    def _get_password_reset_url(self, token):
+        """Generate password reset URL."""
+        domain = os.environ.get("PRODUCTION_DOMAIN", "localhost:5000")
+        if os.environ.get("REPLIT_DEV_DOMAIN"):
+            domain = os.environ.get("REPLIT_DEV_DOMAIN")
+        return f"https://{domain}/password-reset/confirm/{token}/"
 
     # ============ INVOICE EMAILS ============
 
@@ -432,24 +467,13 @@ The InvoiceFlow Team"""
         subject,
         invoice=None,
     ):
-        """Send email using SendGrid dynamic template.
-
-        Smart Direct Sending System:
-        - Sends FROM platform owner's verified email (technical requirement for deliverability)
-        - Sets Reply-To to user's business email (customers reply directly to user)
-        - No SendGrid verification needed for users!
-        - Recipients see user's business name prominently
-        """
-        # Check if SendGrid is configured
+        """Send email using SendGrid dynamic template."""
         if not self.is_configured:
-            error_msg = "SendGrid API key not configured. Email sending is disabled. Please set SENDGRID_API_KEY in environment variables."
+            error_msg = "SendGrid API key not configured. Email sending is disabled."
             logger.warning(f"⚠️  {error_msg}")
             return {"status": "error", "message": error_msg, "configured": False}
 
         try:
-            # Always send from platform owner's verified email for deliverability
-            # But set Reply-To to user's business email for direct replies
-            
             if not Mail or not From or not To:
                 return {"status": "error", "message": "SendGrid helper classes not available"}
 
@@ -459,27 +483,21 @@ The InvoiceFlow Team"""
                 subject=subject,
             )
 
-            # Set Reply-To header to user's business email
-            # This allows customers to reply directly to the user without verification
-            if user_business_email and ReplyTo:
+            if user_business_email and ReplyTo is not None:
                 message.reply_to = ReplyTo(user_business_email)
 
-            # Use dynamic template if ID is provided
-            if template_id and TemplateId and Personalization:
+            if template_id and TemplateId is not None and Personalization is not None:
                 message.template_id = TemplateId(template_id)
                 personalization = Personalization()
                 personalization.add_to(To(to_email))
                 personalization.dynamic_template_data = template_data
                 message.add_personalization(personalization)
             else:
-                # Fallback to simple email if no template
-                # Use platform from_email (not user_business_email) for the sender
                 return self._send_simple_email(
                     self.from_email, from_name, to_email, subject, template_data, user_business_email
                 )
 
-            # Add PDF attachment for invoice emails
-            if invoice and Attachment and FileContent and FileName and FileType:
+            if invoice and Attachment is not None and FileContent is not None and FileName is not None and FileType is not None:
                 pdf_data = self._generate_invoice_pdf(invoice)
                 if pdf_data:
                     attachment = Attachment(
@@ -489,14 +507,9 @@ The InvoiceFlow Team"""
                     )
                     message.attachment = attachment
 
-            # Send email
             if self.client is None:
                 return {"status": "error", "message": "SendGrid client not initialized"}
             response = self.client.send(message)
-            logger.info("✅ Email sent successfully!")
-            logger.debug(f"   From: {self.from_email} (verified platform email)")
-            logger.debug(f"   Reply-To: {user_business_email} (user's direct email)")
-            logger.debug(f"   Display Name: {from_name}")
             return {
                 "status": "sent",
                 "response": response.status_code,
@@ -512,7 +525,6 @@ The InvoiceFlow Team"""
 
     def _send_simple_email(self, from_email, from_name, to_email, subject, data, reply_to_email=None):
         """Fallback: Send simple HTML email without dynamic template."""
-        # Check if SendGrid is configured
         if not self.is_configured:
             error_msg = "SendGrid API key not configured. Email sending is disabled."
             logger.warning(f"⚠️  {error_msg}")
@@ -522,7 +534,6 @@ The InvoiceFlow Team"""
             if not Mail or not From or not To:
                 return {"status": "error", "message": "SendGrid helper classes not available"}
 
-            # Create simple text content from template data
             plain_text = self._format_plain_text(data)
 
             message = Mail(
@@ -532,8 +543,7 @@ The InvoiceFlow Team"""
                 plain_text_content=plain_text,
             )
 
-            # Set Reply-To if provided
-            if reply_to_email and ReplyTo:
+            if reply_to_email and ReplyTo is not None:
                 message.reply_to = ReplyTo(reply_to_email)
 
             if self.client is None:
