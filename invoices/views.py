@@ -56,7 +56,9 @@ def custom_500_view(request):
     return render(request, "500.html", status=500)
 
 def landing_view(request):
-    return redirect("invoices:login")
+    if request.user.is_authenticated:
+        return redirect("invoices:dashboard")
+    return render(request, "pages/landing.html")
 
 # Landing page views removed.
 
@@ -254,7 +256,42 @@ def about_view(request):
     return redirect('invoices:home')
 
 def contact_view(request):
-    return redirect('invoices:home')
+    return render(request, "pages/landing.html", {"scroll_to": "contact"})
+
+def faq_api(request):
+    faq_data = [
+        {
+            "id": 1,
+            "question": "How quickly can I start sending invoices?",
+            "answer": "You can create and send your first invoice within minutes of signing up. Our intuitive editor guides you through adding client details, line items, and payment terms. No complex setup required."
+        },
+        {
+            "id": 2,
+            "question": "What payment methods do my clients have?",
+            "answer": "Your clients can pay via bank transfer, card payments, or mobile money through our integrated payment partners. All transactions are secured with bank-level encryption and PCI DSS compliance."
+        },
+        {
+            "id": 3,
+            "question": "How do automated reminders work?",
+            "answer": "Set up reminder rules once, and our system automatically sends professional follow-up emails before due dates, on due dates, and for overdue invoices. You can customize the timing, frequency, and messaging for each reminder stage."
+        },
+        {
+            "id": 4,
+            "question": "Can I customize my invoice branding?",
+            "answer": "Absolutely. Add your company logo, choose brand colors, set custom payment terms, and include personalized notes. Your invoices will look professional and consistent with your brand identity."
+        },
+        {
+            "id": 5,
+            "question": "Is my financial data secure?",
+            "answer": "Security is our priority. We use 256-bit SSL encryption, multi-factor authentication, and comply with international data protection standards. Your data is backed up daily and stored in secure, redundant data centers."
+        },
+        {
+            "id": 6,
+            "question": "What analytics and reports are available?",
+            "answer": "Track revenue trends, payment timelines, client payment behavior, and invoice status in real-time. Export detailed reports for accounting, identify your best clients, and forecast cash flow with our analytics dashboard."
+        }
+    ]
+    return JsonResponse({"faqs": faq_data, "status": "success"})
 
 def terms_view(request):
     return redirect('invoices:home')
