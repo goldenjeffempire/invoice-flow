@@ -146,11 +146,15 @@
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
+          // Add staggered delay to children if needed
+          if (entry.target.classList.contains('stagger-children')) {
+            entry.target.classList.add('visible');
+          }
         }
       });
     }, {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
+      threshold: 0.15,
+      rootMargin: '0px 0px -10% 0px'
     });
 
     reveals.forEach(el => observer.observe(el));
