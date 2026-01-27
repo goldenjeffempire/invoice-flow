@@ -1,0 +1,64 @@
+{% extends "base/layout_app.html" %}
+
+{% block title %}Payment History | InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-8" data-aos="fade-up">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Payment History</h1>
+            <p class="text-slate-500 mt-1">Track all incoming payments and transaction status.</p>
+        </div>
+        <a href="{% url 'invoices:dashboard' %}" class="bg-white text-slate-700 px-5 py-2.5 rounded-lg font-semibold border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left" aria-describedby="payment-table-caption">
+                <caption id="payment-table-caption" class="sr-only">List of payments with details and status.</caption>
+                <thead class="bg-slate-50">
+                    <tr>
+                        <th class="px-6 py-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Reference</th>
+                        <th class="px-6 py-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Invoice</th>
+                        <th class="px-6 py-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Amount</th>
+                        <th class="px-6 py-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Date</th>
+                        <th class="px-6 py-4 font-bold text-slate-400 text-xs uppercase tracking-widest">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    {% for payment in payments %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="font-bold text-slate-900">{{ payment.reference|truncatechars:16 }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <a href="{% url 'invoices:invoice_detail' payment.invoice.invoice_id %}" class="font-semibold text-indigo-600 hover:underline">#{{ payment.invoice.invoice_id }}</a>
+                        </td>
+                        <td class="px-6 py-4 font-bold text-slate-900">{{ payment.invoice.currency }} {{ payment.amount|floatformat:2 }}</td>
+                        <td class="px-6 py-4 text-sm text-slate-500">{{ payment.created_at|date:"M d, Y H:i" }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold uppercase
+                                {% if payment.status == 'success' %}bg-emerald-100 text-emerald-700
+                                {% elif payment.status == 'failed' %}bg-rose-100 text-rose-700
+                                {% else %}bg-amber-100 text-amber-700{% endif %}">
+                                {{ payment.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-16 text-center text-slate-400">
+                            <i data-lucide="credit-card" class="w-12 h-12 mx-auto mb-4 opacity-20"></i>
+                            <p class="font-bold">No payments yet</p>
+                            <p class="text-sm mt-2">Payments will appear here once your clients pay their invoices.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

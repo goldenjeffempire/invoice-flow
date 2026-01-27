@@ -321,11 +321,23 @@ def robots_txt_view(request):
 def waitlist_subscribe(request):
     return redirect('invoices:home')
 
+@login_required
 def payment_history(request):
-    return redirect('invoices:dashboard')
+    from .models import Payment
+    payments = Payment.objects.filter(invoice__user=request.user).select_related('invoice').order_by('-created_at')
+    return render(request, "pages/payment_history.html", {
+        "payments": payments,
+        "active": "payments"
+    })
 
+@login_required
 def payment_detail(request, payment_id):
-    return redirect('invoices:dashboard')
+    from .models import Payment
+    payment = get_object_or_404(Payment, id=payment_id, invoice__user=request.user)
+    return render(request, "pages/payment_detail.html", {
+        "payment": payment,
+        "active": "payments"
+    })
 
 @login_required
 def invoice_edit(request, invoice_id):
