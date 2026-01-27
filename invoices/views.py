@@ -255,6 +255,27 @@ def about_view(request):
 def contact_view(request):
     return render(request, "pages/contact.html")
 
+def careers_view(request):
+    return render(request, "pages/careers.html")
+
+def blog_view(request):
+    return render(request, "pages/blog.html")
+
+def faq_view(request):
+    return render(request, "pages/faq.html")
+
+def support_view(request):
+    return render(request, "pages/support.html")
+
+def terms_view(request):
+    return render(request, "pages/terms.html")
+
+def privacy_view(request):
+    return render(request, "pages/privacy.html")
+
+def security_view(request):
+    return render(request, "pages/security.html")
+
 def faq_api(request):
     faq_data = [
         {
@@ -289,31 +310,6 @@ def faq_api(request):
         }
     ]
     return JsonResponse({"faqs": faq_data, "status": "success"})
-
-def terms_view(request):
-    return redirect('invoices:home')
-
-def privacy_view(request):
-    return redirect('invoices:home')
-
-def security_view(request):
-    return redirect('invoices:home')
-
-def faq_view(request):
-    return redirect('invoices:home')
-
-def support_view(request):
-    return redirect('invoices:home')
-
-def careers_view(request):
-    return redirect('invoices:home')
-
-def blog_view(request):
-    return redirect('invoices:home')
-
-def robots_txt_view(request):
-    content = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
-    return HttpResponse(content.encode('utf-8'), content_type="text/plain")
 
 def waitlist_subscribe(request):
     return redirect('invoices:home')
