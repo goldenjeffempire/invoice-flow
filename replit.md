@@ -24,6 +24,12 @@ invoiceflow/
 ```
 
 ## Recent Changes
+- **Jan 27, 2026**: Navigation consistency update:
+  - Created reusable navbar and footer partials (templates/partials/)
+  - Added consistent navigation to all public pages: about, features, contact, careers, blog, faq, support, terms, privacy, security
+  - Navbar includes: logo, Home, About, Features, Contact links, Sign In, Get Started buttons
+  - Footer includes: product links, resources, legal links, social media icons
+
 - **Jan 27, 2026**: Migration and cleanup:
   - Removed all pricing-related components (URL, view, template, sitemap entry, tests)
   - Created 7 new public pages: careers, blog, faq, support, terms, privacy, security
