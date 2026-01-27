@@ -24,6 +24,13 @@ invoiceflow/
 ```
 
 ## Recent Changes
+- **Jan 27, 2026**: Migration and cleanup:
+  - Removed all pricing-related components (URL, view, template, sitemap entry, tests)
+  - Created 7 new public pages: careers, blog, faq, support, terms, privacy, security
+  - Fixed duplicate view functions that were incorrectly redirecting to home
+  - All routes verified working with 200 status codes
+  - Platform fully operational with no broken links
+
 - **Jan 27, 2026**: Full production-ready enhancement:
   - Created complete email template system (invoice_ready, payment_reminder, invoice_paid, password_reset, verification_email) with HTML and plain text versions
   - Added professional 404 and 500 error pages
