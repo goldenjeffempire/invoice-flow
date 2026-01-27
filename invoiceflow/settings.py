@@ -160,7 +160,9 @@ DATABASES = {
 # PostgreSQL connection using the provisioned DATABASE_URL
 # Use PostgreSQL in both development and production when DATABASE_URL is available
 if os.getenv("DATABASE_URL"):
-    DATABASES["default"] = dj_database_url.config(conn_max_age=600, ssl_require=False)
+    db_config = dj_database_url.config(conn_max_age=600, ssl_require=False)
+    if db_config:
+        DATABASES["default"] = db_config
 
 # =============================================================================
 # STATIC / MEDIA
