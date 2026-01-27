@@ -26,7 +26,14 @@ class UnifiedMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        # Extremely fast path for static files, service worker, and webhooks
+        # In development, prevent 304 by stripping conditional request headers
+        if settings.DEBUG:
+            headers_to_remove = ["HTTP_IF_MODIFIED_SINCE", "HTTP_IF_NONE_MATCH"]
+            for header in headers_to_remove:
+                if header in request.META:
+                    del request.META[header]
+
+        # Extremely fast path for service worker and webhooks
         if (request.path == "/sw.js" or 
             "webhook" in request.path):
             return self.get_response(request)
