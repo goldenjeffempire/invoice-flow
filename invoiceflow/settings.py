@@ -112,6 +112,7 @@ CACHE_TIMEOUT_TOP_CLIENTS = 300
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "invoiceflow.unified_middleware.UnifiedMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
