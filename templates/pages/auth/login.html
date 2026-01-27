@@ -1,10 +1,9 @@
-{% extends "base/layout_app.html" %}
+{% extends "base/layout.html" %}
 {% load static %}
 
 {% block title %}Login | InvoiceFlow{% endblock %}
 
 {% block head %}
-{{ block.super }}
 <style>
   .auth-gradient {
     background: 
@@ -96,8 +95,11 @@
 </style>
 {% endblock %}
 
-{% block content %}
-<section class="auth-gradient py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center rounded-3xl overflow-hidden shadow-soft border border-slate-200">
+{% block body %}
+{% include "partials/navbar_public.html" %}
+
+<main id="content" class="min-h-screen pt-20">
+<section class="min-h-[calc(100vh-80px)] auth-gradient py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
   <div class="w-full max-w-6xl grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
     <div class="space-y-8 order-2 lg:order-1 text-center lg:text-left">
       <div>
@@ -155,6 +157,28 @@
           <p class="text-slate-500 text-sm">Use your email or username to continue</p>
         </div>
       </div>
+
+      {% if messages %}
+        <div class="space-y-3 mb-6">
+          {% for message in messages %}
+            <div class="flex items-start gap-3 rounded-xl px-4 py-3 text-sm font-medium border animate-fade-in
+              {% if message.tags == 'error' %}bg-red-50 text-red-700 border-red-200
+              {% elif message.tags == 'warning' %}bg-amber-50 text-amber-700 border-amber-200
+              {% else %}bg-emerald-50 text-emerald-700 border-emerald-200{% endif %}">
+              {% if message.tags == 'error' %}
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              {% else %}
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              {% endif %}
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
 
       <form method="post" class="space-y-6" data-validate>
         {% csrf_token %}
@@ -221,4 +245,7 @@
     </div>
   </div>
 </section>
+</main>
+
+{% include "partials/footer_public.html" %}
 {% endblock %}
