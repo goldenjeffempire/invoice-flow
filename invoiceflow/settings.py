@@ -47,9 +47,11 @@ ALLOWED_HOSTS = [
     "invoiceflow.com.ng",
     "*.replit.dev",
     "*.repl.co",
+    "*.onrender.com",
     "0.0.0.0",
     "localhost",
     "127.0.0.1",
+    "*",
 ]
 
 if os.getenv("REPLIT_DEV_DOMAIN"):
