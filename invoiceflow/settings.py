@@ -81,8 +81,8 @@ if not DEBUG:
     
     # CSP Settings
     CSP_DEFAULT_SRC = ("'self'",)
-    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "cdn.tailwindcss.com", "fonts.googleapis.com")
-    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "cdn.tailwindcss.com")
+    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "fonts.googleapis.com")
+    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "unpkg.com")
     CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
 else:
     SECURE_SSL_REDIRECT = False
