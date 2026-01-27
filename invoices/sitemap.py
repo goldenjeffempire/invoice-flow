@@ -31,7 +31,6 @@ class CorePagesSitemap(Sitemap):
     def items(self) -> List[str]:
         return [
             "features",
-            "pricing",
         ]
 
     def location(self, item: str) -> str:

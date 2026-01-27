@@ -243,9 +243,6 @@ def password_reset_confirm(request, token: str):
         },
     )
 
-def pricing_view(request):
-    return render(request, 'pages/pricing.html')
-
 def _render_public_page(request, template_name="pages/landing.html"):
     return redirect('invoices:home')
 

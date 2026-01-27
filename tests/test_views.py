@@ -62,10 +62,6 @@ class TestPublicPages:
         response = client.get("/features/")
         assert response.status_code == 200
 
-    def test_pricing_page(self, client):
-        response = client.get("/pricing/")
-        assert response.status_code == 200
-
     def test_about_page(self, client):
         response = client.get("/about/")
         assert response.status_code == 200
