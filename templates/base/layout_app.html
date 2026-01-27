@@ -3,68 +3,303 @@
 
 {% block head %}
 <style>
-  .sidebar-link { transition: transform .12s ease, background-color .12s ease, color .12s ease; }
-  .sidebar-link:hover { transform: translateX(2px); }
+  .sidebar-link {
+    position: relative;
+    transition: all 0.2s ease;
+  }
+  
+  .sidebar-link:hover {
+    transform: translateX(4px);
+  }
+  
+  .sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 60%;
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    border-radius: 0 4px 4px 0;
+  }
+
+  .main-content {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .stat-card {
+    transition: all 0.3s ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  }
+
   @media (max-width: 1023px) {
     .sidebar-mobile-hidden { display: none; }
+  }
+
+  .mobile-menu-open .sidebar-mobile-hidden {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: 4rem;
+    z-index: 50;
+    background: white;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .notification-badge {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid white;
   }
 </style>
 {% endblock %}
 
 {% block body %}
-<div class="min-h-screen bg-slate-50">
-  <!-- Top bar -->
-  <header class="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <a href="{% url 'invoices:dashboard' %}" class="flex items-center gap-2">
-          <div class="h-9 w-9 rounded-xl bg-slate-900 text-white grid place-items-center font-extrabold">IF</div>
-          <span class="font-bold tracking-tight">InvoiceFlow</span>
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+  <header class="sticky top-0 z-40 border-b border-slate-200/80 glass-header">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <button class="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors" id="mobile-menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+          <svg class="w-5 h-5 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+        </button>
+        
+        <a href="{% url 'invoices:dashboard' %}" class="flex items-center gap-3 group">
+          <div class="relative h-10 w-10 rounded-xl bg-gradient-to-br from-primary-600 to-primary-700 text-white grid place-items-center font-extrabold shadow-lg shadow-primary-600/20 group-hover:shadow-primary-600/30 transition-shadow">
+            IF
+          </div>
+          <span class="font-bold text-lg tracking-tight hidden sm:block">InvoiceFlow</span>
         </a>
       </div>
-      <div class="flex items-center gap-2">
-        <a href="{% url 'invoices:settings' %}" class="px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-sm font-semibold">Settings</a>
-        <a href="{% url 'invoices:logout' %}" class="px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold">Logout</a>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="{% url 'invoices:invoice_create' %}" class="hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:from-primary-500 hover:to-primary-600 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          New Invoice
+        </a>
+        
+        <div class="relative">
+          <button class="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all relative" aria-label="Notifications">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </button>
+        </div>
+
+        <a href="{% url 'invoices:settings' %}" class="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all" aria-label="Settings">
+          <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </a>
+
+        <div class="relative group">
+          <button class="flex items-center gap-2 p-1.5 pr-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-700 to-slate-900 text-white text-sm font-bold grid place-items-center">
+              {% if user.first_name %}{{ user.first_name.0|upper }}{% else %}U{% endif %}
+            </div>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          
+          <div class="dropdown-menu absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-1 group-hover:translate-y-0">
+            <div class="p-3 border-b border-slate-100">
+              <p class="font-semibold text-slate-900">{{ user.get_full_name|default:user.email }}</p>
+              <p class="text-sm text-slate-500 truncate">{{ user.email }}</p>
+            </div>
+            <div class="p-1.5">
+              <a href="{% url 'invoices:settings' %}" class="dropdown-item">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                Profile Settings
+              </a>
+              <a href="{% url 'invoices:logout' %}" class="dropdown-item dropdown-item-danger">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Sign Out
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </header>
 
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-    <!-- Sidebar -->
-    <aside class="lg:col-span-3">
-      <div class="rounded-2xl border border-slate-200 bg-white shadow-soft p-4 sticky top-20">
-        <nav class="space-y-1">
-          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if request.path == '/dashboard/' %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
-             href="{% url 'invoices:dashboard' %}">Dashboard</a>
-          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/list/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
-             href="{% url 'invoices:invoices_list' %}">Invoices</a>
-          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/create/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
-             href="{% url 'invoices:invoice_create' %}">Create invoice</a>
-          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/payments/history/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
-             href="{% url 'invoices:payment_history' %}">Payments</a>
-          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/analytics/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
-             href="{% url 'invoices:analytics' %}">Analytics</a>
-          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/settings/reminders/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
-             href="{% url 'invoices:reminder_dashboard' %}">Reminders</a>
-          <a class="sidebar-link block px-3 py-2 rounded-xl text-sm font-semibold {% if '/settings/' in request.path %}bg-slate-900 text-white{% else %}text-slate-700 hover:bg-slate-50{% endif %}"
-             href="{% url 'invoices:settings' %}">Settings</a>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+    <aside class="lg:col-span-3 sidebar-mobile-hidden" id="sidebar">
+      <div class="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-sm shadow-soft p-5 sticky top-24">
+        <div class="mb-6">
+          <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Main Menu</p>
+        </div>
+        
+        <nav class="space-y-1" aria-label="Main navigation">
+          <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+             {% if request.path == '/dashboard/' %}bg-primary-50 text-primary-700 active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+             href="{% url 'invoices:dashboard' %}">
+            <svg class="w-5 h-5 {% if request.path == '/dashboard/' %}text-primary-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            Dashboard
+          </a>
+          
+          <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+             {% if '/list/' in request.path %}bg-primary-50 text-primary-700 active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+             href="{% url 'invoices:invoices_list' %}">
+            <svg class="w-5 h-5 {% if '/list/' in request.path %}text-primary-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Invoices
+          </a>
+          
+          <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+             {% if '/create/' in request.path %}bg-primary-50 text-primary-700 active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+             href="{% url 'invoices:invoice_create' %}">
+            <svg class="w-5 h-5 {% if '/create/' in request.path %}text-primary-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Create Invoice
+          </a>
+          
+          <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+             {% if '/clients/' in request.path %}bg-primary-50 text-primary-700 active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+             href="{% url 'invoices:clients' %}">
+            <svg class="w-5 h-5 {% if '/clients/' in request.path %}text-primary-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            Clients
+          </a>
+          
+          <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+             {% if '/payments/history/' in request.path %}bg-primary-50 text-primary-700 active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+             href="{% url 'invoices:payment_history' %}">
+            <svg class="w-5 h-5 {% if '/payments/history/' in request.path %}text-primary-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+            </svg>
+            Payments
+          </a>
+          
+          <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+             {% if '/analytics/' in request.path %}bg-primary-50 text-primary-700 active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+             href="{% url 'invoices:analytics' %}">
+            <svg class="w-5 h-5 {% if '/analytics/' in request.path %}text-primary-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            Analytics
+          </a>
         </nav>
+
+        <div class="mt-6 pt-6 border-t border-slate-100">
+          <p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Settings</p>
+          <nav class="space-y-1">
+            <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+               {% if '/settings/reminders/' in request.path %}bg-primary-50 text-primary-700 active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+               href="{% url 'invoices:reminder_dashboard' %}">
+              <svg class="w-5 h-5 {% if '/settings/reminders/' in request.path %}text-primary-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Reminders
+            </a>
+            
+            <a class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
+               {% if request.path == '/settings/' %}bg-primary-50 text-primary-700 active{% else %}text-slate-600 hover:bg-slate-50 hover:text-slate-900{% endif %}"
+               href="{% url 'invoices:settings' %}">
+              <svg class="w-5 h-5 {% if request.path == '/settings/' %}text-primary-600{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              Settings
+            </a>
+          </nav>
+        </div>
+
+        <div class="mt-6 p-4 rounded-xl bg-gradient-to-br from-primary-50 to-blue-50 border border-primary-100">
+          <div class="flex items-center gap-3 mb-2">
+            <div class="p-2 rounded-lg bg-primary-100">
+              <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+            </div>
+            <p class="font-semibold text-sm text-primary-900">Pro Tip</p>
+          </div>
+          <p class="text-xs text-primary-700 leading-relaxed">Set up automatic payment reminders to get paid 2x faster.</p>
+        </div>
       </div>
     </aside>
 
-    <!-- Main -->
-    <main id="content" class="lg:col-span-9">
+    <main id="content" class="lg:col-span-9 main-content">
       {% if messages %}
-        <div class="space-y-2 mb-4">
+        <div class="space-y-3 mb-6">
           {% for message in messages %}
-            <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-soft text-sm">
-              {{ message }}
+            <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %} animate-fade-in-up" role="alert">
+              <div class="alert-icon">
+                {% if message.tags == 'error' %}
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {% elif message.tags == 'success' %}
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                {% else %}
+                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                {% endif %}
+              </div>
+              <div class="alert-content">{{ message }}</div>
+              <button class="alert-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
             </div>
           {% endfor %}
         </div>
       {% endif %}
+      
       {% block content %}{% endblock %}
     </main>
   </div>
 </div>
+
+<div class="mobile-menu-backdrop" id="mobile-backdrop"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const mobileToggle = document.getElementById('mobile-menu-toggle');
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('mobile-backdrop');
+  
+  if (mobileToggle && sidebar && backdrop) {
+    mobileToggle.addEventListener('click', () => {
+      const isOpen = sidebar.classList.contains('sidebar-mobile-hidden') === false;
+      sidebar.classList.toggle('sidebar-mobile-hidden', isOpen);
+      backdrop.classList.toggle('open', !isOpen);
+      document.body.style.overflow = isOpen ? '' : 'hidden';
+      mobileToggle.setAttribute('aria-expanded', !isOpen);
+    });
+    
+    backdrop.addEventListener('click', () => {
+      sidebar.classList.add('sidebar-mobile-hidden');
+      backdrop.classList.remove('open');
+      document.body.style.overflow = '';
+      mobileToggle.setAttribute('aria-expanded', 'false');
+    });
+  }
+</script>
 {% endblock %}

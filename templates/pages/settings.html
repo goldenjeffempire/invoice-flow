@@ -1,161 +1,350 @@
 {% extends "base/layout_app.html" %}
+{% load static %}
 
-{% block title %}Settings · InvoiceFlow{% endblock %}
+{% block title %}Settings | InvoiceFlow{% endblock %}
+
+{% block head %}
+<style>
+  .settings-card {
+    background: white;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+  }
+
+  .settings-card:hover {
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.06);
+  }
+
+  .input-modern {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 0.75rem;
+    background: white;
+    transition: all 0.2s ease;
+  }
+
+  .input-modern:hover {
+    border-color: #cbd5e1;
+  }
+
+  .input-modern:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+
+  .checkbox-modern {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.375rem;
+    accent-color: #2563eb;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.75rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .checkbox-label:hover {
+    background: #f8fafc;
+  }
+
+  .section-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .tab-nav {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.375rem;
+    background: #f1f5f9;
+    border-radius: 0.75rem;
+  }
+
+  .tab-nav-item {
+    flex: 1;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: center;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    color: #64748b;
+  }
+
+  .tab-nav-item:hover {
+    color: #334155;
+  }
+
+  .tab-nav-item.active {
+    background: white;
+    color: #1e293b;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<section class="max-w-6xl mx-auto px-6 py-12">
-    <div class="flex flex-col gap-8">
-        <header class="flex flex-col gap-3">
-            <h1 class="text-3xl font-extrabold text-slate-900">Settings</h1>
-            <p class="text-slate-600">Manage your profile, notifications, and payment preferences.</p>
-        </header>
+<div class="max-w-4xl mx-auto space-y-8">
+  <div>
+    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Settings</h1>
+    <p class="text-slate-500 mt-1">Manage your profile, notifications, and payment preferences.</p>
+  </div>
 
-        {% if messages %}
-            <div class="space-y-3">
-                {% for message in messages %}
-                    <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        <form method="post" class="space-y-10">
-            {% csrf_token %}
-
-            <section class="card-glass rounded-2xl p-6 space-y-6">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-900">Business Profile</h2>
-                    <p class="text-sm text-slate-500">Update your business details shown on invoices.</p>
-                </div>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label class="text-sm font-semibold text-slate-600">Company Name</label>
-                        <input class="input-modern" name="company_name" value="{{ profile.company_name }}" />
-                    </div>
-                    <div>
-                        <label class="text-sm font-semibold text-slate-600">Business Email</label>
-                        <input class="input-modern" name="business_email" value="{{ profile.business_email }}" />
-                    </div>
-                    <div>
-                        <label class="text-sm font-semibold text-slate-600">Business Phone</label>
-                        <input class="input-modern" name="business_phone" value="{{ profile.business_phone }}" />
-                    </div>
-                    <div>
-                        <label class="text-sm font-semibold text-slate-600">Invoice Prefix</label>
-                        <input class="input-modern" name="invoice_prefix" value="{{ profile.invoice_prefix }}" />
-                    </div>
-                </div>
-                <div>
-                    <label class="text-sm font-semibold text-slate-600">Business Address</label>
-                    <textarea class="input-modern" rows="3" name="business_address">{{ profile.business_address }}</textarea>
-                </div>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label class="text-sm font-semibold text-slate-600">Default Currency</label>
-                        <input class="input-modern" name="default_currency" value="{{ profile.default_currency }}" />
-                    </div>
-                    <div>
-                        <label class="text-sm font-semibold text-slate-600">Default Tax Rate (%)</label>
-                        <input class="input-modern" name="default_tax_rate" value="{{ profile.default_tax_rate }}" />
-                    </div>
-                </div>
-            </section>
-
-            <section class="card-glass rounded-2xl p-6 space-y-6">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-900">Notifications</h2>
-                    <p class="text-sm text-slate-500">Choose when you want to receive alerts.</p>
-                </div>
-                <div class="grid gap-4 md:grid-cols-2 text-sm font-medium text-slate-600">
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="notify_invoice_created" {% if profile.notify_invoice_created %}checked{% endif %} />
-                        Invoice created
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="notify_payment_received" {% if profile.notify_payment_received %}checked{% endif %} />
-                        Payment received
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="notify_invoice_viewed" {% if profile.notify_invoice_viewed %}checked{% endif %} />
-                        Invoice viewed
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="notify_invoice_overdue" {% if profile.notify_invoice_overdue %}checked{% endif %} />
-                        Invoice overdue
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="notify_weekly_summary" {% if profile.notify_weekly_summary %}checked{% endif %} />
-                        Weekly summary
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="notify_security_alerts" {% if profile.notify_security_alerts %}checked{% endif %} />
-                        Security alerts
-                    </label>
-                </div>
-            </section>
-
-            <section class="card-glass rounded-2xl p-6 space-y-6">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-900">Payment Preferences</h2>
-                    <p class="text-sm text-slate-500">Control payment methods and payout settings.</p>
-                </div>
-                <div class="grid gap-4 md:grid-cols-2 text-sm font-medium text-slate-600">
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="enable_card_payments" {% if payment_settings.enable_card_payments %}checked{% endif %} />
-                        Card payments
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="enable_bank_transfers" {% if payment_settings.enable_bank_transfers %}checked{% endif %} />
-                        Bank transfers
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="enable_mobile_money" {% if payment_settings.enable_mobile_money %}checked{% endif %} />
-                        Mobile money
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="enable_ussd" {% if payment_settings.enable_ussd %}checked{% endif %} />
-                        USSD payments
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="auto_payout" {% if payment_settings.auto_payout %}checked{% endif %} />
-                        Auto payouts
-                    </label>
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" name="send_payment_receipt" {% if payment_settings.send_payment_receipt %}checked{% endif %} />
-                        Send payment receipts
-                    </label>
-                </div>
-                <div class="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label class="text-sm font-semibold text-slate-600">Preferred Currency</label>
-                        <input class="input-modern" name="preferred_currency" value="{{ payment_settings.preferred_currency }}" />
-                    </div>
-                    <div>
-                        <label class="text-sm font-semibold text-slate-600">Payout Schedule</label>
-                        <input class="input-modern" name="payout_schedule" value="{{ payment_settings.payout_schedule }}" />
-                    </div>
-                </div>
-                <div>
-                    <label class="text-sm font-semibold text-slate-600">Payment Instructions</label>
-                    <textarea class="input-modern" rows="3" name="payment_instructions">{{ payment_settings.payment_instructions }}</textarea>
-                </div>
-                <div class="flex flex-wrap gap-3">
-                    <a href="{% url 'invoices:reminder_dashboard' %}" class="inline-flex items-center gap-2 text-indigo-600 font-semibold hover:text-indigo-700">
-                        Manage reminder rules
-                    </a>
-                    <a href="{% url 'invoices:mfa_setup' %}" class="inline-flex items-center gap-2 text-indigo-600 font-semibold hover:text-indigo-700">
-                        Configure MFA
-                    </a>
-                </div>
-            </section>
-
-            <div class="flex justify-end">
-                <button type="submit" class="btn-primary px-6 py-3 rounded-xl font-bold hover:scale-[1.01] transition">
-                    Save Settings
-                </button>
-            </div>
-        </form>
+  {% if messages %}
+    <div class="space-y-3">
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}" role="alert">
+          <div class="alert-content">{{ message }}</div>
+          <button class="alert-dismiss" onclick="this.parentElement.remove()" aria-label="Dismiss">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      {% endfor %}
     </div>
-</section>
+  {% endif %}
+
+  <form method="post" class="space-y-8">
+    {% csrf_token %}
+
+    <div class="settings-card p-6 sm:p-8">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="section-icon bg-primary-100">
+          <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Business Profile</h2>
+          <p class="text-sm text-slate-500 mt-0.5">Update your business details shown on invoices.</p>
+        </div>
+      </div>
+      
+      <div class="grid gap-5 md:grid-cols-2">
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Company Name</label>
+          <input class="input-modern" name="company_name" value="{{ profile.company_name }}" placeholder="Your Company Inc." />
+        </div>
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Business Email</label>
+          <input class="input-modern" name="business_email" type="email" value="{{ profile.business_email }}" placeholder="billing@company.com" />
+        </div>
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Business Phone</label>
+          <input class="input-modern" name="business_phone" value="{{ profile.business_phone }}" placeholder="+1 (555) 123-4567" />
+        </div>
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Invoice Prefix</label>
+          <input class="input-modern" name="invoice_prefix" value="{{ profile.invoice_prefix }}" placeholder="INV-" />
+        </div>
+      </div>
+      <div class="form-group mt-5">
+        <label class="block text-sm font-semibold text-slate-700 mb-2">Business Address</label>
+        <textarea class="input-modern" rows="3" name="business_address" placeholder="123 Business St, City, Country">{{ profile.business_address }}</textarea>
+      </div>
+      <div class="grid gap-5 md:grid-cols-2 mt-5">
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Default Currency</label>
+          <input class="input-modern" name="default_currency" value="{{ profile.default_currency }}" placeholder="USD" />
+        </div>
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Default Tax Rate (%)</label>
+          <input class="input-modern" name="default_tax_rate" type="number" step="0.01" value="{{ profile.default_tax_rate }}" placeholder="0.00" />
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-card p-6 sm:p-8">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="section-icon bg-amber-100">
+          <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Notifications</h2>
+          <p class="text-sm text-slate-500 mt-0.5">Choose when you want to receive alerts.</p>
+        </div>
+      </div>
+      
+      <div class="grid gap-3 md:grid-cols-2">
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="notify_invoice_created" {% if profile.notify_invoice_created %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Invoice created</span>
+            <p class="text-xs text-slate-500">Get notified when you create a new invoice</p>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="notify_payment_received" {% if profile.notify_payment_received %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Payment received</span>
+            <p class="text-xs text-slate-500">Get notified when a client pays</p>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="notify_invoice_viewed" {% if profile.notify_invoice_viewed %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Invoice viewed</span>
+            <p class="text-xs text-slate-500">Know when clients view your invoice</p>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="notify_invoice_overdue" {% if profile.notify_invoice_overdue %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Invoice overdue</span>
+            <p class="text-xs text-slate-500">Reminders for overdue payments</p>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="notify_weekly_summary" {% if profile.notify_weekly_summary %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Weekly summary</span>
+            <p class="text-xs text-slate-500">Receive a weekly financial overview</p>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="notify_security_alerts" {% if profile.notify_security_alerts %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Security alerts</span>
+            <p class="text-xs text-slate-500">Important account security notifications</p>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="settings-card p-6 sm:p-8">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="section-icon bg-emerald-100">
+          <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Payment Preferences</h2>
+          <p class="text-sm text-slate-500 mt-0.5">Control payment methods and payout settings.</p>
+        </div>
+      </div>
+      
+      <div class="grid gap-3 md:grid-cols-2 mb-6">
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="enable_card_payments" {% if payment_settings.enable_card_payments %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Card payments</span>
+            <p class="text-xs text-slate-500">Accept credit/debit cards</p>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="enable_bank_transfers" {% if payment_settings.enable_bank_transfers %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Bank transfers</span>
+            <p class="text-xs text-slate-500">Accept direct bank transfers</p>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="auto_payout" {% if payment_settings.auto_payout %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Auto payouts</span>
+            <p class="text-xs text-slate-500">Automatically transfer funds</p>
+          </div>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" class="checkbox-modern" name="send_payment_receipt" {% if payment_settings.send_payment_receipt %}checked{% endif %} />
+          <div>
+            <span class="font-medium text-slate-900">Send receipts</span>
+            <p class="text-xs text-slate-500">Email receipts to clients</p>
+          </div>
+        </label>
+      </div>
+
+      <div class="grid gap-5 md:grid-cols-2">
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Preferred Currency</label>
+          <input class="input-modern" name="preferred_currency" value="{{ payment_settings.preferred_currency }}" placeholder="USD" />
+        </div>
+        <div class="form-group">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Payout Schedule</label>
+          <input class="input-modern" name="payout_schedule" value="{{ payment_settings.payout_schedule }}" placeholder="Weekly" />
+        </div>
+      </div>
+      <div class="form-group mt-5">
+        <label class="block text-sm font-semibold text-slate-700 mb-2">Payment Instructions</label>
+        <textarea class="input-modern" rows="3" name="payment_instructions" placeholder="Bank details, payment notes, etc.">{{ payment_settings.payment_instructions }}</textarea>
+      </div>
+    </div>
+
+    <div class="settings-card p-6 sm:p-8">
+      <div class="flex items-start gap-4 mb-6">
+        <div class="section-icon bg-violet-100">
+          <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Security & Tools</h2>
+          <p class="text-sm text-slate-500 mt-0.5">Configure security settings and access tools.</p>
+        </div>
+      </div>
+      
+      <div class="grid gap-4 md:grid-cols-2">
+        <a href="{% url 'invoices:mfa_setup' %}" class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-primary-200 hover:bg-primary-50/50 transition-all group">
+          <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+            <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-900">Configure MFA</p>
+            <p class="text-sm text-slate-500">Set up two-factor authentication</p>
+          </div>
+          <svg class="w-5 h-5 text-slate-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+        
+        <a href="{% url 'invoices:reminder_dashboard' %}" class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 hover:border-amber-200 hover:bg-amber-50/50 transition-all group">
+          <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
+            <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-900">Reminder Rules</p>
+            <p class="text-sm text-slate-500">Manage payment reminder settings</p>
+          </div>
+          <svg class="w-5 h-5 text-slate-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between pt-4">
+      <p class="text-sm text-slate-500">Changes are saved automatically when you submit.</p>
+      <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+        </svg>
+        Save Settings
+      </button>
+    </div>
+  </form>
+</div>
 {% endblock %}
