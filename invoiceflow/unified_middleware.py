@@ -27,8 +27,7 @@ class UnifiedMiddleware:
 
     def __call__(self, request):
         # Extremely fast path for static files, service worker, and webhooks
-        if (request.path.startswith(settings.STATIC_URL) or 
-            request.path == "/sw.js" or 
+        if (request.path == "/sw.js" or 
             "webhook" in request.path):
             return self.get_response(request)
 
