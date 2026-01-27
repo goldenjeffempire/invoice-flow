@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: invoiceflow
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn invoiceflow.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --worker-class gthread --timeout 120 --keep-alive 5 --max-requests 1000 --max-requests-jitter 50
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: PRODUCTION
+        value: "true"
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: invoiceflow-db
+          property: connectionString
+    healthCheckPath: /health/ready/
+    autoDeploy: true
+    plan: starter
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+      targetCPUPercent: 80
+
+databases:
+  - name: invoiceflow-db
+    plan: starter
+    databaseName: invoiceflow
+    postgresMajorVersion: 15

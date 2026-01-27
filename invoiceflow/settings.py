@@ -35,8 +35,13 @@ PRODUCTION_URL = f"https://{PRODUCTION_DOMAIN}"
 # =============================================================================
 # SECURITY
 # =============================================================================
-SECRET_KEY = env.str("SECRET_KEY", "django-insecure-dev-only")
-DEBUG = env.bool("DEBUG", False)
+SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-dev-only-change-in-production")
+DEBUG = env.bool("DEBUG", default=False)
+
+# Warn in production if using insecure secret key
+if not DEBUG and "insecure" in SECRET_KEY.lower():
+    import warnings
+    warnings.warn("Using insecure SECRET_KEY in production is dangerous!")
 
 ALLOWED_HOSTS = [
     "invoiceflow.com.ng",
@@ -48,7 +53,9 @@ ALLOWED_HOSTS = [
 ]
 
 if os.getenv("REPLIT_DEV_DOMAIN"):
-    ALLOWED_HOSTS.append(os.getenv("REPLIT_DEV_DOMAIN"))
+    replit_domain = os.getenv("REPLIT_DEV_DOMAIN")
+    if replit_domain:
+        ALLOWED_HOSTS.append(replit_domain)
 
 CSRF_TRUSTED_ORIGINS = [
     "https://*.replit.dev",
