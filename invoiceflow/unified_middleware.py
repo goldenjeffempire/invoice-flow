@@ -41,13 +41,22 @@ class UnifiedMiddleware:
 
         duration = time.time() - start
 
-        logger.debug(
-            "%s %s %s %sms",
-            request.method,
-            request.path,
-            response.status_code,
-            int(duration * 1000),
-        )
+        if duration > 1.0:
+            logger.warning(
+                "SLOW_REQ: %s %s %s %sms",
+                request.method,
+                request.path,
+                response.status_code,
+                int(duration * 1000),
+            )
+        else:
+            logger.debug(
+                "%s %s %s %sms",
+                request.method,
+                request.path,
+                response.status_code,
+                int(duration * 1000),
+            )
 
         # Force fresh content in development to avoid 304/stale state
         if settings.DEBUG:

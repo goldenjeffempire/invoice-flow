@@ -118,7 +118,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "invoiceflow.performance_middleware.PerformanceMonitoringMiddleware",
     "invoiceflow.unified_middleware.UnifiedMiddleware",
     "invoiceflow.unified_middleware.OptimizedRateLimitMiddleware",
     "invoiceflow.mfa_middleware.MFAEnforcementMiddleware",
