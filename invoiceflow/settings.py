@@ -161,12 +161,16 @@ DATABASES = {
 
 # PostgreSQL connection using the provisioned DATABASE_URL
 # Use PostgreSQL in both development and production when DATABASE_URL is available
-if os.getenv("DATABASE_URL"):
+if os.getenv("DATABASE_URL") and not os.getenv("REPL_ID"):
     db_url = os.getenv("DATABASE_URL")
     if db_url.startswith("postgres://") or db_url.startswith("postgresql://"):
-        db_config = dj_database_url.config(conn_max_age=600, ssl_require=False)
-        if db_config:
-            DATABASES["default"] = db_config
+        try:
+            import psycopg2
+            db_config = dj_database_url.config(conn_max_age=600, ssl_require=False)
+            if db_config:
+                DATABASES["default"] = db_config
+        except ImportError:
+            pass
 
 # =============================================================================
 # STATIC / MEDIA
