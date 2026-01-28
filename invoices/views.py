@@ -607,9 +607,6 @@ def dashboard(request):
         "recent_invoices": recent_invoices,
         "active": "dashboard",
     })
-        "recent_invoices": recent_invoices,
-        "active": "dashboard"
-    })
 
 @login_required
 def invoices_list(request):

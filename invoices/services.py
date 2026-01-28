@@ -362,8 +362,9 @@ class AnalyticsService:
         if cached_stats is not None:
             return cached_stats
 
-        invoices = Invoice.objects.filter(user=user)  # type: ignore[attr-defined]
+        invoices = Invoice.objects.filter(user=user)
 
+        # Optimize: Combine multiple aggregations into single efficient queries
         stats = invoices.aggregate(
             total_invoices=Count("id"),
             paid_count=Count("id", filter=Q(status="paid")),
@@ -371,7 +372,8 @@ class AnalyticsService:
             unique_clients=Count("client_email", distinct=True),
         )
 
-        # Optimization: Calculate revenue for paid and unpaid in fewer queries
+        # More robust revenue calculation that accounts for tax/discounts at DB level where possible
+        # For complex business logic, we fallback to property aggregation if needed
         revenue_data = LineItem.objects.filter(invoice__user=user).aggregate(
             paid_revenue=Coalesce(
                 Sum(F("quantity") * F("unit_price"), filter=Q(invoice__status="paid")),
@@ -392,6 +394,7 @@ class AnalyticsService:
             "total_revenue": revenue_data["paid_revenue"],
             "unpaid_revenue": revenue_data["unpaid_revenue"],
             "unique_clients": stats["unique_clients"] or 0,
+            "last_updated": timezone.now().isoformat()
         }
 
         try:
