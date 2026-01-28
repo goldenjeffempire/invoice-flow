@@ -286,8 +286,8 @@ class PDFService:
         try:
             return html.write_pdf(font_config=font_config)
         except Exception as e:
-            logger.error(f"PDF generation failed for invoice: {e}")
-            raise ValueError(f"Failed to generate PDF. System dependencies (cffi/weasyprint) might be missing.")
+            logger.error(f"PDF generation failed: {e}")
+            raise ValueError("PDF service is currently unavailable. Please contact support.")
 
 
 class AnalyticsService:

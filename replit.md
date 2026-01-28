@@ -1,78 +1,38 @@
 # InvoiceFlow - Professional Invoicing Platform
 
 ## Overview
-InvoiceFlow is a professional invoicing platform built with Django. It allows businesses to create, send, and track invoices with automated payment reminders and real-time analytics.
+InvoiceFlow is an enterprise-grade invoicing platform built with Django. It provides a robust suite of features including secure authentication with MFA, automated payment reminders, and integrated Paystack payments.
 
 ## Project Structure
 ```
-invoiceflow/
-├── invoices/           # Main Django app
-│   ├── views.py        # Views including landing page, auth, invoices
-│   ├── urls.py         # URL routing
-│   ├── models.py       # Database models
-│   └── api/            # REST API endpoints
-├── templates/
-│   ├── base/           # Base layout templates
-│   ├── pages/          # Page templates (landing, auth, dashboard)
-│   ├── payments/       # Payment-related templates
-│   └── admin/          # Admin panel templates
-├── static/
-│   ├── css/            # Stylesheets (landing_v2.css)
-│   ├── js/             # JavaScript (landing_v2.js)
-│   └── images/         # Image assets
-└── invoiceflow/        # Django project settings
+invoiceflow/            # Django project settings
+invoices/               # Main Django app
+├── api/                # REST API
+├── management/         # Custom CLI commands
+├── migrations/         # Database migrations
+├── templates/          # App-specific templates
+└── services.py         # Business logic services
+static/                 # Visual assets and design system
+templates/              # Project-wide templates
 ```
 
 ## Recent Changes
-- **Jan 27, 2026**: Final Audit and Polish:
-  - Verified production security headers (HSTS, CSP, SSL redirect).
-  - Optimized database connection logic to support both local SQLite and production PostgreSQL.
-  - Confirmed all public and authenticated routes are operational.
-  - Added comprehensive 404/500 error pages.
-  - Finalized email template system and MFA flows.
-
-- **Jan 27, 2026**: Navigation consistency update:
-  - Created reusable navbar and footer partials (templates/partials/)
-  - Added consistent navigation to all public pages: about, features, contact, careers, blog, faq, support, terms, privacy, security
-  - Navbar includes: logo, Home, About, Features, Contact links, Sign In, Get Started buttons
-  - Footer includes: product links, resources, legal links, social media icons
-
-- **Jan 27, 2026**: Migration and cleanup:
-  - Removed all pricing-related components (URL, view, template, sitemap entry, tests)
-  - Created 7 new public pages: careers, blog, faq, support, terms, privacy, security
-  - Fixed duplicate view functions that were incorrectly redirecting to home
-  - All routes verified working with 200 status codes
-  - Platform fully operational with no broken links
-
-- **Jan 27, 2026**: Full production-ready enhancement:
-  - Created complete email template system (invoice_ready, payment_reminder, invoice_paid, password_reset, verification_email) with HTML and plain text versions
-  - Added professional 404 and 500 error pages
-  - Created payment history and payment detail pages with full functionality
-  - Added MFA setup, verify, and backup codes pages
-  - Enhanced features page with complete feature cards
-  - Fixed invoice detail page to use app layout for consistent navigation
-  - Verified all core systems: health check endpoint (/health/ready/), FAQ API, authentication flows
-  - All secrets properly configured (SENDGRID_API_KEY, PAYSTACK keys, DATABASE_URL)
+- **Jan 28, 2026**: Completed a full system audit and professional production-readiness cleanup.
+  - Consolidated Django project settings to `invoiceflow/` for enterprise-grade modularity.
+  - Fixed database connectivity for Neon PostgreSQL with reliable failover to SQLite.
+  - Verified all core features: MFA, Paystack integration, and Analytics.
+  - Optimized middleware stack for security and performance (CSP, SSL, Rate-limiting).
+  - Synchronized all database migrations and collected static assets.
 
 ## Key Features
-- Professional invoice creation and management
-- Automated payment reminders
-- Real-time analytics dashboard
-- Online payments via Paystack integration
-- MFA support for security
-- PDF invoice export
+- **Enterprise Security**: Built-in MFA (TOTP), secure sessions, and CSP protection.
+- **Payment Integration**: Native Paystack support for cards, transfers, and webhooks.
+- **Automated Reminders**: Intelligent scheduling system for invoice follow-ups.
+- **Real-time Analytics**: High-performance dashboard with SQL-level aggregations.
 
 ## Development
 - Run with: `python manage.py runserver 0.0.0.0:5000`
-- Database: PostgreSQL (DATABASE_URL environment variable)
-- Static files served with WhiteNoise
+- Database: Neon PostgreSQL via `DATABASE_URL` secret.
 
-## Production Notes
-Production deployments should use **Render** (or another production platform) with:
-- `DEBUG=False`
-- strict `ALLOWED_HOSTS`
-- strict `CSRF_TRUSTED_ORIGINS`
-- a managed Postgres database
-- proper secrets set via environment variables
-
-If you use Replit, do not commit secrets. Configure them in Replit's Secrets UI.
+## Deployment
+Production-ready for **Render** via `render.yaml`. Requires `DATABASE_URL`, `SECRET_KEY`, and `PAYSTACK_SECRET_KEY` environment variables.
