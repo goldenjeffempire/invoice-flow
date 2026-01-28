@@ -54,6 +54,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'invoice_flow.wsgi.application'
 
+# Database configuration using DATABASE_URL secret
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),
