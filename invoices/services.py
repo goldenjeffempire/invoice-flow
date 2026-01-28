@@ -402,6 +402,13 @@ class AnalyticsService:
         except Exception as e:
             logger.warning(f"Failed to cache dashboard stats: {e}")
 
+        # Async background warming for related analytics if not cached
+        try:
+            executor = cls._get_executor()
+            executor.submit(cls.get_user_analytics_stats, user)
+        except Exception:
+            pass
+
         return result
 
     @classmethod
