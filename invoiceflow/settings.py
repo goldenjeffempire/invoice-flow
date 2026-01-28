@@ -161,6 +161,9 @@ DATABASES = {
 if os.getenv("DATABASE_URL"):
     db_config = dj_database_url.config(conn_max_age=600, ssl_require=False)
     if db_config:
+        db_config['OPTIONS'] = {
+            'connect_timeout': 10,
+        }
         DATABASES["default"] = db_config
 
 # =============================================================================

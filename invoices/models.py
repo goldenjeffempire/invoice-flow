@@ -343,14 +343,12 @@ class Invoice(models.Model):
     @property
     def total(self) -> Decimal:
         """Calculates the grand total of the invoice."""
-        # Standardize total calculation across model and analytics
         try:
-            discountable_amount = self.subtotal - self.discount_amount
-            taxable_amount = max(Decimal("0.00"), discountable_amount)
-            tax_total = (taxable_amount * Decimal(str(self.tax_rate))) / Decimal("100")
-            
-            total = taxable_amount + tax_total
-            return total.quantize(Decimal("0.01"))
+            sub = self.subtotal
+            disc = (sub * Decimal(str(self.discount))) / Decimal("100")
+            taxable = max(Decimal("0.00"), sub - disc)
+            tax = (taxable * Decimal(str(self.tax_rate))) / Decimal("100")
+            return (taxable + tax).quantize(Decimal("0.01"))
         except (InvalidOperation, ValueError, TypeError):
             return Decimal("0.00")
 

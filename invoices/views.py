@@ -600,11 +600,13 @@ def dashboard(request):
         stats = AnalyticsService.get_user_dashboard_stats(request.user)
         cache.set(cache_key, stats, 300)
 
-    recent_invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')[:5]
+    recent_invoices = Invoice.objects.filter(user=request.user).select_related('template').prefetch_related('line_items').order_by('-created_at')[:5]
     
-    # We use stats directly from AnalyticsService which already has the correct keys
     return render(request, "pages/dashboard.html", {
-        "stats": stats, 
+        "stats": stats,
+        "recent_invoices": recent_invoices,
+        "active": "dashboard",
+    })
         "recent_invoices": recent_invoices,
         "active": "dashboard"
     })
