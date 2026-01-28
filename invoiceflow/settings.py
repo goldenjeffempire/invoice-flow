@@ -6,7 +6,7 @@ Domain: https://invoiceflow.com.ng
 from pathlib import Path
 import os
 import sys
-from typing import Any, cast
+from typing import Any, cast, Dict
 import environ
 import dj_database_url
 
@@ -14,7 +14,7 @@ import dj_database_url
 # BASE SETUP
 # =============================================================================
 BASE_DIR = Path(__file__).resolve().parent.parent
-env = environ.Env(DEBUG=(bool, False))
+env = environ.Env()
 
 _env_file = os.path.join(BASE_DIR, ".env")
 if os.path.exists(_env_file):
@@ -24,24 +24,20 @@ if os.path.exists(_env_file):
 # ENVIRONMENT DETECTION
 # =============================================================================
 IS_PRODUCTION = os.getenv("PRODUCTION") == "true" and not os.getenv("REPL_ID")
-DEBUG = env.bool("DEBUG", not IS_PRODUCTION)
+_debug_default = "false" if IS_PRODUCTION else "true"
+DEBUG = os.getenv("DEBUG", _debug_default).lower() == "true"
 
 # =============================================================================
 # DOMAIN
 # =============================================================================
 PRODUCTION_DOMAIN = "invoiceflow.com.ng"
 PRODUCTION_URL = f"https://{PRODUCTION_DOMAIN}"
-SITE_URL = PRODUCTION_URL if not DEBUG else "http://localhost:5000"
+SITE_URL = PRODUCTION_URL if IS_PRODUCTION else "http://localhost:5000"
 
 # =============================================================================
 # SECURITY
 # =============================================================================
-SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-dev-only-change-in-production")
-
-# Warn in production if using insecure secret key
-if not DEBUG and "insecure" in SECRET_KEY.lower():
-    import warnings
-    warnings.warn("Using insecure SECRET_KEY in production is dangerous!")
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-production")
 
 ALLOWED_HOSTS = [
     "invoiceflow.com.ng",
@@ -167,7 +163,7 @@ if os.getenv("DATABASE_URL"):
         db_config['OPTIONS'] = {
             'connect_timeout': 10,
         }
-        DATABASES["default"] = db_config
+        DATABASES["default"] = cast(Dict[str, Any], db_config)
 
 # =============================================================================
 # STATIC / MEDIA
