@@ -31,6 +31,7 @@ DEBUG = env.bool("DEBUG", not IS_PRODUCTION)
 # =============================================================================
 PRODUCTION_DOMAIN = "invoiceflow.com.ng"
 PRODUCTION_URL = f"https://{PRODUCTION_DOMAIN}"
+SITE_URL = PRODUCTION_URL if not DEBUG else "http://localhost:5000"
 
 # =============================================================================
 # SECURITY
@@ -44,13 +45,13 @@ if not DEBUG and "insecure" in SECRET_KEY.lower():
 
 ALLOWED_HOSTS = [
     "invoiceflow.com.ng",
+    "www.invoiceflow.com.ng",
     "*.replit.dev",
     "*.repl.co",
     "*.onrender.com",
     "0.0.0.0",
     "localhost",
     "127.0.0.1",
-    "*",
 ]
 
 if os.getenv("REPLIT_DEV_DOMAIN"):
@@ -61,14 +62,16 @@ if os.getenv("REPLIT_DEV_DOMAIN"):
 CSRF_TRUSTED_ORIGINS = [
     "https://*.replit.dev",
     "https://*.repl.co",
-    f"https://{PRODUCTION_DOMAIN}",
+    "https://invoiceflow.com.ng",
+    "https://www.invoiceflow.com.ng",
 ]
 if os.getenv("REPLIT_DEV_DOMAIN"):
     CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['REPLIT_DEV_DOMAIN']}")
 
 # Production Security Headers
 if not DEBUG:
-    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", True)
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000 # 1 year
