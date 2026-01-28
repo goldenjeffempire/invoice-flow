@@ -196,6 +196,21 @@ def when_ready(server):
     logger.info("✓ GET /health/live/ for quick liveness check (no external dependencies)")
 
 
+def post_fork(server, worker):
+    """
+    Called after a worker has been forked.
+    Pre-warm database connections to avoid slow first requests.
+    """
+    try:
+        import django
+        django.setup()
+        from django.db import connection
+        connection.ensure_connection()
+        logger.info(f"Worker {worker.pid}: Database connection pre-warmed")
+    except Exception as e:
+        logger.warning(f"Worker {worker.pid}: Failed to pre-warm DB connection: {e}")
+
+
 def on_exit(server):
     """
     Called when Gunicorn is shutting down.
