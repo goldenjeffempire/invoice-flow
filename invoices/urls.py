@@ -39,6 +39,7 @@ urlpatterns = [
 
     path("dashboard/", views.dashboard, name="dashboard"),
     path("analytics/", views.analytics, name="analytics"),
+    path("clients/", views.clients, name="clients"),
     path("create/", views.invoice_create, name="invoice_create"),
     path("list/", views.invoices_list, name="invoices_list"),
     path("invoice/<str:invoice_id>/", views.invoice_detail, name="invoice_detail_by_pk"),
