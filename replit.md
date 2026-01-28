@@ -1,38 +1,125 @@
-# InvoiceFlow - Professional Invoicing Platform
+# InvoiceFlow - Professional Enterprise Invoicing Platform
 
 ## Overview
-InvoiceFlow is an enterprise-grade invoicing platform built with Django. It provides a robust suite of features including secure authentication with MFA, automated payment reminders, and integrated Paystack payments.
+InvoiceFlow is a professional enterprise-grade invoicing platform built with Django, featuring modern UI/UX with Tailwind CSS, comprehensive design system, and production-ready deployment configuration for Render with custom domain support.
 
 ## Project Structure
 ```
 invoiceflow/            # Django project settings
+├── settings.py         # Production-ready settings with security hardening
+├── urls.py             # URL routing
+└── wsgi.py             # WSGI application entry point
+
 invoices/               # Main Django app
-├── api/                # REST API
+├── api/                # REST API endpoints
 ├── management/         # Custom CLI commands
 ├── migrations/         # Database migrations
 ├── templates/          # App-specific templates
+├── views.py            # View controllers
 └── services.py         # Business logic services
-static/                 # Visual assets and design system
+
+static/                 # Visual assets
+├── css/
+│   └── design-system.css  # Comprehensive design system (2000+ lines)
+└── js/                 # JavaScript utilities
+
 templates/              # Project-wide templates
+├── base/               # Base layouts
+│   ├── layout.html     # Public page layout
+│   └── layout_app.html # Authenticated app layout
+├── pages/              # Page templates
+│   ├── auth/           # Authentication pages
+│   ├── dashboard.html  # User dashboard
+│   └── invoices_list.html # Invoice registry
+└── partials/           # Reusable components
 ```
 
 ## Recent Changes
-- **Jan 28, 2026**: Completed a full system audit and professional production-readiness cleanup.
-  - Consolidated Django project settings to `invoiceflow/` for enterprise-grade modularity.
-  - Fixed database connectivity for Neon PostgreSQL with reliable failover to SQLite.
-  - Verified all core features: MFA, Paystack integration, and Analytics.
-  - Optimized middleware stack for security and performance (CSP, SSL, Rate-limiting).
-  - Synchronized all database migrations and collected static assets.
+- **Jan 28, 2026**: Production deployment configuration and settings finalization
+  - Updated Django settings with proper SECRET_KEY handling (warning-free)
+  - Configured enterprise-grade Gunicorn settings with dynamic worker scaling
+  - Updated render.yaml with proper environment variables for custom domain
+  - Added ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS for invoiceflow.com.ng
+  - Health check endpoints at /health/live/ and /health/ready/
 
 ## Key Features
-- **Enterprise Security**: Built-in MFA (TOTP), secure sessions, and CSP protection.
-- **Payment Integration**: Native Paystack support for cards, transfers, and webhooks.
-- **Automated Reminders**: Intelligent scheduling system for invoice follow-ups.
-- **Real-time Analytics**: High-performance dashboard with SQL-level aggregations.
+
+### Enterprise Security
+- MFA (Multi-Factor Authentication) with TOTP support
+- Secure session management with encrypted cookies
+- CSP (Content Security Policy) protection
+- Rate limiting and brute force protection
+- CSRF and XSS protection
+
+### Payment Integration
+- Native Paystack support for Nigerian payments
+- Card, bank transfer, and USSD payment methods
+- Webhook handling for payment confirmations
+- Multi-currency support
+
+### Automated Reminders
+- Intelligent scheduling system for invoice follow-ups
+- Configurable reminder intervals
+- Email notification templates
+
+### Real-time Analytics
+- High-performance dashboard with SQL aggregations
+- Revenue tracking and client insights
+- Payment status monitoring
+
+### Modern UI/UX
+- Tailwind CSS with custom design system
+- Glassmorphism effects and smooth animations
+- Fully responsive design (mobile-first)
+- Accessible components with ARIA support
 
 ## Development
-- Run with: `python manage.py runserver 0.0.0.0:5000`
-- Database: Neon PostgreSQL via `DATABASE_URL` secret.
 
-## Deployment
-Production-ready for **Render** via `render.yaml`. Requires `DATABASE_URL`, `SECRET_KEY`, and `PAYSTACK_SECRET_KEY` environment variables.
+### Running Locally
+```bash
+python manage.py runserver 0.0.0.0:5000
+```
+
+### Database
+- Development: PostgreSQL via `DATABASE_URL` environment variable
+- Fallback: SQLite for local development without DATABASE_URL
+
+### Environment Variables
+- `SECRET_KEY`: Django secret key (auto-generated if not set)
+- `DATABASE_URL`: PostgreSQL connection string
+- `DEBUG`: Set to "false" for production
+- `PRODUCTION`: Set to "true" for production mode
+
+## Production Deployment (Render)
+
+### Configuration
+The project includes `render.yaml` for one-click deployment to Render.
+
+### Required Environment Variables
+- `SECRET_KEY`: Auto-generated by Render
+- `DATABASE_URL`: Auto-configured from Render PostgreSQL
+- `SITE_URL`: https://invoiceflow.com.ng
+- `ALLOWED_HOSTS`: invoiceflow.com.ng,www.invoiceflow.com.ng,.onrender.com
+- `PAYSTACK_SECRET_KEY`: Required for payment processing
+
+### Custom Domain Setup
+1. Add custom domain in Render dashboard
+2. Configure DNS records as instructed
+3. ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS are pre-configured
+
+### Health Checks
+- Liveness: `/health/live/` - Quick check, no external dependencies
+- Readiness: `/health/ready/` - Full check including database
+
+## User Preferences
+- Modern, professional UI with glassmorphism effects
+- Enterprise-grade security and reliability
+- Mobile-responsive design
+- Automated workflows and reminders
+
+## Architecture Decisions
+- **Django 5.x**: Latest LTS for security and performance
+- **Tailwind CSS**: Utility-first CSS for rapid UI development
+- **PostgreSQL**: Robust database with Neon hosting support
+- **Gunicorn**: Production WSGI server with gthread workers
+- **Render**: Cloud platform with zero-downtime deployments
