@@ -598,7 +598,7 @@ def dashboard(request):
     stats = cache.get(cache_key)
     if not stats:
         stats = AnalyticsService.get_user_dashboard_stats(request.user)
-        cache.set(cache_key, stats, 300)
+        # cache.set(cache_key, stats, 300) # AnalyticsService already handles caching
 
     recent_invoices = Invoice.objects.filter(user=request.user).select_related('template').prefetch_related('line_items').order_by('-created_at')[:5]
     
