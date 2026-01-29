@@ -41,23 +41,41 @@ SITE_URL = PRODUCTION_URL if IS_PRODUCTION else "http://localhost:5000"
 # =============================================================================
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-production")
 
-ALLOWED_HOSTS = [
-    "*",
-    "invoiceflow.com.ng",
-    "www.invoiceflow.com.ng",
-    "*.replit.dev",
-    "*.repl.co",
-    "*.onrender.com",
-    "0.0.0.0",
-    "localhost",
-    "127.0.0.1",
-    "invoice-flow-7vu0.onrender.com",
-]
-
-if os.getenv("REPLIT_DEV_DOMAIN"):
-    replit_domain = os.getenv("REPLIT_DEV_DOMAIN")
-    if replit_domain:
-        ALLOWED_HOSTS.append(replit_domain)
+# Build ALLOWED_HOSTS based on environment
+if IS_PRODUCTION:
+    # Production: explicit hosts only, no wildcards
+    ALLOWED_HOSTS = [
+        "invoiceflow.com.ng",
+        "www.invoiceflow.com.ng",
+        "invoice-flow-7vu0.onrender.com",
+    ]
+    # Auto-append RENDER_EXTERNAL_HOSTNAME if set (Render provides this)
+    render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+    if render_hostname:
+        ALLOWED_HOSTS.append(render_hostname)
+    # Also read ALLOWED_HOSTS env var if set (comma-separated)
+    env_allowed_hosts = os.getenv("ALLOWED_HOSTS", "")
+    if env_allowed_hosts:
+        for host in env_allowed_hosts.split(","):
+            host = host.strip()
+            if host and host not in ALLOWED_HOSTS:
+                ALLOWED_HOSTS.append(host)
+else:
+    # Development: allow local hosts and Replit domains
+    ALLOWED_HOSTS = [
+        "invoiceflow.com.ng",
+        "www.invoiceflow.com.ng",
+        "invoice-flow-7vu0.onrender.com",
+        "0.0.0.0",
+        "localhost",
+        "127.0.0.1",
+    ]
+    # Replit development domains
+    replit_dev_domain = os.getenv("REPLIT_DEV_DOMAIN")
+    if replit_dev_domain:
+        ALLOWED_HOSTS.append(replit_dev_domain)
+    # Allow wildcard Replit domains in dev
+    ALLOWED_HOSTS.extend(["*.replit.dev", "*.repl.co"])
 
 CSRF_TRUSTED_ORIGINS = [
     "https://*.replit.dev",
@@ -162,11 +180,17 @@ DATABASES = {
 }
 
 # PostgreSQL connection using the provisioned DATABASE_URL
-DATABASE_URL = os.getenv("DATABASE_URL")
-if IS_PRODUCTION and not DATABASE_URL:
-    raise ImproperlyConfigured("DATABASE_URL environment variable is required in production.")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
-if DATABASE_URL and DATABASE_URL.strip():
+# Production requires a valid DATABASE_URL
+if IS_PRODUCTION:
+    if not DATABASE_URL:
+        raise ImproperlyConfigured(
+            "DATABASE_URL environment variable is required in production. "
+            "Ensure exactly one non-empty DATABASE_URL is set in Render environment settings."
+        )
+
+if DATABASE_URL:
     # Remove unsupported parameters from the connection string if they exist
     _db_url = DATABASE_URL
     if "channel_binding=" in _db_url:
@@ -175,30 +199,40 @@ if DATABASE_URL and DATABASE_URL.strip():
         # Fix possible leading/trailing &
         _db_url = _db_url.replace('?&', '?').rstrip('&')
     
-    import dj_database_url
     try:
-        # Use conn_max_age to keep connections alive
-        db_config = dj_database_url.config(
-            default=_db_url, 
+        # Parse database URL with production-ready settings
+        db_config = dj_database_url.parse(
+            _db_url,
             conn_max_age=600,
             ssl_require=True
         )
         if db_config:
-            # Check if psycopg2 or psycopg is available before setting engine
+            # Check if psycopg (v3) or psycopg2 is available before setting engine
+            pg_driver_found = False
             try:
-                import psycopg2
+                import psycopg
                 db_config['ENGINE'] = 'django.db.backends.postgresql'
                 DATABASES["default"] = db_config
+                pg_driver_found = True
             except ImportError:
+                pass
+            
+            if not pg_driver_found:
                 try:
-                    import psycopg
+                    import psycopg2
+                    # Verify psycopg2 actually works (binary can fail to load)
+                    psycopg2.extensions
                     db_config['ENGINE'] = 'django.db.backends.postgresql'
                     DATABASES["default"] = db_config
-                except ImportError:
-                    if IS_PRODUCTION:
-                         raise ImproperlyConfigured("No PostgreSQL driver found (psycopg2 or psycopg) in production.")
-                    import sys
-                    sys.stderr.write("WARNING: No PostgreSQL driver found. Falling back to SQLite.\n")
+                    pg_driver_found = True
+                except (ImportError, AttributeError, ModuleNotFoundError):
+                    pass
+            
+            if not pg_driver_found:
+                if IS_PRODUCTION:
+                    raise ImproperlyConfigured("No PostgreSQL driver found (psycopg or psycopg2) in production.")
+                import sys
+                sys.stderr.write("WARNING: No PostgreSQL driver found. Falling back to SQLite.\n")
     except Exception as e:
         if IS_PRODUCTION:
             raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
