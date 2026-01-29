@@ -18,13 +18,12 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 
-_env_file = os.path.join(BASE_DIR, ".env")
-if os.path.exists(_env_file):
-    environ.Env.read_env(_env_file)
+# Fail-fast environment validation
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL or not DATABASE_URL.strip():
+    if os.getenv("PRODUCTION") == "true":
+        raise ImproperlyConfigured("DATABASE_URL is required and cannot be empty in production.")
 
-# =============================================================================
-# ENVIRONMENT DETECTION
-# =============================================================================
 IS_PRODUCTION = os.getenv("PRODUCTION") == "true" and not os.getenv("REPL_ID")
 _debug_default = "false" if IS_PRODUCTION else "true"
 DEBUG = os.getenv("DEBUG", _debug_default).lower() == "true"
@@ -39,21 +38,17 @@ SITE_URL = PRODUCTION_URL if IS_PRODUCTION else "http://localhost:5000"
 # =============================================================================
 # SECURITY
 # =============================================================================
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-production")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY and IS_PRODUCTION:
+    raise ImproperlyConfigured("SECRET_KEY is required in production.")
+SECRET_KEY = SECRET_KEY or "django-insecure-dev-only-change-in-production"
 
 # Build ALLOWED_HOSTS based on environment
 if IS_PRODUCTION:
-    ALLOWED_HOSTS = [
-        "invoiceflow.com.ng",
-        "www.invoiceflow.com.ng",
-    ]
+    ALLOWED_HOSTS = [PRODUCTION_DOMAIN, f"www.{PRODUCTION_DOMAIN}"]
     render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
     if render_hostname:
         ALLOWED_HOSTS.append(render_hostname)
-    
-    env_allowed_hosts = os.getenv("ALLOWED_HOSTS", "")
-    if env_allowed_hosts:
-        ALLOWED_HOSTS.extend([h.strip() for h in env_allowed_hosts.split(",") if h.strip()])
 else:
     ALLOWED_HOSTS = ["*"]
 
