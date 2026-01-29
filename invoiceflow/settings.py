@@ -149,6 +149,7 @@ MIDDLEWARE = [
     "invoiceflow.unified_middleware.OptimizedRateLimitMiddleware",
     "invoiceflow.mfa_middleware.MFAEnforcementMiddleware",
     "invoiceflow.middleware.RequestIDMiddleware",
+    "invoices.validation.middleware.ErrorHandlingMiddleware",
 ]
 
 ROOT_URLCONF = "invoiceflow.urls"
@@ -232,3 +233,25 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "invoices:login"
 LOGIN_REDIRECT_URL = "invoices:dashboard"
 LOGOUT_REDIRECT_URL = "invoices:home"
+
+# =============================================================================
+# DJANGO REST FRAMEWORK
+# =============================================================================
+REST_FRAMEWORK = {
+    "EXCEPTION_HANDLER": "invoices.validation.api_exceptions.custom_exception_handler",
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_PARSER_CLASSES": [
+        "rest_framework.parsers.JSONParser",
+        "rest_framework.parsers.FormParser",
+        "rest_framework.parsers.MultiPartParser",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "NON_FIELD_ERRORS_KEY": "__all__",
+}
