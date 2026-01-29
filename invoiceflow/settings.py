@@ -10,6 +10,8 @@ from typing import Any, cast, Dict
 import environ
 import dj_database_url
 
+from django.core.exceptions import ImproperlyConfigured
+
 # =============================================================================
 # BASE SETUP
 # =============================================================================
@@ -161,11 +163,26 @@ DATABASES = {
 
 # PostgreSQL connection using the provisioned DATABASE_URL
 DATABASE_URL = os.getenv("DATABASE_URL")
+if IS_PRODUCTION and not DATABASE_URL:
+    raise ImproperlyConfigured("DATABASE_URL environment variable is required in production.")
+
 if DATABASE_URL and DATABASE_URL.strip():
+    # Remove unsupported parameters from the connection string if they exist
+    _db_url = DATABASE_URL
+    if "channel_binding=" in _db_url:
+        import re
+        _db_url = re.sub(r'[?&]channel_binding=[^&]+', '', _db_url)
+        # Fix possible leading/trailing &
+        _db_url = _db_url.replace('?&', '?').rstrip('&')
+    
     import dj_database_url
     try:
         # Use conn_max_age to keep connections alive
-        db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+        db_config = dj_database_url.config(
+            default=_db_url, 
+            conn_max_age=600,
+            ssl_require=True
+        )
         if db_config:
             # Check if psycopg2 or psycopg is available before setting engine
             try:
@@ -178,9 +195,13 @@ if DATABASE_URL and DATABASE_URL.strip():
                     db_config['ENGINE'] = 'django.db.backends.postgresql'
                     DATABASES["default"] = db_config
                 except ImportError:
+                    if IS_PRODUCTION:
+                         raise ImproperlyConfigured("No PostgreSQL driver found (psycopg2 or psycopg) in production.")
                     import sys
                     sys.stderr.write("WARNING: No PostgreSQL driver found. Falling back to SQLite.\n")
     except Exception as e:
+        if IS_PRODUCTION:
+            raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
         import sys
         sys.stderr.write(f"Warning: Failed to configure database from DATABASE_URL: {e}\n")
 
