@@ -74,10 +74,34 @@ Preferred communication style: Simple, everyday language.
 - Sentry integration for error tracking
 
 ### Key Design Patterns
-- **Service Layer**: Business logic extracted into service classes (`PaymentService`, `InvoiceService`, `AnalyticsService`)
+- **Strict Layered Architecture**: Clear separation between layers:
+  - **Models** (`invoices/models.py`): Pure data + constraints only, no business logic
+  - **Services** (`invoices/services/`): All business logic, transactions, and side effects
+  - **Views** (`invoices/views.py`): Request parsing, auth checks, response mapping only
+  - **Templates**: Presentation only
+- **Service Layer** (`invoices/services/`): Modular service classes:
+  - `InvoiceService` - Invoice lifecycle management
+  - `UserService`, `ProfileService`, `NotificationService`, `PaymentSettingsService` - User management
+  - `PaymentService` - Payment processing and webhook handling
+  - `AnalyticsService` - Dashboard statistics with caching
+  - `EmailService` - Email delivery orchestration
+  - `PDFService` - Invoice PDF generation
 - **Repository Pattern**: Models with custom managers for query encapsulation
 - **Decorator Pattern**: Extensive use for authentication, rate limiting, and monitoring
 - **Middleware Stack**: Security headers, request logging, MFA enforcement
+
+### Service Layer Architecture
+All business logic flows through the `invoices/services/` directory:
+```
+invoices/services/
+├── __init__.py          # Exports all services
+├── invoice_service.py   # Invoice CRUD and status transitions
+├── user_service.py      # Profile, notifications, payment settings
+├── payment_service.py   # Payment processing and webhooks
+├── analytics_service.py # Dashboard stats with caching
+├── email_service.py     # Email delivery
+└── pdf_service.py       # PDF generation
+```
 
 ## External Dependencies
 
