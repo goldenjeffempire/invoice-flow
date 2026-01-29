@@ -113,6 +113,55 @@ Every endpoint/view maps cleanly to service functions with no business logic in 
 - **Models**: Define data structure and constraints only - no business methods
 - **Templates**: Presentation only, no conditional business rules
 
+### Validation and Error Handling
+Centralized validation and error handling in `invoices/validation/`:
+```
+invoices/validation/
+├── __init__.py           # Module exports
+├── schemas.py            # Domain-specific validation schemas
+├── errors.py             # Standardized error classes and format
+├── middleware.py         # ErrorHandlingMiddleware for consistent responses
+└── api_exceptions.py     # DRF custom exception handler
+```
+
+**Validation Schemas** (domain-specific rules):
+- `InvoiceSchema` - Invoice creation/updates with line items
+- `ClientSchema` - Client information validation
+- `PaymentSchema` - Payment processing validation
+- `RecurringSchema` - Recurring invoice configuration
+- `LineItemSchema` - Invoice line item validation
+
+**Error Response Format** (consistent across all endpoints):
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed. Please check your input.",
+    "fields": [
+      {"field": "client_email", "code": "FIELD_INVALID_FORMAT", "message": "Please enter a valid email address."}
+    ]
+  },
+  "request_id": "uuid"
+}
+```
+
+**HTTP Status Codes**:
+- 400: Bad Request (validation errors)
+- 401: Unauthorized (not authenticated)
+- 403: Forbidden (not permitted)
+- 404: Not Found
+- 422: Unprocessable Entity (business rule violation)
+- 429: Too Many Requests (rate limited)
+- 500: Internal Server Error
+
+**Frontend Error Utilities** (`static/js/error-handler.js`):
+- Toast notifications for transient errors
+- Inline field error display
+- `ErrorHandler.handleFetch()` for consistent API error handling
+
+**API Endpoint**: `/api/v1/validation/constraints/` exposes validation rules for client-side mirroring
+
 ## External Dependencies
 
 ### Payment Gateway
