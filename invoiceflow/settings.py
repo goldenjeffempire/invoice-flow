@@ -161,17 +161,26 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL and DATABASE_URL.strip():
     import dj_database_url
     try:
-        # Use conn_max_age to keep connections alive, but not indefinitely
+        # Use conn_max_age to keep connections alive
+        # Note: We are using sqlite3 as a fallback if DATABASE_URL fails
         db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600, ssl_require=False)
         if db_config:
-            # Explicitly use postgresql backend
+            # The 'postgresql' engine automatically selects the best driver (psycopg2 or psycopg)
             db_config['ENGINE'] = 'django.db.backends.postgresql'
             db_config['OPTIONS'] = {
                 'connect_timeout': 10,
             }
             DATABASES["default"] = cast(Dict[str, Any], db_config)
+            
+            # Verify driver availability
+            try:
+                import psycopg2
+            except ImportError:
+                try:
+                    import psycopg
+                except ImportError:
+                    sys.stderr.write("CRITICAL: No PostgreSQL driver found (psycopg2 or psycopg)\n")
     except Exception as e:
-        # Log to stderr for visibility in logs
         sys.stderr.write(f"Warning: Failed to configure database from DATABASE_URL: {e}\n")
 
 # =============================================================================
