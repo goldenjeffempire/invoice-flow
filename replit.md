@@ -35,12 +35,13 @@ templates/              # Project-wide templates
 ```
 
 ## Recent Changes
-- **Jan 28, 2026**: Production deployment configuration and settings finalization
-  - Updated Django settings with proper SECRET_KEY handling (warning-free)
-  - Configured enterprise-grade Gunicorn settings with dynamic worker scaling
-  - Updated render.yaml with proper environment variables for custom domain
-  - Added ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS for invoiceflow.com.ng
-  - Health check endpoints at /health/live/ and /health/ready/
+- **Jan 29, 2026**: Project cleanup and Replit environment optimization
+  - Removed duplicate `invoice_flow` settings directory.
+  - Consolidated settings in `invoiceflow/` directory.
+  - Configured robust database fallback (SQLite) when PostgreSQL drivers are missing.
+  - Updated `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` for Replit and Render domains.
+  - Applied all pending migrations and collected static files.
+  - Optimized security settings for development environment.
 
 ## Key Features
 
