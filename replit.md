@@ -6,6 +6,24 @@ InvoiceFlow is a production-ready professional invoicing platform built with Dja
 
 The application follows a monolithic Django architecture with a single `invoices` app containing all business logic, with clear separation between views, services, and models. It's optimized for deployment on Render with Gunicorn WSGI server.
 
+### Invoice Status Workflow
+Invoices follow a state machine with the following statuses and allowed transitions:
+- **Draft** -> Sent, Unpaid
+- **Sent** -> Unpaid, Paid, Overdue
+- **Unpaid** -> Sent, Paid, Overdue  
+- **Paid** -> (terminal state, no transitions)
+- **Overdue** -> Paid, Sent
+
+Status transitions are enforced via `InvoiceService.transition_status()` and logged to `InvoiceHistory` for audit purposes.
+
+### Invoice History/Audit Log
+The `InvoiceHistory` model tracks all invoice changes:
+- Creation, updates, and deletions
+- Status transitions with old/new values
+- Line item changes
+- Email and PDF generation events
+- User who made the change and timestamp
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
