@@ -16,6 +16,9 @@ from .payment_service import PaymentService
 from .analytics_service import AnalyticsService
 from .email_service import EmailService
 from .pdf_service import PDFService
+from .admin_service import AdminService
+from .feedback_service import FeedbackService
+from .reminder_service import ReminderService
 
 __all__ = [
     "InvoiceService",
@@ -27,4 +30,7 @@ __all__ = [
     "AnalyticsService",
     "EmailService",
     "PDFService",
+    "AdminService",
+    "FeedbackService",
+    "ReminderService",
 ]

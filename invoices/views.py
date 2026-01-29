@@ -17,11 +17,7 @@ from django.http import JsonResponse, HttpResponse
 from .models import (
     Invoice,
     UserProfile,
-    EngagementMetric,
-    UserFeedback,
-    ReminderLog,
     ReminderRule,
-    PaymentSettings,
 )
 from django.db.models import Sum, Count
 from .auth_services import AuthenticationService, RegistrationService, PasswordService
@@ -35,7 +31,7 @@ from .forms import (
     ReminderRuleForm,
 )
 from .sendgrid_service import SendGridEmailService
-from .services import AnalyticsService, InvoiceService, ProfileService, NotificationService, PaymentSettingsService
+from .services import AnalyticsService, InvoiceService, ProfileService, NotificationService, PaymentSettingsService, FeedbackService, ReminderService
 
 def _parse_request_payload(request) -> dict:
     if request.content_type and "application/json" in request.content_type:
@@ -445,17 +441,14 @@ def reminder_settings(request):
     return reminder_dashboard(request)
 
 def track_reminder_click(request, log_id):
-    reminder_log = get_object_or_404(ReminderLog, id=log_id)
-    if reminder_log.clicked_at is None:
-        reminder_log.clicked_at = timezone.now()
-        reminder_log.save(update_fields=["clicked_at"])
-    return redirect("invoices:public_invoice", invoice_id=reminder_log.invoice.invoice_id)
+    success, invoice_id = ReminderService.record_reminder_click(log_id)
+    if not success:
+        from django.http import Http404
+        raise Http404("Reminder not found")
+    return redirect("invoices:public_invoice", invoice_id=invoice_id)
 
 def track_reminder_open(request, log_id):
-    reminder_log = get_object_or_404(ReminderLog, id=log_id)
-    if reminder_log.opened_at is None:
-        reminder_log.opened_at = timezone.now()
-        reminder_log.save(update_fields=["opened_at"])
+    ReminderService.record_reminder_open(log_id)
     pixel = (
         b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\xff\xff\xff!"
         b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01"
@@ -497,31 +490,29 @@ def record_engagement(request):
         return JsonResponse({"success": False, "message": "Authentication required."}, status=401)
     payload = _parse_request_payload(request)
     metric_type = payload.get("metric_type")
-    if metric_type not in dict(EngagementMetric.MetricType.choices):
-        return JsonResponse({"success": False, "message": "Invalid metric type."}, status=400)
+
     invoice = None
     invoice_id = payload.get("invoice_id")
     if invoice_id:
         invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
+
     try:
         value = float(payload.get("value", 0.0))
     except (TypeError, ValueError):
         return JsonResponse({"success": False, "message": "Invalid metric value."}, status=400)
-    metadata = payload.get("metadata", {}) or {}
-    if isinstance(metadata, str):
-        try:
-            metadata = json.loads(metadata)
-        except json.JSONDecodeError:
-            metadata = {"raw": metadata}
-    EngagementMetric.objects.create(
+
+    success, message = FeedbackService.record_engagement(
         user=request.user,
-        invoice=invoice,
         metric_type=metric_type,
+        invoice=invoice,
         element_id=payload.get("element_id", ""),
         value=value,
-        metadata=metadata,
+        metadata=payload.get("metadata", {}),
     )
-    return JsonResponse({"success": True})
+
+    if success:
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False, "message": message}, status=400)
 
 @require_POST
 def submit_feedback(request):
@@ -530,26 +521,19 @@ def submit_feedback(request):
         rating = int(payload.get("rating", 0))
     except (TypeError, ValueError):
         rating = 0
-    if rating not in range(1, 6):
-        return JsonResponse({"success": False, "message": "Rating must be between 1 and 5."}, status=400)
-    page_url = payload.get("page_url")
-    if not page_url:
-        return JsonResponse({"success": False, "message": "Page URL is required."}, status=400)
-    
-    # Redact PII from user agent if needed, but here we just ensure we don't log it raw if we were logging
-    user_agent = request.META.get("HTTP_USER_AGENT", "")
-    is_mobile = payload.get("is_mobile")
-    if is_mobile is None:
-        is_mobile = "mobile" in user_agent.lower()
-    UserFeedback.objects.create(
-        user=request.user if request.user.is_authenticated else None,
+
+    success, message = FeedbackService.submit_feedback(
         rating=rating,
+        page_url=payload.get("page_url", ""),
+        user=request.user if request.user.is_authenticated else None,
         comment=payload.get("comment", ""),
-        page_url=page_url,
-        user_agent=user_agent,
-        is_mobile=bool(is_mobile),
+        user_agent=request.META.get("HTTP_USER_AGENT", ""),
+        is_mobile=payload.get("is_mobile"),
     )
-    return JsonResponse({"success": True, "message": "Feedback received. Thank you!"})
+
+    if success:
+        return JsonResponse({"success": True, "message": message})
+    return JsonResponse({"success": False, "message": message}, status=400)
 
 @login_required
 def dashboard(request):
