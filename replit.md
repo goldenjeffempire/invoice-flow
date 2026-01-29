@@ -100,8 +100,18 @@ invoices/services/
 ├── payment_service.py   # Payment processing and webhooks
 ├── analytics_service.py # Dashboard stats with caching
 ├── email_service.py     # Email delivery
-└── pdf_service.py       # PDF generation
+├── pdf_service.py       # PDF generation
+├── admin_service.py     # Platform admin statistics and user management
+├── feedback_service.py  # Engagement metrics and user feedback
+└── reminder_service.py  # Reminder rule management and tracking
 ```
+
+### Layering Rules (Gate)
+Every endpoint/view maps cleanly to service functions with no business logic in views or templates:
+- **Views**: Only handle request parsing, authentication checks, permission validation, and response mapping
+- **Services**: Contain all business logic, database transactions, and side effect orchestration
+- **Models**: Define data structure and constraints only - no business methods
+- **Templates**: Presentation only, no conditional business rules
 
 ## External Dependencies
 
