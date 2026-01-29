@@ -606,6 +606,7 @@ def invoice_detail(request, invoice_id):
         lookup = {"pk": invoice_id}
     else:
         lookup = {"invoice_id": invoice_id}
+    # Enforce ownership at DB query layer
     invoice = get_object_or_404(Invoice, user=request.user, **lookup)
     if request.method == "POST":
         new_status = request.POST.get('status')
