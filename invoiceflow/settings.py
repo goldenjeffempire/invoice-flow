@@ -208,7 +208,7 @@ if DATABASE_URL:
         )
         if db_config:
             db_config['ENGINE'] = 'django.db.backends.postgresql'
-            DATABASES["default"] = db_config
+            DATABASES["default"] = dict(db_config)
     except Exception as e:
         raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
 
