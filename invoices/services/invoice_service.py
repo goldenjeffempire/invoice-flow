@@ -74,6 +74,15 @@ class InvoiceService:
                     unit_price=Decimal(str(item.get("unit_price", 0))),
                 )
 
+        from invoices.models import InvoiceHistory
+        InvoiceHistory.log(
+            invoice=invoice,
+            action=InvoiceHistory.ActionType.CREATED,
+            user=user,
+            new_value={"invoice_id": invoice.invoice_id, "client_name": invoice.client_name},
+            description=f"Invoice {invoice.invoice_id} created",
+        )
+
         AnalyticsService.invalidate_user_cache(user.id)
         logger.info(f"Invoice {invoice.invoice_id} created for user {user.id}")
         return invoice, form
@@ -134,6 +143,14 @@ class InvoiceService:
         invoice.line_items.all().delete()
         LineItem.objects.bulk_create(new_items)
 
+        from invoices.models import InvoiceHistory
+        InvoiceHistory.log(
+            invoice=invoice,
+            action=InvoiceHistory.ActionType.UPDATED,
+            user=invoice.user,
+            description=f"Invoice {invoice.invoice_id} updated",
+        )
+
         AnalyticsService.invalidate_user_cache(invoice.user_id)
         logger.info(f"Invoice {invoice.invoice_id} updated")
         return invoice, invoice_form
@@ -163,36 +180,61 @@ class InvoiceService:
 
     @staticmethod
     @transaction.atomic
-    def transition_status(invoice: "Invoice", new_status: str) -> bool:
+    def transition_status(
+        invoice: "Invoice",
+        new_status: str,
+        user=None,
+        force: bool = False,
+    ) -> Tuple[bool, Optional[str]]:
         """
-        Safely transition invoice status.
+        Safely transition invoice status with validation.
         
         Args:
             invoice: The invoice to update
             new_status: The new status value
+            user: The user performing the transition (for audit log)
+            force: If True, skip transition validation (admin override)
             
         Returns:
-            True if transition was successful
+            Tuple of (success, error_message) - error_message is None if successful
         """
-        from invoices.models import Invoice
+        from invoices.models import Invoice, InvoiceHistory
         from .analytics_service import AnalyticsService
 
         if new_status not in dict(Invoice.Status.choices):
-            return False
+            return False, f"Invalid status: {new_status}"
 
         old_status = invoice.status
+        
+        if old_status == new_status:
+            return True, None
+
+        if not force and not invoice.can_transition_to(new_status):
+            allowed = invoice.get_available_transitions()
+            return False, f"Cannot transition from '{old_status}' to '{new_status}'. Allowed: {allowed}"
         
         if new_status == Invoice.Status.PAID:
             InvoiceService._mark_as_paid(invoice)
         elif new_status == Invoice.Status.OVERDUE:
             InvoiceService._mark_as_overdue(invoice)
+        elif new_status == Invoice.Status.SENT:
+            InvoiceService._mark_as_sent(invoice)
         else:
             invoice.status = new_status
             invoice.save(update_fields=["status", "updated_at"])
 
+        InvoiceHistory.log(
+            invoice=invoice,
+            action=InvoiceHistory.ActionType.STATUS_CHANGED,
+            user=user,
+            old_value={"status": old_status},
+            new_value={"status": new_status},
+            description=f"Status changed from {old_status} to {new_status}",
+        )
+
         AnalyticsService.invalidate_user_cache(invoice.user_id)
         logger.info(f"Invoice {invoice.invoice_id} status: {old_status} -> {new_status}")
-        return True
+        return True, None
 
     @staticmethod
     def _mark_as_paid(invoice: "Invoice") -> None:
@@ -228,8 +270,17 @@ class InvoiceService:
         """Internal method to mark invoice as overdue."""
         from invoices.models import Invoice
 
-        if invoice.status == Invoice.Status.UNPAID:
+        if invoice.status in [Invoice.Status.UNPAID, Invoice.Status.SENT]:
             invoice.status = Invoice.Status.OVERDUE
+            invoice.save(update_fields=["status", "updated_at"])
+
+    @staticmethod
+    def _mark_as_sent(invoice: "Invoice") -> None:
+        """Internal method to mark invoice as sent."""
+        from invoices.models import Invoice
+
+        if invoice.status in [Invoice.Status.DRAFT, Invoice.Status.UNPAID, Invoice.Status.OVERDUE]:
+            invoice.status = Invoice.Status.SENT
             invoice.save(update_fields=["status", "updated_at"])
 
     @staticmethod

@@ -220,9 +220,19 @@ class InvoiceTemplate(models.Model):
 
 class Invoice(models.Model):
     class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SENT = "sent", "Sent"
         UNPAID = "unpaid", "Unpaid"
         PAID = "paid", "Paid"
         OVERDUE = "overdue", "Overdue"
+    
+    VALID_TRANSITIONS = {
+        "draft": ["sent", "unpaid"],
+        "sent": ["unpaid", "paid", "overdue"],
+        "unpaid": ["sent", "paid", "overdue"],
+        "paid": [],
+        "overdue": ["paid", "sent"],
+    }
 
     CURRENCY_CHOICES = [
         ("USD", "USD - US Dollar"),
@@ -274,7 +284,7 @@ class Invoice(models.Model):
     automated_reminders_enabled = models.BooleanField(default=True)
 
     status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.UNPAID, db_index=True
+        max_length=10, choices=Status.choices, default=Status.DRAFT, db_index=True
     )
     
     objects = models.Manager()
@@ -371,6 +381,84 @@ class Invoice(models.Model):
         """
         from .services import InvoiceService
         InvoiceService.transition_status(self, self.Status.OVERDUE)
+
+    def can_transition_to(self, new_status: str) -> bool:
+        """Check if transition to new_status is valid."""
+        return new_status in self.VALID_TRANSITIONS.get(self.status, [])
+
+    def get_available_transitions(self) -> list:
+        """Return list of statuses this invoice can transition to."""
+        return self.VALID_TRANSITIONS.get(self.status, [])
+
+
+# ============================================================================
+# INVOICE HISTORY (AUDIT LOG)
+# ============================================================================
+
+class InvoiceHistory(models.Model):
+    class ActionType(models.TextChoices):
+        CREATED = "created", "Created"
+        UPDATED = "updated", "Updated"
+        STATUS_CHANGED = "status_changed", "Status Changed"
+        LINE_ITEM_ADDED = "line_item_added", "Line Item Added"
+        LINE_ITEM_UPDATED = "line_item_updated", "Line Item Updated"
+        LINE_ITEM_DELETED = "line_item_deleted", "Line Item Deleted"
+        EMAIL_SENT = "email_sent", "Email Sent"
+        PDF_GENERATED = "pdf_generated", "PDF Generated"
+        DELETED = "deleted", "Deleted"
+
+    invoice = models.ForeignKey(
+        Invoice, on_delete=models.CASCADE, related_name="history"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invoice_history_entries",
+    )
+    action = models.CharField(max_length=30, choices=ActionType.choices)
+    old_value = models.JSONField(null=True, blank=True)
+    new_value = models.JSONField(null=True, blank=True)
+    description = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name_plural = "Invoice histories"
+        indexes = [
+            models.Index(fields=["invoice", "-created_at"]),
+            models.Index(fields=["action", "-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.invoice.invoice_id} - {self.get_action_display()} at {self.created_at}"
+
+    @classmethod
+    def log(
+        cls,
+        invoice: Invoice,
+        action: str,
+        user=None,
+        old_value=None,
+        new_value=None,
+        description: str = "",
+        ip_address: str = None,
+        user_agent: str = "",
+    ) -> "InvoiceHistory":
+        """Create an audit log entry for an invoice action."""
+        return cls.objects.create(
+            invoice=invoice,
+            user=user,
+            action=action,
+            old_value=old_value,
+            new_value=new_value,
+            description=description,
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
 
 
 # ============================================================================
