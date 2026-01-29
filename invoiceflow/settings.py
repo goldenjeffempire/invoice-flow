@@ -21,12 +21,10 @@ env = environ.Env()
 # Fail-fast environment validation
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL or not DATABASE_URL.strip():
-    if os.getenv("PRODUCTION") == "true":
-        raise ImproperlyConfigured("DATABASE_URL is required and cannot be empty in production.")
+    raise ImproperlyConfigured("DATABASE_URL environment variable is required.")
 
-IS_PRODUCTION = os.getenv("PRODUCTION") == "true" and not os.getenv("REPL_ID")
-_debug_default = "false" if IS_PRODUCTION else "true"
-DEBUG = os.getenv("DEBUG", _debug_default).lower() == "true"
+IS_PRODUCTION = os.getenv("PRODUCTION", "false").lower() == "true"
+DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
 # =============================================================================
 # DOMAIN
@@ -191,16 +189,8 @@ DATABASES = {
 # PostgreSQL connection using the provisioned DATABASE_URL
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
-# Production requires a valid DATABASE_URL
-if IS_PRODUCTION:
-    if not DATABASE_URL:
-        raise ImproperlyConfigured(
-            "DATABASE_URL environment variable is required in production. "
-            "Ensure exactly one non-empty DATABASE_URL is set in Render environment settings."
-        )
-
-# Only use PostgreSQL in production, use SQLite for development
-if DATABASE_URL and IS_PRODUCTION:
+# Only use PostgreSQL
+if DATABASE_URL:
     # Remove unsupported parameters from the connection string if they exist
     _db_url = DATABASE_URL
     if "channel_binding=" in _db_url:
@@ -214,10 +204,9 @@ if DATABASE_URL and IS_PRODUCTION:
         db_config = dj_database_url.parse(
             _db_url,
             conn_max_age=600,
-            ssl_require=True
+            ssl_require=IS_PRODUCTION  # Only require SSL in production
         )
         if db_config:
-            # Use standard postgresql backend - Django will auto-detect psycopg version
             db_config['ENGINE'] = 'django.db.backends.postgresql'
             DATABASES["default"] = db_config
     except Exception as e:
