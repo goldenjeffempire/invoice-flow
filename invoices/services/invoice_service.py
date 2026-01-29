@@ -215,6 +215,12 @@ class InvoiceService:
         
         if new_status == Invoice.Status.PAID:
             InvoiceService._mark_as_paid(invoice)
+            # Cancel any pending reminders
+            from invoices.models import ScheduledReminder
+            ScheduledReminder.objects.filter(
+                invoice=invoice, 
+                status=ScheduledReminder.Status.PENDING
+            ).update(status=ScheduledReminder.Status.CANCELLED)
         elif new_status == Invoice.Status.OVERDUE:
             InvoiceService._mark_as_overdue(invoice)
         elif new_status == Invoice.Status.SENT:

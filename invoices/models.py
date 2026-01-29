@@ -287,6 +287,8 @@ class Invoice(models.Model):
         max_length=10, choices=Status.choices, default=Status.DRAFT, db_index=True
     )
     
+    reminder_rules = models.ManyToManyField("ReminderRule", blank=True, related_name="custom_invoices")
+
     objects = models.Manager()
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)

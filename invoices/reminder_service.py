@@ -80,7 +80,10 @@ class ReminderSchedulingService:
             if invoice.status == Invoice.Status.PAID:
                 return
 
-            rules = ReminderRule.objects.filter(user=invoice.user, is_active=True)
+            # Prioritize invoice-specific rules, fallback to user-level rules
+            rules = invoice.reminder_rules.filter(is_active=True)
+            if not rules.exists():
+                rules = ReminderRule.objects.filter(user=invoice.user, is_active=True)
             
             for rule in rules:
                 scheduled_time = None
