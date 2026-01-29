@@ -55,6 +55,21 @@ Preferred communication style: Simple, everyday language.
 - Idempotency keys for preventing duplicate transactions
 - Webhook handling for real-time payment status updates
 
+#### Payment Security Features
+- **Webhook Signature Verification**: HMAC-SHA512 signature validation for all Paystack webhooks
+- **Idempotency Keys**: Prevents duplicate payment processing via cached responses (24h TTL)
+- **Replay Prevention**: ProcessedWebhook model tracks all processed events by event_id
+- **Rate Limiting**: Configurable rate limits on webhook endpoints (default: 120 req/60s per IP)
+- **Amount/Currency Validation**: Server-side verification of payment amounts against invoice totals
+- **Atomic Transactions**: Payment and invoice updates happen in single database transactions with row locking
+- **Reconciliation Service**: Automatic detection of payment state mismatches with recovery attempts
+
+#### Payment Status Flow
+1. Payment initialized -> Status: PENDING
+2. Webhook received with charge.success -> Signature verified -> Amount validated
+3. Payment marked SUCCESS atomically -> Invoice status updated to PAID
+4. InvoiceHistory audit log created with payment details
+
 ### Email Services
 - **SendGrid** for transactional emails with dynamic templates
 - Invoice delivery, payment reminders, and verification emails

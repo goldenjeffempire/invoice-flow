@@ -566,19 +566,29 @@ class Payment(models.Model):
         return self.status == self.Status.SUCCESS
 
     @transaction.atomic
-    def mark_as_success(self, paid_at: Optional[datetime] = None) -> None:
-        """Atomically mark payment as successful and update invoice."""
+    def mark_as_success(self, paid_at: Optional[datetime] = None, user=None) -> None:
+        """Atomically mark payment as successful and update invoice with audit logging."""
         if self.status == self.Status.SUCCESS:
             return
-            
+        
+        old_status = self.status
         self.status = self.Status.SUCCESS
         self.paid_at = paid_at or timezone.now()
         self.save(update_fields=["status", "paid_at", "updated_at"])
         
-        # Update invoice status
-        if self.invoice.status != Invoice.Status.PAID:
+        old_invoice_status = self.invoice.status
+        if old_invoice_status != Invoice.Status.PAID:
             self.invoice.status = Invoice.Status.PAID
             self.invoice.save(update_fields=["status", "updated_at"])
+            
+            InvoiceHistory.log(
+                invoice=self.invoice,
+                action=InvoiceHistory.ActionType.STATUS_CHANGED,
+                user=user,
+                old_value={"status": old_invoice_status, "payment_status": old_status},
+                new_value={"status": Invoice.Status.PAID, "payment_status": self.Status.SUCCESS},
+                description=f"Payment {self.reference} successful - Invoice marked as paid",
+            )
 
     def __str__(self) -> str:
         return f"{self.reference} ({self.status})"
