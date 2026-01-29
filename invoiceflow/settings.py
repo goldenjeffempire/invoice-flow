@@ -149,6 +149,9 @@ TEMPLATES = [
 MFA_ENABLED = True
 MFA_ISSUER_NAME = "InvoiceFlow"
 
+# =============================================================================
+# DATABASE
+# =============================================================================
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -164,9 +167,19 @@ if DATABASE_URL and DATABASE_URL.strip():
         # Use conn_max_age to keep connections alive
         db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
         if db_config:
-            # The 'postgresql' engine automatically selects the best driver (psycopg2 or psycopg)
-            db_config['ENGINE'] = 'django.db.backends.postgresql'
-            DATABASES["default"] = db_config
+            # Check if psycopg2 or psycopg is available before setting engine
+            try:
+                import psycopg2
+                db_config['ENGINE'] = 'django.db.backends.postgresql'
+                DATABASES["default"] = db_config
+            except ImportError:
+                try:
+                    import psycopg
+                    db_config['ENGINE'] = 'django.db.backends.postgresql'
+                    DATABASES["default"] = db_config
+                except ImportError:
+                    import sys
+                    sys.stderr.write("WARNING: No PostgreSQL driver found. Falling back to SQLite.\n")
     except Exception as e:
         import sys
         sys.stderr.write(f"Warning: Failed to configure database from DATABASE_URL: {e}\n")
