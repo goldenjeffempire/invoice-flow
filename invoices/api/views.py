@@ -10,13 +10,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from invoices.models import Invoice, InvoiceTemplate
+from invoices.models import Invoice, InvoiceHistory, InvoiceTemplate
 from invoices.services import AnalyticsService, PDFService
 
 from .response import APIResponse
 from .serializers import (
     InvoiceCreateSerializer,
     InvoiceDetailSerializer,
+    InvoiceHistorySerializer,
     InvoiceListSerializer,
     InvoiceStatusSerializer,
     InvoiceTemplateSerializer,
@@ -99,7 +100,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Invoice.objects.filter(user=self.request.user).prefetch_related("line_items")
         status_filter = self.request.query_params.get("status")
-        if status_filter in ["paid", "unpaid"]:
+        if status_filter in ["draft", "sent", "unpaid", "paid", "overdue"]:
             queryset = queryset.filter(status=status_filter)
         return queryset
 
@@ -118,7 +119,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         summary="Update invoice status",
-        description="Update the payment status of an invoice (paid/unpaid).",
+        description="Update the status of an invoice (draft/sent/unpaid/paid/overdue). Status transitions are enforced.",
         request=InvoiceStatusSerializer,
         responses={200: InvoiceDetailSerializer},
         parameters=[INVOICE_ID_PARAM],
@@ -131,12 +132,52 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         validated_data = cast(Dict[str, Any], serializer.validated_data)
         
         from invoices.services import InvoiceService
-        if InvoiceService.transition_status(invoice, validated_data["status"]):
+        success, error_message = InvoiceService.transition_status(
+            invoice,
+            validated_data["status"],
+            user=request.user,
+            force=validated_data.get("force", False),
+        )
+        if success:
+            invoice.refresh_from_db()
             return APIResponse.success(
                 data=InvoiceDetailSerializer(invoice).data,
                 message="Invoice status updated.",
             )
-        return APIResponse.error(message="Invalid status transition.", status=400)
+        return APIResponse.error(message=error_message or "Invalid status transition.", status=400)
+
+    @extend_schema(
+        summary="Get available status transitions",
+        description="Get list of valid status transitions for this invoice.",
+        responses={200: {"type": "object", "properties": {"current_status": {"type": "string"}, "available_transitions": {"type": "array", "items": {"type": "string"}}}}},
+        parameters=[INVOICE_ID_PARAM],
+    )
+    @action(detail=True, methods=["get"], url_path="available-transitions")
+    def available_transitions(self, request: Request, pk: Optional[int] = None, version: Optional[str] = None) -> Response:
+        invoice = self.get_object()
+        return APIResponse.success(
+            data={
+                "current_status": invoice.status,
+                "available_transitions": invoice.get_available_transitions(),
+            },
+            message="Available transitions retrieved.",
+        )
+
+    @extend_schema(
+        summary="Get invoice history",
+        description="Get the audit log/history for an invoice, showing all changes and status transitions.",
+        responses={200: InvoiceHistorySerializer(many=True)},
+        parameters=[INVOICE_ID_PARAM],
+    )
+    @action(detail=True, methods=["get"], url_path="history")
+    def history(self, request: Request, pk: Optional[int] = None, version: Optional[str] = None) -> Response:
+        invoice = self.get_object()
+        history_entries = invoice.history.all().order_by("-created_at")
+        serializer = InvoiceHistorySerializer(history_entries, many=True)
+        return APIResponse.success(
+            data=serializer.data,
+            message="Invoice history retrieved.",
+        )
 
     @extend_schema(
         summary="Generate PDF",

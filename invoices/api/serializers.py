@@ -1,7 +1,7 @@
 from decimal import Decimal
 from rest_framework import serializers
 
-from invoices.models import Invoice, InvoiceTemplate, LineItem
+from invoices.models import Invoice, InvoiceHistory, InvoiceTemplate, LineItem
 from invoices.validators import InvoiceBusinessRules
 
 
@@ -45,6 +45,7 @@ class InvoiceListSerializer(serializers.ModelSerializer):
 
 class InvoiceDetailSerializer(serializers.ModelSerializer):
     line_items = LineItemSerializer(many=True, read_only=True)
+    available_transitions = serializers.SerializerMethodField()
 
     class Meta:
         model = Invoice
@@ -62,6 +63,7 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
             "invoice_date",
             "due_date",
             "status",
+            "available_transitions",
             "currency",
             "tax_rate",
             "subtotal",
@@ -78,9 +80,13 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
             "subtotal",
             "tax_amount",
             "total",
+            "available_transitions",
             "created_at",
             "updated_at",
         ]
+
+    def get_available_transitions(self, obj) -> list:
+        return obj.get_available_transitions()
 
 
 class InvoiceCreateSerializer(serializers.ModelSerializer):
@@ -147,7 +153,27 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
 
 
 class InvoiceStatusSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=["paid", "unpaid"])
+    status = serializers.ChoiceField(choices=["draft", "sent", "unpaid", "paid", "overdue"])
+    force = serializers.BooleanField(default=False, required=False)
+
+
+class InvoiceHistorySerializer(serializers.ModelSerializer):
+    action_display = serializers.CharField(source="get_action_display", read_only=True)
+    user_email = serializers.EmailField(source="user.email", read_only=True, allow_null=True)
+
+    class Meta:
+        model = InvoiceHistory
+        fields = [
+            "id",
+            "action",
+            "action_display",
+            "old_value",
+            "new_value",
+            "description",
+            "user_email",
+            "created_at",
+        ]
+        read_only_fields = fields
 
 
 class InvoiceTemplateSerializer(serializers.ModelSerializer):
