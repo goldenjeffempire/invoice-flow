@@ -43,68 +43,45 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-product
 
 # Build ALLOWED_HOSTS based on environment
 if IS_PRODUCTION:
-    # Production: explicit hosts only, no wildcards
     ALLOWED_HOSTS = [
         "invoiceflow.com.ng",
         "www.invoiceflow.com.ng",
-        "invoice-flow-7vu0.onrender.com",
     ]
-    # Auto-append RENDER_EXTERNAL_HOSTNAME if set (Render provides this)
     render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
     if render_hostname:
         ALLOWED_HOSTS.append(render_hostname)
-    # Also read ALLOWED_HOSTS env var if set (comma-separated)
+    
     env_allowed_hosts = os.getenv("ALLOWED_HOSTS", "")
     if env_allowed_hosts:
-        for host in env_allowed_hosts.split(","):
-            host = host.strip()
-            if host and host not in ALLOWED_HOSTS:
-                ALLOWED_HOSTS.append(host)
+        ALLOWED_HOSTS.extend([h.strip() for h in env_allowed_hosts.split(",") if h.strip()])
 else:
-    # Development: allow local hosts and Replit domains
-    ALLOWED_HOSTS = [
-        "invoiceflow.com.ng",
-        "www.invoiceflow.com.ng",
-        "invoice-flow-7vu0.onrender.com",
-        "0.0.0.0",
-        "localhost",
-        "127.0.0.1",
-    ]
-    # Replit development domains
-    replit_dev_domain = os.getenv("REPLIT_DEV_DOMAIN")
-    if replit_dev_domain:
-        ALLOWED_HOSTS.append(replit_dev_domain)
-    # Allow wildcard Replit domains in dev
-    ALLOWED_HOSTS.extend(["*.replit.dev", "*.repl.co"])
+    ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://*.replit.dev",
-    "https://*.repl.co",
-    "https://invoiceflow.com.ng",
-    "https://www.invoiceflow.com.ng",
-    "https://invoice-flow-7vu0.onrender.com",
-]
-if os.getenv("REPLIT_DEV_DOMAIN"):
-    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['REPLIT_DEV_DOMAIN']}")
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if "*" not in host]
+if not IS_PRODUCTION:
+    CSRF_TRUSTED_ORIGINS.extend(["https://*.replit.dev", "https://*.repl.co"])
 
 # Production Security Headers
 if not DEBUG:
-    SECURE_SSL_REDIRECT = False
+    SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000 # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = "DENY"
+    SECURE_REFERRER_POLICY = "same-origin"
     
     # CSP Settings
     CSP_DEFAULT_SRC = ("'self'",)
     CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "fonts.googleapis.com")
-    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "unpkg.com")
+    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://js.paystack.co")
     CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
+    CSP_IMG_SRC = ("'self'", "data:", "https://www.google-analytics.com")
+    CSP_FRAME_ANCESTORS = ("'none'",)
 else:
     SECURE_SSL_REDIRECT = False
 

@@ -14,6 +14,7 @@ urlpatterns = [
     path("blog/", views.blog_view, name="blog"),
     path("faq/", views.faq_view, name="faq"),
     path("support/", views.support_view, name="support"),
+    path("healthz/", views.health_check_view, name="healthz"),
     path("terms/", views.terms_view, name="terms"),
     path("privacy/", views.privacy_view, name="privacy"),
     path("security/", views.security_view, name="security"),

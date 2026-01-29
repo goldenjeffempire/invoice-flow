@@ -46,8 +46,11 @@ def _parse_request_payload(request) -> dict:
     return request.POST.dict()
 
 def robots_txt_view(request):
-    content = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
+    content = "User-agent: *\nDisallow: /dashboard/\nDisallow: /admin/\nDisallow: /settings/\nDisallow: /api/\nDisallow: /login/\nDisallow: /signup/\nDisallow: /password-reset/\nAllow: /\nSitemap: /sitemap.xml\n"
     return HttpResponse(content.encode('utf-8'), content_type="text/plain")
+
+def health_check_view(request):
+    return HttpResponse("OK")
 
 def favicon_view(request):
     from django.conf import settings
