@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
-from django.urls import path, include
+from django.urls import path, include, re_path
 from invoices import admin_views, health, views
 from invoices.sitemap import sitemaps
 
@@ -8,6 +8,7 @@ handler404 = "invoices.views.custom_404_view"
 handler500 = "invoices.views.custom_500_view"
 
 urlpatterns = [
+    re_path(r'^favicon\.ico/?$', views.favicon_view, name="favicon"),
     path("admin/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path("admin/users/", admin_views.admin_users, name="admin_users"),
     path("admin/payments/", admin_views.admin_payments, name="admin_payments"),

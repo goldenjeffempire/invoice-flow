@@ -49,6 +49,15 @@ def robots_txt_view(request):
     content = "User-agent: *\nAllow: /\nSitemap: /sitemap.xml\n"
     return HttpResponse(content.encode('utf-8'), content_type="text/plain")
 
+def favicon_view(request):
+    from django.conf import settings
+    import os
+    favicon_path = os.path.join(settings.STATIC_ROOT or settings.BASE_DIR / 'static', 'favicon.ico')
+    if os.path.exists(favicon_path):
+        with open(favicon_path, 'rb') as f:
+            return HttpResponse(f.read(), content_type='image/x-icon')
+    return HttpResponse(status=204)
+
 def custom_404_view(request, exception=None):
     return render(request, "404.html", status=404)
 
