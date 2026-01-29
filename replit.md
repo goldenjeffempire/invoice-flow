@@ -24,6 +24,23 @@ The `InvoiceHistory` model tracks all invoice changes:
 - Email and PDF generation events
 - User who made the change and timestamp
 
+### Automated Payment Reminders
+Per-invoice configurable reminder system:
+- **ReminderRule**: User-defined reminder templates (e.g., "3 days before due", "1 day after overdue")
+- **ScheduledReminder**: Tracks individual reminder schedules per invoice
+- **ReminderLog**: Audit trail of sent reminders with open/click tracking
+- **ReminderFailureAlertService**: Emails users when reminders fail after max retries
+- **Management command**: `python manage.py process_reminders` for scheduled processing
+
+### Design System
+Comprehensive CSS design system in `static/css/design-system.css`:
+- **Design tokens**: Colors (primary, success, warning, error, slate), spacing, typography, shadows, transitions
+- **Reusable components**: Buttons, cards, forms, badges, alerts, tables, modals, dropdowns, tabs
+- **States**: Loading spinners, skeleton loaders, empty states, toast notifications
+- **Micro-interactions**: Hover effects, focus states, reveal animations
+- **Accessibility**: Skip links, focus-visible styles, ARIA support, screen reader utilities
+- **Responsive utilities**: Mobile/tablet/desktop breakpoints, responsive grids
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
