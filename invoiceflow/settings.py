@@ -157,8 +157,10 @@ DATABASES = {
 }
 
 # PostgreSQL connection using the provisioned DATABASE_URL
-if os.getenv("DATABASE_URL"):
-    db_config = dj_database_url.config(conn_max_age=600, ssl_require=False)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.strip():
+    import dj_database_url
+    db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600, ssl_require=False)
     if db_config:
         db_config['OPTIONS'] = {
             'connect_timeout': 10,
