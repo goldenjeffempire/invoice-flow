@@ -183,7 +183,7 @@ def paystack_webhook(request):
     # Signature verification (stateless/fast)
     if not service.verify_webhook_signature(payload, signature):
         logger.warning(f"Invalid Paystack signature: {signature[:10]}...")
-        return HttpResponse(status=401)
+        return HttpResponse("Unauthorized", status=401)
 
     try:
         event = json.loads(payload.decode("utf-8"))

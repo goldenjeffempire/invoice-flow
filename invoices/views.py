@@ -109,19 +109,18 @@ def login_view(request):
             else:
                 messages.error(request, error_message)
         else:
-            result = AuthenticationService.login_user(request, user)
+            login_result = AuthenticationService.login_user(request, user)
+            
+            if not login_result.get("success", True):
+                messages.error(request, login_result.get("error", "Login failed."))
+                return redirect("invoices:login")
 
             if form.cleaned_data.get("remember_me"):
                 request.session.set_expiry(60 * 60 * 24 * 30)
             else:
                 request.session.set_expiry(0)
 
-            if not result.get("email_verified"):
-                messages.warning(
-                    request,
-                    "Please verify your email to unlock all features.",
-                )
-
+            messages.success(request, "Logged in successfully.")
             return redirect(next_url or "invoices:dashboard")
 
     return render(
@@ -285,6 +284,7 @@ def terms_view(request):
 def privacy_view(request):
     return render(request, "pages/privacy.html")
 
+@login_required
 def security_view(request):
     return render(request, "pages/security.html")
 

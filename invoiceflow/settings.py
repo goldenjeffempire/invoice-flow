@@ -155,6 +155,7 @@ MIDDLEWARE = [
     "invoiceflow.unified_middleware.UnifiedMiddleware",
     "invoiceflow.unified_middleware.OptimizedRateLimitMiddleware",
     "invoiceflow.mfa_middleware.MFAEnforcementMiddleware",
+    "invoiceflow.middleware.RequestIDMiddleware",
 ]
 
 ROOT_URLCONF = "invoiceflow.urls"

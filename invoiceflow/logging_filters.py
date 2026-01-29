@@ -1,8 +1,7 @@
-import uuid
 import logging
+from .middleware import get_current_request_id
 
 class RequestIDFilter(logging.Filter):
     def filter(self, record):
-        # In a real app, this would get the ID from thread-local storage or middleware
-        record.request_id = getattr(record, 'request_id', 'no-id')
+        record.request_id = get_current_request_id()
         return True

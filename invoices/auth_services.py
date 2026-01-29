@@ -165,6 +165,15 @@ class AuthenticationService:
     @classmethod
     def login_user(cls, request: HttpRequest, user: User) -> dict[str, Any]:
         """Complete login process with session rotation and tracking."""
+        # Ensure email is verified before login if required
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        if not profile.email_verified and not user.is_staff:
+             return {
+                "success": False,
+                "error": "Please verify your email address to continue.",
+                "email_verified": False
+            }
+
         # Invalidate old sessions for this user (session fixation prevention)
         try:
             UserSession.objects.filter(user=user).delete()
@@ -173,6 +182,7 @@ class AuthenticationService:
 
         # Create fresh session
         login(request, user)
+        request.session.cycle_key() # Explicit rotation
 
         client_ip = cls.get_client_ip(request)
         user_agent = request.META.get("HTTP_USER_AGENT", "")
