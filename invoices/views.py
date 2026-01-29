@@ -35,7 +35,7 @@ from .forms import (
     ReminderRuleForm,
 )
 from .sendgrid_service import SendGridEmailService
-from .services import AnalyticsService, InvoiceService
+from .services import AnalyticsService, InvoiceService, ProfileService, NotificationService, PaymentSettingsService
 
 def _parse_request_payload(request) -> dict:
     if request.content_type and "application/json" in request.content_type:
@@ -391,20 +391,10 @@ def settings_page(request):
 @require_POST
 def profile_update_ajax(request):
     payload = _parse_request_payload(request)
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    profile.company_name = payload.get("company_name", profile.company_name)
-    profile.business_email = payload.get("business_email", profile.business_email)
-    profile.business_phone = payload.get("business_phone", profile.business_phone)
-    profile.business_address = payload.get("business_address", profile.business_address)
-    profile.default_currency = payload.get("default_currency", profile.default_currency)
-    profile.invoice_prefix = payload.get("invoice_prefix", profile.invoice_prefix)
-    if "default_tax_rate" in payload:
-        try:
-            profile.default_tax_rate = Decimal(str(payload.get("default_tax_rate", profile.default_tax_rate)))
-        except Exception:
-            return JsonResponse({"success": False, "message": "Invalid tax rate."}, status=400)
-    profile.save()
-    return JsonResponse({"success": True, "message": "Profile updated."})
+    success, message, _ = ProfileService.update_profile(request.user, payload)
+    if success:
+        return JsonResponse({"success": True, "message": message})
+    return JsonResponse({"success": False, "message": message}, status=400)
 
 @login_required
 @require_POST
@@ -423,22 +413,10 @@ def security_update_ajax(request):
 @require_POST
 def notifications_update_ajax(request):
     payload = _parse_request_payload(request)
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
-    notification_fields = [
-        "notify_invoice_created",
-        "notify_payment_received",
-        "notify_invoice_viewed",
-        "notify_invoice_overdue",
-        "notify_weekly_summary",
-        "notify_security_alerts",
-        "notify_password_changes",
-    ]
-    for field in notification_fields:
-        if field in payload:
-            profile_value = str(payload[field]).lower() in {"1", "true", "yes", "on"}
-            setattr(profile, field, profile_value)
-    profile.save()
-    return JsonResponse({"success": True, "message": "Notification preferences updated."})
+    success, message = NotificationService.update_preferences(request.user, payload)
+    if success:
+        return JsonResponse({"success": True, "message": message})
+    return JsonResponse({"success": False, "message": message}, status=400)
 
 @login_required
 def reminder_dashboard(request):
@@ -492,40 +470,10 @@ def track_reminder_open(request, log_id):
 @require_POST
 def payment_settings_update_ajax(request):
     payload = _parse_request_payload(request)
-    payment_settings, _ = PaymentSettings.objects.get_or_create(user=request.user)
-    bool_fields = [
-        "enable_card_payments",
-        "enable_bank_transfers",
-        "enable_mobile_money",
-        "enable_ussd",
-        "auto_payout",
-        "send_payment_receipt",
-        "send_payout_notification",
-    ]
-    for field in bool_fields:
-        if field in payload:
-            setattr(payment_settings, field, str(payload[field]).lower() in {"1", "true", "yes", "on"})
-    for field in [
-        "preferred_currency",
-        "payout_schedule",
-        "payment_instructions",
-        "paystack_public_key",
-        "paystack_secret_key",
-        "paystack_webhook_secret",
-        "bank_name",
-        "account_number_encrypted",
-        "account_name",
-        "webhook_secret",
-    ]:
-        if field in payload:
-            setattr(payment_settings, field, payload.get(field, getattr(payment_settings, field)))
-    if "payout_threshold" in payload:
-        try:
-            payment_settings.payout_threshold = Decimal(str(payload.get("payout_threshold", payment_settings.payout_threshold)))
-        except Exception:
-            return JsonResponse({"success": False, "message": "Invalid payout threshold."}, status=400)
-    payment_settings.save()
-    return JsonResponse({"success": True, "message": "Payment settings updated."})
+    success, message, _ = PaymentSettingsService.update_settings(request.user, payload)
+    if success:
+        return JsonResponse({"success": True, "message": message})
+    return JsonResponse({"success": False, "message": message}, status=400)
 
 def mfa_setup(request):
     from invoiceflow.mfa import mfa_setup as mfa_setup_view

@@ -353,40 +353,24 @@ class Invoice(models.Model):
             return Decimal("0.00")
 
     def mark_as_paid(self) -> None:
-        """Updates the invoice status to PAID and handles associated business logic."""
-        if self.status == self.Status.PAID:
-            return
-
-        with transaction.atomic():
-            self.status = self.Status.PAID
-            self.save(update_fields=["status", "updated_at"])
-
-            # Update associated payments
-            self.payments.filter(status="pending").update(
-                status="success", 
-                paid_at=timezone.now(),
-                updated_at=timezone.now()
-            )
-
-        # Integration point for analytics/notification services
-        from .services import AnalyticsService, EmailService
+        """
+        Mark invoice as paid. Delegates to InvoiceService for business logic.
         
-        AnalyticsService.invalidate_user_cache(self.user_id)
-        try:
-            # Send receipt for the latest successful payment
-            successful_payment = self.payments.filter(status="success").order_by('-paid_at').first()
-            if successful_payment:
-                EmailService.send_receipt(successful_payment)
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to send payment confirmation: {e}")
+        Note: Prefer using InvoiceService.transition_status() directly from views.
+        This method exists for backward compatibility and model-level calls.
+        """
+        from .services import InvoiceService
+        InvoiceService.transition_status(self, self.Status.PAID)
 
     def mark_as_overdue(self) -> None:
-        """Updates the invoice status to OVERDUE."""
-        if self.status == self.Status.UNPAID:
-            self.status = self.Status.OVERDUE
-            self.save(update_fields=["status", "updated_at"])
+        """
+        Mark invoice as overdue. Delegates to InvoiceService for business logic.
+        
+        Note: Prefer using InvoiceService.transition_status() directly from views.
+        This method exists for backward compatibility and model-level calls.
+        """
+        from .services import InvoiceService
+        InvoiceService.transition_status(self, self.Status.OVERDUE)
 
 
 # ============================================================================
