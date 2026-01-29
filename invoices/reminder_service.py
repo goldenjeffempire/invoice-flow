@@ -1,9 +1,68 @@
 from django.utils import timezone
+from django.db import transaction
 from .models import Invoice, ReminderRule, ScheduledReminder, ReminderLog
 from .sendgrid_service import SendGridEmailService
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class ReminderFailureAlertService:
+    """Service for sending failure alerts when reminders fail after all retries."""
+    
+    @staticmethod
+    def send_failure_alert(reminder: ScheduledReminder, error: str):
+        """Send failure alert to the invoice owner when a reminder fails."""
+        try:
+            email_service = SendGridEmailService()
+            invoice = reminder.invoice
+            user = invoice.user
+            
+            if not user.email:
+                logger.warning(f"Cannot send failure alert for reminder {reminder.id}: no user email")
+                return False
+            
+            subject = f"Reminder Failed: Invoice #{invoice.invoice_id}"
+            body = f"""
+            <html>
+            <body>
+            <h2>Payment Reminder Failed</h2>
+            <p>We were unable to send a payment reminder for invoice <strong>#{invoice.invoice_id}</strong> after multiple attempts.</p>
+            
+            <h3>Invoice Details</h3>
+            <ul>
+                <li><strong>Client:</strong> {invoice.client_name}</li>
+                <li><strong>Amount:</strong> {invoice.currency} {invoice.total}</li>
+                <li><strong>Due Date:</strong> {invoice.due_date}</li>
+            </ul>
+            
+            <h3>Error Details</h3>
+            <p style="color: #dc2626; background: #fef2f2; padding: 12px; border-radius: 6px;">{error}</p>
+            
+            <h3>What to do next</h3>
+            <p>Please check the client's email address and try sending the reminder manually from your dashboard.</p>
+            
+            <p>Best regards,<br>InvoiceFlow Team</p>
+            </body>
+            </html>
+            """
+            
+            result = email_service.send_generic_email(
+                to_email=user.email,
+                subject=subject,
+                html_content=body
+            )
+            
+            if result.get("status") == "sent":
+                logger.info(f"Failure alert sent to {user.email} for reminder {reminder.id}")
+                return True
+            else:
+                logger.error(f"Failed to send failure alert: {result.get('message')}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Exception sending failure alert for reminder {reminder.id}: {e}")
+            return False
 
 class ReminderSchedulingService:
     @staticmethod
@@ -140,10 +199,30 @@ class ReminderSchedulingService:
                 processed_count += 1
             except Exception as e:
                 reminder.attempts += 1
-                if reminder.attempts >= 3:
+                error_msg = str(e)
+                max_attempts = getattr(reminder.rule, 'max_retries', 3) if reminder.rule else 3
+                
+                if reminder.attempts >= max_attempts:
                     reminder.status = ScheduledReminder.Status.FAILED
-                reminder.error_log = str(e)
-                reminder.save()
-                logger.error(f"Failed to send reminder {reminder.id}: {e}")
+                    reminder.error_log = error_msg
+                    reminder.save()
+                    
+                    ReminderLog.objects.create(
+                        scheduled_reminder=reminder,
+                        invoice=invoice,
+                        recipient_email=invoice.client_email,
+                        subject="",
+                        body="",
+                        success=False,
+                        error_message=error_msg
+                    )
+                    
+                    ReminderFailureAlertService.send_failure_alert(reminder, error_msg)
+                    logger.error(f"Reminder {reminder.id} failed after {reminder.attempts} attempts: {e}")
+                else:
+                    reminder.error_log = error_msg
+                    reminder.save()
+                    logger.warning(f"Reminder {reminder.id} attempt {reminder.attempts} failed, will retry: {e}")
         
+        logger.info(f"Processed {processed_count} reminders successfully")
         return processed_count

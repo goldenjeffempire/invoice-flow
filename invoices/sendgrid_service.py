@@ -689,6 +689,51 @@ The InvoiceFlow Team"""
         """Get email verification URL."""
         return f"{self._get_base_url()}/verify-email/{token}/"
 
+    def send_generic_email(self, to_email, subject, html_content, text_content=None):
+        """Send a generic email with custom HTML content.
+
+        Args:
+            to_email: Recipient email address
+            subject: Email subject line
+            html_content: HTML content of the email
+            text_content: Optional plain text version
+
+        Returns:
+            dict: Result with 'status' and 'message' keys
+        """
+        if not self.is_configured:
+            return {
+                "status": "error",
+                "configured": False,
+                "message": "SendGrid API key not configured",
+            }
+
+        try:
+            message = Mail()
+            message.from_email = From(self.from_email, self.platform_from_name)
+            message.to = To(to_email)
+            message.subject = subject
+            
+            content_list = []
+            if text_content:
+                content_list.append(Content("text/plain", text_content))
+            content_list.append(Content("text/html", html_content))
+            message.content = content_list
+
+            if self.client is None:
+                return {"status": "error", "message": "SendGrid client not initialized"}
+            response = self.client.send(message)
+
+            logger.info(f"Generic email sent to {to_email}: {subject}")
+            return {
+                "status": "sent",
+                "message": f"Email sent successfully to {to_email}",
+                "status_code": response.status_code,
+            }
+        except Exception as e:
+            logger.error(f"Failed to send generic email: {str(e)}")
+            return {"status": "error", "message": f"Failed to send email: {str(e)}"}
+
     def send_test_email(self, recipient_email):
         """Send a test email to verify SendGrid configuration.
 
