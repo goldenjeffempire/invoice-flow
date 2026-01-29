@@ -61,6 +61,14 @@ CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if "*" not i
 if not IS_PRODUCTION:
     CSRF_TRUSTED_ORIGINS.extend(["https://*.replit.dev", "https://*.repl.co"])
 
+# Security Hardening
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 1209600 # 2 weeks
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
 # Production Security Headers
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
@@ -73,17 +81,45 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = "DENY"
-    SECURE_REFERRER_POLICY = "same-origin"
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
     
     # CSP Settings
     CSP_DEFAULT_SRC = ("'self'",)
     CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "fonts.googleapis.com")
-    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://js.paystack.co")
+    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://js.paystack.co", "https://js.stripe.com")
     CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
     CSP_IMG_SRC = ("'self'", "data:", "https://www.google-analytics.com")
     CSP_FRAME_ANCESTORS = ("'none'",)
+    CSP_FRAME_SRC = ("'self'", "https://js.stripe.com")
 else:
     SECURE_SSL_REDIRECT = False
+
+# Structured Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'structured': {
+            'format': '[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] [request_id=%(request_id)s] %(message)s',
+        },
+    },
+    'filters': {
+        'request_id': {
+            '()': 'invoiceflow.logging_filters.RequestIDFilter',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'structured',
+            'filters': ['request_id'],
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}
 
 # =============================================================================
 # INSTALLED APPS
