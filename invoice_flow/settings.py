@@ -10,10 +10,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-default-key-for-dev')
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    '*',
+    'invoice-flow-7vu0.onrender.com',
+    'c0ef6454-eacb-4d88-bc5c-3c7f2eb6bd60-00-3uwwtj7ml25ek.riker.replit.dev'
+]
 CSRF_TRUSTED_ORIGINS = [
     'https://*.replit.dev',
     'https://*.replit.com',
+    'https://invoice-flow-7vu0.onrender.com',
 ]
 
 INSTALLED_APPS = [
@@ -23,10 +28,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'invoice_flow', # Adding the app if it's not there
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # Add Whitenoise for static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -40,10 +47,11 @@ ROOT_URLCONF = 'invoice_flow.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -54,22 +62,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'invoice_flow.wsgi.application'
 
-# Force SQLite for development if PostgreSQL fails
-if os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
+
+# PostgreSQL connection using the provisioned DATABASE_URL
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.strip():
+    import dj_database_url
+    try:
+        db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
+        if db_config:
+            # Use postgresql backend which works with psycopg2-binary
+            db_config['ENGINE'] = 'django.db.backends.postgresql'
+            DATABASES["default"] = db_config
+    except Exception as e:
+        import sys
+        sys.stderr.write(f"Warning: Failed to configure database from DATABASE_URL: {e}\n")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

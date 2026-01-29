@@ -40,6 +40,7 @@ SITE_URL = PRODUCTION_URL if IS_PRODUCTION else "http://localhost:5000"
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-production")
 
 ALLOWED_HOSTS = [
+    "*",
     "invoiceflow.com.ng",
     "www.invoiceflow.com.ng",
     "*.replit.dev",
@@ -48,6 +49,7 @@ ALLOWED_HOSTS = [
     "0.0.0.0",
     "localhost",
     "127.0.0.1",
+    "invoice-flow-7vu0.onrender.com",
 ]
 
 if os.getenv("REPLIT_DEV_DOMAIN"):
@@ -60,6 +62,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.repl.co",
     "https://invoiceflow.com.ng",
     "https://www.invoiceflow.com.ng",
+    "https://invoice-flow-7vu0.onrender.com",
 ]
 if os.getenv("REPLIT_DEV_DOMAIN"):
     CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['REPLIT_DEV_DOMAIN']}")
@@ -146,9 +149,6 @@ TEMPLATES = [
 MFA_ENABLED = True
 MFA_ISSUER_NAME = "InvoiceFlow"
 
-# =============================================================================
-# DATABASE
-# =============================================================================
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
@@ -162,25 +162,13 @@ if DATABASE_URL and DATABASE_URL.strip():
     import dj_database_url
     try:
         # Use conn_max_age to keep connections alive
-        # Note: We are using sqlite3 as a fallback if DATABASE_URL fails
-        db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600, ssl_require=False)
+        db_config = dj_database_url.config(default=DATABASE_URL, conn_max_age=600)
         if db_config:
             # The 'postgresql' engine automatically selects the best driver (psycopg2 or psycopg)
             db_config['ENGINE'] = 'django.db.backends.postgresql'
-            db_config['OPTIONS'] = {
-                'connect_timeout': 10,
-            }
-            DATABASES["default"] = cast(Dict[str, Any], db_config)
-            
-            # Verify driver availability
-            try:
-                import psycopg2
-            except ImportError:
-                try:
-                    import psycopg
-                except ImportError:
-                    sys.stderr.write("CRITICAL: No PostgreSQL driver found (psycopg2 or psycopg)\n")
+            DATABASES["default"] = db_config
     except Exception as e:
+        import sys
         sys.stderr.write(f"Warning: Failed to configure database from DATABASE_URL: {e}\n")
 
 # =============================================================================
