@@ -61,6 +61,11 @@ CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if "*" not i
 if not IS_PRODUCTION:
     CSRF_TRUSTED_ORIGINS.extend(["https://*.replit.dev", "https://*.repl.co"])
 
+# Handle Replit proxy HTTPS
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
 # Security Hardening
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = 'Lax'
@@ -72,7 +77,6 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 # Production Security Headers
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000 # 1 year
@@ -82,17 +86,13 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = "DENY"
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-    
-    # CSP Settings
-    CSP_DEFAULT_SRC = ("'self'",)
-    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "fonts.googleapis.com")
-    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://js.paystack.co", "https://js.stripe.com")
-    CSP_FONT_SRC = ("'self'", "fonts.gstatic.com")
-    CSP_IMG_SRC = ("'self'", "data:", "https://www.google-analytics.com")
-    CSP_FRAME_ANCESTORS = ("'none'",)
-    CSP_FRAME_SRC = ("'self'", "https://js.stripe.com")
 else:
+    # Disable redirect and secure cookies in development to avoid proxy issues
     SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    # Allow insecure requests for the development server behind Replit proxy
+    SECURE_REDIRECT_EXEMPT = [r'.*']
 
 # Structured Logging
 LOGGING = {
