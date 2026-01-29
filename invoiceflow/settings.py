@@ -73,6 +73,10 @@ CSRF_USE_SESSIONS = True           # Store CSRF token in session instead of cook
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 
+# Rate Limiting
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'
+
 # Password Policy and Hashing
 AUTH_PASSWORD_VALIDATORS = [
     {

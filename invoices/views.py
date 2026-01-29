@@ -13,6 +13,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
+from django_ratelimit.decorators import ratelimit
 
 from .models import (
     Invoice,
@@ -70,6 +71,7 @@ def landing_view(request):
 
 # Landing page views removed.
 
+@ratelimit(key='ip', rate='5/m', method='POST', block=True)
 def login_view(request):
     if request.user.is_authenticated:
         return redirect("invoices:dashboard")
@@ -129,6 +131,7 @@ def login_view(request):
     )
 
 @csrf_protect
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def signup(request):
     if request.user.is_authenticated:
         return redirect("invoices:dashboard")
@@ -203,6 +206,7 @@ def verify_email(request, token: str):
 
 
 @csrf_protect
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def password_reset_request(request):
     form = EmailOnlyForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -544,6 +548,7 @@ def dashboard(request):
         stats = AnalyticsService.get_user_dashboard_stats(request.user)
         # cache.set(cache_key, stats, 300) # AnalyticsService already handles caching
 
+    # Ownership enforced at query level
     recent_invoices = Invoice.objects.filter(user=request.user).select_related('template').prefetch_related('line_items').order_by('-created_at')[:5]
     
     return render(request, "pages/dashboard.html", {
@@ -554,6 +559,7 @@ def dashboard(request):
 
 @login_required
 def invoices_list(request):
+    # Ownership enforced at query level
     invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')
     return render(request, "pages/invoices_list.html", {
         "invoices": invoices,
@@ -628,6 +634,7 @@ def invoice_detail(request, invoice_id):
 
 @login_required
 def analytics(request):
+    # Ownership enforced in AnalyticsService
     stats = AnalyticsService.get_user_analytics_stats(request.user)
     return render(request, "pages/analytics.html", stats)
 
