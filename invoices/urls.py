@@ -31,6 +31,8 @@ urlpatterns = [
     path("invoices/<str:invoice_id>/pdf/", views.download_invoice_pdf, name="invoice_pdf"),
     path("invoices/<str:invoice_id>/delete/", views.delete_invoice, name="delete_invoice"),
     path("invoices/<str:invoice_id>/reminder/", views.send_reminder, name="send_reminder"),
+    path("invoices/<str:invoice_id>/toggle-reminders/", views.toggle_invoice_reminders, name="toggle_invoice_reminders"),
+    path("invoices/<str:invoice_id>/send-reminder/", views.send_manual_reminder, name="send_manual_reminder"),
 
     # ------------------------------------------------------------------
     # PAYMENTS

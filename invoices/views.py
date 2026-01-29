@@ -607,12 +607,12 @@ def invoice_create(request):
 
 @login_required
 def invoice_detail(request, invoice_id):
+    from invoices.models import ScheduledReminder
     lookup: dict[str, object]
     if str(invoice_id).isdigit():
         lookup = {"pk": invoice_id}
     else:
         lookup = {"invoice_id": invoice_id}
-    # Enforce ownership at DB query layer
     invoice = get_object_or_404(Invoice, user=request.user, **lookup)
     if request.method == "POST":
         new_status = request.POST.get('status')
@@ -621,6 +621,12 @@ def invoice_detail(request, invoice_id):
             invoice.save()
             messages.success(request, f"Invoice {invoice_id} status updated to {invoice.get_status_display()}.")
             return redirect("invoices:invoice_detail", invoice_id=invoice_id)
+    
+    scheduled_reminders = ScheduledReminder.objects.filter(
+        invoice=invoice
+    ).select_related('rule').order_by('scheduled_for')[:10]
+    
+    reminder_rules = ReminderRule.objects.filter(user=request.user, is_active=True)
             
     return render(
         request,
@@ -628,9 +634,49 @@ def invoice_detail(request, invoice_id):
         {
             "invoice": invoice,
             "status_choices": Invoice.Status.choices,
+            "scheduled_reminders": scheduled_reminders,
+            "reminder_rules": reminder_rules,
             "active": "invoices",
         },
     )
+
+@login_required
+@require_POST
+def toggle_invoice_reminders(request, invoice_id):
+    invoice = get_object_or_404(Invoice, user=request.user, invoice_id=invoice_id)
+    invoice.automated_reminders_enabled = not invoice.automated_reminders_enabled
+    invoice.save(update_fields=['automated_reminders_enabled'])
+    
+    if invoice.automated_reminders_enabled:
+        from invoices.reminder_service import ReminderSchedulingService
+        ReminderSchedulingService.schedule_reminders_for_invoice(invoice)
+        messages.success(request, "Automated reminders enabled for this invoice.")
+    else:
+        from invoices.models import ScheduledReminder
+        ScheduledReminder.objects.filter(
+            invoice=invoice, 
+            status=ScheduledReminder.Status.PENDING
+        ).update(status=ScheduledReminder.Status.CANCELLED)
+        messages.success(request, "Automated reminders disabled for this invoice.")
+    
+    return redirect("invoices:invoice_detail", invoice_id=invoice_id)
+
+@login_required
+@require_POST
+def send_manual_reminder(request, invoice_id):
+    invoice = get_object_or_404(Invoice, user=request.user, invoice_id=invoice_id)
+    
+    if invoice.status == Invoice.Status.PAID:
+        messages.error(request, "Cannot send reminders for paid invoices.")
+        return redirect("invoices:invoice_detail", invoice_id=invoice_id)
+    
+    success = SendGridEmailService().send_payment_reminder(invoice)
+    if success:
+        messages.success(request, f"Payment reminder sent to {invoice.client_email}.")
+    else:
+        messages.error(request, "Failed to send reminder. Please try again.")
+    
+    return redirect("invoices:invoice_detail", invoice_id=invoice_id)
 
 @login_required
 def analytics(request):

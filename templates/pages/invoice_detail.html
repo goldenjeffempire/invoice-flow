@@ -256,14 +256,73 @@
             <dt class="text-slate-500">Last Updated</dt>
             <dd class="font-medium text-slate-700">{{ invoice.updated_at|date:"M d, Y" }}</dd>
           </div>
-          {% if invoice.automated_reminders_enabled %}
-          <div class="flex justify-between">
-            <dt class="text-slate-500">Auto Reminders</dt>
-            <dd class="font-medium text-emerald-600">Enabled</dd>
-          </div>
-          {% endif %}
         </dl>
       </div>
+
+      {% if invoice.status != 'paid' %}
+      <div class="bg-white rounded-2xl border border-slate-200/60 shadow-soft p-5 sm:p-6 no-print">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-slate-900">Reminders</h3>
+          </div>
+          <form method="post" action="{% url 'invoices:toggle_invoice_reminders' invoice.invoice_id %}">
+            {% csrf_token %}
+            <button type="submit" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 {% if invoice.automated_reminders_enabled %}bg-primary-600{% else %}bg-slate-200{% endif %}" role="switch" aria-checked="{{ invoice.automated_reminders_enabled|yesno:'true,false' }}" aria-label="Toggle automated reminders">
+              <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform {% if invoice.automated_reminders_enabled %}translate-x-6{% else %}translate-x-1{% endif %}"></span>
+            </button>
+          </form>
+        </div>
+
+        <p class="text-sm text-slate-500 mb-4">
+          {% if invoice.automated_reminders_enabled %}
+          Automated reminders are <span class="text-emerald-600 font-medium">enabled</span> for this invoice.
+          {% else %}
+          Automated reminders are <span class="text-slate-600 font-medium">disabled</span> for this invoice.
+          {% endif %}
+        </p>
+
+        {% if scheduled_reminders %}
+        <div class="mb-4">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Scheduled Reminders</h4>
+          <ul class="space-y-2">
+            {% for reminder in scheduled_reminders %}
+            <li class="flex items-center justify-between text-sm p-2 rounded-lg bg-slate-50">
+              <span class="text-slate-700">{{ reminder.scheduled_for|date:"M d, Y H:i" }}</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                {% if reminder.status == 'pending' %}bg-amber-100 text-amber-700
+                {% elif reminder.status == 'sent' %}bg-emerald-100 text-emerald-700
+                {% elif reminder.status == 'failed' %}bg-red-100 text-red-700
+                {% else %}bg-slate-100 text-slate-700{% endif %}">
+                {{ reminder.get_status_display }}
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'invoices:send_manual_reminder' invoice.invoice_id %}">
+          {% csrf_token %}
+          <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 text-sm font-semibold border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Send Reminder Now
+          </button>
+        </form>
+
+        {% if not reminder_rules %}
+        <p class="text-xs text-slate-400 mt-3 text-center">
+          <a href="{% url 'invoices:reminder_dashboard' %}" class="text-primary-600 hover:underline">Configure reminder rules</a> in settings.
+        </p>
+        {% endif %}
+      </div>
+      {% endif %}
     </div>
   </div>
 
