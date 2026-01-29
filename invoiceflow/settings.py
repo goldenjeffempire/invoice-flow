@@ -190,7 +190,8 @@ if IS_PRODUCTION:
             "Ensure exactly one non-empty DATABASE_URL is set in Render environment settings."
         )
 
-if DATABASE_URL:
+# Only use PostgreSQL in production, use SQLite for development
+if DATABASE_URL and IS_PRODUCTION:
     # Remove unsupported parameters from the connection string if they exist
     _db_url = DATABASE_URL
     if "channel_binding=" in _db_url:
@@ -207,37 +208,11 @@ if DATABASE_URL:
             ssl_require=True
         )
         if db_config:
-            # Check if psycopg (v3) or psycopg2 is available before setting engine
-            pg_driver_found = False
-            try:
-                import psycopg
-                db_config['ENGINE'] = 'django.db.backends.postgresql'
-                DATABASES["default"] = db_config
-                pg_driver_found = True
-            except ImportError:
-                pass
-            
-            if not pg_driver_found:
-                try:
-                    import psycopg2
-                    # Verify psycopg2 actually works (binary can fail to load)
-                    psycopg2.extensions
-                    db_config['ENGINE'] = 'django.db.backends.postgresql'
-                    DATABASES["default"] = db_config
-                    pg_driver_found = True
-                except (ImportError, AttributeError, ModuleNotFoundError):
-                    pass
-            
-            if not pg_driver_found:
-                if IS_PRODUCTION:
-                    raise ImproperlyConfigured("No PostgreSQL driver found (psycopg or psycopg2) in production.")
-                import sys
-                sys.stderr.write("WARNING: No PostgreSQL driver found. Falling back to SQLite.\n")
+            # Use standard postgresql backend - Django will auto-detect psycopg version
+            db_config['ENGINE'] = 'django.db.backends.postgresql'
+            DATABASES["default"] = db_config
     except Exception as e:
-        if IS_PRODUCTION:
-            raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
-        import sys
-        sys.stderr.write(f"Warning: Failed to configure database from DATABASE_URL: {e}\n")
+        raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
 
 # =============================================================================
 # STATIC / MEDIA
