@@ -1,0 +1,62 @@
+Phase A — Repo Health + Baseline Stability
+Ensure project boots cleanly locally and in prod mode
+Fix dependency issues, broken imports, missing env vars, build pipeline errors
+Remove legacy/replit-only artifacts if any
+Add .env.example and central config validation (fail fast on missing env vars) Gate: clean install + clean run + no runtime errors + no critical warnings
+Phase B — Architecture & Layer Mapping Enforcement
+Refactor into strict layering:
+Models: pure data + constraints
+Services: business logic + transactions + side effects orchestration
+Views/APIs: request parsing, auth, permission checks, input validation call, response mapping
+Templates/components: presentation only, no business rules Add a consistent module structure and eliminate logic duplication. Gate: every endpoint/view maps cleanly to service functions; no business logic in templates/controllers
+Phase C — Unified Validation + Error Handling
+Centralize validation schemas/rules per domain object (Invoice, Client, Payment, Recurring)
+Server is authoritative; client mirrors constraints for UX
+Introduce consistent error format:
+API: { success:false, error:{ code, message, fields? }, request_id }
+UI: toast + inline field errors + dedicated error pages
+Standardize HTTP status codes and messages Gate: same invalid input yields same error structure everywhere; UX shows clear feedback
+Phase D — Auth, Session, Permissions (Security Hardening)
+Implement/verify:
+Password policy + hashing best practices
+CSRF protection for state-changing routes
+Secure cookies: HttpOnly, Secure, SameSite, session rotation
+Rate limiting/throttling for auth endpoints
+Email verification + password reset with expiring tokens
+Object-level permissions on all reads/writes (ownership enforced at DB query layer) Gate: attempt cross-user access is always blocked; session security verified
+Phase E — Core Product Flows (Invoices, Clients, Payments, Reminders)
+Invoices
+Create/edit/delete invoice with line items
+Draft/sent/paid/overdue states
+PDF generation, email sending, status transitions enforced by rules
+History/audit log per invoice (optional but recommended)
+Payments
+Verify provider integration (Stripe + Paystack if present)
+Webhooks: signature verification, idempotency keys, replay prevention
+Update invoice/payment records transactionally
+Reminders / Automation
+Configurable reminder schedules per invoice
+Background jobs with retries, logging, and failure alerts Gate: invoice lifecycle works end-to-end from creation to payment and status update reliably
+Phase F — UI/UX Modernization + Broken Links Elimination
+Fix every broken CTA, missing route, missing page
+Apply consistent design system:
+tokens for spacing/typography/colors
+reusable components (buttons, inputs, modals, tables, cards)
+consistent empty/loading/success/error states
+Implement micro-interactions (hover, focus, skeletons, toasts)
+Ensure responsive layout across mobile/tablet/desktop
+Accessibility: keyboard navigation, semantic HTML, aria labels, color contrast Gate: zero dead links; all pages look consistent; all flows usable on mobile
+Phase G — Performance Optimization
+DB query optimization (N+1 elimination, indexes, select_related/prefetch etc. as relevant)
+Caching where safe (template fragments, computed metrics)
+Compress/minify static assets; enable long-term caching and fingerprinting
+Reduce blocking scripts; optimize bundle
+Add profiling + logs for slow endpoints Gate: noticeable speed improvement + Lighthouse or equivalent improvements
+Phase H — Tests + CI + Observability
+Add and/or fix tests:
+Unit tests for services
+Integration tests for endpoints (auth, invoice CRUD, payment webhook)
+Security tests for permissions + CSRF/session expectations
+Add CI pipeline to run lint + tests on push Add production logging:
+structured logs + request_id correlation
+error tracking hooks if supported Gate: tests pass reliably; coverage for critical flows; CI green

@@ -290,3 +290,10 @@ REST_FRAMEWORK = {
     ],
     "NON_FIELD_ERRORS_KEY": "__all__",
 }
+
+# =============================================================================
+# ENVIRONMENT VALIDATION (FAIL-FAST)
+# =============================================================================
+# Run validation at the end of settings to ensure all required vars are set
+from invoiceflow.env_validation import validate_env
+validate_env()
