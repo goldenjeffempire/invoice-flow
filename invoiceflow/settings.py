@@ -48,11 +48,13 @@ if IS_PRODUCTION:
     if render_hostname:
         ALLOWED_HOSTS.append(render_hostname)
 else:
+    # In development, prioritize Replit domains for correctness
     ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if "*" not in host]
 if not IS_PRODUCTION:
-    CSRF_TRUSTED_ORIGINS.extend(["https://*.replit.dev", "https://*.repl.co"])
+    # Explicitly trust Replit origins for CSRF
+    CSRF_TRUSTED_ORIGINS.extend(["https://*.replit.dev", "https://*.repl.co", "https://*.replit.app"])
 
 # Handle Replit proxy HTTPS
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

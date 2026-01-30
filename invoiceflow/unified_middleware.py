@@ -79,7 +79,7 @@ class UnifiedMiddleware:
         else:
             response["X-Content-Type-Options"] = "nosniff"
             response["Referrer-Policy"] = "strict-origin-when-cross-origin"
-            # Production: Use sensible defaults or let downstream handle
+            response["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:;"
             if "Cache-Control" not in response:
                 response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
 
