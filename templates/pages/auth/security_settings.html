@@ -4,25 +4,22 @@
 {% block title %}Security Settings | InvoiceFlow{% endblock %}
 
 {% block head %}
+<link rel="stylesheet" href="{% static 'css/auth-enhanced.css' %}">
 <style>
   .security-card {
     background: white;
     border-radius: 1rem;
     border: 1px solid #e2e8f0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: box-shadow 0.2s ease;
   }
   
-  .device-icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .security-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
   
   .session-item {
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
   }
   
   .session-item:hover {
@@ -31,7 +28,7 @@
   
   .event-badge {
     font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 9999px;
     font-weight: 500;
   }
@@ -39,40 +36,65 @@
   .event-badge.info { background: #dbeafe; color: #1e40af; }
   .event-badge.warning { background: #fef3c7; color: #92400e; }
   .event-badge.critical { background: #fee2e2; color: #991b1b; }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .security-card:hover {
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<main id="content" class="min-h-screen bg-slate-50 pt-20 pb-12">
+<main id="main-content" class="min-h-screen bg-slate-50 pt-20 pb-12">
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-slate-900">Security Settings</h1>
-      <p class="mt-2 text-slate-600">Manage your account security, sessions, and trusted devices.</p>
+    <div class="mb-8 animate-fade-in-up">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center shadow-lg">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-slate-900">Security Settings</h1>
+          <p class="text-slate-600">Manage your account security, sessions, and trusted devices.</p>
+        </div>
+      </div>
     </div>
 
+    {% if messages %}
+      <div class="space-y-3 mb-6" role="alert">
+        {% for message in messages %}
+          <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     <div class="space-y-6">
-      <div class="security-card p-6">
+      <div class="security-card p-6 stagger-item">
         <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-              <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 flex items-center justify-center">
+              <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
               </svg>
             </div>
             <div>
-              <h2 class="text-lg font-semibold text-slate-900">Two-Factor Authentication</h2>
+              <h2 class="text-lg font-bold text-slate-900">Two-Factor Authentication</h2>
               <p class="text-sm text-slate-500">Add an extra layer of security to your account</p>
             </div>
           </div>
           {% if mfa_enabled %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-700">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
               </svg>
               Enabled
             </span>
           {% else %}
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-700">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold bg-amber-100 text-amber-700">
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
               </svg>
@@ -81,39 +103,48 @@
           {% endif %}
         </div>
         
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
           {% if mfa_enabled %}
-            <a href="{% url 'invoices:mfa_backup_codes' %}" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+            <a href="{% url 'invoices:mfa_backup_codes' %}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-colors">
+              <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+              </svg>
               View Recovery Codes ({{ remaining_codes }} remaining)
             </a>
-            <a href="{% url 'invoices:mfa_disable' %}" class="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+            <a href="{% url 'invoices:mfa_disable' %}" class="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-xl hover:bg-red-50 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+              </svg>
               Disable 2FA
             </a>
           {% else %}
-            <a href="{% url 'invoices:mfa_setup' %}" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors shadow-sm">
+            <a href="{% url 'invoices:mfa_setup' %}" class="btn-success inline-flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
               Enable Two-Factor Authentication
             </a>
           {% endif %}
         </div>
       </div>
 
-      <div class="security-card p-6">
+      <div class="security-card p-6 stagger-item">
         <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
-              <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center">
+              <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
             </div>
             <div>
-              <h2 class="text-lg font-semibold text-slate-900">Active Sessions</h2>
+              <h2 class="text-lg font-bold text-slate-900">Active Sessions</h2>
               <p class="text-sm text-slate-500">Manage devices where you're logged in</p>
             </div>
           </div>
           {% if sessions|length > 1 %}
             <form method="post" action="{% url 'invoices:revoke_all_sessions' %}">
               {% csrf_token %}
-              <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors">
+              <button type="submit" class="text-sm font-semibold text-red-600 hover:text-red-700 transition-colors">
                 Sign out all other sessions
               </button>
             </form>
@@ -122,18 +153,18 @@
         
         <div class="space-y-3">
           {% for session in sessions %}
-            <div class="session-item flex items-center justify-between p-4 rounded-xl border border-slate-100 {% if session.is_current %}bg-primary-50 border-primary-200{% endif %}">
+            <div class="session-item flex items-center justify-between p-4 rounded-xl border {% if session.is_current %}bg-blue-50 border-blue-200{% else %}border-slate-100{% endif %}">
               <div class="flex items-center gap-4">
-                <div class="device-icon {% if session.is_current %}bg-primary-100 text-primary-600{% else %}bg-slate-100 text-slate-600{% endif %}">
+                <div class="device-icon w-10 h-10 rounded-lg flex items-center justify-center {% if session.is_current %}bg-blue-100 text-blue-600{% else %}bg-slate-100 text-slate-600{% endif %}">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                   </svg>
                 </div>
                 <div>
-                  <p class="font-medium text-slate-900">
+                  <p class="font-semibold text-slate-900">
                     {{ session.browser }} on {{ session.os }}
                     {% if session.is_current %}
-                      <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-700">Current</span>
+                      <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700">Current</span>
                     {% endif %}
                   </p>
                   <p class="text-sm text-slate-500">
@@ -144,29 +175,32 @@
               {% if not session.is_current %}
                 <form method="post" action="{% url 'invoices:revoke_session' session.id %}">
                   {% csrf_token %}
-                  <button type="submit" class="px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
+                  <button type="submit" class="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
                     Revoke
                   </button>
                 </form>
               {% endif %}
             </div>
           {% empty %}
-            <div class="text-center py-8 text-slate-500">
+            <div class="text-center py-12 text-slate-500">
+              <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
               <p>No active sessions found.</p>
             </div>
           {% endfor %}
         </div>
       </div>
 
-      <div class="security-card p-6">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center">
-            <svg class="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="security-card p-6 stagger-item">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-violet-50 flex items-center justify-center">
+            <svg class="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
             </svg>
           </div>
           <div>
-            <h2 class="text-lg font-semibold text-slate-900">Trusted Devices</h2>
+            <h2 class="text-lg font-bold text-slate-900">Trusted Devices</h2>
             <p class="text-sm text-slate-500">Devices recognized as yours</p>
           </div>
         </div>
@@ -175,7 +209,7 @@
           {% for device in devices %}
             <div class="session-item flex items-center justify-between p-4 rounded-xl border border-slate-100">
               <div class="flex items-center gap-4">
-                <div class="device-icon bg-slate-100 text-slate-600">
+                <div class="device-icon w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
                   {% if device.device_type == 'mobile' %}
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
@@ -191,7 +225,7 @@
                   {% endif %}
                 </div>
                 <div>
-                  <p class="font-medium text-slate-900">{{ device.device_name }}</p>
+                  <p class="font-semibold text-slate-900">{{ device.device_name }}</p>
                   <p class="text-sm text-slate-500">
                     {{ device.browser }} on {{ device.os }} · Last used {{ device.last_used|timesince }} ago
                   </p>
@@ -199,33 +233,36 @@
               </div>
               <form method="post" action="{% url 'invoices:revoke_device' device.id %}">
                 {% csrf_token %}
-                <button type="submit" class="px-3 py-1.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
                   Remove
                 </button>
               </form>
             </div>
           {% empty %}
-            <div class="text-center py-8 text-slate-500">
+            <div class="text-center py-12 text-slate-500">
+              <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+              </svg>
               <p>No trusted devices found.</p>
             </div>
           {% endfor %}
         </div>
       </div>
 
-      <div class="security-card p-6">
+      <div class="security-card p-6 stagger-item">
         <div class="flex items-center justify-between mb-6">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
-              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+              <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
             </div>
             <div>
-              <h2 class="text-lg font-semibold text-slate-900">Recent Activity</h2>
+              <h2 class="text-lg font-bold text-slate-900">Recent Activity</h2>
               <p class="text-sm text-slate-500">Security events on your account</p>
             </div>
           </div>
-          <a href="{% url 'invoices:security_activity' %}" class="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+          <a href="{% url 'invoices:security_activity' %}" class="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors">
             View all
           </a>
         </div>
@@ -242,31 +279,42 @@
               <span class="text-sm text-slate-400">{{ event.created_at|timesince }} ago</span>
             </div>
           {% empty %}
-            <div class="text-center py-8 text-slate-500">
+            <div class="text-center py-12 text-slate-500">
+              <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
               <p>No security events recorded yet.</p>
             </div>
           {% endfor %}
         </div>
       </div>
 
-      <div class="security-card p-6">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="security-card p-6 stagger-item">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center">
+            <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
             </svg>
           </div>
           <div>
-            <h2 class="text-lg font-semibold text-slate-900">Password</h2>
+            <h2 class="text-lg font-bold text-slate-900">Password</h2>
             <p class="text-sm text-slate-500">Change your account password</p>
           </div>
         </div>
         
-        <a href="{% url 'invoices:password_reset' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+        <a href="{% url 'invoices:password_reset' %}" class="btn-primary inline-flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
           Change Password
         </a>
       </div>
     </div>
   </div>
 </main>
+{% endblock %}
+
+{% block scripts %}
+{{ block.super }}
+<script src="{% static 'js/auth-interactions.js' %}"></script>
 {% endblock %}
