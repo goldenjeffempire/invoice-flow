@@ -45,6 +45,19 @@ Service classes: `AuthService`, `MFAService`, `SessionService`, `SecurityService
 ### Frontend
 The frontend uses **Tailwind CSS** for styling, with server-side rendered Django templates. It includes a comprehensive design system with reusable components, states, micro-interactions, and accessibility features. The public-facing website features a modern design with a fixed header, mobile menu, and a narrative-driven layout with scroll-triggered animations.
 
+**Authentication UI (Enhanced January 31, 2026)**: All authentication pages feature modern SaaS-grade design with:
+- Glass morphism card effects with blur and shadows
+- Real-time password strength indicators with visual checklists
+- Password visibility toggles
+- Staggered animations and micro-interactions
+- Full reduced-motion accessibility support
+- Semantic HTML with ARIA attributes for screen readers
+- MFA code auto-formatting (6-digit TOTP or 8-char recovery codes)
+- Form submission loading states
+- Responsive layouts for mobile/desktop
+
+Key files: `static/css/auth-enhanced.css`, `static/js/auth-interactions.js`
+
 ### Caching
 **Django-Redis** provides the caching layer for performance optimization.
 
