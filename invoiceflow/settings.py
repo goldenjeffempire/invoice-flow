@@ -264,10 +264,22 @@ if DATABASE_URL:
             ssl_require=IS_PRODUCTION  # Only require SSL in production
         )
         if db_config:
-            db_config['ENGINE'] = 'django.db.backends.postgresql'
+            # Fix for dj_database_url returning empty string engine or mismatched engine
+            if not db_config.get('ENGINE') or db_config['ENGINE'] == 'django.db.backends.':
+                db_config['ENGINE'] = 'django.db.backends.postgresql'
             DATABASES["default"] = dict(db_config)
     except Exception as e:
-        raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
+        # Fallback to default postgres engine if parsing succeeds but something is off
+        try:
+            db_config = dj_database_url.config(default=_db_url, conn_max_age=600, ssl_require=IS_PRODUCTION)
+            if db_config:
+                if not db_config.get('ENGINE') or db_config['ENGINE'] == 'django.db.backends.':
+                    db_config['ENGINE'] = 'django.db.backends.postgresql'
+                DATABASES["default"] = dict(db_config)
+            else:
+                raise e
+        except:
+            raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
 
 # =============================================================================
 # STATIC / MEDIA
