@@ -41,6 +41,27 @@ Comprehensive CSS design system in `static/css/design-system.css`:
 - **Accessibility**: Skip links, focus-visible styles, ARIA support, screen reader utilities
 - **Responsive utilities**: Mobile/tablet/desktop breakpoints, responsive grids
 
+### Public-Facing Website (January 2026 Rebuild)
+Complete rebuild of public marketing website with unified design system:
+- **Base Layout** (`templates/base/layout.html`): Fixed header with glass effect, mobile menu, footer, skip links
+- **Font**: Plus Jakarta Sans for modern, professional aesthetic
+- **12 Core Pages**: All using narrative-driven design with product UI mockups (no stock imagery)
+  - Home (`/`) - Hero, problem/solution, how it works, features
+  - Features (`/features/`) - Feature grid with 9 capabilities
+  - Use Cases (`/use-cases/`) - Freelancers, agencies, small business
+  - Templates (`/templates/`) - 6 template previews with interactive hover
+  - Integrations (`/integrations/`) - Accounting, payments, productivity, storage
+  - Security (`/security/`) - 8 enterprise security features
+  - Resources (`/resources/`) - Guides, best practices, business resources
+  - FAQ (`/faq/`) - Expandable questions by category with JavaScript
+  - Contact (`/contact/`) - Contact form with CSRF protection
+  - About (`/about/`) - Mission, story, values
+  - Terms (`/terms/`) - Terms of service (10 sections)
+  - Privacy (`/privacy/`) - Privacy policy (11 sections)
+- **Excluded by design**: No pricing, testimonials, statistics, "trusted by", or "integrated by" sections
+- **Animations**: Uses `data-animate` attributes for scroll-triggered animations via `static/js/animations.js`
+- **All navigation**: Uses Django `{% url %}` template tags for proper routing
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
