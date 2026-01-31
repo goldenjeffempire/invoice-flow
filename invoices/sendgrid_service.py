@@ -547,11 +547,12 @@ The InvoiceFlow Team"""
 
             plain_text = self._format_plain_text(data)
 
+            sender = From(from_email, from_name)
             message = Mail(
-                from_email=From(from_email, from_name),
+                from_email=sender,
                 to_emails=To(to_email),
                 subject=subject,
-                plain_text_content=plain_text,
+                plain_text_content=Content("text/plain", plain_text),
             )
 
             if reply_to_email and ReplyTo is not None:
@@ -568,7 +569,7 @@ The InvoiceFlow Team"""
             logger.error(f"❌ SendGrid API Error: {error_detail}")
             return {"status": "error", "message": error_detail, "code": status_code}
 
-    def _send_html_email(self, to_email, subject, plain_text, html_content):
+    def _send_html_email(self, to_email, subject, plain_text, html_content, from_email_override=None):
         """Send an HTML email with plain text fallback."""
         if not self.is_configured:
             error_msg = "SendGrid API key not configured. Email sending is disabled."
@@ -579,12 +580,13 @@ The InvoiceFlow Team"""
             if not Mail or not From or not To:
                 return {"status": "error", "message": "SendGrid helper classes not available"}
 
+            sender = From(from_email_override or self.from_email, self.platform_from_name)
             message = Mail(
-                from_email=From(self.from_email, "InvoiceFlow"),
+                from_email=sender,
                 to_emails=To(to_email),
                 subject=subject,
-                plain_text_content=plain_text,
-                html_content=html_content,
+                plain_text_content=Content("text/plain", plain_text) if plain_text else None,
+                html_content=Content("text/html", html_content) if html_content else None,
             )
 
             if self.client is None:
