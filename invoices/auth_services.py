@@ -330,6 +330,16 @@ class AuthenticationService:
         
         # Suspicious if 2+ reasons
         is_suspicious = len(reasons) >= 2
+        
+        if is_suspicious:
+            from .models import SuspiciousLogin
+            SuspiciousLogin.objects.create(
+                user=user,
+                ip_address=client_ip,
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                reasons=reasons
+            )
+            
         return is_suspicious, reasons
     
     @classmethod

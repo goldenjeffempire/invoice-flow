@@ -174,6 +174,7 @@ def verification_sent(request):
 
 
 @csrf_protect
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def resend_verification(request):
     form = EmailOnlyForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
@@ -231,6 +232,7 @@ def password_reset_done(request):
 
 
 @csrf_protect
+@ratelimit(key='ip', rate='3/m', method='POST', block=True)
 def password_reset_confirm(request, token: str):
     is_valid, user, error_message = PasswordService.validate_reset_token(token)
     if not is_valid or user is None:

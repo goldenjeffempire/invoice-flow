@@ -48,6 +48,23 @@ class Waitlist(models.Model):
         return f"{self.email} ({self.get_feature_display()})"  # type: ignore[attr-defined]
 
 
+class SuspiciousLogin(models.Model):
+    """Tracks potentially suspicious login attempts for review."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="suspicious_logins")
+    ip_address = models.GenericIPAddressField()
+    user_agent = models.TextField()
+    reasons = models.JSONField(default=list)  # ["new_location", "unusual_time"]
+    is_reviewed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "is_reviewed"])]
+
+    def __str__(self) -> str:
+        return f"Suspicious Login: {self.user.username} at {self.created_at}"
+
+
 # ============================================================================
 # CONTACT FORM
 # ============================================================================

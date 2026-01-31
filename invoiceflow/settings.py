@@ -75,9 +75,28 @@ CSRF_USE_SESSIONS = True           # Store CSRF token in session instead of cook
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 
+# Email Configuration
+if IS_PRODUCTION:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.sendgrid.net")
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() == "true"
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "apikey")
+    EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY")
+    DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@invoiceflow.com.ng")
+else:
+    # Use console backend for development
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "noreply@invoiceflow.replit.dev"
+
+# Replit Mail Integration (if available)
+REPLIT_MAIL_ENABLED = True
+
 # Rate Limiting
 RATELIMIT_ENABLE = True
 RATELIMIT_USE_CACHE = 'default'
+ACCOUNT_LOCKOUT_THRESHOLD = 5
+ACCOUNT_LOCKOUT_DURATION = 900 # 15 minutes
 
 # Password Policy and Hashing
 AUTH_PASSWORD_VALIDATORS = [
