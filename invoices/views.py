@@ -284,8 +284,22 @@ def terms_view(request):
 def privacy_view(request):
     return render(request, "pages/privacy.html")
 
-@login_required
 def security_view(request):
+    return render(request, "pages/security.html")
+
+def use_cases_view(request):
+    return render(request, "pages/use_cases.html")
+
+def templates_view(request):
+    return render(request, "pages/templates.html")
+
+def integrations_view(request):
+    return render(request, "pages/integrations.html")
+
+def resources_view(request):
+    return render(request, "pages/resources.html")
+
+def security_public_view(request):
     return render(request, "pages/security.html")
 
 def faq_api(request):

@@ -1,127 +1,306 @@
 {% load static %}
-<!doctype html>
-<html lang="en" class="h-full scroll-smooth">
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#2563eb" />
-  <meta name="color-scheme" content="light" />
-  <meta name="description" content="{% block meta_description %}InvoiceFlow - Modern invoicing made simple. Create, send, and track invoices effortlessly.{% endblock %}" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <title>{% block title %}InvoiceFlow{% endblock %}</title>
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="{% block meta_description %}InvoiceFlow - Professional invoicing software. Create, send, and track invoices in minutes. Get paid faster with automated reminders.{% endblock %}">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
+  <meta property="og:title" content="{% block og_title %}InvoiceFlow - Professional Invoicing Made Simple{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Create professional invoices in minutes. Automated reminders, payment tracking, and beautiful templates.{% endblock %}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{% block twitter_title %}InvoiceFlow{% endblock %}">
+  
+  <title>{% block title %}InvoiceFlow - Professional Invoicing Software{% endblock %}</title>
+  
+  <link rel="canonical" href="{{ request.build_absolute_uri }}">
+  <link rel="icon" href="{% static 'favicon.ico' %}" type="image/x-icon">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
   <link rel="stylesheet" href="{% static 'css/design-system.css' %}">
-
-  {% block head %}{% endblock %}
-
-  <style>
-    :root {
-      --primary: var(--color-primary-600);
-      --primary-hover: var(--color-primary-700);
-      --secondary: var(--color-slate-500);
-      --success: var(--color-success-500);
-      --danger: var(--color-error-500);
-      --background: var(--color-slate-50);
-      --font-family: var(--font-sans);
-    }
-
-    body {
-      font-family: var(--font-family);
-      line-height: 1.6;
-    }
-
-    .btn-primary {
-      @apply btn btn-primary;
-    }
-
-    .input-standard {
-      @apply form-input;
-    }
-
-    .page-transition {
-      animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .btn-gradient {
-      background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    }
-    
-    .btn-gradient:hover {
-      background: linear-gradient(135deg, #3b82f6 0%, var(--primary) 100%);
-      transform: translateY(-1.5px);
-      box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2), 0 4px 6px -4px rgba(37, 99, 235, 0.1);
-    }
-
-    .glass-header {
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-    }
-
-    .card-modern {
-      @apply bg-white rounded-2xl border border-slate-200/60 shadow-sm transition-all duration-300;
-    }
-    .card-modern:hover {
-      @apply shadow-md border-slate-300/60;
-    }
-
-    .skeleton {
-      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-      background-size: 200% 100%;
-      animation: skeleton-loading 1.5s infinite;
-    }
-    @keyframes skeleton-loading {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-  </style>
-</head>
-<body class="min-h-full bg-slate-50 text-slate-900 font-sans antialiased">
-  <a href="#content" class="skip-link">Skip to main content</a>
   
-  <div class="scroll-progress" aria-hidden="true"></div>
-
-  {% block body %}
-  <main id="content" class="min-h-screen page-transition">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <header class="header" id="header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="{% url 'invoices:home' %}" class="logo" aria-label="InvoiceFlow Home">
+          <span class="logo-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          </span>
+          <span>InvoiceFlow</span>
+        </a>
+        
+        <nav aria-label="Main navigation">
+          <ul class="nav-links">
+            <li><a href="{% url 'invoices:features' %}" class="nav-link {% if request.resolver_match.url_name == 'features' %}active{% endif %}">Features</a></li>
+            <li class="nav-dropdown">
+              <a href="{% url 'invoices:use_cases' %}" class="nav-link {% if request.resolver_match.url_name == 'use_cases' %}active{% endif %}">
+                Use Cases
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </a>
+              <ul class="nav-dropdown-menu">
+                <li><a href="{% url 'invoices:use_cases' %}#freelancers" class="nav-dropdown-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg>
+                  Freelancers
+                </a></li>
+                <li><a href="{% url 'invoices:use_cases' %}#agencies" class="nav-dropdown-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                  Agencies
+                </a></li>
+                <li><a href="{% url 'invoices:use_cases' %}#small-business" class="nav-dropdown-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                  Small Businesses
+                </a></li>
+              </ul>
+            </li>
+            <li><a href="{% url 'invoices:templates' %}" class="nav-link {% if request.resolver_match.url_name == 'templates' %}active{% endif %}">Templates</a></li>
+            <li><a href="{% url 'invoices:integrations' %}" class="nav-link {% if request.resolver_match.url_name == 'integrations' %}active{% endif %}">Integrations</a></li>
+            <li class="nav-dropdown">
+              <a href="#" class="nav-link">
+                Resources
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 4px;">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </a>
+              <ul class="nav-dropdown-menu">
+                <li><a href="{% url 'invoices:resources' %}" class="nav-dropdown-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                  Guides
+                </a></li>
+                <li><a href="{% url 'invoices:faq' %}" class="nav-dropdown-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  FAQ
+                </a></li>
+                <li><a href="{% url 'invoices:security' %}" class="nav-dropdown-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  Security
+                </a></li>
+              </ul>
+            </li>
+          </ul>
+        </nav>
+        
+        <div class="nav-actions">
+          <a href="{% url 'invoices:login' %}" class="btn btn-ghost" style="display: none;">Login</a>
+          <a href="{% url 'invoices:signup' %}" class="btn btn-primary">Start Free</a>
+          <button class="mobile-menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        
+        <a href="{% url 'invoices:login' %}" class="btn btn-ghost" style="margin-right: 0.5rem;">Login</a>
+      </div>
+    </div>
+  </header>
+  
+  <div class="mobile-menu" id="mobile-menu" aria-hidden="true">
+    <div class="mobile-menu-panel">
+      <button class="mobile-menu-close" aria-label="Close menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <nav aria-label="Mobile navigation">
+        <a href="{% url 'invoices:features' %}" class="mobile-nav-link">Features</a>
+        <a href="{% url 'invoices:use_cases' %}" class="mobile-nav-link">Use Cases</a>
+        <a href="{% url 'invoices:templates' %}" class="mobile-nav-link">Templates</a>
+        <a href="{% url 'invoices:integrations' %}" class="mobile-nav-link">Integrations</a>
+        <a href="{% url 'invoices:resources' %}" class="mobile-nav-link">Resources</a>
+        <a href="{% url 'invoices:faq' %}" class="mobile-nav-link">FAQ</a>
+        <a href="{% url 'invoices:security' %}" class="mobile-nav-link">Security</a>
+        <a href="{% url 'invoices:contact' %}" class="mobile-nav-link">Contact</a>
+        <hr style="margin: 1rem 0; border-color: var(--color-slate-200);">
+        <a href="{% url 'invoices:login' %}" class="mobile-nav-link">Login</a>
+        <a href="{% url 'invoices:signup' %}" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">Start Free</a>
+      </nav>
+    </div>
+  </div>
+  
+  <main id="main-content">
     {% block content %}{% endblock %}
   </main>
-  {% endblock %}
-
-  <div class="toast-container" role="alert" aria-live="polite"></div>
-
-  <button class="scroll-to-top" aria-label="Scroll to top">
+  
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="{% url 'invoices:home' %}" class="logo" style="color: white;">
+            <span class="logo-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </span>
+            <span>InvoiceFlow</span>
+          </a>
+          <p>Professional invoicing software that helps you get paid faster. Create beautiful invoices in minutes.</p>
+        </div>
+        
+        <div>
+          <h3 class="footer-heading">Product</h3>
+          <ul class="footer-links">
+            <li><a href="{% url 'invoices:features' %}" class="footer-link">Features</a></li>
+            <li><a href="{% url 'invoices:templates' %}" class="footer-link">Templates</a></li>
+            <li><a href="{% url 'invoices:integrations' %}" class="footer-link">Integrations</a></li>
+            <li><a href="{% url 'invoices:use_cases' %}" class="footer-link">Use Cases</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="footer-heading">Resources</h3>
+          <ul class="footer-links">
+            <li><a href="{% url 'invoices:resources' %}" class="footer-link">Guides</a></li>
+            <li><a href="{% url 'invoices:faq' %}" class="footer-link">FAQ</a></li>
+            <li><a href="{% url 'invoices:security' %}" class="footer-link">Security</a></li>
+            <li><a href="{% url 'invoices:contact' %}" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="footer-heading">Company</h3>
+          <ul class="footer-links">
+            <li><a href="{% url 'invoices:about' %}" class="footer-link">About</a></li>
+            <li><a href="{% url 'invoices:terms' %}" class="footer-link">Terms of Service</a></li>
+            <li><a href="{% url 'invoices:privacy' %}" class="footer-link">Privacy Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; {% now "Y" %} InvoiceFlow. All rights reserved.</p>
+        <div class="footer-social">
+          <a href="#" aria-label="Twitter">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+            </svg>
+          </a>
+          <a href="#" aria-label="LinkedIn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+              <rect x="2" y="9" width="4" height="12"></rect>
+              <circle cx="4" cy="4" r="2"></circle>
+            </svg>
+          </a>
+          <a href="#" aria-label="GitHub">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+  
+  <button class="scroll-to-top" aria-label="Scroll to top" id="scroll-to-top">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="18 15 12 9 6 15"></polyline>
     </svg>
   </button>
-
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="{% static 'js/app.js' %}"></script>
+  
+  <div class="toast-container" id="toast-container" role="alert" aria-live="polite"></div>
+  
   <script>
-    lucide.createIcons();
-    
-    document.querySelectorAll('img').forEach(img => {
-      if (img.complete) {
-        img.classList.add('loaded');
-      } else {
-        img.addEventListener('load', () => img.classList.add('loaded'));
+    (function() {
+      const header = document.getElementById('header');
+      const scrollBtn = document.getElementById('scroll-to-top');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const mobileToggle = document.querySelector('.mobile-menu-toggle');
+      const mobileClose = document.querySelector('.mobile-menu-close');
+      
+      let lastScroll = 0;
+      window.addEventListener('scroll', () => {
+        const currentScroll = window.pageYOffset;
+        
+        if (currentScroll > 50) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+        
+        if (currentScroll > 400) {
+          scrollBtn.classList.add('is-visible');
+        } else {
+          scrollBtn.classList.remove('is-visible');
+        }
+        
+        lastScroll = currentScroll;
+      });
+      
+      scrollBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      
+      mobileToggle.addEventListener('click', () => {
+        mobileMenu.classList.add('is-open');
+        mobileMenu.setAttribute('aria-hidden', 'false');
+        mobileToggle.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      });
+      
+      function closeMobileMenu() {
+        mobileMenu.classList.remove('is-open');
+        mobileMenu.setAttribute('aria-hidden', 'true');
+        mobileToggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
       }
-    });
+      
+      mobileClose.addEventListener('click', closeMobileMenu);
+      mobileMenu.addEventListener('click', (e) => {
+        if (e.target === mobileMenu) closeMobileMenu();
+      });
+      
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && mobileMenu.classList.contains('is-open')) {
+          closeMobileMenu();
+        }
+      });
+      
+      const animateElements = document.querySelectorAll('[data-animate]');
+      if (animateElements.length > 0) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        
+        animateElements.forEach(el => observer.observe(el));
+      }
+    })();
   </script>
+  
   {% block scripts %}{% endblock %}
 </body>
 </html>

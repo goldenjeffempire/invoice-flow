@@ -1,0 +1,382 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Professional Invoice Templates - InvoiceFlow{% endblock %}
+{% block meta_description %}Choose from beautifully designed, customizable invoice templates. From modern minimal to corporate standard, find the perfect template for your business.{% endblock %}
+
+{% block head %}
+<style>
+.template-grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .template-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .template-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.template-card {
+  position: relative;
+  background: white;
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--color-slate-200);
+  overflow: hidden;
+  transition: all 0.3s var(--ease-out);
+}
+.template-card:hover {
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-primary-200);
+  transform: translateY(-4px);
+}
+
+.template-preview {
+  position: relative;
+  padding: 1.5rem;
+  background: var(--color-slate-50);
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.template-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s var(--ease-out);
+}
+.template-card:hover .template-overlay {
+  opacity: 1;
+  visibility: visible;
+}
+
+.template-info {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--color-slate-200);
+}
+.template-info h3 {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-slate-900);
+  margin: 0 0 0.25rem;
+}
+.template-info p {
+  font-size: 0.875rem;
+  color: var(--color-slate-500);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.mini-invoice {
+  width: 100%;
+  max-width: 200px;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  font-size: 0.5rem;
+}
+.mini-invoice-header {
+  padding: 0.75rem;
+}
+.mini-invoice-body {
+  padding: 0.5rem 0.75rem;
+}
+.mini-invoice-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--color-slate-100);
+}
+.mini-invoice-row:last-child {
+  border-bottom: none;
+}
+.mini-invoice-total {
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.mini-invoice.style-minimal .mini-invoice-header {
+  border-bottom: 1px solid var(--color-slate-200);
+}
+.mini-invoice.style-classic .mini-invoice-header {
+  background: var(--color-slate-800);
+  color: white;
+}
+.mini-invoice.style-bold .mini-invoice-header {
+  background: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+  color: white;
+}
+.mini-invoice.style-corporate .mini-invoice-header {
+  background: var(--color-slate-100);
+  border-bottom: 2px solid var(--color-primary-600);
+}
+.mini-invoice.style-freelancer .mini-invoice-header {
+  background: linear-gradient(135deg, var(--color-primary-500) 0%, var(--color-primary-700) 100%);
+  color: white;
+}
+.mini-invoice.style-agency .mini-invoice-header {
+  background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+  color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="hero" style="min-height: auto; padding: 10rem 0 4rem;">
+  <div class="hero-bg"></div>
+  <div class="container">
+    <div class="hero-content" data-animate>
+      <span class="badge badge-primary" style="margin-bottom: 1rem;">TEMPLATES</span>
+      <h1>Professional Invoice Templates</h1>
+      <p class="hero-subtitle">Choose from our collection of professionally designed templates. Fully customizable to match your brand and impress your clients.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="template-grid">
+      <div class="template-card" data-animate>
+        <div class="template-preview">
+          <div class="mini-invoice style-minimal">
+            <div class="mini-invoice-header">
+              <div style="font-weight: 700; color: var(--color-slate-900); font-size: 0.625rem;">INVOICE</div>
+              <div style="color: var(--color-slate-500); font-size: 0.5rem; margin-top: 0.125rem;">#INV-001</div>
+            </div>
+            <div class="mini-invoice-body">
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Design Services</span>
+                <span style="color: var(--color-slate-900);">$1,200</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Consultation</span>
+                <span style="color: var(--color-slate-900);">$400</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Revisions</span>
+                <span style="color: var(--color-slate-900);">$200</span>
+              </div>
+            </div>
+            <div class="mini-invoice-total" style="border-top: 1px solid var(--color-slate-200);">
+              <span style="color: var(--color-slate-700);">Total</span>
+              <span style="color: var(--color-slate-900);">$1,800</span>
+            </div>
+          </div>
+          <div class="template-overlay">
+            <a href="{% url 'invoices:signup' %}" class="btn btn-primary">Use This Template</a>
+          </div>
+        </div>
+        <div class="template-info">
+          <h3>Modern Minimal</h3>
+          <p>Clean, simple design with elegant typography and whitespace.</p>
+        </div>
+      </div>
+
+      <div class="template-card" data-animate>
+        <div class="template-preview">
+          <div class="mini-invoice style-classic">
+            <div class="mini-invoice-header">
+              <div style="font-weight: 700; font-size: 0.625rem;">INVOICE</div>
+              <div style="font-size: 0.5rem; opacity: 0.8; margin-top: 0.125rem;">No. 2024-0042</div>
+            </div>
+            <div class="mini-invoice-body">
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Legal Consulting</span>
+                <span style="color: var(--color-slate-900);">$2,500</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Document Review</span>
+                <span style="color: var(--color-slate-900);">$750</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Filing Fees</span>
+                <span style="color: var(--color-slate-900);">$150</span>
+              </div>
+            </div>
+            <div class="mini-invoice-total" style="background: var(--color-slate-50);">
+              <span style="color: var(--color-slate-700);">Total Due</span>
+              <span style="color: var(--color-slate-900);">$3,400</span>
+            </div>
+          </div>
+          <div class="template-overlay">
+            <a href="{% url 'invoices:signup' %}" class="btn btn-primary">Use This Template</a>
+          </div>
+        </div>
+        <div class="template-info">
+          <h3>Professional Classic</h3>
+          <p>Traditional business style that conveys trust and reliability.</p>
+        </div>
+      </div>
+
+      <div class="template-card" data-animate>
+        <div class="template-preview">
+          <div class="mini-invoice style-bold">
+            <div class="mini-invoice-header">
+              <div style="font-weight: 800; font-size: 0.75rem; letter-spacing: 0.05em;">INVOICE</div>
+              <div style="font-size: 0.5rem; opacity: 0.9; margin-top: 0.125rem;">#CB-2024-01</div>
+            </div>
+            <div class="mini-invoice-body">
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Brand Identity</span>
+                <span style="color: #7c3aed; font-weight: 600;">$3,500</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Logo Design</span>
+                <span style="color: #7c3aed; font-weight: 600;">$1,200</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Style Guide</span>
+                <span style="color: #7c3aed; font-weight: 600;">$800</span>
+              </div>
+            </div>
+            <div class="mini-invoice-total" style="background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(236, 72, 153, 0.1) 100%);">
+              <span style="color: var(--color-slate-700);">Total</span>
+              <span style="color: #7c3aed; font-weight: 800;">$5,500</span>
+            </div>
+          </div>
+          <div class="template-overlay">
+            <a href="{% url 'invoices:signup' %}" class="btn btn-primary">Use This Template</a>
+          </div>
+        </div>
+        <div class="template-info">
+          <h3>Creative Bold</h3>
+          <p>Vibrant, design-focused template for creative professionals.</p>
+        </div>
+      </div>
+
+      <div class="template-card" data-animate>
+        <div class="template-preview">
+          <div class="mini-invoice style-corporate">
+            <div class="mini-invoice-header">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-weight: 700; color: var(--color-slate-800); font-size: 0.5625rem;">ACME CORP</div>
+                <div style="font-size: 0.5rem; color: var(--color-primary-600); font-weight: 600;">INV-10842</div>
+              </div>
+            </div>
+            <div class="mini-invoice-body">
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">IT Services Q4</span>
+                <span style="color: var(--color-slate-900);">$15,000</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Support Plan</span>
+                <span style="color: var(--color-slate-900);">$3,600</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">License Renewal</span>
+                <span style="color: var(--color-slate-900);">$2,400</span>
+              </div>
+            </div>
+            <div class="mini-invoice-total" style="border-top: 2px solid var(--color-primary-600);">
+              <span style="color: var(--color-slate-700);">Amount Due</span>
+              <span style="color: var(--color-primary-600); font-weight: 700;">$21,000</span>
+            </div>
+          </div>
+          <div class="template-overlay">
+            <a href="{% url 'invoices:signup' %}" class="btn btn-primary">Use This Template</a>
+          </div>
+        </div>
+        <div class="template-info">
+          <h3>Corporate Standard</h3>
+          <p>Formal corporate style ideal for enterprise clients.</p>
+        </div>
+      </div>
+
+      <div class="template-card" data-animate>
+        <div class="template-preview">
+          <div class="mini-invoice style-freelancer">
+            <div class="mini-invoice-header">
+              <div style="font-weight: 700; font-size: 0.625rem;">Sarah Chen Design</div>
+              <div style="font-size: 0.4375rem; opacity: 0.9; margin-top: 0.125rem;">Invoice #FP-0089</div>
+            </div>
+            <div class="mini-invoice-body">
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">UI/UX Design (20 hrs)</span>
+                <span style="color: var(--color-slate-900);">$2,000</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Prototyping</span>
+                <span style="color: var(--color-slate-900);">$600</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">User Testing</span>
+                <span style="color: var(--color-slate-900);">$400</span>
+              </div>
+            </div>
+            <div class="mini-invoice-total" style="background: var(--color-primary-50);">
+              <span style="color: var(--color-slate-700);">Total</span>
+              <span style="color: var(--color-primary-600); font-weight: 700;">$3,000</span>
+            </div>
+          </div>
+          <div class="template-overlay">
+            <a href="{% url 'invoices:signup' %}" class="btn btn-primary">Use This Template</a>
+          </div>
+        </div>
+        <div class="template-info">
+          <h3>Freelancer Pro</h3>
+          <p>Perfect for independent contractors and consultants.</p>
+        </div>
+      </div>
+
+      <div class="template-card" data-animate>
+        <div class="template-preview">
+          <div class="mini-invoice style-agency">
+            <div class="mini-invoice-header">
+              <div style="font-weight: 800; font-size: 0.625rem; letter-spacing: 0.02em;">PIXEL STUDIO</div>
+              <div style="font-size: 0.4375rem; opacity: 0.9; margin-top: 0.125rem;">Project Invoice #AS-2024</div>
+            </div>
+            <div class="mini-invoice-body">
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Website Redesign</span>
+                <span style="color: var(--color-slate-900);">$8,500</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Motion Graphics</span>
+                <span style="color: var(--color-slate-900);">$2,200</span>
+              </div>
+              <div class="mini-invoice-row">
+                <span style="color: var(--color-slate-600);">Content Strategy</span>
+                <span style="color: var(--color-slate-900);">$1,800</span>
+              </div>
+            </div>
+            <div class="mini-invoice-total" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);">
+              <span style="color: var(--color-slate-700);">Project Total</span>
+              <span style="color: #6366f1; font-weight: 800;">$12,500</span>
+            </div>
+          </div>
+          <div class="template-overlay">
+            <a href="{% url 'invoices:signup' %}" class="btn btn-primary">Use This Template</a>
+          </div>
+        </div>
+        <div class="template-info">
+          <h3>Agency Suite</h3>
+          <p>Designed for creative agencies handling multi-faceted projects.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-card" data-animate>
+      <h2>Start with Any Template</h2>
+      <p>All templates are fully customizable. Add your logo, colors, and branding to make it uniquely yours.</p>
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="{% url 'invoices:signup' %}" class="btn btn-lg btn-white">Get Started Free</a>
+        <a href="{% url 'invoices:features' %}" class="btn btn-lg btn-ghost" style="color: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.3);">Explore Features</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
