@@ -67,20 +67,24 @@ class SendGridEmailService:
     }
 
     def __init__(self):
-        self.api_key = None
-        self.from_email = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@invoiceflow.com.ng")
-        self.PLATFORM_FROM_EMAIL = self.from_email  # Alias for backward compatibility
-        self.platform_from_name = "InvoiceFlow"
-
         self.api_key = os.environ.get("SENDGRID_API_KEY")
+        # Custom identities configuration
+        self.IDENTITIES = {
+            "admin": "admin@invoiceflow.com.ng",
+            "support": "support@invoiceflow.com.ng",
+            "hello": "hello@invoiceflow.com.ng",
+            "info": "info@invoiceflow.com.ng",
+            "noreply": os.environ.get("SENDGRID_FROM_EMAIL", "noreply@invoiceflow.com.ng")
+        }
+        self.from_email = self.IDENTITIES["noreply"]
+        self.PLATFORM_FROM_EMAIL = self.from_email
+        self.platform_from_name = "InvoiceFlow"
         self.is_configured = bool(self.api_key)
 
         if self.is_configured and self.api_key and SendGridAPIClient is not None:
             self.client = SendGridAPIClient(self.api_key)
         else:
             self.client = None
-            if self.is_configured and SendGridAPIClient is None:
-                logger.error("SendGridAPIClient is None but API key is configured. Is 'sendgrid' package installed?")
 
     def _get_api_with_validation(self, url: str, headers: dict, timeout: int = 5) -> dict | None:
         """Safely get API response with proper URL validation."""
@@ -262,9 +266,10 @@ class SendGridEmailService:
         )
 
     def send_verification_email(self, user, verification_token):
-        """Send email verification link to user."""
+        """Send email verification link to user using hello@ identity."""
         verification_url = self._get_verification_url(verification_token)
         first_name = user.first_name or user.username
+        from_email = self.IDENTITIES.get("hello", self.from_email)
 
         plain_text = f"""Hello {first_name},
 
@@ -300,13 +305,15 @@ The InvoiceFlow Team"""
             subject="Verify your InvoiceFlow account",
             plain_text=plain_text,
             html_content=html_content,
+            from_email_override=from_email
         )
 
     def send_password_reset_email(self, user, reset_token, template_id=None):
-        """Send password reset email."""
+        """Send password reset email using support@ identity."""
         template_id = template_id or self.TEMPLATE_IDS.get("password_reset")
         reset_url = self._get_password_reset_url(reset_token)
         first_name = user.first_name or user.username
+        from_email = self.IDENTITIES.get("support", self.from_email)
 
         if template_id:
             template_data = {
@@ -318,11 +325,12 @@ The InvoiceFlow Team"""
             }
             return self._send_email(
                 user_business_email=None,
-                from_name="InvoiceFlow",
+                from_name="InvoiceFlow Support",
                 to_email=user.email,
                 template_id=template_id,
                 template_data=template_data,
                 subject="Password Reset Request",
+                from_email_override=from_email
             )
 
         plain_text = f"""Hello {first_name},
@@ -359,6 +367,7 @@ The InvoiceFlow Team"""
             subject="Password Reset Request",
             plain_text=plain_text,
             html_content=html_content,
+            from_email_override=from_email
         )
 
     # ============ ADMIN EMAILS ============
@@ -466,6 +475,7 @@ The InvoiceFlow Team"""
         template_data,
         subject,
         invoice=None,
+        from_email_override=None,
     ):
         """Send email using SendGrid dynamic template."""
         if not self.is_configured:
@@ -477,8 +487,9 @@ The InvoiceFlow Team"""
             if not Mail or not From or not To:
                 return {"status": "error", "message": "SendGrid helper classes not available"}
 
+            sender = From(from_email_override or self.from_email, from_name)
             message = Mail(
-                from_email=From(self.from_email, from_name),
+                from_email=sender,
                 to_emails=To(to_email),
                 subject=subject,
             )

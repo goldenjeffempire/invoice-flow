@@ -290,26 +290,8 @@ class EmailService:
     @classmethod
     def send_verification_email(cls, user, token: EmailToken) -> bool:
         try:
-            site_url = getattr(settings, 'SITE_URL', 'http://localhost:5000')
-            verify_url = f"{site_url}/invoices/verify-email/{token.token}/"
-
-            subject = "Verify your InvoiceFlow account"
-            html_message = render_to_string('invoices/emails/verification_email.html', {
-                'user': user,
-                'verify_url': verify_url,
-                'expiry_hours': 24,
-            })
-            plain_message = strip_tags(html_message)
-
-            send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-            return True
+            from .sendgrid_service import SendGridEmailService
+            return SendGridEmailService().send_verification_email(user, token.token)
         except Exception as e:
             logger.error(f"Failed to send verification email: {e}")
             return False
@@ -317,26 +299,8 @@ class EmailService:
     @classmethod
     def send_password_reset_email(cls, user, token: EmailToken) -> bool:
         try:
-            site_url = getattr(settings, 'SITE_URL', 'http://localhost:5000')
-            reset_url = f"{site_url}/invoices/password-reset-confirm/{token.token}/"
-
-            subject = "Reset your InvoiceFlow password"
-            html_message = render_to_string('invoices/emails/password_reset.html', {
-                'user': user,
-                'reset_url': reset_url,
-                'expiry_hours': 1,
-            })
-            plain_message = strip_tags(html_message)
-
-            send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[user.email],
-                html_message=html_message,
-                fail_silently=False,
-            )
-            return True
+            from .sendgrid_service import SendGridEmailService
+            return SendGridEmailService().send_password_reset_email(user, token.token)
         except Exception as e:
             logger.error(f"Failed to send password reset email: {e}")
             return False
