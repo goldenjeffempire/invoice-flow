@@ -45,6 +45,18 @@ Comprehensive CSS design system in `static/css/design-system.css`:
 Complete rebuild of public marketing website with unified design system:
 - **Base Layout** (`templates/base/layout.html`): Fixed header with glass effect, mobile menu, footer, skip links
 - **Font**: Plus Jakarta Sans for modern, professional aesthetic
+- **Landing Page** (`templates/pages/landing.html`): Comprehensive narrative-driven experience with:
+  - Hero section with animated invoice mockup and payment notification popup
+  - Pain point section with visual pain cards showing user frustrations
+  - Solution section with gradient solution cards
+  - Interactive 3-step workflow visualization with browser mockups
+  - Before/After transformation comparison with visual contrast
+  - Feature deep-dive sections with detailed UI mockups (invoice creation, reminders, dashboard)
+  - Aspirational journey timeline showing user progression over time
+  - Business type cards (Freelancers, Agencies, Small Businesses)
+  - Mega CTA section with gradient animation
+  - All sections use scroll-triggered animations via `data-animate` attributes
+  - Zero placeholders, no pricing/testimonials/statistics as per design requirements
 - **12 Core Pages**: All using narrative-driven design with product UI mockups (no stock imagery)
   - Home (`/`) - Hero, problem/solution, how it works, features
   - Features (`/features/`) - Feature grid with 9 capabilities
