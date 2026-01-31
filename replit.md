@@ -32,6 +32,37 @@ Per-invoice configurable reminder system:
 - **ReminderFailureAlertService**: Emails users when reminders fail after max retries
 - **Management command**: `python manage.py process_reminders` for scheduled processing
 
+### Security Features (January 2026 Enhancement)
+Comprehensive security system with production-ready protection:
+
+**Password Security:**
+- **Breach Detection**: HaveIBeenPwned API integration using k-anonymity (only first 5 chars of SHA1 sent)
+- **Password Strength**: Server-side validation for length, complexity, common patterns
+- Checks applied during signup and password reset flows
+
+**Suspicious Login Detection:**
+- New IP address detection (compared to last 30 days of known IPs)
+- Unusual login time detection (2-5 AM local time flagged)
+- Multiple failed attempt tracking (3+ in 1 hour)
+- Suspicious logins require 2+ risk factors and are logged with elevated severity
+
+**Device & Session Management:**
+- **KnownDevice**: Tracks trusted devices via SHA-256 fingerprint (user agent + headers)
+- **UserSession**: Active session tracking with IP address and user agent
+- **Security Settings UI** (`/security-settings/`): View/revoke sessions and devices
+- Automatic device registration on login with browser/OS parsing
+
+**Security Event Logging:**
+- **SecurityEvent**: Comprehensive audit log with 20+ event types
+- Events: login_success, login_failed, login_suspicious, login_new_device, logout, session_revoked, device_revoked, password_changed, mfa_enabled, mfa_disabled, etc.
+- Severity levels: info, warning, critical
+- Security Activity page (`/security-settings/activity/`) shows full history
+
+**Workspace Invitations:**
+- **WorkspaceInvitation**: Team member invitation system with secure tokens
+- Token-based acceptance flow with expiration
+- Role assignment (admin, member, viewer)
+
 ### Design System
 Comprehensive CSS design system in `static/css/design-system.css`:
 - **Design tokens**: Colors (primary, success, warning, error, slate), spacing, typography, shadows, transitions
