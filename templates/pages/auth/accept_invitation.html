@@ -1,0 +1,84 @@
+{% extends "base/layout.html" %}
+{% load static %}
+
+{% block title %}Accept Invitation | InvoiceFlow{% endblock %}
+
+{% block head %}
+<style>
+  .invitation-card {
+    background: white;
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+    max-width: 28rem;
+    margin: 0 auto;
+  }
+  
+  .avatar-circle {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+{% include "partials/navbar_public.html" %}
+
+<main id="content" class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 pt-20 pb-12 flex items-center">
+  <div class="w-full max-w-lg mx-auto px-4">
+    <div class="invitation-card p-8 text-center">
+      <div class="avatar-circle mx-auto mb-6">
+        {{ invitation.inviter.first_name.0|default:invitation.inviter.username.0|upper }}
+      </div>
+      
+      <h1 class="text-2xl font-bold text-slate-900 mb-2">You've been invited!</h1>
+      <p class="text-slate-600 mb-6">
+        <span class="font-medium text-slate-900">{{ invitation.inviter.get_full_name|default:invitation.inviter.username }}</span>
+        has invited you to join as a <span class="font-medium text-slate-900">{{ invitation.get_role_display }}</span>.
+      </p>
+      
+      <div class="bg-slate-50 rounded-xl p-4 mb-6">
+        <p class="text-sm text-slate-500 mb-1">Invitation sent to</p>
+        <p class="font-medium text-slate-900">{{ invitation.email }}</p>
+      </div>
+      
+      {% if request.user.email != invitation.email %}
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <div class="text-left">
+              <p class="text-sm font-medium text-amber-800">Email mismatch</p>
+              <p class="text-sm text-amber-700">You're logged in as <strong>{{ request.user.email }}</strong>. This invitation was sent to <strong>{{ invitation.email }}</strong>.</p>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+      
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <button type="submit" class="w-full py-3 px-6 rounded-xl font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-lg shadow-primary-600/25 transition-all hover:-translate-y-0.5">
+          Accept Invitation
+        </button>
+        <a href="{% url 'invoices:dashboard' %}" class="block w-full py-3 px-6 rounded-xl font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+          Maybe Later
+        </a>
+      </form>
+      
+      <p class="mt-6 text-xs text-slate-400">
+        This invitation expires on {{ invitation.expires_at|date:"F d, Y" }}.
+      </p>
+    </div>
+  </div>
+</main>
+
+{% include "partials/footer_public.html" %}
+{% endblock %}

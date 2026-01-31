@@ -71,6 +71,20 @@ urlpatterns = [
     path("mfa/disable/", views.mfa_disable, name="mfa_disable"),
     path("mfa/backup-codes/", views.mfa_backup_codes, name="mfa_backup_codes"),
     
+    # ------------------------------------------------------------------
+    # SECURITY SETTINGS
+    # ------------------------------------------------------------------
+    path("security-settings/", views.security_settings, name="security_settings"),
+    path("security-settings/sessions/<int:session_id>/revoke/", views.revoke_session, name="revoke_session"),
+    path("security-settings/sessions/revoke-all/", views.revoke_all_sessions, name="revoke_all_sessions"),
+    path("security-settings/devices/<int:device_id>/revoke/", views.revoke_device, name="revoke_device"),
+    path("security-settings/activity/", views.security_activity, name="security_activity"),
+    
+    # ------------------------------------------------------------------
+    # INVITATIONS
+    # ------------------------------------------------------------------
+    path("invitation/<str:token>/", views.accept_invitation, name="accept_invitation"),
+    
     path("api/engagement/record/", views.record_engagement, name="record_engagement"),
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),
 

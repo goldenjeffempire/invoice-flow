@@ -1786,3 +1786,165 @@ class EmailRetryQueue(models.Model):
     
     def __str__(self) -> str:
         return f"Retry {self.retry_count}/{self.max_retries} - {getattr(self.email_log, 'to_email', 'Unknown')}"
+
+
+# ============================================================================
+# SECURITY EVENT (AUDIT LOG)
+# ============================================================================
+
+class SecurityEvent(models.Model):
+    class Severity(models.TextChoices):
+        INFO = "info", "Info"
+        WARNING = "warning", "Warning"
+        CRITICAL = "critical", "Critical"
+    
+    EVENT_TYPE_CHOICES = [
+        ("login_success", "Successful Login"),
+        ("login_failed", "Failed Login"),
+        ("login_suspicious", "Suspicious Login"),
+        ("login_new_device", "Login from New Device"),
+        ("login_new_location", "Login from New Location"),
+        ("logout", "Logout"),
+        ("password_changed", "Password Changed"),
+        ("password_reset_requested", "Password Reset Requested"),
+        ("password_reset_completed", "Password Reset Completed"),
+        ("email_verified", "Email Verified"),
+        ("mfa_enabled", "MFA Enabled"),
+        ("mfa_disabled", "MFA Disabled"),
+        ("mfa_verified", "MFA Verified"),
+        ("mfa_failed", "MFA Verification Failed"),
+        ("session_revoked", "Session Revoked"),
+        ("all_sessions_revoked", "All Sessions Revoked"),
+        ("account_locked", "Account Locked"),
+        ("account_unlocked", "Account Unlocked"),
+        ("suspicious_activity", "Suspicious Activity Detected"),
+        ("device_trusted", "Device Marked as Trusted"),
+        ("device_revoked", "Device Trust Revoked"),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="security_events",
+    )
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPE_CHOICES, db_index=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    details = models.JSONField(default=dict, blank=True)
+    severity = models.CharField(max_length=10, choices=Severity.choices, default=Severity.INFO)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["event_type", "-created_at"]),
+            models.Index(fields=["ip_address", "-created_at"]),
+        ]
+    
+    def __str__(self) -> str:
+        username = getattr(self.user, 'username', 'Anonymous') if self.user else 'Anonymous'
+        return f"{self.get_event_type_display()} - {username} at {self.created_at}"
+    
+    def get_event_display(self) -> str:
+        return self.get_event_type_display()
+
+
+# ============================================================================
+# KNOWN DEVICE (DEVICE TRUST)
+# ============================================================================
+
+class KnownDevice(models.Model):
+    class DeviceType(models.TextChoices):
+        DESKTOP = "desktop", "Desktop"
+        MOBILE = "mobile", "Mobile"
+        TABLET = "tablet", "Tablet"
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="known_devices",
+    )
+    fingerprint = models.CharField(max_length=64, db_index=True)
+    device_name = models.CharField(max_length=100)
+    user_agent = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    browser = models.CharField(max_length=50, blank=True)
+    os = models.CharField(max_length=50, blank=True)
+    device_type = models.CharField(
+        max_length=10,
+        choices=DeviceType.choices,
+        default=DeviceType.DESKTOP,
+    )
+    is_trusted = models.BooleanField(default=True)
+    last_used = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ["-last_used"]
+        unique_together = [["user", "fingerprint"]]
+        indexes = [
+            models.Index(fields=["user", "is_trusted"]),
+            models.Index(fields=["fingerprint"]),
+        ]
+    
+    def __str__(self) -> str:
+        username = getattr(self.user, 'username', 'Unknown')
+        return f"{self.device_name} - {username}"
+
+
+# ============================================================================
+# WORKSPACE INVITATION
+# ============================================================================
+
+class WorkspaceInvitation(models.Model):
+    class Role(models.TextChoices):
+        ADMIN = "admin", "Admin"
+        MEMBER = "member", "Member"
+        VIEWER = "viewer", "Viewer"
+    
+    inviter = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_invitations",
+    )
+    email = models.EmailField(db_index=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.MEMBER)
+    
+    is_accepted = models.BooleanField(default=False)
+    is_revoked = models.BooleanField(default=False)
+    
+    accepted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="accepted_invitations",
+    )
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["email", "is_accepted", "is_revoked"]),
+            models.Index(fields=["inviter", "-created_at"]),
+        ]
+    
+    def __str__(self) -> str:
+        inviter_name = getattr(self.inviter, 'username', 'Unknown')
+        status = "accepted" if self.is_accepted else ("revoked" if self.is_revoked else "pending")
+        return f"Invitation to {self.email} by {inviter_name} ({status})"
+    
+    @property
+    def is_expired(self) -> bool:
+        return timezone.now() > self.expires_at
+    
+    @property
+    def is_valid(self) -> bool:
+        return not self.is_accepted and not self.is_revoked and not self.is_expired

@@ -502,6 +502,167 @@ def mfa_backup_codes(request):
     from invoiceflow.mfa import mfa_regenerate_recovery as mfa_regenerate_recovery_view
     return mfa_regenerate_recovery_view(request)
 
+
+# ============================================================================
+# SESSION AND SECURITY MANAGEMENT VIEWS
+# ============================================================================
+
+@login_required
+def security_settings(request):
+    """Security settings page with session/device management and activity log."""
+    from .models import UserSession, KnownDevice, SecurityEvent, MFAProfile
+    from .auth_services import SessionService
+    
+    current_session_key = request.session.session_key or ""
+    sessions = SessionService.get_user_sessions(request.user, current_session_key)
+    
+    devices = list(KnownDevice.objects.filter(
+        user=request.user,
+        is_trusted=True
+    ).order_by('-last_used')[:10])
+    
+    security_events = list(SecurityEvent.objects.filter(
+        user=request.user
+    ).order_by('-created_at')[:20])
+    
+    try:
+        mfa_profile = MFAProfile.objects.get(user=request.user)
+        mfa_enabled = mfa_profile.is_enabled
+        recovery_codes_count = len(mfa_profile.recovery_codes)
+    except MFAProfile.DoesNotExist:
+        mfa_enabled = False
+        recovery_codes_count = 0
+    
+    return render(request, "pages/auth/security_settings.html", {
+        "sessions": sessions,
+        "devices": devices,
+        "security_events": security_events,
+        "mfa_enabled": mfa_enabled,
+        "recovery_codes_count": recovery_codes_count,
+    })
+
+
+@login_required
+@require_POST
+def revoke_session(request, session_id):
+    """Revoke a specific session."""
+    from .auth_services import SessionService, log_security_event, AuthenticationService
+    
+    success, message = SessionService.revoke_session(request.user, session_id)
+    
+    if success:
+        log_security_event(
+            user=request.user,
+            event_type="session_revoked",
+            ip_address=AuthenticationService.get_client_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            details={"revoked_session_id": session_id},
+        )
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+    
+    return redirect("invoices:security_settings")
+
+
+@login_required
+@require_POST
+def revoke_all_sessions(request):
+    """Revoke all sessions except current."""
+    from .auth_services import SessionService, log_security_event, AuthenticationService
+    
+    current_session_key = request.session.session_key or ""
+    count = SessionService.revoke_all_sessions(request.user, current_session_key)
+    
+    log_security_event(
+        user=request.user,
+        event_type="all_sessions_revoked",
+        ip_address=AuthenticationService.get_client_ip(request),
+        user_agent=request.META.get("HTTP_USER_AGENT", ""),
+        details={"sessions_revoked": count},
+    )
+    
+    messages.success(request, f"Revoked {count} other session(s).")
+    return redirect("invoices:security_settings")
+
+
+@login_required
+@require_POST
+def revoke_device(request, device_id):
+    """Revoke trust from a device."""
+    from .models import KnownDevice
+    from .auth_services import log_security_event, AuthenticationService
+    
+    try:
+        device = KnownDevice.objects.get(id=device_id, user=request.user)
+        device.is_trusted = False
+        device.save(update_fields=["is_trusted"])
+        
+        log_security_event(
+            user=request.user,
+            event_type="device_revoked",
+            ip_address=AuthenticationService.get_client_ip(request),
+            user_agent=request.META.get("HTTP_USER_AGENT", ""),
+            details={"device_name": device.device_name, "device_id": device_id},
+        )
+        
+        messages.success(request, f"Device '{device.device_name}' is no longer trusted.")
+    except KnownDevice.DoesNotExist:
+        messages.error(request, "Device not found.")
+    
+    return redirect("invoices:security_settings")
+
+
+@login_required
+def security_activity(request):
+    """Full security activity log."""
+    from .models import SecurityEvent
+    
+    events = SecurityEvent.objects.filter(user=request.user).order_by('-created_at')[:100]
+    
+    return render(request, "pages/auth/security_activity.html", {
+        "events": events,
+    })
+
+
+# ============================================================================
+# WORKSPACE INVITATION VIEWS
+# ============================================================================
+
+def accept_invitation(request, token):
+    """Accept a workspace invitation."""
+    from .models import WorkspaceInvitation
+    from .security_service import WorkspaceInvitationService
+    from django.urls import reverse
+    
+    is_valid, invitation, error_message = WorkspaceInvitationService.validate_invitation(token)
+    
+    if not is_valid:
+        messages.error(request, error_message)
+        return render(request, "pages/auth/invitation_invalid.html", {
+            "error_message": error_message,
+        })
+    
+    if not request.user.is_authenticated:
+        request.session["pending_invitation_token"] = token
+        messages.info(request, "Please log in or create an account to accept this invitation.")
+        login_url = reverse('invoices:login')
+        invitation_url = reverse('invoices:accept_invitation', kwargs={'token': token})
+        return redirect(f"{login_url}?next={invitation_url}")
+    
+    if request.method == "POST":
+        success, message = WorkspaceInvitationService.accept_invitation(token, request.user)
+        if success:
+            messages.success(request, message)
+            return redirect("invoices:dashboard")
+        else:
+            messages.error(request, message)
+    
+    return render(request, "pages/auth/accept_invitation.html", {
+        "invitation": invitation,
+    })
+
+
 @require_POST
 def record_engagement(request):
     if not request.user.is_authenticated:

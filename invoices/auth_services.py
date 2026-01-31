@@ -13,8 +13,10 @@ from django.utils import timezone
 
 from .models import (
     EmailVerificationToken,
+    KnownDevice,
     LoginAttempt,
     MFAProfile,
+    SecurityEvent,
     UserProfile,
     UserSession,
 )
@@ -23,6 +25,28 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
 
 logger = logging.getLogger(__name__)
+
+
+def log_security_event(
+    user,
+    event_type: str,
+    ip_address: str = "",
+    user_agent: str = "",
+    details: dict | None = None,
+    severity: str = "info",
+) -> None:
+    """Helper to log security events."""
+    try:
+        SecurityEvent.objects.create(
+            user=user,
+            event_type=event_type,
+            ip_address=ip_address or None,
+            user_agent=user_agent[:500] if user_agent else "",
+            details=details or {},
+            severity=severity,
+        )
+    except Exception as e:
+        logger.error(f"Failed to log security event: {e}")
 
 
 class EmailNotVerifiedError(Exception):
@@ -145,18 +169,45 @@ class AuthenticationService:
         password: str,
     ) -> tuple[User | None, str]:
         """Authenticate user credentials. Returns (user, error_message)."""
+        client_ip = cls.get_client_ip(request)
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        
         is_locked, lock_message = cls.check_rate_limit(request, username)
         if is_locked:
+            log_security_event(
+                user=None,
+                event_type="account_locked",
+                ip_address=client_ip,
+                user_agent=user_agent,
+                details={"username": username, "reason": "rate_limit"},
+                severity="warning",
+            )
             return None, lock_message
 
         user = authenticate(request, username=username, password=password)
 
         if user is None:
             cls.record_login_attempt(request, username, success=False, failure_reason="Invalid credentials")
+            log_security_event(
+                user=None,
+                event_type="login_failed",
+                ip_address=client_ip,
+                user_agent=user_agent,
+                details={"username": username, "reason": "invalid_credentials"},
+                severity="warning",
+            )
             return None, "Invalid username or password."
 
         if not user.is_active:
             cls.record_login_attempt(request, username, success=False, failure_reason="Account inactive")
+            log_security_event(
+                user=user,
+                event_type="login_failed",
+                ip_address=client_ip,
+                user_agent=user_agent,
+                details={"reason": "account_inactive"},
+                severity="warning",
+            )
             return None, "This account is inactive. Please verify your email."
 
         cls.record_login_attempt(request, username, success=True)
@@ -165,6 +216,9 @@ class AuthenticationService:
     @classmethod
     def login_user(cls, request: HttpRequest, user: User) -> dict[str, Any]:
         """Complete login process with session rotation and tracking."""
+        client_ip = cls.get_client_ip(request)
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        
         # Ensure email is verified before login if required
         profile, _ = UserProfile.objects.get_or_create(user=user)
         if not profile.email_verified and not user.is_staff:
@@ -174,6 +228,9 @@ class AuthenticationService:
                 "email_verified": False
             }
 
+        # Check for suspicious login patterns
+        is_suspicious, suspicious_reasons = cls._check_suspicious_login(request, user)
+        
         # Invalidate old sessions for this user (session fixation prevention)
         try:
             UserSession.objects.filter(user=user).delete()
@@ -182,10 +239,7 @@ class AuthenticationService:
 
         # Create fresh session
         login(request, user)
-        request.session.cycle_key() # Explicit rotation
-
-        client_ip = cls.get_client_ip(request)
-        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        request.session.cycle_key()
 
         # Track new session
         try:
@@ -198,13 +252,23 @@ class AuthenticationService:
         except Exception as e:
             logger.warning(f"Failed to create user session: {e}")
 
+        # Register device if new
+        is_new_device = cls._register_device_if_new(request, user)
+        
+        # Log security event
+        event_type = "login_suspicious" if is_suspicious else ("login_new_device" if is_new_device else "login_success")
+        severity = "warning" if is_suspicious else "info"
+        log_security_event(
+            user=user,
+            event_type=event_type,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            details={"suspicious_reasons": suspicious_reasons} if suspicious_reasons else {},
+            severity=severity,
+        )
+
         # Check email verification status
-        email_verified = False
-        try:
-            profile = UserProfile.objects.get(user=user)
-            email_verified = profile.email_verified
-        except UserProfile.DoesNotExist:
-            email_verified = False
+        email_verified = profile.email_verified
 
         # Check MFA status
         mfa_required = False
@@ -225,19 +289,131 @@ class AuthenticationService:
             "mfa_required": mfa_required,
             "email_verified": email_verified,
             "user": user,
+            "is_suspicious": is_suspicious,
+            "suspicious_reasons": suspicious_reasons,
+            "is_new_device": is_new_device,
         }
+    
+    @classmethod
+    def _check_suspicious_login(cls, request: HttpRequest, user: User) -> tuple[bool, list[str]]:
+        """Check for suspicious login patterns."""
+        from datetime import timedelta
+        
+        reasons = []
+        client_ip = cls.get_client_ip(request)
+        
+        # Check if new IP in the last 30 days
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        known_ips = UserSession.objects.filter(
+            user=user,
+            created_at__gte=thirty_days_ago,
+        ).values_list("ip_address", flat=True).distinct()
+        
+        if client_ip not in list(known_ips) and known_ips.exists():
+            reasons.append("new_location")
+        
+        # Check for unusual login time (2-5 AM)
+        current_hour = timezone.localtime().hour
+        if 2 <= current_hour < 5:
+            reasons.append("unusual_time")
+        
+        # Check for recent failed attempts
+        one_hour_ago = timezone.now() - timedelta(hours=1)
+        failed_attempts = LoginAttempt.objects.filter(
+            username__iexact=user.username,
+            success=False,
+            created_at__gte=one_hour_ago,
+        ).count()
+        
+        if failed_attempts >= 3:
+            reasons.append("multiple_failed_attempts")
+        
+        # Suspicious if 2+ reasons
+        is_suspicious = len(reasons) >= 2
+        return is_suspicious, reasons
+    
+    @classmethod
+    def _register_device_if_new(cls, request: HttpRequest, user: User) -> bool:
+        """Register device and return True if it's new."""
+        import hashlib
+        
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        accept_lang = request.META.get("HTTP_ACCEPT_LANGUAGE", "")
+        accept_enc = request.META.get("HTTP_ACCEPT_ENCODING", "")
+        
+        fingerprint_string = f"{user_agent}|{accept_lang}|{accept_enc}"
+        fingerprint = hashlib.sha256(fingerprint_string.encode()).hexdigest()[:32]
+        
+        # Parse user agent for device info
+        ua_lower = user_agent.lower()
+        browser = "Unknown"
+        os_name = "Unknown"
+        device_type = "desktop"
+        
+        if "chrome" in ua_lower and "edg" not in ua_lower:
+            browser = "Chrome"
+        elif "firefox" in ua_lower:
+            browser = "Firefox"
+        elif "safari" in ua_lower and "chrome" not in ua_lower:
+            browser = "Safari"
+        elif "edg" in ua_lower:
+            browser = "Edge"
+        
+        if "windows" in ua_lower:
+            os_name = "Windows"
+        elif "mac os" in ua_lower:
+            os_name = "macOS"
+        elif "linux" in ua_lower:
+            os_name = "Linux"
+        elif "android" in ua_lower:
+            os_name = "Android"
+            device_type = "mobile"
+        elif "iphone" in ua_lower:
+            os_name = "iOS"
+            device_type = "mobile"
+        elif "ipad" in ua_lower:
+            os_name = "iOS"
+            device_type = "tablet"
+        
+        device, created = KnownDevice.objects.update_or_create(
+            user=user,
+            fingerprint=fingerprint,
+            defaults={
+                "device_name": f"{browser} on {os_name}",
+                "user_agent": user_agent[:500],
+                "ip_address": cls.get_client_ip(request),
+                "browser": browser,
+                "os": os_name,
+                "device_type": device_type,
+                "is_trusted": True,
+                "last_used": timezone.now(),
+            }
+        )
+        
+        return created
 
     @classmethod
     def logout_user(cls, request: HttpRequest) -> None:
         """Complete logout process with session cleanup."""
-        if request.user.is_authenticated and request.session.session_key:
+        user = request.user if request.user.is_authenticated else None
+        client_ip = cls.get_client_ip(request)
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        
+        if user and request.session.session_key:
             try:
                 UserSession.objects.filter(
-                    user=request.user,
+                    user=user,
                     session_key=request.session.session_key,
                 ).delete()
             except Exception as e:
                 logger.warning(f"Failed to delete user session: {e}")
+            
+            log_security_event(
+                user=user,
+                event_type="logout",
+                ip_address=client_ip,
+                user_agent=user_agent,
+            )
 
         request.session.pop("mfa_verified", None)
         logout(request)

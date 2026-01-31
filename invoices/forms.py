@@ -163,6 +163,23 @@ class SignUpForm(UserCreationForm):
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("This email is already registered.")
         return email
+    
+    def clean_password1(self) -> str:
+        password = self.cleaned_data.get("password1")
+        if password:
+            from .security_service import PasswordBreachService
+            
+            is_weak, issues = PasswordBreachService.is_password_weak(password)
+            if is_weak:
+                raise forms.ValidationError(issues[0])
+            
+            is_breached, breach_count = PasswordBreachService.check_password_breach(password)
+            if is_breached:
+                raise forms.ValidationError(
+                    f"This password has appeared in {breach_count:,} data breaches. Please choose a different password."
+                )
+        
+        return password
 
 
 class LoginForm(forms.Form):
@@ -257,6 +274,19 @@ class PasswordResetConfirmForm(forms.Form):
     def clean_new_password(self) -> str:
         password = self.cleaned_data.get("new_password") or ""
         validate_password(password)
+        
+        from .security_service import PasswordBreachService
+        
+        is_weak, issues = PasswordBreachService.is_password_weak(password)
+        if is_weak:
+            raise forms.ValidationError(issues[0])
+        
+        is_breached, breach_count = PasswordBreachService.check_password_breach(password)
+        if is_breached:
+            raise forms.ValidationError(
+                f"This password has appeared in {breach_count:,} data breaches. Please choose a different password."
+            )
+        
         return password
 
     def clean(self) -> dict[str, Any]:
