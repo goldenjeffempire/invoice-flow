@@ -15,15 +15,29 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     email_verified = models.BooleanField(default=False)
     two_factor_enabled = models.BooleanField(default=False)
+    
+    # Onboarding State
+    onboarding_completed = models.BooleanField(default=False)
+    onboarding_step = models.IntegerField(default=1) # 1: Welcome, 2: Business, 3: Branding, 4: Tax, 5: Payments, 6: Final
+    onboarding_data = models.JSONField(default=dict, blank=True)
+    
+    # Business Details
     company_name = models.CharField(max_length=255, blank=True)
     company_logo = models.FileField(upload_to="company_logos/", null=True, blank=True)
+    business_type = models.CharField(max_length=100, blank=True)
     business_email = models.EmailField(blank=True)
     business_phone = models.CharField(max_length=50, blank=True)
     business_address = models.TextField(blank=True)
+    
+    # Preferences
     default_currency = models.CharField(max_length=3, default="USD")
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     invoice_prefix = models.CharField(max_length=10, default="INV")
+    invoice_style = models.CharField(max_length=50, default="modern")
+    primary_color = models.CharField(max_length=7, default="#6366f1")
     timezone = models.CharField(max_length=63, default="UTC")
+    
+    # Security/System
     failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
     last_password_change = models.DateTimeField(null=True, blank=True)
