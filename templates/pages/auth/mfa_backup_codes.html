@@ -1,0 +1,120 @@
+{% extends "base/layout.html" %}
+{% load static %}
+
+{% block title %}Backup Recovery Codes | InvoiceFlow{% endblock %}
+
+{% block head %}
+<style>
+  .card-glass {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .code-item {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main id="content" class="min-h-screen bg-slate-50 pt-20 pb-12">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="card-glass rounded-2xl p-6 sm:p-8">
+      <div class="text-center mb-8">
+        <div class="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center mb-4">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900">Save Your Backup Codes</h1>
+        <p class="text-slate-600 mt-2">These codes can be used to access your account if you lose your authenticator device.</p>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+        <div class="flex gap-3">
+          <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+          </svg>
+          <div>
+            <p class="text-sm font-medium text-amber-800">Store these codes securely</p>
+            <p class="text-sm text-amber-700 mt-1">Each code can only be used once. Keep them in a safe place like a password manager.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-6">
+        <div class="grid grid-cols-2 gap-3">
+          {% for code in backup_codes %}
+            <div class="code-item bg-white border border-slate-200 rounded-lg px-4 py-3 text-center text-slate-800">
+              {{ code }}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 mb-6">
+        <button onclick="copyToClipboard()" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Copy codes
+        </button>
+        <button onclick="downloadCodes()" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Download codes
+        </button>
+      </div>
+
+      <div class="text-center">
+        <a href="{% url 'invoices:security_settings' %}" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 shadow-lg shadow-emerald-600/25 transition-all hover:-translate-y-0.5">
+          I've saved my codes
+        </a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const backupCodes = [{% for code in backup_codes %}"{{ code }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+function copyToClipboard() {
+  const text = backupCodes.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Backup codes copied to clipboard!');
+  }).catch(() => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    alert('Backup codes copied to clipboard!');
+  });
+}
+
+function downloadCodes() {
+  const text = 'InvoiceFlow Backup Recovery Codes\n' +
+               '================================\n\n' +
+               'Generated: ' + new Date().toISOString() + '\n\n' +
+               'Each code can only be used once.\n' +
+               'Store these codes in a safe place.\n\n' +
+               backupCodes.join('\n');
+  
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'invoiceflow-backup-codes.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}

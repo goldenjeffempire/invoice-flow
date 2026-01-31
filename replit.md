@@ -17,7 +17,21 @@ The platform is built on **Django 5.2.9** following a monolithic architecture wi
 **PostgreSQL** is the primary database, utilizing Django's ORM.
 
 ### Authentication & Security
-Django's built-in authentication is extended with **Multi-Factor Authentication (MFA)** using TOTP, email verification, and **OAuth integration** for Google and GitHub. Custom password validators include breach detection, and sensitive data uses field-level encryption with Fernet (AES-256). Security features encompass suspicious login detection, device and session management, and a comprehensive security event logging system. Workspace invitations with role assignment are also supported.
+**Production-grade authentication system rebuilt on January 31, 2026** with the following features:
+- **Sign Up**: User registration with strong password validation (min 8 chars, uppercase, lowercase, numbers, special characters)
+- **Login**: Username or email authentication with rate limiting and account lockout protection
+- **Email Verification**: Token-based verification with 24-hour expiry and resend functionality
+- **Password Reset**: Secure token-based reset with 1-hour expiry
+- **Multi-Factor Authentication (MFA)**: TOTP-based 2FA with QR code setup and 10 backup recovery codes
+- **Password Breach Detection**: Integration with Have I Been Pwned API (k-anonymity model)
+- **Suspicious Login Detection**: Detects new devices, new locations, unusual times, and failed attempt patterns
+- **Device/Session Management**: Track and revoke active sessions, trusted device management
+- **Workspace Invitations**: Token-based invitations with role assignment and email-based acceptance
+- **Security Event Logging**: Comprehensive audit log for all authentication events
+- **Rate Limiting**: IP-based rate limiting on login, signup, and password reset endpoints
+- **CSRF Protection**: Django's built-in CSRF protection on all forms
+
+Service classes: `AuthService`, `MFAService`, `SessionService`, `SecurityService`, `EmailService`, `InvitationService`
 
 ### Payment Processing
 **Paystack** is the primary payment gateway, featuring a payment reconciliation service, idempotency keys, webhook handling with signature verification, and atomic transactions.

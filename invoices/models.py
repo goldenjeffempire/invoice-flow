@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+import hashlib
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, List, Optional
@@ -9,9 +10,6 @@ from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone
 
-# ============================================================================
-# AUTH & ACCOUNT MODELS
-# ============================================================================
 
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
@@ -26,6 +24,10 @@ class UserProfile(models.Model):
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     invoice_prefix = models.CharField(max_length=10, default="INV")
     timezone = models.CharField(max_length=63, default="UTC")
+    failed_login_attempts = models.IntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+    last_password_change = models.DateTimeField(null=True, blank=True)
+    password_reset_required = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -39,40 +41,110 @@ class UserProfile(models.Model):
     def __str__(self):
         return f"{self.user.username}'s Profile"
 
+    def is_locked(self):
+        if self.locked_until and self.locked_until > timezone.now():
+            return True
+        return False
+
+    def increment_failed_attempts(self):
+        self.failed_login_attempts += 1
+        if self.failed_login_attempts >= getattr(settings, 'ACCOUNT_LOCKOUT_THRESHOLD', 5):
+            lockout_duration = getattr(settings, 'ACCOUNT_LOCKOUT_DURATION', 900)
+            self.locked_until = timezone.now() + timedelta(seconds=lockout_duration)
+        self.save(update_fields=['failed_login_attempts', 'locked_until'])
+
+    def reset_failed_attempts(self):
+        self.failed_login_attempts = 0
+        self.locked_until = None
+        self.save(update_fields=['failed_login_attempts', 'locked_until'])
+
+
 class MFAProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mfa_profile")
-    secret = models.CharField(max_length=32, blank=True)
+    secret = models.CharField(max_length=64, blank=True)
     is_enabled = models.BooleanField(default=False)
     recovery_codes = models.JSONField(default=list)
+    recovery_codes_viewed = models.BooleanField(default=False)
+    last_used = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def get_remaining_codes_count(self):
+        return len(self.recovery_codes) if self.recovery_codes else 0
+
+
 class SecurityEvent(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
-    event_type = models.CharField(max_length=100)
-    ip_address = models.GenericIPAddressField(null=True)
+    class Severity(models.TextChoices):
+        INFO = "info", "Info"
+        WARNING = "warning", "Warning"
+        CRITICAL = "critical", "Critical"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name="security_events")
+    event_type = models.CharField(max_length=100, db_index=True)
+    ip_address = models.GenericIPAddressField(null=True, db_index=True)
     user_agent = models.TextField(blank=True)
     details = models.JSONField(default=dict)
-    severity = models.CharField(max_length=20, default="info")
-    created_at = models.DateTimeField(auto_now_add=True)
+    severity = models.CharField(max_length=20, choices=Severity.choices, default=Severity.INFO)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'event_type', '-created_at']),
+        ]
+
+    def get_event_display(self):
+        event_displays = {
+            'login_success': 'Successful login',
+            'login_failed': 'Failed login attempt',
+            'login_suspicious': 'Suspicious login detected',
+            'logout': 'Logged out',
+            'password_changed': 'Password changed',
+            'password_reset_requested': 'Password reset requested',
+            'password_reset_completed': 'Password reset completed',
+            'email_verified': 'Email verified',
+            'email_verification_sent': 'Verification email sent',
+            'mfa_enabled': '2FA enabled',
+            'mfa_disabled': '2FA disabled',
+            'mfa_verified': '2FA verified',
+            'mfa_failed': '2FA verification failed',
+            'session_revoked': 'Session revoked',
+            'all_sessions_revoked': 'All sessions revoked',
+            'account_locked': 'Account locked',
+            'account_unlocked': 'Account unlocked',
+            'signup': 'Account created',
+            'invitation_accepted': 'Workspace invitation accepted',
+        }
+        return event_displays.get(self.event_type, self.event_type.replace('_', ' ').title())
+
 
 class UserSession(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="auth_sessions")
-    session_key = models.CharField(max_length=40, unique=True)
+    session_key = models.CharField(max_length=40, unique=True, db_index=True)
     ip_address = models.GenericIPAddressField(null=True)
     user_agent = models.TextField(blank=True)
+    device_fingerprint = models.CharField(max_length=64, blank=True, db_index=True)
+    browser = models.CharField(max_length=50, blank=True)
+    os = models.CharField(max_length=50, blank=True)
+    device_type = models.CharField(max_length=20, default='desktop')
+    location = models.CharField(max_length=100, blank=True)
+    is_current = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     last_activity = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        ordering = ['-last_activity']
+
+
 class EmailToken(models.Model):
     class TokenType(models.TextChoices):
-        VERIFY = "verify", "Verification"
+        VERIFY = "verify", "Email Verification"
         RESET = "reset", "Password Reset"
         INVITE = "invite", "Workspace Invitation"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="auth_tokens")
-    token = models.CharField(max_length=64, unique=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
     token_type = models.CharField(max_length=20, choices=TokenType.choices)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
@@ -80,16 +152,61 @@ class EmailToken(models.Model):
 
     @classmethod
     def create_token(cls, user, token_type, hours=24):
+        cls.objects.filter(user=user, token_type=token_type, used_at__isnull=True).update(used_at=timezone.now())
         expires_at = timezone.now() + timedelta(hours=hours)
-        return cls.objects.create(user=user, token=secrets.token_urlsafe(32), token_type=token_type, expires_at=expires_at)
+        return cls.objects.create(
+            user=user,
+            token=secrets.token_urlsafe(32),
+            token_type=token_type,
+            expires_at=expires_at
+        )
 
     @property
     def is_valid(self):
         return self.used_at is None and self.expires_at > timezone.now()
 
-# ============================================================================
-# APP MODELS
-# ============================================================================
+    @property
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+    def mark_used(self):
+        self.used_at = timezone.now()
+        self.save(update_fields=['used_at'])
+
+
+class LoginAttempt(models.Model):
+    username = models.CharField(max_length=150, db_index=True)
+    ip_address = models.GenericIPAddressField(db_index=True)
+    user_agent = models.TextField(blank=True)
+    success = models.BooleanField(default=False)
+    failure_reason = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['ip_address', '-created_at']),
+            models.Index(fields=['username', '-created_at']),
+        ]
+
+
+class KnownDevice(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="known_devices")
+    fingerprint = models.CharField(max_length=64, db_index=True)
+    device_name = models.CharField(max_length=100, blank=True)
+    user_agent = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True)
+    browser = models.CharField(max_length=50, blank=True)
+    os = models.CharField(max_length=50, blank=True)
+    device_type = models.CharField(max_length=20, default='desktop')
+    is_trusted = models.BooleanField(default=True)
+    last_used = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'fingerprint']
+        ordering = ['-last_used']
+
 
 class InvoiceTemplate(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -98,6 +215,7 @@ class InvoiceTemplate(models.Model):
     currency = models.CharField(max_length=3, default="USD")
     is_default = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
 
 class Invoice(models.Model):
     class Status(models.TextChoices):
@@ -122,16 +240,19 @@ class Invoice(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
 class LineItem(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="line_items")
     description = models.CharField(max_length=500)
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
 
+
 class InvoiceHistory(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="history")
     action = models.CharField(max_length=100)
     created_at = models.DateTimeField(auto_now_add=True)
+
 
 class Payment(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
@@ -141,13 +262,41 @@ class Payment(models.Model):
     status = models.CharField(max_length=20, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
 
+
 class WorkspaceInvitation(models.Model):
-    email = models.EmailField()
-    token = models.CharField(max_length=64, unique=True)
-    inviter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    email = models.EmailField(db_index=True)
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    inviter = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_invitations")
+    role = models.CharField(max_length=50, default="member")
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     accepted_at = models.DateTimeField(null=True, blank=True)
+    accepted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="accepted_invitations")
+    is_revoked = models.BooleanField(default=False)
+
+    @classmethod
+    def create_invitation(cls, inviter, email, role="member", expires_days=7):
+        cls.objects.filter(email=email.lower(), accepted_at__isnull=True, is_revoked=False).update(is_revoked=True)
+        return cls.objects.create(
+            inviter=inviter,
+            email=email.lower(),
+            token=secrets.token_urlsafe(32),
+            role=role,
+            expires_at=timezone.now() + timedelta(days=expires_days)
+        )
+
+    @property
+    def is_valid(self):
+        return not self.is_revoked and self.accepted_at is None and self.expires_at > timezone.now()
+
+    @property
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+    @property
+    def is_accepted(self):
+        return self.accepted_at is not None
+
 
 class RecurringInvoice(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -156,9 +305,11 @@ class RecurringInvoice(models.Model):
     status = models.CharField(max_length=20, default="active")
     created_at = models.DateTimeField(auto_now_add=True)
 
+
 class Waitlist(models.Model):
     email = models.EmailField(unique=True)
     subscribed_at = models.DateTimeField(auto_now_add=True)
+
 
 class ContactSubmission(models.Model):
     name = models.CharField(max_length=200)
@@ -167,16 +318,19 @@ class ContactSubmission(models.Model):
     message = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
 
+
 class ReminderRule(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     days_delta = models.IntegerField()
     trigger_type = models.CharField(max_length=20)
+
 
 class SocialAccount(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     provider = models.CharField(max_length=50)
     uid = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+
 
 class PaymentSettings(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
