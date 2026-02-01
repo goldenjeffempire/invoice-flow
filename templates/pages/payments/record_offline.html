@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-4xl mx-auto p-6">
+    <div class="mb-6 flex items-center justify-between">
+        <h1 class="text-2xl font-bold">Record Offline Payment</h1>
+        <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="text-gray-600 hover:text-gray-900">&larr; Back to Invoice</a>
+    </div>
+
+    <div class="bg-white p-8 rounded-lg shadow">
+        <div class="mb-6 p-4 bg-gray-50 rounded border">
+            <h3 class="font-semibold mb-2">Invoice #{{ invoice.invoice_number }}</h3>
+            <p class="text-sm text-gray-600">Client: {{ invoice.client.name }}</p>
+            <p class="text-sm text-gray-600">Amount Due: {{ invoice.currency }} {{ invoice.amount_due }}</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Amount Paid ({{ invoice.currency }})</label>
+                    <input type="number" step="0.01" name="amount" value="{{ invoice.amount_due }}" max="{{ invoice.amount_due }}" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                    <select name="method" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" required>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cash">Cash</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <textarea name="notes" rows="3" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Optional notes for this payment..."></textarea>
+                </div>
+            </div>
+
+            <div class="mt-8 flex justify-end">
+                <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 font-medium transition">
+                    Record Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
