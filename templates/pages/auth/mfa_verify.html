@@ -1,115 +1,76 @@
 {% extends "base/layout.html" %}
 {% load static %}
 
-{% block title %}Two-Factor Verification | InvoiceFlow{% endblock %}
-
-{% block head %}
-<link rel="stylesheet" href="{% static 'css/auth-enhanced.css' %}">
-{% endblock %}
+{% block title %}Two-Factor Authentication - InvoiceFlow{% endblock %}
 
 {% block content %}
-<main id="main-content" class="min-h-screen pt-20">
-<section class="min-h-[calc(100vh-80px)] auth-gradient py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-  <div class="w-full max-w-md">
-    <div class="card-glass rounded-3xl p-8 sm:p-10 animate-scale-in">
-      <div class="text-center mb-8">
-        <div class="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
-          <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-          </svg>
-        </div>
-        <h1 class="text-2xl font-extrabold text-slate-900">Two-Factor Authentication</h1>
-        <p class="text-slate-500 mt-2">Enter the 6-digit code from your authenticator app</p>
-      </div>
-
-      {% if messages %}
-        <div class="space-y-3 mb-6" role="alert" aria-live="polite">
-          {% for message in messages %}
-            <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %}">
-              {{ message }}
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full">
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div class="text-center mb-8">
+                <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900">Two-Factor Authentication</h1>
+                <p class="mt-2 text-gray-600">Enter the 6-digit code from your authenticator app</p>
             </div>
-          {% endfor %}
+
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                    <p class="text-sm font-medium">{{ message }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-5" novalidate>
+                {% csrf_token %}
+                
+                <div>
+                    <label for="id_code" class="block text-sm font-medium text-gray-700 mb-1">Verification Code</label>
+                    <input type="text" name="code" id="id_code" inputmode="numeric" pattern="[0-9]*" maxlength="8"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-center text-2xl tracking-widest font-mono"
+                           placeholder="000000" required autofocus autocomplete="one-time-code">
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-200 transition-all duration-200">
+                    Verify
+                </button>
+            </form>
+
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                <p class="text-sm text-gray-600 text-center">
+                    Lost access to your authenticator?<br>
+                    <a href="#" class="text-indigo-600 hover:text-indigo-700 font-medium" onclick="document.getElementById('recovery-form').classList.toggle('hidden'); return false;">Use a recovery code</a>
+                </p>
+            </div>
+
+            <form method="post" id="recovery-form" class="hidden mt-4 space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label for="id_recovery_code" class="block text-sm font-medium text-gray-700 mb-1">Recovery Code</label>
+                    <input type="text" name="code" id="id_recovery_code"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors uppercase tracking-wider font-mono"
+                           placeholder="XXXX-XXXX">
+                </div>
+                <button type="submit" class="w-full bg-gray-800 text-white py-3 px-4 rounded-lg font-semibold hover:bg-gray-900 transition-all duration-200">
+                    Use Recovery Code
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <a href="{% url 'invoices:login' %}" class="inline-flex items-center text-gray-600 hover:text-gray-700">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Cancel and go back
+                </a>
+            </div>
         </div>
-      {% endif %}
-
-      <form method="post" class="space-y-6" data-validate novalidate>
-        {% csrf_token %}
-        
-        <div class="form-group">
-          <label for="id_code" class="sr-only">Verification Code</label>
-          <input type="text" name="code" id="id_code" required
-            class="code-input input-modern text-2xl py-4"
-            placeholder="000000"
-            autocomplete="one-time-code"
-            inputmode="numeric"
-            maxlength="10"
-            autofocus
-            aria-describedby="code-hint">
-          <p id="code-hint" class="text-xs text-slate-400 mt-3 text-center">Enter your 6-digit code or a backup recovery code</p>
-          {% if form.code.errors %}
-            <p class="text-sm text-red-600 mt-2 text-center" role="alert">{{ form.code.errors|striptags }}</p>
-          {% endif %}
-        </div>
-
-        <button type="submit" class="btn-success w-full">
-          <span class="flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-            </svg>
-            <span>Verify</span>
-          </span>
-        </button>
-      </form>
-
-      <div class="mt-8 pt-6 border-t border-slate-100">
-        <div class="text-center">
-          <div class="flex items-center justify-center gap-2 text-sm text-slate-500 mb-3">
-            <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-            </svg>
-            <span>Lost access to your authenticator?</span>
-          </div>
-          <p class="text-xs text-slate-400 mb-2">You can enter a backup recovery code above</p>
-          {% if remaining_codes %}
-            <p class="inline-flex items-center gap-1.5 text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full">
-              <svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-              </svg>
-              {{ remaining_codes }} backup code{{ remaining_codes|pluralize }} remaining
-            </p>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="mt-6 text-center">
-        <a href="{% url 'invoices:login' %}" class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-800 transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
-          </svg>
-          Back to login
-        </a>
-      </div>
     </div>
-  </div>
-</section>
-</main>
-{% endblock %}
-
-{% block scripts %}
-{{ block.super }}
-<script src="{% static 'js/auth-interactions.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  const codeInput = document.getElementById('id_code');
-  if (codeInput) {
-    codeInput.addEventListener('input', function(e) {
-      let value = e.target.value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
-      if (value.length > 8 && !value.match(/[A-Z]/)) {
-        value = value.slice(0, 6);
-      }
-      e.target.value = value;
-    });
-  }
-});
-</script>
+</div>
 {% endblock %}

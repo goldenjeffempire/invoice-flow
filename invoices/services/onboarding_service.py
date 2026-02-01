@@ -1,3 +1,7 @@
+"""
+Production-Grade Onboarding Service
+Stepper-based onboarding with smart defaults, progress tracking, and workspace setup.
+"""
 import logging
 from typing import Dict, Any, Tuple, Optional, List
 from decimal import Decimal
@@ -5,19 +9,19 @@ from django.db import transaction
 from django.utils import timezone
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from ..models import UserProfile
+from ..models import UserProfile, Workspace, WorkspaceMember
 
 logger = logging.getLogger(__name__)
 
 ONBOARDING_STEPS = [
-    {"id": 1, "name": "Welcome", "slug": "welcome", "icon": "hand-wave", "duration": 1},
-    {"id": 2, "name": "Business Profile", "slug": "business", "icon": "building", "duration": 3},
-    {"id": 3, "name": "Branding", "slug": "branding", "icon": "palette", "duration": 2},
-    {"id": 4, "name": "Tax & Compliance", "slug": "tax", "icon": "receipt", "duration": 2},
-    {"id": 5, "name": "Payments", "slug": "payments", "icon": "credit-card", "duration": 3},
-    {"id": 6, "name": "Data Import", "slug": "import", "icon": "upload", "duration": 2},
-    {"id": 7, "name": "Templates", "slug": "templates", "icon": "file-text", "duration": 1},
-    {"id": 8, "name": "Team", "slug": "team", "icon": "users", "duration": 2},
+    {"id": 1, "name": "Welcome", "slug": "welcome", "icon": "hand-wave", "duration": 1, "required": True},
+    {"id": 2, "name": "Business Profile", "slug": "business", "icon": "building", "duration": 3, "required": True},
+    {"id": 3, "name": "Branding", "slug": "branding", "icon": "palette", "duration": 2, "required": False},
+    {"id": 4, "name": "Tax & Compliance", "slug": "tax", "icon": "receipt", "duration": 2, "required": False},
+    {"id": 5, "name": "Payments", "slug": "payments", "icon": "credit-card", "duration": 3, "required": False},
+    {"id": 6, "name": "Data Import", "slug": "import", "icon": "upload", "duration": 2, "required": False},
+    {"id": 7, "name": "Templates", "slug": "templates", "icon": "file-text", "duration": 1, "required": False},
+    {"id": 8, "name": "Team", "slug": "team", "icon": "users", "duration": 2, "required": False},
 ]
 
 REGION_DEFAULTS = {
@@ -29,6 +33,7 @@ REGION_DEFAULTS = {
         "vat_rate": Decimal("7.5"),
         "wht_rate": Decimal("5.0"),
         "tax_id_type": "TIN",
+        "bank_format": "NG",
     },
     "us": {
         "currency": "USD",
@@ -38,6 +43,7 @@ REGION_DEFAULTS = {
         "vat_rate": Decimal("0"),
         "wht_rate": Decimal("0"),
         "tax_id_type": "EIN",
+        "bank_format": "US",
     },
     "gb": {
         "currency": "GBP",
@@ -47,15 +53,17 @@ REGION_DEFAULTS = {
         "vat_rate": Decimal("20.0"),
         "wht_rate": Decimal("0"),
         "tax_id_type": "VAT",
+        "bank_format": "UK",
     },
     "eu": {
         "currency": "EUR",
-        "timezone": "Europe/Berlin",
+        "timezone": "Europe/Paris",
         "locale": "en-EU",
         "date_format": "DD/MM/YYYY",
-        "vat_rate": Decimal("19.0"),
+        "vat_rate": Decimal("20.0"),
         "wht_rate": Decimal("0"),
         "tax_id_type": "VAT",
+        "bank_format": "EU",
     },
     "za": {
         "currency": "ZAR",
@@ -65,6 +73,7 @@ REGION_DEFAULTS = {
         "vat_rate": Decimal("15.0"),
         "wht_rate": Decimal("0"),
         "tax_id_type": "VAT",
+        "bank_format": "ZA",
     },
     "gh": {
         "currency": "GHS",
@@ -72,8 +81,9 @@ REGION_DEFAULTS = {
         "locale": "en-GH",
         "date_format": "DD/MM/YYYY",
         "vat_rate": Decimal("15.0"),
-        "wht_rate": Decimal("5.0"),
+        "wht_rate": Decimal("0"),
         "tax_id_type": "TIN",
+        "bank_format": "GH",
     },
     "ke": {
         "currency": "KES",
@@ -81,507 +91,463 @@ REGION_DEFAULTS = {
         "locale": "en-KE",
         "date_format": "DD/MM/YYYY",
         "vat_rate": Decimal("16.0"),
-        "wht_rate": Decimal("5.0"),
+        "wht_rate": Decimal("0"),
         "tax_id_type": "PIN",
+        "bank_format": "KE",
     },
 }
 
-BUSINESS_TYPE_SUGGESTIONS = {
+BUSINESS_TYPE_TEMPLATES = {
     "freelancer": {
         "invoice_prefix": "INV",
-        "invoice_style": "minimal",
+        "invoice_style": "modern",
+        "payment_terms": 14,
+        "suggested_colors": {"primary": "#6366f1", "accent": "#10b981"},
     },
     "agency": {
         "invoice_prefix": "AGY",
-        "invoice_style": "modern",
+        "invoice_style": "professional",
+        "payment_terms": 30,
+        "suggested_colors": {"primary": "#3b82f6", "accent": "#f59e0b"},
     },
     "consulting": {
         "invoice_prefix": "CON",
-        "invoice_style": "professional",
+        "invoice_style": "classic",
+        "payment_terms": 30,
+        "suggested_colors": {"primary": "#1f2937", "accent": "#6366f1"},
     },
     "ecommerce": {
         "invoice_prefix": "ORD",
         "invoice_style": "modern",
+        "payment_terms": 0,
+        "suggested_colors": {"primary": "#059669", "accent": "#8b5cf6"},
     },
     "saas": {
         "invoice_prefix": "SUB",
         "invoice_style": "minimal",
+        "payment_terms": 0,
+        "suggested_colors": {"primary": "#7c3aed", "accent": "#06b6d4"},
     },
     "services": {
         "invoice_prefix": "SVC",
-        "invoice_style": "classic",
+        "invoice_style": "professional",
+        "payment_terms": 15,
+        "suggested_colors": {"primary": "#2563eb", "accent": "#10b981"},
     },
     "construction": {
         "invoice_prefix": "PRJ",
-        "invoice_style": "bold",
+        "invoice_style": "classic",
+        "payment_terms": 30,
+        "suggested_colors": {"primary": "#b45309", "accent": "#1f2937"},
     },
     "healthcare": {
         "invoice_prefix": "MED",
         "invoice_style": "professional",
+        "payment_terms": 30,
+        "suggested_colors": {"primary": "#0891b2", "accent": "#22c55e"},
     },
 }
 
 
 class OnboardingService:
     @classmethod
-    def get_steps(cls) -> List[Dict[str, Any]]:
-        return ONBOARDING_STEPS.copy()
-    
+    def get_onboarding_state(cls, user) -> Dict[str, Any]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            current_step = profile.onboarding_step
+            
+            steps_with_status = []
+            for step in ONBOARDING_STEPS:
+                step_copy = step.copy()
+                if step["id"] < current_step:
+                    step_copy["status"] = "completed"
+                elif step["id"] == current_step:
+                    step_copy["status"] = "current"
+                else:
+                    step_copy["status"] = "pending"
+                steps_with_status.append(step_copy)
+            
+            progress_percentage = ((current_step - 1) / len(ONBOARDING_STEPS)) * 100
+            
+            return {
+                "current_step": current_step,
+                "total_steps": len(ONBOARDING_STEPS),
+                "steps": steps_with_status,
+                "progress_percentage": round(progress_percentage),
+                "is_completed": profile.onboarding_completed,
+                "started_at": profile.onboarding_started_at,
+                "data": profile.onboarding_data or {},
+            }
+        except UserProfile.DoesNotExist:
+            return {
+                "current_step": 1,
+                "total_steps": len(ONBOARDING_STEPS),
+                "steps": ONBOARDING_STEPS,
+                "progress_percentage": 0,
+                "is_completed": False,
+                "started_at": None,
+                "data": {},
+            }
+
     @classmethod
-    def get_total_steps(cls) -> int:
-        return len(ONBOARDING_STEPS)
-    
-    @classmethod
-    def get_step_by_slug(cls, slug: str) -> Optional[Dict[str, Any]]:
+    def get_step_by_slug(cls, slug: str) -> Optional[Dict]:
         for step in ONBOARDING_STEPS:
             if step["slug"] == slug:
                 return step
         return None
-    
+
     @classmethod
-    def get_onboarding_status(cls, user) -> Dict[str, Any]:
-        profile = user.profile
-        total_steps = cls.get_total_steps()
-        current_step = min(profile.onboarding_step, total_steps)
+    def get_step_url(cls, step_number: int) -> str:
+        if step_number <= 0:
+            step_number = 1
+        if step_number > len(ONBOARDING_STEPS):
+            return "invoices:onboarding_complete"
         
-        steps = []
-        for step in ONBOARDING_STEPS:
-            steps.append({
-                **step,
-                "completed": step["id"] < current_step,
-                "current": step["id"] == current_step,
-                "locked": step["id"] > current_step and not profile.onboarding_completed,
-            })
-        
-        completed_steps = current_step - 1 if not profile.onboarding_completed else total_steps
-        progress_percent = int((completed_steps / total_steps) * 100)
-        
-        time_to_first_invoice = None
-        if profile.first_invoice_created_at and profile.onboarding_started_at:
-            delta = profile.first_invoice_created_at - profile.onboarding_started_at
-            time_to_first_invoice = {
-                "days": delta.days,
-                "hours": delta.seconds // 3600,
-                "minutes": (delta.seconds % 3600) // 60,
-                "total_minutes": int(delta.total_seconds() / 60),
-            }
-        
-        estimated_time_remaining = sum(
-            step["duration"] for step in ONBOARDING_STEPS 
-            if step["id"] >= current_step
-        )
-        
-        return {
-            "current_step": current_step,
-            "current_step_slug": ONBOARDING_STEPS[current_step - 1]["slug"] if current_step <= total_steps else "complete",
-            "total_steps": total_steps,
-            "is_completed": profile.onboarding_completed,
-            "steps": steps,
-            "progress_percent": progress_percent,
-            "completed_steps": completed_steps,
-            "started_at": profile.onboarding_started_at,
-            "completed_at": profile.onboarding_completed_at,
-            "time_to_first_invoice": time_to_first_invoice,
-            "estimated_time_remaining": estimated_time_remaining,
-        }
-    
-    @classmethod
-    def get_checklist(cls, user) -> List[Dict[str, Any]]:
-        profile = user.profile
-        
-        checklist = [
-            {
-                "id": "business_profile",
-                "title": "Complete business profile",
-                "completed": bool(profile.company_name and profile.business_type),
-                "step": 2,
-            },
-            {
-                "id": "branding",
-                "title": "Set up branding",
-                "completed": profile.onboarding_step > 3 or profile.onboarding_completed,
-                "step": 3,
-            },
-            {
-                "id": "tax_setup",
-                "title": "Configure tax settings",
-                "completed": profile.onboarding_step > 4 or profile.onboarding_completed,
-                "step": 4,
-            },
-            {
-                "id": "payment_info",
-                "title": "Add payment information",
-                "completed": bool(profile.bank_name or profile.accept_card_payments),
-                "step": 5,
-            },
-            {
-                "id": "first_invoice",
-                "title": "Create your first invoice",
-                "completed": profile.first_invoice_created_at is not None,
-                "step": None,
-            },
-        ]
-        
-        return checklist
-    
-    @classmethod
-    def get_region_defaults(cls, region: str) -> Dict[str, Any]:
-        return REGION_DEFAULTS.get(region, REGION_DEFAULTS.get("ng", {}))
-    
-    @classmethod
-    def get_business_type_suggestions(cls, business_type: str) -> Dict[str, Any]:
-        return BUSINESS_TYPE_SUGGESTIONS.get(business_type, {})
-    
-    @classmethod
-    def apply_contextual_defaults(cls, profile: UserProfile, region: str = None, business_type: str = None) -> None:
-        if region:
-            defaults = cls.get_region_defaults(region)
-            profile.default_currency = defaults.get("currency", profile.default_currency)
-            profile.timezone = defaults.get("timezone", profile.timezone)
-            profile.locale = defaults.get("locale", profile.locale)
-            profile.date_format = defaults.get("date_format", profile.date_format)
-            profile.vat_rate = defaults.get("vat_rate", profile.vat_rate)
-            profile.wht_rate = defaults.get("wht_rate", profile.wht_rate)
-            profile.tax_id_type = defaults.get("tax_id_type", profile.tax_id_type)
-        
-        if business_type:
-            suggestions = cls.get_business_type_suggestions(business_type)
-            if not profile.invoice_prefix or profile.invoice_prefix == "INV":
-                profile.invoice_prefix = suggestions.get("invoice_prefix", profile.invoice_prefix)
-            if profile.invoice_style == "modern":
-                profile.invoice_style = suggestions.get("invoice_style", profile.invoice_style)
-    
-    @classmethod
-    def start_onboarding(cls, user) -> None:
-        profile = user.profile
-        if not profile.onboarding_started_at:
-            profile.onboarding_started_at = timezone.now()
-            profile.save(update_fields=["onboarding_started_at"])
-    
+        step = ONBOARDING_STEPS[step_number - 1]
+        return f"invoices:onboarding_{step['slug']}"
+
     @classmethod
     @transaction.atomic
-    def save_welcome_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str, Dict]:
-        profile = user.profile
-        errors = {}
-        
-        region = data.get("region", "").strip()
-        if region and region in dict(UserProfile.REGION_CHOICES):
-            profile.region = region
-            cls.apply_contextual_defaults(profile, region=region)
-        
-        if profile.onboarding_step == 1:
-            profile.onboarding_step = 2
-        
-        if not profile.onboarding_started_at:
-            profile.onboarding_started_at = timezone.now()
-        
-        profile.save()
-        return True, "Welcome step completed", errors
-    
-    @classmethod
-    @transaction.atomic
-    def save_business_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str, Dict]:
-        profile = user.profile
-        errors = {}
-        
-        company_name = data.get("company_name", "").strip()
-        if not company_name:
-            errors["company_name"] = "Company name is required"
-        elif len(company_name) > 255:
-            errors["company_name"] = "Company name must be 255 characters or less"
-        
-        business_type = data.get("business_type", "").strip()
-        if not business_type:
-            errors["business_type"] = "Business type is required"
-        
-        business_email = data.get("business_email", "").strip()
-        if business_email:
-            try:
-                validate_email(business_email)
-            except ValidationError:
-                errors["business_email"] = "Enter a valid email address"
-        
-        if errors:
-            return False, "Please fix the errors below", errors
-        
-        profile.company_name = company_name
-        profile.business_type = business_type
-        profile.business_email = business_email or user.email
-        profile.business_phone = data.get("business_phone", "").strip()
-        profile.business_address = data.get("business_address", "").strip()
-        profile.business_city = data.get("business_city", "").strip()
-        profile.business_state = data.get("business_state", "").strip()
-        profile.business_country = data.get("business_country", "").strip()
-        profile.business_postal_code = data.get("business_postal_code", "").strip()
-        profile.business_website = data.get("business_website", "").strip()
-        
-        region = data.get("region", profile.region).strip()
-        if region and region != profile.region:
-            profile.region = region
-            cls.apply_contextual_defaults(profile, region=region)
-        
-        cls.apply_contextual_defaults(profile, business_type=business_type)
-        
-        if profile.onboarding_step <= 2:
-            profile.onboarding_step = 3
-        
-        profile.save()
-        return True, "Business profile saved", errors
-    
-    @classmethod
-    @transaction.atomic
-    def save_branding_step(cls, user, data: Dict[str, Any], logo_file=None) -> Tuple[bool, str, Dict]:
-        profile = user.profile
-        errors = {}
-        
-        primary_color = data.get("primary_color", "").strip()
-        if primary_color:
-            if not primary_color.startswith("#") or len(primary_color) != 7:
-                errors["primary_color"] = "Invalid color format (use #RRGGBB)"
-            else:
-                profile.primary_color = primary_color
-        
-        secondary_color = data.get("secondary_color", "").strip()
-        if secondary_color:
-            if not secondary_color.startswith("#") or len(secondary_color) != 7:
-                errors["secondary_color"] = "Invalid color format (use #RRGGBB)"
-            else:
-                profile.secondary_color = secondary_color
-        
-        accent_color = data.get("accent_color", "").strip()
-        if accent_color:
-            if not accent_color.startswith("#") or len(accent_color) != 7:
-                errors["accent_color"] = "Invalid color format (use #RRGGBB)"
-            else:
-                profile.accent_color = accent_color
-        
-        invoice_style = data.get("invoice_style", "").strip()
-        if invoice_style and invoice_style in dict(UserProfile.INVOICE_STYLE_CHOICES):
-            profile.invoice_style = invoice_style
-        
-        if logo_file:
-            allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
-            if hasattr(logo_file, "content_type") and logo_file.content_type not in allowed_types:
-                errors["company_logo"] = "Please upload a valid image (JPEG, PNG, GIF, or WebP)"
-            elif logo_file.size > 5 * 1024 * 1024:
-                errors["company_logo"] = "Logo must be less than 5MB"
-            else:
-                profile.company_logo = logo_file
-        
-        if errors:
-            return False, "Please fix the errors below", errors
-        
-        if profile.onboarding_step <= 3:
-            profile.onboarding_step = 4
-        
-        profile.save()
-        return True, "Branding settings saved", errors
-    
-    @classmethod
-    @transaction.atomic
-    def save_tax_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str, Dict]:
-        profile = user.profile
-        errors = {}
-        
-        tax_id_number = data.get("tax_id_number", "").strip()
-        tax_id_type = data.get("tax_id_type", "").strip()
-        profile.tax_id_number = tax_id_number
-        profile.tax_id_type = tax_id_type
-        
-        vat_registered = data.get("vat_registered") in [True, "true", "on", "1"]
-        profile.vat_registered = vat_registered
-        
-        if vat_registered:
-            vat_number = data.get("vat_number", "").strip()
-            if not vat_number:
-                errors["vat_number"] = "VAT number is required when VAT registered"
-            profile.vat_number = vat_number
-            
-            try:
-                vat_rate = Decimal(str(data.get("vat_rate", "0")))
-                if vat_rate < 0 or vat_rate > 100:
-                    errors["vat_rate"] = "VAT rate must be between 0 and 100"
-                profile.vat_rate = vat_rate
-            except (ValueError, TypeError):
-                errors["vat_rate"] = "Invalid VAT rate"
-        
-        wht_applicable = data.get("wht_applicable") in [True, "true", "on", "1"]
-        profile.wht_applicable = wht_applicable
-        
-        if wht_applicable:
-            try:
-                wht_rate = Decimal(str(data.get("wht_rate", "0")))
-                if wht_rate < 0 or wht_rate > 100:
-                    errors["wht_rate"] = "WHT rate must be between 0 and 100"
-                profile.wht_rate = wht_rate
-            except (ValueError, TypeError):
-                errors["wht_rate"] = "Invalid WHT rate"
-        
+    def save_welcome_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
-            default_tax_rate = Decimal(str(data.get("default_tax_rate", "0")))
-            if default_tax_rate < 0 or default_tax_rate > 100:
-                errors["default_tax_rate"] = "Tax rate must be between 0 and 100"
-            profile.default_tax_rate = default_tax_rate
-        except (ValueError, TypeError):
-            errors["default_tax_rate"] = "Invalid tax rate"
-        
-        if errors:
-            return False, "Please fix the errors below", errors
-        
-        if profile.onboarding_step <= 4:
-            profile.onboarding_step = 5
-        
-        profile.save()
-        return True, "Tax settings saved", errors
-    
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            
+            region = data.get("region", "ng")
+            business_type = data.get("business_type", "freelancer")
+            
+            region_defaults = REGION_DEFAULTS.get(region, REGION_DEFAULTS["ng"])
+            business_defaults = BUSINESS_TYPE_TEMPLATES.get(business_type, BUSINESS_TYPE_TEMPLATES["freelancer"])
+            
+            profile.region = region
+            profile.business_type = business_type
+            profile.default_currency = region_defaults["currency"]
+            profile.timezone = region_defaults["timezone"]
+            profile.locale = region_defaults["locale"]
+            profile.date_format = region_defaults["date_format"]
+            profile.invoice_prefix = business_defaults["invoice_prefix"]
+            profile.invoice_style = business_defaults["invoice_style"]
+            profile.primary_color = business_defaults["suggested_colors"]["primary"]
+            profile.accent_color = business_defaults["suggested_colors"]["accent"]
+            
+            if region_defaults["vat_rate"] > 0:
+                profile.vat_registered = True
+                profile.vat_rate = region_defaults["vat_rate"]
+            
+            onboarding_data = profile.onboarding_data or {}
+            onboarding_data["welcome"] = data
+            profile.onboarding_data = onboarding_data
+            
+            if profile.onboarding_step == 1:
+                profile.onboarding_step = 2
+            
+            profile.save()
+            
+            return True, "Welcome step completed!"
+            
+        except Exception as e:
+            logger.error(f"Welcome step error: {e}")
+            return False, "Failed to save. Please try again."
+
     @classmethod
     @transaction.atomic
-    def save_payments_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str, Dict]:
-        profile = user.profile
-        errors = {}
-        
-        accept_bank_transfers = data.get("accept_bank_transfers") in [True, "true", "on", "1"]
-        accept_card_payments = data.get("accept_card_payments") in [True, "true", "on", "1"]
-        accept_mobile_money = data.get("accept_mobile_money") in [True, "true", "on", "1"]
-        
-        if not accept_bank_transfers and not accept_card_payments and not accept_mobile_money:
-            errors["payment_methods"] = "Please select at least one payment method"
-        
-        profile.accept_bank_transfers = accept_bank_transfers
-        profile.accept_card_payments = accept_card_payments
-        profile.accept_mobile_money = accept_mobile_money
-        
-        if accept_bank_transfers:
-            bank_name = data.get("bank_name", "").strip()
-            bank_account_name = data.get("bank_account_name", "").strip()
-            bank_account_number = data.get("bank_account_number", "").strip()
+    def save_business_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
+        try:
+            profile = UserProfile.objects.get(user=user)
             
-            if not bank_name:
-                errors["bank_name"] = "Bank name is required for bank transfers"
-            if not bank_account_name:
-                errors["bank_account_name"] = "Account name is required for bank transfers"
-            if not bank_account_number:
-                errors["bank_account_number"] = "Account number is required for bank transfers"
+            company_name = data.get("company_name", "").strip()
+            if not company_name:
+                return False, "Company name is required."
             
-            profile.bank_name = bank_name
-            profile.bank_account_name = bank_account_name
-            profile.bank_account_number = bank_account_number
+            profile.company_name = company_name
+            profile.business_email = data.get("business_email", user.email).strip()
+            profile.business_phone = data.get("business_phone", "").strip()
+            profile.business_address = data.get("business_address", "").strip()
+            profile.business_city = data.get("business_city", "").strip()
+            profile.business_state = data.get("business_state", "").strip()
+            profile.business_country = data.get("business_country", "").strip()
+            profile.business_postal_code = data.get("business_postal_code", "").strip()
+            profile.business_website = data.get("business_website", "").strip()
+            
+            if profile.current_workspace:
+                workspace = profile.current_workspace
+                workspace.name = company_name
+                workspace.save(update_fields=["name"])
+            
+            onboarding_data = profile.onboarding_data or {}
+            onboarding_data["business"] = data
+            profile.onboarding_data = onboarding_data
+            
+            if profile.onboarding_step == 2:
+                profile.onboarding_step = 3
+            
+            profile.save()
+            
+            return True, "Business profile saved!"
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found."
+        except Exception as e:
+            logger.error(f"Business step error: {e}")
+            return False, "Failed to save. Please try again."
+
+    @classmethod
+    @transaction.atomic
+    def save_branding_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
+            if data.get("primary_color"):
+                profile.primary_color = data["primary_color"]
+            if data.get("secondary_color"):
+                profile.secondary_color = data["secondary_color"]
+            if data.get("accent_color"):
+                profile.accent_color = data["accent_color"]
+            if data.get("invoice_style"):
+                profile.invoice_style = data["invoice_style"]
+            
+            onboarding_data = profile.onboarding_data or {}
+            onboarding_data["branding"] = data
+            profile.onboarding_data = onboarding_data
+            
+            if profile.onboarding_step == 3:
+                profile.onboarding_step = 4
+            
+            profile.save()
+            
+            return True, "Branding saved!"
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found."
+        except Exception as e:
+            logger.error(f"Branding step error: {e}")
+            return False, "Failed to save. Please try again."
+
+    @classmethod
+    @transaction.atomic
+    def save_tax_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
+            profile.tax_id_number = data.get("tax_id_number", "").strip()
+            profile.tax_id_type = data.get("tax_id_type", "").strip()
+            profile.vat_registered = data.get("vat_registered", False)
+            
+            if profile.vat_registered:
+                profile.vat_number = data.get("vat_number", "").strip()
+                try:
+                    profile.vat_rate = Decimal(str(data.get("vat_rate", "0")))
+                except:
+                    profile.vat_rate = Decimal("0")
+            
+            profile.wht_applicable = data.get("wht_applicable", False)
+            if profile.wht_applicable:
+                try:
+                    profile.wht_rate = Decimal(str(data.get("wht_rate", "0")))
+                except:
+                    profile.wht_rate = Decimal("0")
+            
+            onboarding_data = profile.onboarding_data or {}
+            onboarding_data["tax"] = data
+            profile.onboarding_data = onboarding_data
+            
+            if profile.onboarding_step == 4:
+                profile.onboarding_step = 5
+            
+            profile.save()
+            
+            return True, "Tax settings saved!"
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found."
+        except Exception as e:
+            logger.error(f"Tax step error: {e}")
+            return False, "Failed to save. Please try again."
+
+    @classmethod
+    @transaction.atomic
+    def save_payments_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
+            profile.bank_name = data.get("bank_name", "").strip()
+            profile.bank_account_name = data.get("bank_account_name", "").strip()
+            profile.bank_account_number = data.get("bank_account_number", "").strip()
             profile.bank_routing_number = data.get("bank_routing_number", "").strip()
             profile.bank_swift_code = data.get("bank_swift_code", "").strip()
-        
-        profile.payment_instructions = data.get("payment_instructions", "").strip()
-        
-        if errors:
-            return False, "Please fix the errors below", errors
-        
-        if profile.onboarding_step <= 5:
-            profile.onboarding_step = 6
-        
-        profile.save()
-        return True, "Payment settings saved", errors
-    
+            profile.accept_card_payments = data.get("accept_card_payments", False)
+            profile.accept_bank_transfers = data.get("accept_bank_transfers", True)
+            profile.accept_mobile_money = data.get("accept_mobile_money", False)
+            profile.payment_instructions = data.get("payment_instructions", "").strip()
+            
+            onboarding_data = profile.onboarding_data or {}
+            onboarding_data["payments"] = data
+            profile.onboarding_data = onboarding_data
+            
+            if profile.onboarding_step == 5:
+                profile.onboarding_step = 6
+            
+            profile.save()
+            
+            return True, "Payment settings saved!"
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found."
+        except Exception as e:
+            logger.error(f"Payments step error: {e}")
+            return False, "Failed to save. Please try again."
+
     @classmethod
     @transaction.atomic
-    def save_import_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str, Dict]:
-        profile = user.profile
-        errors = {}
-        
-        skip_import = data.get("skip_import") in [True, "true", "on", "1"]
-        
-        if not skip_import:
-            profile.onboarding_data["import_preferences"] = {
-                "import_customers": data.get("import_customers") in [True, "true", "on", "1"],
-                "import_products": data.get("import_products") in [True, "true", "on", "1"],
-                "import_invoices": data.get("import_invoices") in [True, "true", "on", "1"],
-            }
-        
-        if profile.onboarding_step <= 6:
-            profile.onboarding_step = 7
-        
-        profile.save()
-        return True, "Import preferences saved", errors
-    
-    @classmethod
-    @transaction.atomic
-    def save_templates_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str, Dict]:
-        profile = user.profile
-        errors = {}
-        
-        invoice_style = data.get("invoice_style", "").strip()
-        if invoice_style and invoice_style in dict(UserProfile.INVOICE_STYLE_CHOICES):
-            profile.invoice_style = invoice_style
-        
-        invoice_prefix = data.get("invoice_prefix", "").strip()
-        if invoice_prefix:
-            if len(invoice_prefix) > 10:
-                errors["invoice_prefix"] = "Invoice prefix must be 10 characters or less"
-            else:
-                profile.invoice_prefix = invoice_prefix.upper()
-        
+    def save_import_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
-            invoice_start_number = int(data.get("invoice_start_number", 1))
-            if invoice_start_number < 1:
-                errors["invoice_start_number"] = "Invoice start number must be at least 1"
-            else:
-                profile.invoice_start_number = invoice_start_number
-        except (ValueError, TypeError):
-            pass
-        
-        if errors:
-            return False, "Please fix the errors below", errors
-        
-        if profile.onboarding_step <= 7:
-            profile.onboarding_step = 8
-        
-        profile.save()
-        return True, "Template settings saved", errors
-    
+            profile = UserProfile.objects.get(user=user)
+            
+            onboarding_data = profile.onboarding_data or {}
+            onboarding_data["import"] = data
+            profile.onboarding_data = onboarding_data
+            
+            if profile.onboarding_step == 6:
+                profile.onboarding_step = 7
+            
+            profile.save()
+            
+            return True, "Import step completed!"
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found."
+        except Exception as e:
+            logger.error(f"Import step error: {e}")
+            return False, "Failed to save. Please try again."
+
     @classmethod
     @transaction.atomic
-    def save_team_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str, Dict]:
-        profile = user.profile
-        errors = {}
-        
-        skip_invites = data.get("skip_invites") in [True, "true", "on", "1"]
-        
-        if not skip_invites:
-            team_emails = data.get("team_emails", "").strip()
-            if team_emails:
-                emails = [e.strip() for e in team_emails.split(",") if e.strip()]
-                valid_emails = []
-                for email in emails:
-                    try:
-                        validate_email(email)
-                        valid_emails.append(email)
-                    except ValidationError:
-                        errors["team_emails"] = f"Invalid email: {email}"
-                        break
-                
-                if not errors:
-                    profile.onboarding_data["pending_invites"] = valid_emails
-                    profile.team_invites_sent = len(valid_emails)
-        
-        if errors:
-            return False, "Please fix the errors below", errors
-        
-        profile.onboarding_completed = True
-        profile.onboarding_completed_at = timezone.now()
-        profile.onboarding_step = 9
-        profile.save()
-        
-        return True, "Setup complete! Welcome to InvoiceFlow", errors
-    
+    def save_templates_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
+            if data.get("invoice_prefix"):
+                profile.invoice_prefix = data["invoice_prefix"]
+            if data.get("invoice_start_number"):
+                try:
+                    profile.invoice_start_number = int(data["invoice_start_number"])
+                except:
+                    pass
+            if data.get("invoice_numbering_format"):
+                profile.invoice_numbering_format = data["invoice_numbering_format"]
+            
+            onboarding_data = profile.onboarding_data or {}
+            onboarding_data["templates"] = data
+            profile.onboarding_data = onboarding_data
+            
+            if profile.onboarding_step == 7:
+                profile.onboarding_step = 8
+            
+            profile.save()
+            
+            return True, "Template settings saved!"
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found."
+        except Exception as e:
+            logger.error(f"Templates step error: {e}")
+            return False, "Failed to save. Please try again."
+
     @classmethod
-    def complete_onboarding(cls, user) -> None:
-        profile = user.profile
-        if not profile.onboarding_completed:
+    @transaction.atomic
+    def save_team_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
+            onboarding_data = profile.onboarding_data or {}
+            onboarding_data["team"] = data
+            profile.onboarding_data = onboarding_data
+            
+            if profile.onboarding_step == 8:
+                profile.onboarding_step = 9
+            
+            profile.save()
+            
+            return True, "Team step completed!"
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found."
+        except Exception as e:
+            logger.error(f"Team step error: {e}")
+            return False, "Failed to save. Please try again."
+
+    @classmethod
+    @transaction.atomic
+    def complete_onboarding(cls, user) -> Tuple[bool, str]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
             profile.onboarding_completed = True
             profile.onboarding_completed_at = timezone.now()
             profile.save(update_fields=["onboarding_completed", "onboarding_completed_at"])
-    
+            
+            return True, "Onboarding completed! Welcome to InvoiceFlow."
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found."
+        except Exception as e:
+            logger.error(f"Complete onboarding error: {e}")
+            return False, "Failed to complete. Please try again."
+
     @classmethod
-    def record_first_invoice(cls, user) -> None:
-        profile = user.profile
-        if not profile.first_invoice_created_at:
-            profile.first_invoice_created_at = timezone.now()
-            profile.save(update_fields=["first_invoice_created_at"])
+    def skip_step(cls, user) -> Tuple[bool, str, int]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
+            current_step = profile.onboarding_step
+            if current_step < len(ONBOARDING_STEPS):
+                profile.onboarding_step = current_step + 1
+                profile.save(update_fields=["onboarding_step"])
+                return True, "Step skipped.", profile.onboarding_step
+            else:
+                return True, "Onboarding complete.", current_step
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found.", 1
+        except Exception as e:
+            logger.error(f"Skip step error: {e}")
+            return False, "Failed to skip. Please try again.", 1
+
+    @classmethod
+    def go_back(cls, user) -> Tuple[bool, str, int]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
+            current_step = profile.onboarding_step
+            if current_step > 1:
+                profile.onboarding_step = current_step - 1
+                profile.save(update_fields=["onboarding_step"])
+                return True, "Going back.", profile.onboarding_step
+            else:
+                return True, "Already at first step.", current_step
+            
+        except UserProfile.DoesNotExist:
+            return False, "Profile not found.", 1
+        except Exception as e:
+            logger.error(f"Go back error: {e}")
+            return False, "Failed. Please try again.", 1
+
+    @classmethod
+    def get_smart_defaults(cls, user) -> Dict[str, Any]:
+        try:
+            profile = UserProfile.objects.get(user=user)
+            
+            region_defaults = REGION_DEFAULTS.get(profile.region, {})
+            business_defaults = BUSINESS_TYPE_TEMPLATES.get(profile.business_type, {})
+            
+            return {
+                "region": region_defaults,
+                "business": business_defaults,
+                "profile": {
+                    "company_name": profile.company_name,
+                    "business_email": profile.business_email or user.email,
+                    "currency": profile.default_currency,
+                    "timezone": profile.timezone,
+                }
+            }
+        except UserProfile.DoesNotExist:
+            return {"region": {}, "business": {}, "profile": {}}

@@ -1,0 +1,56 @@
+{% extends "base/layout.html" %}
+{% block title %}Tax Settings - InvoiceFlow Setup{% endblock %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
+    <div class="max-w-3xl mx-auto">
+        {% include "pages/onboarding/_progress.html" %}
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 mt-8">
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold text-gray-900">Tax & Compliance</h1>
+                <p class="mt-2 text-gray-600">Set up your tax information for invoices</p>
+            </div>
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tax ID Number</label>
+                        <input type="text" name="tax_id_number" value="{{ profile.tax_id_number }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="Your tax ID">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tax ID Type</label>
+                        <select name="tax_id_type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            <option value="">Select type</option>
+                            <option value="TIN" {% if profile.tax_id_type == 'TIN' %}selected{% endif %}>TIN (Tax Identification Number)</option>
+                            <option value="EIN" {% if profile.tax_id_type == 'EIN' %}selected{% endif %}>EIN (Employer ID)</option>
+                            <option value="VAT" {% if profile.tax_id_type == 'VAT' %}selected{% endif %}>VAT Number</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="vat_registered" {% if profile.vat_registered %}checked{% endif %} class="w-5 h-5 rounded text-indigo-600" onchange="document.getElementById('vat-fields').classList.toggle('hidden')">
+                        <span class="font-medium text-gray-900">VAT/GST Registered</span>
+                    </label>
+                    <div id="vat-fields" class="{% if not profile.vat_registered %}hidden{% endif %} mt-4 grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">VAT Number</label>
+                            <input type="text" name="vat_number" value="{{ profile.vat_number }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">VAT Rate (%)</label>
+                            <input type="number" name="vat_rate" value="{{ profile.vat_rate }}" step="0.01" class="w-full px-4 py-3 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between gap-4 pt-4">
+                    <a href="{% url 'invoices:onboarding_branding' %}" class="px-6 py-3 text-gray-700 hover:text-gray-900 font-medium">
+                        <svg class="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        Back
+                    </a>
+                    <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-all">Continue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

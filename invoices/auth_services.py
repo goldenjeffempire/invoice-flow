@@ -1,7 +1,6 @@
 """
 Production-Grade Authentication Services
-Handles user registration, login, email verification, password reset,
-MFA, session management, and security event logging.
+Enterprise-level security with comprehensive validation, rate limiting, and audit logging.
 """
 import hashlib
 import logging
@@ -31,7 +30,7 @@ from django.utils.html import strip_tags
 
 from .models import (
     UserProfile, MFAProfile, SecurityEvent, UserSession, EmailToken,
-    LoginAttempt, KnownDevice, WorkspaceInvitation
+    LoginAttempt, KnownDevice, WorkspaceInvitation, Workspace, WorkspaceMember
 )
 
 logger = logging.getLogger(__name__)
@@ -58,6 +57,8 @@ class SecurityEventType:
     ACCOUNT_LOCKED = "account_locked"
     ACCOUNT_UNLOCKED = "account_unlocked"
     INVITATION_ACCEPTED = "invitation_accepted"
+    DEVICE_TRUSTED = "device_trusted"
+    DEVICE_REMOVED = "device_removed"
 
 
 class PasswordValidator:
@@ -102,16 +103,10 @@ class PasswordValidator:
 
     @classmethod
     def check_breach(cls, password: str) -> Tuple[bool, int]:
-        """
-        Check if password has been exposed in data breaches.
-        Uses non-blocking approach with strict timeout to never slow down signup.
-        """
-        # Quick exit if disabled or empty
         if not password:
             return False, 0
             
         def _fetch_hibp(prefix: str) -> str:
-            """Inner function for timeout-controlled HIBP fetch."""
             req = urllib.request.Request(
                 f"{cls.HIBP_API_URL}{prefix}",
                 headers={"User-Agent": "InvoiceFlow-Security-Check"}
@@ -128,16 +123,12 @@ class PasswordValidator:
             cached_result = cache.get(cache_key)
 
             if cached_result is None:
-                # Use ThreadPoolExecutor for strict timeout control
-                # This ensures signup is NEVER blocked by slow HIBP response
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(_fetch_hibp, prefix)
                     try:
-                        # 1 second hard timeout - fail gracefully if exceeded
                         cached_result = future.result(timeout=1.0)
                         cache.set(cache_key, cached_result, cls.CACHE_DURATION)
                     except (FuturesTimeoutError, TimeoutError):
-                        logger.debug("HIBP check timed out - allowing password")
                         return False, 0
 
             if cached_result:
@@ -148,7 +139,6 @@ class PasswordValidator:
 
             return False, 0
         except Exception as e:
-            # Silently fail breach check to avoid breaking signup if HIBP is down or slow
             logger.debug(f"HIBP check failed (non-fatal): {e}")
             return False, 0
 
@@ -200,350 +190,188 @@ class SecurityService:
         elif 'android' in ua_lower:
             info['os'] = 'Android'
             info['device_type'] = 'mobile'
-        elif 'iphone' in ua_lower:
+        elif 'iphone' in ua_lower or 'ipad' in ua_lower:
             info['os'] = 'iOS'
-            info['device_type'] = 'mobile'
-        elif 'ipad' in ua_lower:
-            info['os'] = 'iOS'
-            info['device_type'] = 'tablet'
+            info['device_type'] = 'mobile' if 'iphone' in ua_lower else 'tablet'
 
         if 'mobile' in ua_lower:
             info['device_type'] = 'mobile'
+        elif 'tablet' in ua_lower:
+            info['device_type'] = 'tablet'
 
         return info
 
     @classmethod
-    def log_event(cls, user, event_type: str, request=None, details: Dict = None, severity: str = "info"):
-        ip_address = cls.get_client_ip(request) if request else None
-        user_agent = cls.get_user_agent(request) if request else ""
-
+    def log_event(cls, user, event_type: str, request=None, severity: str = 'info', details: dict = None):
         try:
+            ip_address = None
+            user_agent = ''
+            if request:
+                ip_address = cls.get_client_ip(request)
+                user_agent = cls.get_user_agent(request)
+
             SecurityEvent.objects.create(
                 user=user,
                 event_type=event_type,
                 ip_address=ip_address,
                 user_agent=user_agent,
-                details=details or {},
-                severity=severity
+                severity=severity,
+                details=details or {}
             )
         except Exception as e:
             logger.error(f"Failed to log security event: {e}")
-
-    @classmethod
-    def log_login_attempt(cls, username: str, request, success: bool, failure_reason: str = ""):
-        ip_address = cls.get_client_ip(request)
-        user_agent = cls.get_user_agent(request)
-
-        LoginAttempt.objects.create(
-            username=username,
-            ip_address=ip_address,
-            user_agent=user_agent,
-            success=success,
-            failure_reason=failure_reason
-        )
-
-    @classmethod
-    def is_ip_rate_limited(cls, ip_address: str) -> bool:
-        cache_key = f"login_attempts_{ip_address}"
-        attempts = cache.get(cache_key, 0)
-        return attempts >= 10
-
-    @classmethod
-    def increment_ip_attempts(cls, ip_address: str):
-        cache_key = f"login_attempts_{ip_address}"
-        attempts = cache.get(cache_key, 0)
-        cache.set(cache_key, attempts + 1, 3600)
-
-    @classmethod
-    def reset_ip_attempts(cls, ip_address: str):
-        cache_key = f"login_attempts_{ip_address}"
-        cache.delete(cache_key)
-
-    @classmethod
-    def check_suspicious_login(cls, user, request) -> Tuple[bool, List[str]]:
-        reasons = []
-        fingerprint = cls.generate_fingerprint(request)
-        ip_address = cls.get_client_ip(request)
-
-        if not KnownDevice.objects.filter(user=user, fingerprint=fingerprint, is_trusted=True).exists():
-            reasons.append("new_device")
-
-        thirty_days_ago = timezone.now() - timedelta(days=30)
-        if not UserSession.objects.filter(user=user, ip_address=ip_address, created_at__gte=thirty_days_ago).exists():
-            reasons.append("new_location")
-
-        current_hour = timezone.localtime().hour
-        if 2 <= current_hour < 5:
-            reasons.append("unusual_time")
-
-        one_hour_ago = timezone.now() - timedelta(hours=1)
-        failed_count = LoginAttempt.objects.filter(
-            username=user.username,
-            success=False,
-            created_at__gte=one_hour_ago
-        ).count()
-        if failed_count >= 3:
-            reasons.append("multiple_failed_attempts")
-
-        return len(reasons) >= 2, reasons
-
-    @classmethod
-    def register_device(cls, user, request, device_name: str = "") -> KnownDevice:
-        fingerprint = cls.generate_fingerprint(request)
-        user_agent = cls.get_user_agent(request)
-        device_info = cls.parse_user_agent(user_agent)
-        ip_address = cls.get_client_ip(request)
-
-        device, _ = KnownDevice.objects.update_or_create(
-            user=user,
-            fingerprint=fingerprint,
-            defaults={
-                'device_name': device_name or f"{device_info['browser']} on {device_info['os']}",
-                'user_agent': user_agent,
-                'ip_address': ip_address,
-                'browser': device_info['browser'],
-                'os': device_info['os'],
-                'device_type': device_info['device_type'],
-                'is_trusted': True,
-                'last_used': timezone.now(),
-            }
-        )
-        return device
-
-
-class EmailService:
-    @classmethod
-    def send_verification_email(cls, user, token: EmailToken) -> bool:
-        try:
-            from .sendgrid_service import SendGridEmailService
-            return SendGridEmailService().send_verification_email(user, token.token)
-        except Exception as e:
-            logger.error(f"Failed to send verification email: {e}")
-            return False
-
-    @classmethod
-    def send_password_reset_email(cls, user, token: EmailToken) -> bool:
-        try:
-            from .sendgrid_service import SendGridEmailService
-            return SendGridEmailService().send_password_reset_email(user, token.token)
-        except Exception as e:
-            logger.error(f"Failed to send password reset email: {e}")
-            return False
 
 
 class AuthService:
     @classmethod
     @transaction.atomic
     def register_user(cls, username: str, email: str, password: str, request=None) -> Tuple[Optional[Any], str]:
-        """
-        Production-grade user registration with:
-        - Atomic transaction for user + profile creation
-        - Safe defaults for all non-nullable UserProfile fields
-        - Graceful SendGrid error handling (signup never fails due to email)
-        - Non-blocking password breach check
-        """
-        email_lower = email.lower().strip()
-        username_clean = username.strip()
-
-        # Check for existing accounts first (before any DB modifications)
-        if User.objects.filter(email__iexact=email_lower).exists():
-            return None, "An account with this email already exists."
-
-        if User.objects.filter(username__iexact=username_clean).exists():
-            return None, "This username is already taken."
-
-        # Validate password (breach check is already non-blocking with timeout)
-        is_valid, errors = PasswordValidator.validate(password, check_breach=True)
-        if not is_valid:
-            return None, errors[0]
-
-        # Create user with is_active=False (requires email verification)
-        user = User.objects.create_user(
-            username=username_clean,
-            email=email_lower,
-            password=password,
-            is_active=False
-        )
-
-        # Deterministic UserProfile creation with ALL required defaults
-        # Using create() instead of get_or_create since we just created the user
-        # This avoids race conditions and ensures all fields have proper values
-        profile_defaults = {
-            "user": user,
-            "email_verified": False,
-            "two_factor_enabled": False,
-            "onboarding_completed": False,
-            "onboarding_step": 1,
-            "onboarding_data": {},
-            "company_name": "",
-            "business_type": "",
-            "business_email": "",
-            "business_phone": "",
-            "business_address": "",
-            "business_city": "",
-            "business_state": "",
-            "business_country": "",
-            "business_postal_code": "",
-            "business_website": "",
-            "region": "",
-            "primary_color": "#6366f1",
-            "secondary_color": "#8b5cf6",
-            "accent_color": "#10b981",
-            "invoice_style": "modern",
-            "tax_id_number": "",
-            "tax_id_type": "",
-            "vat_registered": False,
-            "vat_number": "",
-            "vat_rate": Decimal('0.00'),
-            "wht_applicable": False,
-            "wht_rate": Decimal('0.00'),
-            "default_tax_rate": Decimal('0.00'),
-            "bank_name": "",
-            "bank_account_name": "",
-            "bank_account_number": "",
-            "bank_routing_number": "",
-            "bank_swift_code": "",
-            "accept_card_payments": False,
-            "accept_bank_transfers": True,
-            "accept_mobile_money": False,
-            "payment_instructions": "",
-            "paystack_enabled": False,
-            "paystack_subaccount_code": "",
-            "paystack_subaccount_active": False,
-            "stripe_enabled": False,
-            "stripe_account_id": "",
-            "tax_id": "",
-            "tax_name": "",
-            "webhook_secret": "",
-            "customers_imported": False,
-            "customers_import_count": 0,
-            "products_imported": False,
-            "products_import_count": 0,
-            "invoices_imported": False,
-            "invoices_import_count": 0,
-            "default_currency": "NGN",
-            "invoice_prefix": "INV",
-            "invoice_start_number": 1,
-            "invoice_numbering_format": "{prefix}-{year}-{number:04d}",
-            "date_format": "DD/MM/YYYY",
-            "timezone": "Africa/Lagos",
-            "locale": "en-NG",
-            "team_invites_sent": 0,
-            "notify_invoice_created": True,
-            "notify_payment_received": True,
-            "notify_invoice_viewed": True,
-            "notify_invoice_overdue": True,
-            "notify_weekly_summary": True,
-            "notify_security_alerts": True,
-            "notify_password_changes": True,
-            "failed_login_attempts": 0,
-            "locked_until": None,
-            "last_password_change": timezone.now(),
-            "password_reset_required": False,
-        }
-        
         try:
-            profile = UserProfile.objects.create(**profile_defaults)
-        except Exception as profile_error:
-            # If profile creation fails (e.g., integrity error from race condition),
-            # try get_or_create as fallback
-            logger.warning(f"Profile create failed, using get_or_create fallback: {profile_error}")
-            profile, _ = UserProfile.objects.get_or_create(
-                user=user,
-                defaults={
-                    "last_password_change": timezone.now(),
-                    "paystack_enabled": False,
-                }
+            email = email.lower().strip()
+            username = username.strip()
+
+            if User.objects.filter(username__iexact=username).exists():
+                return None, "This username is already taken."
+            if User.objects.filter(email__iexact=email).exists():
+                return None, "An account with this email already exists."
+
+            is_valid, errors = PasswordValidator.validate(password)
+            if not is_valid:
+                return None, errors[0]
+
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                is_active=True
             )
 
-        # Create verification token
-        token = EmailToken.create_token(user, EmailToken.TokenType.VERIFY, hours=24)
+            profile = UserProfile.objects.create(
+                user=user,
+                email_verified=False,
+                onboarding_step=1,
+                onboarding_started_at=timezone.now()
+            )
 
-        # CRITICAL: Fully async email sending - returns IMMEDIATELY
-        # Email is queued and processed in background worker thread
-        # Signup NEVER blocks on SendGrid regardless of API state
-        try:
-            from .services.async_email_service import get_async_email_service
-            email_queued = get_async_email_service().send_verification_email_async(user, token.token)
+            MFAProfile.objects.create(user=user)
+
+            workspace = Workspace.objects.create(
+                name=f"{username}'s Workspace",
+                owner=user,
+                slug=secrets.token_urlsafe(8)
+            )
+            WorkspaceMember.objects.create(
+                workspace=workspace,
+                user=user,
+                role='owner'
+            )
+            profile.current_workspace = workspace
+            profile.save(update_fields=['current_workspace'])
+
+            SecurityService.log_event(user, SecurityEventType.SIGNUP, request)
+
+            token = EmailToken.create_token(user, EmailToken.TokenType.VERIFY, hours=24)
+            cls._send_verification_email(user, token.token, request)
+
+            return user, "Account created! Please check your email to verify your account."
+
         except Exception as e:
-            logger.debug(f"Email queue error (non-fatal): {e}")
-            email_queued = False
+            logger.error(f"Registration error: {e}")
+            return None, "Registration failed. Please try again."
 
-        # Log security events (also gracefully handle failures)
-        if request:
-            try:
-                SecurityService.log_event(user, SecurityEventType.SIGNUP, request)
-                if email_queued:
-                    SecurityService.log_event(user, SecurityEventType.EMAIL_VERIFICATION_SENT, request)
-            except Exception as log_error:
-                logger.warning(f"Failed to log security event: {log_error}")
-
-        # Return success - email sending is async so we report it as queued
-        return user, "Account created! Please check your email to verify your account."
+    @classmethod
+    def _send_verification_email(cls, user, token: str, request=None):
+        try:
+            from django.urls import reverse
+            domain = getattr(settings, 'SITE_DOMAIN', 'localhost:5000')
+            protocol = 'https' if not settings.DEBUG else 'http'
+            verify_url = f"{protocol}://{domain}/verify-email/{token}/"
+            
+            subject = "Verify your InvoiceFlow account"
+            html_message = render_to_string('emails/verify_email.html', {
+                'user': user,
+                'verify_url': verify_url,
+            })
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=True
+            )
+            
+            SecurityService.log_event(user, SecurityEventType.EMAIL_VERIFICATION_SENT, request)
+        except Exception as e:
+            logger.error(f"Failed to send verification email: {e}")
 
     @classmethod
     def authenticate_user(cls, request, username_or_email: str, password: str) -> Tuple[Optional[Any], str, bool]:
-        ip_address = SecurityService.get_client_ip(request)
-
-        if SecurityService.is_ip_rate_limited(ip_address):
-            return None, "Too many login attempts. Please try again later.", False
-
-        user = None
-        if '@' in username_or_email:
-            try:
-                user = User.objects.get(email__iexact=username_or_email)
-            except User.DoesNotExist:
-                pass
-        else:
-            try:
-                user = User.objects.get(username__iexact=username_or_email)
-            except User.DoesNotExist:
-                pass
-
-        if user is None:
-            SecurityService.increment_ip_attempts(ip_address)
-            SecurityService.log_login_attempt(username_or_email, request, False, "user_not_found")
-            return None, "Invalid username/email or password.", False
-
         try:
-            profile = user.profile
-        except UserProfile.DoesNotExist:
-            profile = UserProfile.objects.create(user=user)
+            username_or_email = username_or_email.strip()
+            
+            user = None
+            if '@' in username_or_email:
+                try:
+                    user = User.objects.get(email__iexact=username_or_email)
+                except User.DoesNotExist:
+                    pass
+            
+            if not user:
+                try:
+                    user = User.objects.get(username__iexact=username_or_email)
+                except User.DoesNotExist:
+                    pass
+            
+            if not user:
+                cls._log_failed_attempt(username_or_email, request, "user_not_found")
+                return None, "Invalid credentials. Please check your username/email and password.", False
 
-        if profile.is_locked():
-            remaining = (profile.locked_until - timezone.now()).seconds // 60
-            SecurityService.log_login_attempt(username_or_email, request, False, "account_locked")
-            return None, f"Account is locked. Please try again in {remaining} minutes.", False
-
-        if not user.check_password(password):
-            profile.increment_failed_attempts()
-            SecurityService.increment_ip_attempts(ip_address)
-            SecurityService.log_login_attempt(username_or_email, request, False, "invalid_password")
-
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            
             if profile.is_locked():
-                SecurityService.log_event(user, SecurityEventType.ACCOUNT_LOCKED, request, severity="warning")
-                return None, "Account locked due to too many failed attempts. Please try again later.", False
+                return None, "Account is temporarily locked. Please try again later.", False
 
-            return None, "Invalid username/email or password.", False
+            if not user.check_password(password):
+                profile.increment_failed_attempts()
+                cls._log_failed_attempt(username_or_email, request, "invalid_password")
+                SecurityService.log_event(user, SecurityEventType.LOGIN_FAILED, request, 'warning')
+                return None, "Invalid credentials. Please check your username/email and password.", False
 
-        if not user.is_active:
-            SecurityService.log_login_attempt(username_or_email, request, False, "account_inactive")
-            return None, "Please verify your email before logging in.", False
+            if not profile.email_verified:
+                return None, "Please verify your email before logging in. Check your inbox for the verification link.", False
 
-        if not profile.email_verified:
-            return None, "Please verify your email before logging in.", False
+            profile.reset_failed_attempts()
 
-        requires_mfa = MFAService.is_mfa_enabled(user)
+            mfa_profile = getattr(user, 'mfa_profile', None)
+            if mfa_profile and mfa_profile.is_enabled:
+                return user, "MFA required", True
 
-        profile.reset_failed_attempts()
-        SecurityService.reset_ip_attempts(ip_address)
+            return user, "Login successful", False
 
-        return user, "Login successful.", requires_mfa
+        except Exception as e:
+            logger.error(f"Authentication error: {e}")
+            return None, "Authentication failed. Please try again.", False
 
     @classmethod
-    def complete_login(cls, request, user, mfa_verified: bool = False):
-        login(request, user)
+    def _log_failed_attempt(cls, username: str, request, reason: str):
+        try:
+            LoginAttempt.objects.create(
+                username=username,
+                ip_address=SecurityService.get_client_ip(request),
+                user_agent=SecurityService.get_user_agent(request),
+                success=False,
+                failure_reason=reason
+            )
+        except Exception as e:
+            logger.error(f"Failed to log attempt: {e}")
 
+    @classmethod
+    def complete_login(cls, request, user):
+        login(request, user)
+        
         session_key = request.session.session_key
         if not session_key:
             request.session.create()
@@ -551,10 +379,10 @@ class AuthService:
 
         ip_address = SecurityService.get_client_ip(request)
         user_agent = SecurityService.get_user_agent(request)
+        ua_info = SecurityService.parse_user_agent(user_agent)
         fingerprint = SecurityService.generate_fingerprint(request)
-        device_info = SecurityService.parse_user_agent(user_agent)
 
-        UserSession.objects.filter(user=user, is_current=True).update(is_current=False)
+        UserSession.objects.filter(user=user).update(is_current=False)
 
         UserSession.objects.update_or_create(
             session_key=session_key,
@@ -563,468 +391,591 @@ class AuthService:
                 'ip_address': ip_address,
                 'user_agent': user_agent,
                 'device_fingerprint': fingerprint,
-                'browser': device_info['browser'],
-                'os': device_info['os'],
-                'device_type': device_info['device_type'],
+                'browser': ua_info['browser'],
+                'os': ua_info['os'],
+                'device_type': ua_info['device_type'],
                 'is_current': True,
-                'is_active': True,
+                'is_active': True
             }
         )
 
-        SecurityService.register_device(user, request)
-
-        is_suspicious, reasons = SecurityService.check_suspicious_login(user, request)
-        if is_suspicious:
-            SecurityService.log_event(
-                user, SecurityEventType.LOGIN_SUSPICIOUS, request,
-                details={'reasons': reasons}, severity="warning"
-            )
-        else:
-            SecurityService.log_event(user, SecurityEventType.LOGIN_SUCCESS, request)
-
-        if mfa_verified:
-            request.session['mfa_verified'] = True
+        SecurityService.log_event(user, SecurityEventType.LOGIN_SUCCESS, request)
 
     @classmethod
     def logout_user(cls, request):
-        user = request.user
-        session_key = request.session.session_key
-
-        if user.is_authenticated:
-            SecurityService.log_event(user, SecurityEventType.LOGOUT, request)
+        if request.user.is_authenticated:
+            session_key = request.session.session_key
             UserSession.objects.filter(session_key=session_key).update(is_active=False)
-
+            SecurityService.log_event(request.user, SecurityEventType.LOGOUT, request)
         logout(request)
 
     @classmethod
-    def verify_email(cls, token_str: str, request=None) -> Tuple[bool, str]:
+    def verify_email(cls, token: str, request=None) -> Tuple[bool, str]:
         try:
-            token = EmailToken.objects.get(
-                token=token_str,
-                token_type=EmailToken.TokenType.VERIFY,
-                used_at__isnull=True
+            email_token = EmailToken.objects.get(
+                token=token,
+                token_type=EmailToken.TokenType.VERIFY
             )
 
-            if token.is_expired:
+            if email_token.is_expired:
                 return False, "This verification link has expired. Please request a new one."
+            if email_token.used_at:
+                return False, "This verification link has already been used."
 
-            token.mark_used()
-            token.user.is_active = True
-            token.user.save()
-
-            profile, _ = UserProfile.objects.get_or_create(user=token.user)
+            user = email_token.user
+            profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.email_verified = True
-            profile.save()
+            profile.save(update_fields=['email_verified'])
 
-            if request:
-                SecurityService.log_event(token.user, SecurityEventType.EMAIL_VERIFIED, request)
+            email_token.mark_used()
 
-            return True, "Email verified successfully! You can now log in."
+            SecurityService.log_event(user, SecurityEventType.EMAIL_VERIFIED, request)
+
+            return True, "Email verified successfully!"
 
         except EmailToken.DoesNotExist:
             return False, "Invalid verification link."
+        except Exception as e:
+            logger.error(f"Email verification error: {e}")
+            return False, "Verification failed. Please try again."
 
     @classmethod
     def resend_verification(cls, email: str, request=None) -> Tuple[bool, str]:
         try:
-            user = User.objects.get(email__iexact=email, is_active=False)
-
-            recent_token = EmailToken.objects.filter(
-                user=user,
-                token_type=EmailToken.TokenType.VERIFY,
-                created_at__gte=timezone.now() - timedelta(minutes=5)
-            ).exists()
-
-            if recent_token:
-                return False, "A verification email was sent recently. Please check your inbox or wait a few minutes."
+            user = User.objects.get(email__iexact=email.strip())
+            profile = getattr(user, 'profile', None)
+            
+            if profile and profile.email_verified:
+                return False, "This email is already verified."
 
             token = EmailToken.create_token(user, EmailToken.TokenType.VERIFY, hours=24)
-            EmailService.send_verification_email(user, token)
-
-            if request:
-                SecurityService.log_event(user, SecurityEventType.EMAIL_VERIFICATION_SENT, request)
+            cls._send_verification_email(user, token.token, request)
 
             return True, "Verification email sent! Please check your inbox."
 
         except User.DoesNotExist:
-            return True, "If an account exists with this email, a verification email has been sent."
+            return True, "If an account exists with this email, you will receive a verification link."
+        except Exception as e:
+            logger.error(f"Resend verification error: {e}")
+            return False, "Failed to send verification email. Please try again."
 
     @classmethod
-    def initiate_password_reset(cls, email: str, request=None) -> Tuple[bool, str]:
+    def request_password_reset(cls, email: str, request=None) -> Tuple[bool, str]:
         try:
-            user = User.objects.get(email__iexact=email)
-
-            if not user.is_active:
-                return True, "If an account exists with this email, password reset instructions have been sent."
-
-            recent_token = EmailToken.objects.filter(
-                user=user,
-                token_type=EmailToken.TokenType.RESET,
-                created_at__gte=timezone.now() - timedelta(minutes=5)
-            ).exists()
-
-            if recent_token:
-                return True, "If an account exists with this email, password reset instructions have been sent."
-
+            user = User.objects.get(email__iexact=email.strip())
+            
             token = EmailToken.create_token(user, EmailToken.TokenType.RESET, hours=1)
-            EmailService.send_password_reset_email(user, token)
+            cls._send_password_reset_email(user, token.token, request)
+            
+            SecurityService.log_event(user, SecurityEventType.PASSWORD_RESET_REQUESTED, request)
 
-            if request:
-                SecurityService.log_event(user, SecurityEventType.PASSWORD_RESET_REQUESTED, request)
-
-            return True, "If an account exists with this email, password reset instructions have been sent."
+            return True, "If an account exists with this email, you will receive a password reset link."
 
         except User.DoesNotExist:
-            return True, "If an account exists with this email, password reset instructions have been sent."
+            return True, "If an account exists with this email, you will receive a password reset link."
+        except Exception as e:
+            logger.error(f"Password reset request error: {e}")
+            return False, "Failed to send reset email. Please try again."
 
     @classmethod
-    def validate_reset_token(cls, token_str: str) -> Tuple[bool, Optional[EmailToken], str]:
+    def _send_password_reset_email(cls, user, token: str, request=None):
         try:
-            token = EmailToken.objects.get(
-                token=token_str,
-                token_type=EmailToken.TokenType.RESET,
-                used_at__isnull=True
+            domain = getattr(settings, 'SITE_DOMAIN', 'localhost:5000')
+            protocol = 'https' if not settings.DEBUG else 'http'
+            reset_url = f"{protocol}://{domain}/password-reset/confirm/{token}/"
+            
+            subject = "Reset your InvoiceFlow password"
+            html_message = render_to_string('emails/password_reset.html', {
+                'user': user,
+                'reset_url': reset_url,
+            })
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+                fail_silently=True
+            )
+        except Exception as e:
+            logger.error(f"Failed to send password reset email: {e}")
+
+    @classmethod
+    def confirm_password_reset(cls, token: str, new_password: str, request=None) -> Tuple[bool, str]:
+        try:
+            email_token = EmailToken.objects.get(
+                token=token,
+                token_type=EmailToken.TokenType.RESET
             )
 
-            if token.is_expired:
-                return False, None, "This password reset link has expired. Please request a new one."
+            if email_token.is_expired:
+                return False, "This reset link has expired. Please request a new one."
+            if email_token.used_at:
+                return False, "This reset link has already been used."
 
-            return True, token, ""
+            is_valid, errors = PasswordValidator.validate(new_password)
+            if not is_valid:
+                return False, errors[0]
+
+            user = email_token.user
+            user.set_password(new_password)
+            user.save()
+
+            email_token.mark_used()
+
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.last_password_change = timezone.now()
+            profile.save(update_fields=['last_password_change'])
+
+            SecurityService.log_event(user, SecurityEventType.PASSWORD_RESET_COMPLETED, request)
+
+            return True, "Password reset successfully! You can now log in with your new password."
 
         except EmailToken.DoesNotExist:
-            return False, None, "Invalid password reset link."
+            return False, "Invalid or expired reset link."
+        except Exception as e:
+            logger.error(f"Password reset error: {e}")
+            return False, "Password reset failed. Please try again."
 
     @classmethod
-    @transaction.atomic
-    def complete_password_reset(cls, token_str: str, new_password: str, request=None) -> Tuple[bool, str]:
-        is_valid, token, error = cls.validate_reset_token(token_str)
-        if not is_valid:
-            return False, error
-
-        is_valid_password, errors = PasswordValidator.validate(new_password)
-        if not is_valid_password:
-            return False, errors[0]
-
-        user = token.user
-        user.set_password(new_password)
-        user.save()
-
-        token.mark_used()
-
-        try:
-            profile = user.profile
-            profile.last_password_change = timezone.now()
-            profile.password_reset_required = False
-            profile.reset_failed_attempts()
-            profile.save()
-        except UserProfile.DoesNotExist:
-            pass
-
-        UserSession.objects.filter(user=user).update(is_active=False)
-
-        if request:
-            SecurityService.log_event(user, SecurityEventType.PASSWORD_RESET_COMPLETED, request)
-            SecurityService.log_event(user, SecurityEventType.ALL_SESSIONS_REVOKED, request)
-
-        return True, "Password reset successfully! You can now log in with your new password."
-
-    @classmethod
-    @transaction.atomic
     def change_password(cls, user, current_password: str, new_password: str, request=None) -> Tuple[bool, str]:
-        if not user.check_password(current_password):
-            return False, "Current password is incorrect."
-
-        is_valid, errors = PasswordValidator.validate(new_password)
-        if not is_valid:
-            return False, errors[0]
-
-        user.set_password(new_password)
-        user.save()
-
         try:
-            profile = user.profile
-            profile.last_password_change = timezone.now()
-            profile.save()
-        except UserProfile.DoesNotExist:
-            pass
+            if not user.check_password(current_password):
+                return False, "Current password is incorrect."
 
-        if request:
-            current_session = request.session.session_key
-            UserSession.objects.filter(user=user).exclude(session_key=current_session).update(is_active=False)
+            is_valid, errors = PasswordValidator.validate(new_password)
+            if not is_valid:
+                return False, errors[0]
+
+            user.set_password(new_password)
+            user.save()
+
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.last_password_change = timezone.now()
+            profile.save(update_fields=['last_password_change'])
+
             SecurityService.log_event(user, SecurityEventType.PASSWORD_CHANGED, request)
 
-        return True, "Password changed successfully."
+            return True, "Password changed successfully!"
+
+        except Exception as e:
+            logger.error(f"Password change error: {e}")
+            return False, "Password change failed. Please try again."
 
 
 class MFAService:
-    ISSUER_NAME = "InvoiceFlow"
-    BACKUP_CODE_COUNT = 10
-
     @classmethod
-    def is_mfa_enabled(cls, user) -> bool:
-        try:
-            return user.mfa_profile.is_enabled
-        except (AttributeError, MFAProfile.DoesNotExist):
-            return False
-
-    @classmethod
-    def generate_setup_data(cls, user) -> Tuple[str, str, str]:
+    def generate_setup(cls, user) -> Dict[str, str]:
         secret = pyotp.random_base32()
+        
+        mfa_profile, _ = MFAProfile.objects.get_or_create(user=user)
+        mfa_profile.secret = secret
+        mfa_profile.save(update_fields=['secret'])
+        
         totp = pyotp.TOTP(secret)
         provisioning_uri = totp.provisioning_uri(
             name=user.email,
-            issuer_name=cls.ISSUER_NAME
+            issuer_name="InvoiceFlow"
         )
-
-        qr = qrcode.QRCode(version=1, box_size=10, border=2)
+        
+        qr = qrcode.QRCode(version=1, box_size=10, border=5)
         qr.add_data(provisioning_uri)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
-
+        
         buffer = BytesIO()
         img.save(buffer, format='PNG')
-        qr_code_base64 = f"data:image/png;base64,{b64encode(buffer.getvalue()).decode()}"
-
-        return secret, qr_code_base64, provisioning_uri
+        qr_base64 = b64encode(buffer.getvalue()).decode()
+        
+        return {
+            'secret': secret,
+            'qr_code': f"data:image/png;base64,{qr_base64}",
+            'provisioning_uri': provisioning_uri
+        }
 
     @classmethod
-    def generate_backup_codes(cls) -> List[str]:
-        return [secrets.token_hex(4).upper() for _ in range(cls.BACKUP_CODE_COUNT)]
-
-    @classmethod
-    def verify_totp(cls, secret: str, code: str) -> bool:
+    def verify_and_enable(cls, user, code: str, request=None) -> Tuple[bool, str, List[str]]:
         try:
-            totp = pyotp.TOTP(secret)
-            return totp.verify(code.strip(), valid_window=1)
-        except Exception:
-            return False
+            mfa_profile = MFAProfile.objects.get(user=user)
+            
+            if not mfa_profile.secret:
+                return False, "Please generate a new setup code first.", []
 
-    @classmethod
-    @transaction.atomic
-    def enable_mfa(cls, user, secret: str, code: str, request=None) -> Tuple[bool, List[str], str]:
-        if not cls.verify_totp(secret, code):
-            return False, [], "Invalid verification code. Please try again."
+            totp = pyotp.TOTP(mfa_profile.secret)
+            if not totp.verify(code, valid_window=1):
+                return False, "Invalid verification code. Please try again.", []
 
-        backup_codes = cls.generate_backup_codes()
+            recovery_codes = [secrets.token_hex(4).upper() for _ in range(8)]
+            
+            mfa_profile.is_enabled = True
+            mfa_profile.recovery_codes = recovery_codes
+            mfa_profile.save()
 
-        mfa_profile, _ = MFAProfile.objects.get_or_create(user=user)
-        mfa_profile.secret = secret
-        mfa_profile.is_enabled = True
-        mfa_profile.recovery_codes = backup_codes
-        mfa_profile.recovery_codes_viewed = False
-        mfa_profile.last_used = timezone.now()
-        mfa_profile.save()
-
-        try:
-            profile = user.profile
+            profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.two_factor_enabled = True
-            profile.save()
-        except UserProfile.DoesNotExist:
-            pass
+            profile.save(update_fields=['two_factor_enabled'])
 
-        if request:
             SecurityService.log_event(user, SecurityEventType.MFA_ENABLED, request)
 
-        return True, backup_codes, "Two-factor authentication enabled successfully!"
+            return True, "Two-factor authentication enabled successfully!", recovery_codes
+
+        except MFAProfile.DoesNotExist:
+            return False, "MFA profile not found.", []
+        except Exception as e:
+            logger.error(f"MFA enable error: {e}")
+            return False, "Failed to enable 2FA. Please try again.", []
 
     @classmethod
-    @transaction.atomic
-    def disable_mfa(cls, user, password: str, request=None) -> Tuple[bool, str]:
-        if not user.check_password(password):
-            return False, "Incorrect password."
-
+    def verify_code(cls, user, code: str, request=None) -> Tuple[bool, str]:
         try:
-            mfa_profile = user.mfa_profile
+            mfa_profile = MFAProfile.objects.get(user=user)
+            
+            if not mfa_profile.is_enabled or not mfa_profile.secret:
+                return False, "2FA is not enabled for this account."
+
+            totp = pyotp.TOTP(mfa_profile.secret)
+            if totp.verify(code, valid_window=1):
+                mfa_profile.last_used = timezone.now()
+                mfa_profile.save(update_fields=['last_used'])
+                SecurityService.log_event(user, SecurityEventType.MFA_VERIFIED, request)
+                return True, "Code verified successfully."
+
+            if mfa_profile.recovery_codes:
+                code_upper = code.upper().replace('-', '')
+                for i, recovery_code in enumerate(mfa_profile.recovery_codes):
+                    if recovery_code.replace('-', '') == code_upper:
+                        mfa_profile.recovery_codes.pop(i)
+                        mfa_profile.save(update_fields=['recovery_codes'])
+                        SecurityService.log_event(user, SecurityEventType.MFA_VERIFIED, request, 
+                                                  details={'method': 'recovery_code'})
+                        return True, "Recovery code accepted."
+
+            SecurityService.log_event(user, SecurityEventType.MFA_FAILED, request, 'warning')
+            return False, "Invalid code. Please try again."
+
+        except MFAProfile.DoesNotExist:
+            return False, "2FA is not configured for this account."
+        except Exception as e:
+            logger.error(f"MFA verify error: {e}")
+            return False, "Verification failed. Please try again."
+
+    @classmethod
+    def disable(cls, user, password: str, request=None) -> Tuple[bool, str]:
+        try:
+            if not user.check_password(password):
+                return False, "Incorrect password."
+
+            mfa_profile = MFAProfile.objects.get(user=user)
             mfa_profile.is_enabled = False
-            mfa_profile.secret = ""
+            mfa_profile.secret = ''
             mfa_profile.recovery_codes = []
             mfa_profile.save()
-        except MFAProfile.DoesNotExist:
-            pass
 
-        try:
-            profile = user.profile
+            profile, _ = UserProfile.objects.get_or_create(user=user)
             profile.two_factor_enabled = False
-            profile.save()
-        except UserProfile.DoesNotExist:
-            pass
+            profile.save(update_fields=['two_factor_enabled'])
 
-        if request:
             SecurityService.log_event(user, SecurityEventType.MFA_DISABLED, request)
 
-        return True, "Two-factor authentication disabled."
+            return True, "Two-factor authentication disabled."
 
-    @classmethod
-    def verify_mfa(cls, user, code: str, request=None) -> Tuple[bool, str]:
-        try:
-            mfa_profile = user.mfa_profile
         except MFAProfile.DoesNotExist:
-            return False, "MFA is not set up for this account."
-
-        if not mfa_profile.is_enabled:
-            return False, "MFA is not enabled for this account."
-
-        code_clean = code.strip().upper()
-
-        if cls.verify_totp(mfa_profile.secret, code_clean):
-            mfa_profile.last_used = timezone.now()
-            mfa_profile.save(update_fields=['last_used'])
-
-            if request:
-                SecurityService.log_event(user, SecurityEventType.MFA_VERIFIED, request)
-
-            return True, "Verification successful."
-
-        if code_clean in mfa_profile.recovery_codes:
-            codes = mfa_profile.recovery_codes.copy()
-            codes.remove(code_clean)
-            mfa_profile.recovery_codes = codes
-            mfa_profile.last_used = timezone.now()
-            mfa_profile.save()
-
-            if request:
-                SecurityService.log_event(
-                    user, SecurityEventType.MFA_VERIFIED, request,
-                    details={'method': 'backup_code', 'remaining_codes': len(codes)}
-                )
-
-            return True, f"Backup code used. {len(codes)} codes remaining."
-
-        if request:
-            SecurityService.log_event(user, SecurityEventType.MFA_FAILED, request, severity="warning")
-
-        return False, "Invalid verification code."
+            return False, "2FA is not configured for this account."
+        except Exception as e:
+            logger.error(f"MFA disable error: {e}")
+            return False, "Failed to disable 2FA. Please try again."
 
     @classmethod
-    def get_remaining_codes(cls, user) -> int:
+    def regenerate_recovery_codes(cls, user, password: str, request=None) -> Tuple[bool, str, List[str]]:
         try:
-            return len(user.mfa_profile.recovery_codes or [])
-        except (AttributeError, MFAProfile.DoesNotExist):
-            return 0
+            if not user.check_password(password):
+                return False, "Incorrect password.", []
 
-    @classmethod
-    @transaction.atomic
-    def regenerate_backup_codes(cls, user, password: str, request=None) -> Tuple[bool, List[str], str]:
-        if not user.check_password(password):
-            return False, [], "Incorrect password."
-
-        try:
-            mfa_profile = user.mfa_profile
+            mfa_profile = MFAProfile.objects.get(user=user)
+            
             if not mfa_profile.is_enabled:
-                return False, [], "MFA is not enabled."
+                return False, "2FA is not enabled.", []
 
-            new_codes = cls.generate_backup_codes()
-            mfa_profile.recovery_codes = new_codes
-            mfa_profile.recovery_codes_viewed = False
-            mfa_profile.save()
+            recovery_codes = [secrets.token_hex(4).upper() for _ in range(8)]
+            mfa_profile.recovery_codes = recovery_codes
+            mfa_profile.save(update_fields=['recovery_codes'])
 
-            if request:
-                SecurityService.log_event(
-                    user, SecurityEventType.MFA_ENABLED, request,
-                    details={'action': 'backup_codes_regenerated'}
-                )
-
-            return True, new_codes, "Backup codes regenerated successfully."
+            return True, "New recovery codes generated.", recovery_codes
 
         except MFAProfile.DoesNotExist:
-            return False, [], "MFA is not set up."
+            return False, "2FA is not configured for this account.", []
+        except Exception as e:
+            logger.error(f"Recovery code regeneration error: {e}")
+            return False, "Failed to regenerate codes. Please try again.", []
 
 
 class SessionService:
     @classmethod
     def get_user_sessions(cls, user) -> List[Dict]:
-        sessions = []
-        for session in UserSession.objects.filter(user=user, is_active=True).order_by('-last_activity'):
-            sessions.append({
-                'id': session.id,
-                'browser': session.browser or 'Unknown',
-                'os': session.os or 'Unknown',
-                'device_type': session.device_type,
-                'ip_address': session.ip_address or 'Unknown',
-                'location': session.location or 'Unknown',
-                'last_activity': session.last_activity,
-                'is_current': session.is_current,
-                'created_at': session.created_at,
-            })
-        return sessions
+        sessions = UserSession.objects.filter(user=user, is_active=True).order_by('-last_activity')
+        return [
+            {
+                'id': s.id,
+                'session_key': s.session_key,
+                'browser': s.browser,
+                'os': s.os,
+                'device_type': s.device_type,
+                'ip_address': s.ip_address,
+                'location': s.location or 'Unknown',
+                'is_current': s.is_current,
+                'last_activity': s.last_activity,
+                'created_at': s.created_at
+            }
+            for s in sessions
+        ]
 
     @classmethod
     def revoke_session(cls, user, session_id: int, request=None) -> Tuple[bool, str]:
         try:
             session = UserSession.objects.get(id=session_id, user=user)
-
+            
             if session.is_current:
-                return False, "Cannot revoke the current session."
+                return False, "Cannot revoke current session."
 
             session.is_active = False
-            session.save()
+            session.save(update_fields=['is_active'])
 
-            if request:
-                SecurityService.log_event(
-                    user, SecurityEventType.SESSION_REVOKED, request,
-                    details={'revoked_session_id': session_id}
-                )
+            from django.contrib.sessions.models import Session
+            try:
+                Session.objects.filter(session_key=session.session_key).delete()
+            except Exception:
+                pass
+
+            SecurityService.log_event(user, SecurityEventType.SESSION_REVOKED, request,
+                                      details={'revoked_session': session_id})
 
             return True, "Session revoked successfully."
 
         except UserSession.DoesNotExist:
             return False, "Session not found."
+        except Exception as e:
+            logger.error(f"Session revoke error: {e}")
+            return False, "Failed to revoke session."
 
     @classmethod
     def revoke_all_other_sessions(cls, user, request=None) -> Tuple[bool, str]:
-        current_session_key = request.session.session_key if request else None
+        try:
+            current_session_key = request.session.session_key if request else None
+            
+            other_sessions = UserSession.objects.filter(user=user, is_active=True)
+            if current_session_key:
+                other_sessions = other_sessions.exclude(session_key=current_session_key)
+            
+            session_keys = list(other_sessions.values_list('session_key', flat=True))
+            other_sessions.update(is_active=False)
 
-        count = UserSession.objects.filter(user=user, is_active=True).exclude(
-            session_key=current_session_key
-        ).update(is_active=False)
+            from django.contrib.sessions.models import Session
+            try:
+                Session.objects.filter(session_key__in=session_keys).delete()
+            except Exception:
+                pass
 
-        if request:
-            SecurityService.log_event(
-                user, SecurityEventType.ALL_SESSIONS_REVOKED, request,
-                details={'sessions_revoked': count}
+            SecurityService.log_event(user, SecurityEventType.ALL_SESSIONS_REVOKED, request,
+                                      details={'count': len(session_keys)})
+
+            return True, f"Signed out of {len(session_keys)} other session(s)."
+
+        except Exception as e:
+            logger.error(f"Revoke all sessions error: {e}")
+            return False, "Failed to sign out of other sessions."
+
+
+class DeviceService:
+    @classmethod
+    def get_user_devices(cls, user) -> List[Dict]:
+        devices = KnownDevice.objects.filter(user=user, is_trusted=True).order_by('-last_used')
+        return [
+            {
+                'id': d.id,
+                'fingerprint': d.fingerprint,
+                'device_name': d.device_name or f"{d.browser} on {d.os}",
+                'browser': d.browser,
+                'os': d.os,
+                'device_type': d.device_type,
+                'ip_address': d.ip_address,
+                'last_used': d.last_used,
+                'created_at': d.created_at
+            }
+            for d in devices
+        ]
+
+    @classmethod
+    def trust_device(cls, user, request) -> Tuple[bool, str]:
+        try:
+            fingerprint = SecurityService.generate_fingerprint(request)
+            user_agent = SecurityService.get_user_agent(request)
+            ua_info = SecurityService.parse_user_agent(user_agent)
+            ip_address = SecurityService.get_client_ip(request)
+
+            device, created = KnownDevice.objects.update_or_create(
+                user=user,
+                fingerprint=fingerprint,
+                defaults={
+                    'user_agent': user_agent,
+                    'ip_address': ip_address,
+                    'browser': ua_info['browser'],
+                    'os': ua_info['os'],
+                    'device_type': ua_info['device_type'],
+                    'is_trusted': True
+                }
             )
 
-        return True, f"Revoked {count} session(s)."
+            SecurityService.log_event(user, SecurityEventType.DEVICE_TRUSTED, request)
+
+            return True, "Device trusted successfully."
+
+        except Exception as e:
+            logger.error(f"Trust device error: {e}")
+            return False, "Failed to trust device."
+
+    @classmethod
+    def remove_device(cls, user, device_id: int, request=None) -> Tuple[bool, str]:
+        try:
+            device = KnownDevice.objects.get(id=device_id, user=user)
+            device.is_trusted = False
+            device.save(update_fields=['is_trusted'])
+
+            SecurityService.log_event(user, SecurityEventType.DEVICE_REMOVED, request,
+                                      details={'device_id': device_id})
+
+            return True, "Device removed successfully."
+
+        except KnownDevice.DoesNotExist:
+            return False, "Device not found."
+        except Exception as e:
+            logger.error(f"Remove device error: {e}")
+            return False, "Failed to remove device."
 
 
 class InvitationService:
     @classmethod
-    def validate_invitation(cls, token: str) -> Tuple[bool, Optional[WorkspaceInvitation], str]:
+    def send_invitation(cls, workspace, email: str, role: str, invited_by, request=None) -> Tuple[bool, str]:
         try:
-            invitation = WorkspaceInvitation.objects.get(token=token)
+            email = email.lower().strip()
 
-            if invitation.is_revoked:
-                return False, None, "This invitation has been revoked."
+            if WorkspaceMember.objects.filter(workspace=workspace, user__email__iexact=email).exists():
+                return False, "This user is already a member of this workspace."
 
-            if invitation.is_accepted:
-                return False, None, "This invitation has already been accepted."
+            pending = WorkspaceInvitation.objects.filter(
+                workspace=workspace,
+                email__iexact=email,
+                status='pending'
+            )
+            if pending.exists():
+                return False, "An invitation has already been sent to this email."
 
-            if invitation.is_expired:
-                return False, None, "This invitation has expired."
-
-            return True, invitation, ""
-
-        except WorkspaceInvitation.DoesNotExist:
-            return False, None, "Invalid invitation link."
-
-    @classmethod
-    @transaction.atomic
-    def accept_invitation(cls, token: str, user, request=None) -> Tuple[bool, str]:
-        is_valid, invitation, error = cls.validate_invitation(token)
-        if not is_valid:
-            return False, error
-
-        if invitation.email.lower() != user.email.lower():
-            return False, "This invitation was sent to a different email address."
-
-        invitation.accepted_at = timezone.now()
-        invitation.accepted_by = user
-        invitation.save()
-
-        if request:
-            SecurityService.log_event(
-                user, SecurityEventType.INVITATION_ACCEPTED, request,
-                details={'inviter': invitation.inviter.username, 'role': invitation.role}
+            invitation = WorkspaceInvitation.objects.create(
+                workspace=workspace,
+                email=email,
+                role=role,
+                invited_by=invited_by,
+                token=secrets.token_urlsafe(32),
+                expires_at=timezone.now() + timedelta(days=7)
             )
 
-        return True, f"Welcome! You've joined the workspace as {invitation.role}."
+            cls._send_invitation_email(invitation, request)
+
+            profile = getattr(invited_by, 'profile', None)
+            if profile:
+                profile.team_invites_sent = (profile.team_invites_sent or 0) + 1
+                profile.save(update_fields=['team_invites_sent'])
+
+            return True, "Invitation sent successfully!"
+
+        except Exception as e:
+            logger.error(f"Send invitation error: {e}")
+            return False, "Failed to send invitation."
+
+    @classmethod
+    def _send_invitation_email(cls, invitation, request=None):
+        try:
+            domain = getattr(settings, 'SITE_DOMAIN', 'localhost:5000')
+            protocol = 'https' if not settings.DEBUG else 'http'
+            invite_url = f"{protocol}://{domain}/invite/{invitation.token}/"
+            
+            subject = f"You're invited to join {invitation.workspace.name} on InvoiceFlow"
+            html_message = render_to_string('emails/workspace_invitation.html', {
+                'invitation': invitation,
+                'invite_url': invite_url,
+            })
+            plain_message = strip_tags(html_message)
+            
+            send_mail(
+                subject,
+                plain_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [invitation.email],
+                html_message=html_message,
+                fail_silently=True
+            )
+        except Exception as e:
+            logger.error(f"Failed to send invitation email: {e}")
+
+    @classmethod
+    def accept_invitation(cls, token: str, user, request=None) -> Tuple[bool, str]:
+        try:
+            invitation = WorkspaceInvitation.objects.get(
+                token=token,
+                status='pending'
+            )
+
+            if invitation.is_expired:
+                invitation.status = 'expired'
+                invitation.save(update_fields=['status'])
+                return False, "This invitation has expired."
+
+            if invitation.email.lower() != user.email.lower():
+                return False, "This invitation was sent to a different email address."
+
+            WorkspaceMember.objects.create(
+                workspace=invitation.workspace,
+                user=user,
+                role=invitation.role
+            )
+
+            invitation.status = 'accepted'
+            invitation.accepted_at = timezone.now()
+            invitation.save(update_fields=['status', 'accepted_at'])
+
+            SecurityService.log_event(user, SecurityEventType.INVITATION_ACCEPTED, request,
+                                      details={'workspace_id': invitation.workspace.id})
+
+            return True, f"Welcome to {invitation.workspace.name}!"
+
+        except WorkspaceInvitation.DoesNotExist:
+            return False, "Invalid invitation link."
+        except Exception as e:
+            logger.error(f"Accept invitation error: {e}")
+            return False, "Failed to accept invitation."
+
+    @classmethod
+    def revoke_invitation(cls, invitation_id: int, user) -> Tuple[bool, str]:
+        try:
+            invitation = WorkspaceInvitation.objects.get(id=invitation_id)
+            
+            member = WorkspaceMember.objects.filter(
+                workspace=invitation.workspace,
+                user=user,
+                role__in=['owner', 'admin']
+            ).first()
+            
+            if not member:
+                return False, "You don't have permission to revoke this invitation."
+
+            invitation.status = 'revoked'
+            invitation.save(update_fields=['status'])
+
+            return True, "Invitation revoked."
+
+        except WorkspaceInvitation.DoesNotExist:
+            return False, "Invitation not found."
+        except Exception as e:
+            logger.error(f"Revoke invitation error: {e}")
+            return False, "Failed to revoke invitation."
