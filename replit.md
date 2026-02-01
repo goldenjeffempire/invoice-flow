@@ -105,4 +105,5 @@ Centralized validation using domain-specific schemas and standardized error resp
 - **Sentry**: For error tracking and performance monitoring.
 
 ### Deployment Platform
-- **Render**: Primary deployment target with autoscaling and health checks.
+- **Replit**: Development environment with hot reload and instant previews.
+- **Render**: Production deployment target with autoscaling and health checks (see render.yaml).

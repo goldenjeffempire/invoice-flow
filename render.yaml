@@ -22,17 +22,41 @@ services:
       - key: SITE_URL
         value: "https://invoiceflow.com.ng"
       - key: ALLOWED_HOSTS
-        value: "invoiceflow.com.ng,www.invoiceflow.com.ng,invoice-flow-7vu0.onrender.com"
+        value: "invoiceflow.com.ng,www.invoiceflow.com.ng,.onrender.com"
       - key: CSRF_TRUSTED_ORIGINS
-        value: "https://invoiceflow.com.ng,https://www.invoiceflow.com.ng,https://invoice-flow-7vu0.onrender.com"
+        value: "https://invoiceflow.com.ng,https://www.invoiceflow.com.ng,https://*.onrender.com"
+      - key: DJANGO_SETTINGS_MODULE
+        value: "invoiceflow.settings"
       - key: GUNICORN_GRACEFUL_TIMEOUT
         value: "10"
+      - key: WEB_CONCURRENCY
+        value: "4"
+      - key: GUNICORN_THREADS
+        value: "4"
+      - key: GUNICORN_WORKER_CLASS
+        value: "gthread"
+      - key: GUNICORN_LOG_LEVEL
+        value: "info"
+      - key: EMAIL_HOST
+        value: "smtp.sendgrid.net"
+      - key: EMAIL_HOST_USER
+        value: "apikey"
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: DEFAULT_FROM_EMAIL
+        value: "Invoice Flow <noreply@invoiceflow.com.ng>"
     healthCheckPath: /health/live/
     autoDeploy: true
     plan: starter
+    numInstances: 1
+    region: oregon
+    preDeployCommand: python manage.py check --deploy
 
 databases:
   - name: invoiceflow-db
     plan: starter
     databaseName: invoiceflow
-    postgresMajorVersion: 15
+    postgresMajorVersion: 16
+    ipAllowList: []

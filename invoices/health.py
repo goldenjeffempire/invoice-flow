@@ -246,7 +246,11 @@ def detailed_health(request):
 
     from invoiceflow.env_validation import get_env_status
     from invoices.async_tasks import AsyncTaskService
-    from invoices.services import CacheWarmingService
+    
+    try:
+        from invoices.services import CacheWarmingService
+    except ImportError:
+        CacheWarmingService = None
 
     checks = {
         "database": False,
@@ -326,7 +330,7 @@ def detailed_health(request):
             "allowed_hosts": settings.ALLOWED_HOSTS[:3] if settings.ALLOWED_HOSTS else [],
             "time_zone": settings.TIME_ZONE,
         },
-        "cache_warming": CacheWarmingService.get_cache_stats(),
+        "cache_warming": CacheWarmingService.get_cache_stats() if CacheWarmingService else {"status": "unavailable"},
         "async_tasks": AsyncTaskService.get_task_stats(),
     }
     return detailed_health_impl(health_data)
