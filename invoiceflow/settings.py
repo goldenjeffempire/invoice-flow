@@ -19,9 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 
 # Fail-fast environment validation
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL or not DATABASE_URL.strip():
-    raise ImproperlyConfigured("DATABASE_URL environment variable is required.")
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
 IS_PRODUCTION = os.getenv("PRODUCTION", "false").lower() == "true"
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
@@ -246,7 +244,7 @@ DATABASES = {
 # PostgreSQL connection using the provisioned DATABASE_URL
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
-# Only use PostgreSQL
+# Only use PostgreSQL if DATABASE_URL is provided
 if DATABASE_URL:
     # Remove unsupported parameters from the connection string if they exist
     _db_url = DATABASE_URL
@@ -263,23 +261,23 @@ if DATABASE_URL:
             conn_max_age=600,
             ssl_require=IS_PRODUCTION  # Only require SSL in production
         )
-        if db_config:
+        if db_config and db_config.get('ENGINE'):
             # Fix for dj_database_url returning empty string engine or mismatched engine
-            if not db_config.get('ENGINE') or db_config['ENGINE'] == 'django.db.backends.':
+            if db_config['ENGINE'] == 'django.db.backends.':
                 db_config['ENGINE'] = 'django.db.backends.postgresql'
             DATABASES["default"] = dict(db_config)
-    except Exception as e:
-        # Fallback to default postgres engine if parsing succeeds but something is off
-        try:
+        else:
+            # Fallback for empty/invalid configurations
             db_config = dj_database_url.config(default=_db_url, conn_max_age=600, ssl_require=IS_PRODUCTION)
-            if db_config:
-                if not db_config.get('ENGINE') or db_config['ENGINE'] == 'django.db.backends.':
+            if db_config and db_config.get('ENGINE'):
+                if db_config['ENGINE'] == 'django.db.backends.':
                     db_config['ENGINE'] = 'django.db.backends.postgresql'
                 DATABASES["default"] = dict(db_config)
-            else:
-                raise e
-        except:
-            raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
+    except Exception as e:
+        # Final fallback check or raise if in production
+        if IS_PRODUCTION:
+             raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
+        print(f"Warning: Database configuration failed, falling back to SQLite: {e}")
 
 # =============================================================================
 # STATIC / MEDIA
