@@ -10,6 +10,7 @@ from .views import payment_views
 from .views import client_views
 from .views import export_views
 from .views import recurring_views
+from .views import expense_views
 
 app_name = "invoices"
 
@@ -113,4 +114,27 @@ urlpatterns = [
     path('recurring/<int:schedule_id>/pause/', recurring_views.schedule_pause, name='schedule_pause'),
     path('recurring/<int:schedule_id>/resume/', recurring_views.schedule_resume, name='schedule_resume'),
     path('recurring/<int:schedule_id>/cancel/', recurring_views.schedule_cancel, name='schedule_cancel'),
+
+    # Expenses
+    path('expenses/', expense_views.expense_list, name='expense_list'),
+    path('expenses/create/', expense_views.expense_create, name='expense_create'),
+    path('expenses/export/csv/', expense_views.expense_export_csv, name='expense_export_csv'),
+    path('expenses/categories/', expense_views.category_list, name='category_list'),
+    path('expenses/categories/<int:category_id>/edit/', expense_views.category_edit, name='category_edit'),
+    path('expenses/vendors/', expense_views.vendor_list, name='vendor_list'),
+    path('expenses/vendors/create/', expense_views.vendor_create, name='vendor_create'),
+    path('expenses/vendors/<int:vendor_id>/', expense_views.vendor_detail, name='vendor_detail'),
+    path('expenses/vendors/<int:vendor_id>/edit/', expense_views.vendor_edit, name='vendor_edit'),
+    path('expenses/pl-report/', expense_views.expense_pl_report, name='expense_pl_report'),
+    path('expenses/<int:expense_id>/', expense_views.expense_detail, name='expense_detail'),
+    path('expenses/<int:expense_id>/edit/', expense_views.expense_edit, name='expense_edit'),
+    path('expenses/<int:expense_id>/submit/', expense_views.expense_submit, name='expense_submit'),
+    path('expenses/<int:expense_id>/approve/', expense_views.expense_approve, name='expense_approve'),
+    path('expenses/<int:expense_id>/reject/', expense_views.expense_reject, name='expense_reject'),
+    path('expenses/<int:expense_id>/reimburse/', expense_views.expense_reimburse, name='expense_reimburse'),
+    path('expenses/<int:expense_id>/upload-receipt/', expense_views.expense_upload_receipt, name='expense_upload_receipt'),
+    path('expenses/<int:expense_id>/attachments/<int:attachment_id>/delete/', expense_views.expense_delete_attachment, name='expense_delete_attachment'),
+
+    # Billable Expenses to Invoice
+    path('invoices/<int:invoice_id>/add-expenses/', expense_views.billable_expenses_select, name='billable_expenses_select'),
 ]

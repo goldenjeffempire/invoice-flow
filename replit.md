@@ -87,6 +87,23 @@ A production-grade recurring billing and subscription management system:
 - **Management Command**: `process_recurring_schedules` for automated scheduled processing.
 - **Service Layer**: `RecurringBillingService` handles all business logic including invoice generation, payment processing, and retry orchestration.
 
+### Expenses & Cost Tracking
+A comprehensive expense management and cost tracking module:
+- **Models**: `Expense`, `ExpenseCategory`, `Vendor`, `ExpenseAttachment`, `ExpenseAuditLog`.
+- **Expense Workflow**: Draft → Pending Approval → Approved/Rejected → Reimbursed or Billed to Client.
+- **Categories**: Hierarchical categories with color coding, GL account codes, and tax deductibility flags.
+- **Vendors**: Full vendor management with contact info, payment terms, and expense totals tracking.
+- **Receipt Attachments**: Secure file upload with type validation (images, PDFs), size limits (10MB).
+- **Billable Expenses**: Mark expenses as billable, assign to clients with optional markup, add to invoices.
+- **Multi-Currency**: Full currency support with exchange rates and base currency conversion.
+- **Tax Handling**: Per-expense tax rates with automatic tax amount calculation.
+- **Filtering & Search**: Filter by status, category, vendor, client, date range, billable status.
+- **P&L Reports**: Revenue vs expenses analysis with category breakdown and monthly trends.
+- **CSV Export**: Export filtered expense data for external accounting systems.
+- **Audit Logging**: Complete audit trail of all expense actions.
+- **Views**: Expense list, create/edit, detail, categories, vendors, P&L report, billable expense selection.
+- **Service Layer**: `ExpenseService`, `ExpenseCategoryService`, `VendorService` for business logic.
+
 ## External Dependencies
 
 ### Payment Gateway
