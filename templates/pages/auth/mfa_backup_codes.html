@@ -1,0 +1,65 @@
+{% extends "base/layout_app.html" %}
+{% block title %}Backup Codes - InvoiceFlow{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto p-6">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-slate-800">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Two-Factor Authentication Enabled!</h1>
+            <p class="mt-2 text-gray-600 dark:text-gray-400">Save your backup codes in a secure place</p>
+        </div>
+        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div>
+                    <h4 class="font-medium text-amber-800 dark:text-amber-300">Important: Save these codes now</h4>
+                    <p class="text-sm text-amber-700 dark:text-amber-400">These backup codes will not be shown again. Store them in a secure location.</p>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            {% for code in recovery_codes %}
+            <div class="p-3 bg-gray-50 dark:bg-slate-800 rounded-lg text-center font-mono text-sm">{{ code }}</div>
+            {% endfor %}
+        </div>
+        <div class="flex gap-4 mb-6">
+            <button onclick="copyRecoveryCodes()" class="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                </svg>
+                Copy Codes
+            </button>
+            <button onclick="downloadRecoveryCodes()" class="flex-1 px-4 py-3 border border-gray-300 dark:border-slate-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Download
+            </button>
+        </div>
+        <a href="{% url 'invoices:settings' %}" class="block w-full px-6 py-3 bg-indigo-600 text-white text-center rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+            I've Saved My Codes - Continue
+        </a>
+    </div>
+</div>
+<script>
+const codes = [{% for code in recovery_codes %}'{{ code }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+function copyRecoveryCodes() {
+    navigator.clipboard.writeText(codes.join('\n'));
+    alert('Recovery codes copied to clipboard!');
+}
+function downloadRecoveryCodes() {
+    const content = 'InvoiceFlow Recovery Codes\n\n' + codes.join('\n') + '\n\nStore these codes in a secure location.';
+    const blob = new Blob([content], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'invoiceflow-recovery-codes.txt';
+    a.click();
+}
+</script>
+{% endblock %}

@@ -10,9 +10,11 @@ from .models import UserProfile
 
 
 class BaseFormMixin:
-    def add_error_class(self):
-        for field_name, field in self.fields.items():
-            if field_name in self.errors:
+    def add_error_class(self) -> None:
+        fields = getattr(self, 'fields', {})
+        errors = getattr(self, 'errors', {})
+        for field_name, field in fields.items():
+            if field_name in errors:
                 field.widget.attrs['class'] = field.widget.attrs.get('class', '') + ' border-red-500'
                 field.widget.attrs['aria-invalid'] = 'true'
 

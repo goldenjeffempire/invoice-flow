@@ -441,8 +441,39 @@ def revoke_all_sessions(request):
 
 
 @login_required
+@require_POST
+@csrf_protect
+def change_password(request):
+    current_password = request.POST.get('current_password')
+    new_password = request.POST.get('new_password')
+    confirm_password = request.POST.get('confirm_password')
+    
+    if new_password != confirm_password:
+        messages.error(request, "New passwords don't match.")
+        return redirect('invoices:settings')
+    
+    if not request.user.check_password(current_password):
+        messages.error(request, "Current password is incorrect.")
+        return redirect('invoices:settings')
+    
+    success, message = AuthService.change_password(
+        user=request.user,
+        current_password=current_password,
+        new_password=new_password,
+        request=request
+    )
+    
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+    
+    return redirect('invoices:settings')
+
+
+@login_required
 def security_activity(request):
-    from .models import SecurityEvent
+    from ..models import SecurityEvent
     events = SecurityEvent.objects.filter(user=request.user).order_by('-created_at')[:50]
     return render(request, 'pages/auth/security_activity.html', {'events': events})
 
