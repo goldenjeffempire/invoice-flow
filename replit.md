@@ -22,7 +22,11 @@ A production-grade authentication system is implemented with:
 - **Auditing & Resilience**: Comprehensive security event logging, IP-based rate limiting, CSRF protection, and a resilience middleware stack for database, redirect, and session issues.
 
 ### Payment Processing
-**Paystack** is the primary payment gateway, including reconciliation, idempotency keys, webhook handling, and atomic transactions.
+- **Paystack**: Primary payment gateway for online payments.
+  - Webhook: `/webhooks/paystack/`
+  - Integration: Verified signatures, idempotency, and automatic reconciliation.
+- **Offline Payments**: Support for cash and bank transfers with audit trails.
+- **Security**: HMACS signature validation for all webhooks.
 
 ### Email Services
 **SendGrid** is used for all transactional emails.

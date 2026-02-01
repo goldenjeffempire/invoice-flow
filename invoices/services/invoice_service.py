@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.shortcuts import get_object_or_404
 
-from ..models import Invoice, LineItem, InvoiceActivity, InvoiceAttachment, InvoicePayment, Client
+from ..models import Invoice, LineItem, InvoiceActivity, InvoiceAttachment, InvoicePayment, Client, Payment
 
 logger = logging.getLogger(__name__)
 

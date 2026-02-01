@@ -5,8 +5,8 @@ from .views import workspace_views
 from .views import ux_views
 
 from .views import dashboard_views
-
 from .views import invoice_views
+from .views import payment_views
 
 app_name = "invoices"
 
@@ -66,6 +66,7 @@ urlpatterns = [
     path("payments/transactions/", payment_views.transaction_list, name="transaction_list"),
     path("payments/<int:payment_id>/", payment_views.payment_detail, name="payment_detail"),
     path("invoices/<int:invoice_id>/record-payment/", payment_views.record_offline_payment, name="record_offline_payment"),
+    path("webhooks/paystack/", payment_views.paystack_webhook, name="paystack_webhook"),
 
     path('invoices/', invoice_views.invoice_list, name='invoice_list'),
     path('invoices/create/', invoice_views.invoice_create, name='invoice_create'),

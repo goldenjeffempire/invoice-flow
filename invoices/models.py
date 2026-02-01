@@ -486,7 +486,7 @@ class Invoice(models.Model):
         return self.status not in [self.Status.VOID, self.Status.WRITE_OFF, self.Status.PAID]
 
     @property
-    def can_record_payment(self, payment_id):
+    def can_record_payment(self):
         return self.status not in [self.Status.VOID, self.Status.WRITE_OFF, self.Status.PAID] and self.amount_due > 0
 
     def get_public_url(self):
@@ -676,10 +676,18 @@ class PaymentAuditLog(models.Model):
 
 class LineItem(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
+    item_type = models.CharField(max_length=50, default="service")
+    product_id_ref = models.IntegerField(null=True, blank=True)
     description = models.CharField(max_length=500)
+    long_description = models.TextField(blank=True)
+    unit = models.CharField(max_length=50, default="unit")
     quantity = models.DecimalField(max_digits=15, decimal_places=4, default=Decimal('1.0000'))
     unit_price = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    discount_type = models.CharField(max_length=20, default="flat")
+    discount_value = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     sort_order = models.IntegerField(default=0)
@@ -951,17 +959,16 @@ class Payment(models.Model):
         COMPLETED = "completed", "Completed"
         FAILED = "failed", "Failed"
         REFUNDED = "refunded", "Refunded"
-        PARTIALLY_REFUNDED = "partially_refunded", "Partially Refunded"
+        REVERSED = "reversed", "Reversed"
 
     class Method(models.TextChoices):
-        STRIPE = "stripe", "Stripe"
         PAYSTACK = "paystack", "Paystack"
         BANK_TRANSFER = "bank_transfer", "Bank Transfer"
         CASH = "cash", "Cash"
         OTHER = "other", "Other"
 
-    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payments_v2")
-    invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name="payments_v2")
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="workspace_payments")
+    invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name="invoice_payments_v2")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     tip_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     currency = models.CharField(max_length=3)
@@ -985,7 +992,7 @@ class Transaction(models.Model):
         PAYOUT = "payout", "Payout"
         ADJUSTMENT = "adjustment", "Adjustment"
 
-    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="transactions_v2")
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="transactions")
     payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name="transactions")
     transaction_type = models.CharField(max_length=20, choices=Type.choices)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
@@ -997,9 +1004,8 @@ class Transaction(models.Model):
 class Payout(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
-        PAID = "paid", "Paid"
+        SUCCESS = "success", "Success"
         FAILED = "failed", "Failed"
-        CANCELED = "canceled", "Canceled"
 
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payouts")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
@@ -1011,11 +1017,8 @@ class Payout(models.Model):
 
 class Dispute(models.Model):
     class Status(models.TextChoices):
-        WARNING_NEEDS_RESPONSE = "warning_needs_response", "Needs Response"
-        WARNING_UNDER_REVIEW = "warning_under_review", "Under Review"
-        WARNING_CLOSED = "warning_closed", "Closed"
-        NEEDS_RESPONSE = "needs_response", "Needs Response"
-        UNDER_REVIEW = "under_review", "Under Review"
+        OPEN = "open", "Open"
+        RESOLVED = "resolved", "Resolved"
         WON = "won", "Won"
         LOST = "lost", "Lost"
 
@@ -1023,10 +1026,9 @@ class Dispute(models.Model):
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="disputes")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3)
-    status = models.CharField(max_length=30, choices=Status.choices)
-    reason = models.CharField(max_length=100)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    reason = models.CharField(max_length=255)
     provider_dispute_id = models.CharField(max_length=255, blank=True, db_index=True)
-    evidence_due_by = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 class PaymentAuditLog(models.Model):
