@@ -1,20 +1,25 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, F
 from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
-from ..models import Invoice, Payment, WorkspaceMember
+from ..models import Invoice, Payment, WorkspaceMember, Workspace
+from django.db import models
 
 @login_required
 def dashboard_overview(request):
-    workspace = request.workspace
+    workspace = getattr(request, 'workspace', None)
+    if not workspace:
+        # Fallback for when workspace middleware isn't active or no workspace resolved
+        return render(request, 'pages/dashboard.html', {'insights': [{'type': 'setup', 'title': 'No Workspace', 'message': 'Please create or join a workspace.', 'action_text': 'Settings', 'action_url': '/settings/'}]})
+
     now = timezone.now()
     
     # Revenue KPIs
     revenue_mtd = Invoice.objects.filter(
         workspace=workspace, status='paid', updated_at__month=now.month, updated_at__year=now.year
-    ).aggregate(total=Sum('line_items__quantity' * 'line_items__unit_price'))['total'] or Decimal('0.00')
+    ).aggregate(total=Sum(F('line_items__quantity') * F('line_items__unit_price')))['total'] or Decimal('0.00')
     
     # Aging Buckets for Outstanding Invoices
     outstanding = Invoice.objects.filter(workspace=workspace, status='unpaid')

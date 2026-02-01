@@ -38,7 +38,7 @@ urlpatterns = [
     path("integrations/", views.integrations_view, name="integrations"),
     path("resources/", views.resources_view, name="resources"),
 
-    path("api/engagement/record/", views.record_engagement, name="record_engagement"),
+    path("clients/", views.profile_update_ajax, name="clients"),
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),
     path("api/faq/", views.faq_api, name="faq_api"),
 
