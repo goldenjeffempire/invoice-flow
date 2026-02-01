@@ -945,6 +945,98 @@ class ImportJob(models.Model):
     stats = models.JSONField(default=dict, blank=True) # {total: 100, success: 90, failed: 10}
     created_at = models.DateTimeField(auto_now_add=True)
 
+class Payment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+        REFUNDED = "refunded", "Refunded"
+        PARTIALLY_REFUNDED = "partially_refunded", "Partially Refunded"
+
+    class Method(models.TextChoices):
+        STRIPE = "stripe", "Stripe"
+        PAYSTACK = "paystack", "Paystack"
+        BANK_TRANSFER = "bank_transfer", "Bank Transfer"
+        CASH = "cash", "Cash"
+        OTHER = "other", "Other"
+
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payments_v2")
+    invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name="payments_v2")
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    tip_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    currency = models.CharField(max_length=3)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    payment_method = models.CharField(max_length=20, choices=Method.choices)
+    provider_reference = models.CharField(max_length=255, blank=True, db_index=True)
+    idempotency_key = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+class Transaction(models.Model):
+    class Type(models.TextChoices):
+        PAYMENT = "payment", "Payment"
+        REFUND = "refund", "Refund"
+        PAYOUT = "payout", "Payout"
+        ADJUSTMENT = "adjustment", "Adjustment"
+
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="transactions_v2")
+    payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name="transactions")
+    transaction_type = models.CharField(max_length=20, choices=Type.choices)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    description = models.TextField(blank=True)
+    provider_transaction_id = models.CharField(max_length=255, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Payout(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PAID = "paid", "Paid"
+        FAILED = "failed", "Failed"
+        CANCELED = "canceled", "Canceled"
+
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payouts")
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    arrival_date = models.DateField(null=True, blank=True)
+    provider_payout_id = models.CharField(max_length=255, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class Dispute(models.Model):
+    class Status(models.TextChoices):
+        WARNING_NEEDS_RESPONSE = "warning_needs_response", "Needs Response"
+        WARNING_UNDER_REVIEW = "warning_under_review", "Under Review"
+        WARNING_CLOSED = "warning_closed", "Closed"
+        NEEDS_RESPONSE = "needs_response", "Needs Response"
+        UNDER_REVIEW = "under_review", "Under Review"
+        WON = "won", "Won"
+        LOST = "lost", "Lost"
+
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="disputes")
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="disputes")
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    status = models.CharField(max_length=30, choices=Status.choices)
+    reason = models.CharField(max_length=100)
+    provider_dispute_id = models.CharField(max_length=255, blank=True, db_index=True)
+    evidence_due_by = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class PaymentAuditLog(models.Model):
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="audit_logs")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=100)
+    details = models.JSONField(default=dict)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
 class PaymentSettings(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

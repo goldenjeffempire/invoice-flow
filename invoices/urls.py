@@ -62,8 +62,10 @@ urlpatterns = [
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),
     path("api/faq/", views.faq_api, name="faq_api"),
 
-    path("payments/history/", views.payment_history, name="payment_history"),
-    path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
+    path("payments/", payment_views.payment_overview, name="payment_overview"),
+    path("payments/transactions/", payment_views.transaction_list, name="transaction_list"),
+    path("payments/<int:payment_id>/", payment_views.payment_detail, name="payment_detail"),
+    path("invoices/<int:invoice_id>/record-payment/", payment_views.record_offline_payment, name="record_offline_payment"),
 
     path('invoices/', invoice_views.invoice_list, name='invoice_list'),
     path('invoices/create/', invoice_views.invoice_create, name='invoice_create'),
