@@ -1,10 +1,23 @@
 from django.urls import path
-from . import views
+from .views import main_views as views
+from .views import onboarding_views
 
 app_name = "invoices"
 
 urlpatterns = [
     path('', views.landing_view, name='home'),
+
+    path('onboarding/', onboarding_views.onboarding_router, name='onboarding'),
+    path('onboarding/welcome/', onboarding_views.onboarding_welcome, name='onboarding_welcome'),
+    path('onboarding/business/', onboarding_views.onboarding_business, name='onboarding_business'),
+    path('onboarding/branding/', onboarding_views.onboarding_branding, name='onboarding_branding'),
+    path('onboarding/tax/', onboarding_views.onboarding_tax, name='onboarding_tax'),
+    path('onboarding/payments/', onboarding_views.onboarding_payments, name='onboarding_payments'),
+    path('onboarding/import/', onboarding_views.onboarding_import, name='onboarding_import'),
+    path('onboarding/templates/', onboarding_views.onboarding_templates, name='onboarding_templates'),
+    path('onboarding/team/', onboarding_views.onboarding_team, name='onboarding_team'),
+    path('onboarding/complete/', onboarding_views.onboarding_complete, name='onboarding_complete'),
+    path('api/onboarding/status/', onboarding_views.onboarding_status_api, name='onboarding_status_api'),
 
     path('signup/', views.signup_view, name='signup'),
     path('login/', views.login_view, name='login'),

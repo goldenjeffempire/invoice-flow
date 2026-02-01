@@ -107,3 +107,45 @@ Centralized validation using domain-specific schemas and standardized error resp
 ### Deployment Platform
 - **Replit**: Development environment with hot reload and instant previews.
 - **Render**: Production deployment target with autoscaling and health checks (see render.yaml).
+
+## Recent Changes
+
+### February 1, 2026 - Onboarding System Rebuild
+Complete rebuild of the onboarding and workspace setup system to production-grade SaaS standards:
+
+**8-Step Onboarding Flow:**
+1. **Welcome**: Choose usage type (personal, small business, freelancer, agency, enterprise)
+2. **Business Profile**: Company details, address, industry, size
+3. **Branding**: Logo upload, color customization, tagline
+4. **Tax & Compliance**: VAT/tax registration, tax ID, regional tax settings
+5. **Payments**: Bank transfer details, card payments, mobile money (regional)
+6. **Data Import**: Import customers, products, invoices from other platforms
+7. **Templates**: Select and customize invoice template style
+8. **Team**: Send team member invitations with role assignments
+
+**Smart Features:**
+- Region-based contextual defaults (Nigeria, US, UK, EU, South Africa, Ghana, Kenya)
+- Automatic currency, locale, and tax configuration based on country
+- Business-type suggestions for invoice numbering formats
+- Progress tracking with completion percentage
+- Time-to-first-invoice tracking for analytics
+- Skip-able steps with smart defaults
+
+**Technical Implementation:**
+- `OnboardingService` class handles all business logic (service layer pattern)
+- Extended `UserProfile` model with 38+ new fields for comprehensive onboarding data
+- 9 responsive, accessible templates with stepper UI and mobile-first design
+- WCAG accessibility compliance with proper ARIA labels and focus management
+- CSRF protection on all forms, file upload validation (5MB limit, image types only)
+
+**Key Files:**
+- `invoices/services/onboarding_service.py` - Business logic
+- `invoices/views/onboarding_views.py` - Thin controller views
+- `invoices/templates/pages/onboarding/` - 9 template files
+- `invoices/migrations/0004_onboarding_extended_fields.py` - Model changes
+
+**Routes:**
+- `/onboarding/` - Router (redirects to current step)
+- `/onboarding/welcome/` through `/onboarding/team/` - Individual steps
+- `/onboarding/complete/` - Completion celebration page
+- `/api/onboarding/status/` - AJAX status endpoint

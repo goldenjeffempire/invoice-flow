@@ -11,16 +11,16 @@ from django.views.decorators.csrf import csrf_protect
 from django.http import HttpResponse, JsonResponse
 from django_ratelimit.decorators import ratelimit
 
-from .auth_services import (
+from ..auth_services import (
     AuthService, MFAService, SessionService, InvitationService,
     SecurityService, SecurityEventType
 )
-from .forms import (
+from ..forms import (
     SignUpForm, LoginForm, MFAVerifyForm, MFASetupVerifyForm, MFADisableForm,
     PasswordResetRequestForm, PasswordResetConfirmForm, ChangePasswordForm,
     ResendVerificationForm
 )
-from .models import UserSession, WorkspaceInvitation, MFAProfile
+from ..models import UserSession, WorkspaceInvitation, MFAProfile
 
 
 def landing_view(request):

@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ step_title }} - Setup | InvoiceFlow{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --step-active: #6366f1;
+    --step-complete: #10b981;
+    --step-pending: #d1d5db;
+}
+
+.onboarding-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.onboarding-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.stepper::before {
+    content: '';
+    position: absolute;
+    top: 1.25rem;
+    left: 2rem;
+    right: 2rem;
+    height: 2px;
+    background: var(--step-pending);
+    z-index: 0;
+}
+
+.stepper-progress {
+    position: absolute;
+    top: 1.25rem;
+    left: 2rem;
+    height: 2px;
+    background: var(--step-complete);
+    z-index: 1;
+    transition: width 0.5s ease-out;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    flex: 1;
+}
+
+.step-circle {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    border: 2px solid var(--step-pending);
+    background: white;
+    color: #6b7280;
+}
+
+.step.completed .step-circle {
+    background: var(--step-complete);
+    border-color: var(--step-complete);
+    color: white;
+}
+
+.step.current .step-circle {
+    background: var(--step-active);
+    border-color: var(--step-active);
+    color: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.step-label {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-align: center;
+    max-width: 5rem;
+}
+
+.step.current .step-label {
+    color: var(--step-active);
+    font-weight: 600;
+}
+
+.step.completed .step-label {
+    color: var(--step-complete);
+}
+
+@media (max-width: 768px) {
+    .stepper {
+        overflow-x: auto;
+        padding-bottom: 1rem;
+        margin: 0 -1rem 2rem -1rem;
+        padding: 0 1rem 1rem 1rem;
+    }
+    
+    .step-label {
+        display: none;
+    }
+    
+    .step.current .step-label {
+        display: block;
+        position: absolute;
+        bottom: -1.5rem;
+        white-space: nowrap;
+    }
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.form-label.required::after {
+    content: ' *';
+    color: #ef4444;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.2s;
+    background: white;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--step-active);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.form-input.error {
+    border-color: #ef4444;
+}
+
+.form-error {
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.form-hint {
+    color: #6b7280;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    padding: 0.875rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-secondary {
+    background: white;
+    color: #6b7280;
+    padding: 0.875rem 2rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    border: 1px solid #d1d5db;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+.btn-skip {
+    background: transparent;
+    color: #6b7280;
+    padding: 0.875rem 1rem;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: underline;
+}
+
+.btn-skip:hover {
+    color: #374151;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1 0%, #10b981 100%);
+    transition: width 0.5s ease-out;
+}
+
+.time-estimate {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+}
+
+.selectable-card {
+    padding: 1.25rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    background: white;
+}
+
+.selectable-card:hover {
+    border-color: #a5b4fc;
+    background: #f5f3ff;
+}
+
+.selectable-card.selected {
+    border-color: var(--step-active);
+    background: #eef2ff;
+}
+
+.selectable-card input[type="radio"],
+.selectable-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.color-preview {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.toast {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideIn 0.3s ease-out;
+}
+
+.toast.success {
+    background: #10b981;
+}
+
+.toast.error {
+    background: #ef4444;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.loading-spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="onboarding-container">
+    <div class="max-w-4xl mx-auto px-4 py-8 md:py-12">
+        <div class="text-center mb-8">
+            <a href="{% url 'invoices:home' %}" class="inline-flex items-center gap-2 text-2xl font-bold text-indigo-600">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                InvoiceFlow
+            </a>
+        </div>
+        
+        <div class="onboarding-card p-6 md:p-10">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ onboarding_status.progress_percent }}%"></div>
+            </div>
+            
+            <div class="time-estimate">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>About {{ onboarding_status.estimated_time_remaining }} min remaining</span>
+            </div>
+            
+            <nav class="stepper" aria-label="Progress">
+                <div class="stepper-progress" style="width: calc({{ onboarding_status.progress_percent }}% - 4rem)"></div>
+                {% for step in onboarding_status.steps %}
+                <div class="step {% if step.completed %}completed{% elif step.current %}current{% endif %}" 
+                     aria-current="{% if step.current %}step{% endif %}">
+                    <div class="step-circle" aria-label="Step {{ step.id }}: {{ step.name }}">
+                        {% if step.completed %}
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        {% else %}
+                        {{ step.id }}
+                        {% endif %}
+                    </div>
+                    <span class="step-label">{{ step.name }}</span>
+                </div>
+                {% endfor %}
+            </nav>
+            
+            <div class="step-content">
+                {% block step_content %}{% endblock %}
+            </div>
+        </div>
+        
+        <p class="text-center text-gray-500 text-sm mt-6">
+            Need help? <a href="{% url 'invoices:faq' %}" class="text-indigo-600 hover:underline">Check our FAQ</a> or 
+            <a href="{% url 'invoices:contact' %}" class="text-indigo-600 hover:underline">contact support</a>
+        </p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const forms = document.querySelectorAll('form[data-ajax]');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+                
+                form.addEventListener('submit', () => {
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }, 5000);
+                });
+            }
+        });
+    });
+    
+    const selectableCards = document.querySelectorAll('.selectable-card');
+    selectableCards.forEach(card => {
+        const input = card.querySelector('input[type="radio"], input[type="checkbox"]');
+        if (input) {
+            card.addEventListener('click', function() {
+                if (input.type === 'radio') {
+                    document.querySelectorAll(`input[name="${input.name}"]`).forEach(r => {
+                        r.closest('.selectable-card').classList.remove('selected');
+                    });
+                }
+                input.checked = input.type === 'checkbox' ? !input.checked : true;
+                card.classList.toggle('selected', input.checked);
+            });
+            
+            if (input.checked) {
+                card.classList.add('selected');
+            }
+        }
+    });
+});
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+</script>
+{% endblock %}

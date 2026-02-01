@@ -1,0 +1,165 @@
+{% extends "pages/onboarding/base_onboarding.html" %}
+
+{% block step_content %}
+<div class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Payment Settings</h2>
+    <p class="text-gray-600">Set up how you want to receive payments from your clients.</p>
+</div>
+
+<form method="post" action="{% url 'invoices:onboarding_payments' %}">
+    {% csrf_token %}
+    
+    {% if errors %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center gap-2 text-red-800 font-medium">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Please fix the errors below
+        </div>
+        {% if errors.payment_methods %}
+        <p class="text-red-700 text-sm mt-2">{{ errors.payment_methods }}</p>
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div class="mb-8">
+        <label class="form-label required">Accepted Payment Methods</label>
+        <p class="form-hint mb-4">Select how your clients can pay you</p>
+        
+        <div class="space-y-4">
+            <label class="flex items-start gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input type="checkbox" name="accept_bank_transfers" id="accept_bank_transfers"
+                       {% if profile.accept_bank_transfers %}checked{% endif %}
+                       class="mt-1 w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                        </svg>
+                        <span class="font-semibold text-gray-900">Bank Transfer</span>
+                    </div>
+                    <p class="text-gray-500 text-sm mt-1">Receive payments directly to your bank account</p>
+                </div>
+            </label>
+            
+            <label class="flex items-start gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input type="checkbox" name="accept_card_payments" id="accept_card_payments"
+                       {% if profile.accept_card_payments %}checked{% endif %}
+                       class="mt-1 w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                        </svg>
+                        <span class="font-semibold text-gray-900">Card Payments</span>
+                        <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full">Powered by Paystack</span>
+                    </div>
+                    <p class="text-gray-500 text-sm mt-1">Accept Visa, Mastercard, and local cards online</p>
+                </div>
+            </label>
+            
+            <label class="flex items-start gap-4 p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input type="checkbox" name="accept_mobile_money" id="accept_mobile_money"
+                       {% if profile.accept_mobile_money %}checked{% endif %}
+                       class="mt-1 w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="font-semibold text-gray-900">Mobile Money</span>
+                    </div>
+                    <p class="text-gray-500 text-sm mt-1">Accept payments via mobile money (MTN MoMo, etc.)</p>
+                </div>
+            </label>
+        </div>
+    </div>
+    
+    <div id="bank_details" class="border rounded-lg p-6 mb-6 {% if not profile.accept_bank_transfers %}hidden{% endif %}">
+        <h3 class="font-semibold text-gray-900 mb-4">Bank Account Details</h3>
+        <p class="text-gray-500 text-sm mb-4">These details will appear on your invoices for bank transfers</p>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+            <div class="form-group mb-0">
+                <label for="bank_name" class="form-label required">Bank Name</label>
+                <input type="text" id="bank_name" name="bank_name" 
+                       value="{{ profile.bank_name }}" 
+                       class="form-input {% if errors.bank_name %}error{% endif %}"
+                       placeholder="e.g., First Bank">
+                {% if errors.bank_name %}
+                <p class="form-error">{{ errors.bank_name }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="form-group mb-0">
+                <label for="bank_account_name" class="form-label required">Account Name</label>
+                <input type="text" id="bank_account_name" name="bank_account_name" 
+                       value="{{ profile.bank_account_name }}" 
+                       class="form-input {% if errors.bank_account_name %}error{% endif %}"
+                       placeholder="e.g., Acme Consulting Ltd">
+                {% if errors.bank_account_name %}
+                <p class="form-error">{{ errors.bank_account_name }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="form-group mb-0">
+                <label for="bank_account_number" class="form-label required">Account Number</label>
+                <input type="text" id="bank_account_number" name="bank_account_number" 
+                       value="{{ profile.bank_account_number }}" 
+                       class="form-input {% if errors.bank_account_number %}error{% endif %}"
+                       placeholder="1234567890">
+                {% if errors.bank_account_number %}
+                <p class="form-error">{{ errors.bank_account_number }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="form-group mb-0">
+                <label for="bank_routing_number" class="form-label">Routing / Sort Code</label>
+                <input type="text" id="bank_routing_number" name="bank_routing_number" 
+                       value="{{ profile.bank_routing_number }}" 
+                       class="form-input"
+                       placeholder="Optional">
+            </div>
+            
+            <div class="form-group mb-0 md:col-span-2">
+                <label for="bank_swift_code" class="form-label">SWIFT / BIC Code</label>
+                <input type="text" id="bank_swift_code" name="bank_swift_code" 
+                       value="{{ profile.bank_swift_code }}" 
+                       class="form-input"
+                       placeholder="For international transfers"
+                       style="max-width: 300px;">
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label for="payment_instructions" class="form-label">Additional Payment Instructions</label>
+        <p class="form-hint mb-2">Add any special instructions that will appear on your invoices</p>
+        <textarea id="payment_instructions" name="payment_instructions" 
+                  class="form-input" rows="3"
+                  placeholder="e.g., Please include invoice number as reference...">{{ profile.payment_instructions }}</textarea>
+    </div>
+    
+    <div class="flex justify-between items-center mt-8 pt-6 border-t">
+        <a href="{% url 'invoices:onboarding_tax' %}" class="btn-secondary">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+            </svg>
+            Back
+        </a>
+        <button type="submit" class="btn-primary">
+            Continue
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+        </button>
+    </div>
+</form>
+
+<script>
+document.getElementById('accept_bank_transfers').addEventListener('change', function() {
+    document.getElementById('bank_details').classList.toggle('hidden', !this.checked);
+});
+</script>
+{% endblock %}

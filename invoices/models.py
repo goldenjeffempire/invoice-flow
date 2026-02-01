@@ -12,30 +12,119 @@ from django.utils import timezone
 
 
 class UserProfile(models.Model):
+    BUSINESS_TYPE_CHOICES = [
+        ("freelancer", "Freelancer / Sole Proprietor"),
+        ("agency", "Agency / Studio"),
+        ("consulting", "Consulting Firm"),
+        ("ecommerce", "E-commerce / Retail"),
+        ("saas", "SaaS / Software"),
+        ("services", "Professional Services"),
+        ("construction", "Construction / Trades"),
+        ("healthcare", "Healthcare / Medical"),
+        ("other", "Other"),
+    ]
+    
+    REGION_CHOICES = [
+        ("ng", "Nigeria"),
+        ("us", "United States"),
+        ("gb", "United Kingdom"),
+        ("eu", "European Union"),
+        ("za", "South Africa"),
+        ("gh", "Ghana"),
+        ("ke", "Kenya"),
+        ("other", "Other"),
+    ]
+    
+    INVOICE_STYLE_CHOICES = [
+        ("modern", "Modern"),
+        ("classic", "Classic"),
+        ("minimal", "Minimal"),
+        ("professional", "Professional"),
+        ("bold", "Bold"),
+    ]
+    
+    CURRENCY_CHOICES = [
+        ("NGN", "₦ - Nigerian Naira"),
+        ("USD", "$ - US Dollar"),
+        ("EUR", "€ - Euro"),
+        ("GBP", "£ - British Pound"),
+        ("ZAR", "R - South African Rand"),
+        ("GHS", "₵ - Ghanaian Cedi"),
+        ("KES", "KSh - Kenyan Shilling"),
+    ]
+    
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     email_verified = models.BooleanField(default=False)
     two_factor_enabled = models.BooleanField(default=False)
     
-    # Onboarding State
+    # Onboarding State (8 steps: Welcome, Business, Branding, Tax, Payments, Import, Templates, Team)
     onboarding_completed = models.BooleanField(default=False)
-    onboarding_step = models.IntegerField(default=1) # 1: Welcome, 2: Business, 3: Branding, 4: Tax, 5: Payments, 6: Final
+    onboarding_step = models.IntegerField(default=1)
+    onboarding_started_at = models.DateTimeField(null=True, blank=True)
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True)
+    first_invoice_created_at = models.DateTimeField(null=True, blank=True)
     onboarding_data = models.JSONField(default=dict, blank=True)
     
     # Business Details
     company_name = models.CharField(max_length=255, blank=True)
     company_logo = models.FileField(upload_to="company_logos/", null=True, blank=True)
-    business_type = models.CharField(max_length=100, blank=True)
+    business_type = models.CharField(max_length=100, blank=True, choices=BUSINESS_TYPE_CHOICES)
     business_email = models.EmailField(blank=True)
     business_phone = models.CharField(max_length=50, blank=True)
     business_address = models.TextField(blank=True)
+    business_city = models.CharField(max_length=100, blank=True)
+    business_state = models.CharField(max_length=100, blank=True)
+    business_country = models.CharField(max_length=100, blank=True)
+    business_postal_code = models.CharField(max_length=20, blank=True)
+    business_website = models.URLField(blank=True)
+    region = models.CharField(max_length=10, blank=True, choices=REGION_CHOICES)
+    
+    # Branding
+    primary_color = models.CharField(max_length=7, default="#6366f1")
+    secondary_color = models.CharField(max_length=7, default="#8b5cf6")
+    accent_color = models.CharField(max_length=7, default="#10b981")
+    invoice_style = models.CharField(max_length=50, default="modern", choices=INVOICE_STYLE_CHOICES)
+    
+    # Tax & Compliance
+    tax_id_number = models.CharField(max_length=50, blank=True)
+    tax_id_type = models.CharField(max_length=20, blank=True)
+    vat_registered = models.BooleanField(default=False)
+    vat_number = models.CharField(max_length=50, blank=True)
+    vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    wht_applicable = models.BooleanField(default=False)
+    wht_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    
+    # Payment Settings
+    bank_name = models.CharField(max_length=100, blank=True)
+    bank_account_name = models.CharField(max_length=255, blank=True)
+    bank_account_number = models.CharField(max_length=50, blank=True)
+    bank_routing_number = models.CharField(max_length=50, blank=True)
+    bank_swift_code = models.CharField(max_length=20, blank=True)
+    accept_card_payments = models.BooleanField(default=False)
+    accept_bank_transfers = models.BooleanField(default=True)
+    accept_mobile_money = models.BooleanField(default=False)
+    payment_instructions = models.TextField(blank=True)
+    
+    # Data Import Status
+    customers_imported = models.BooleanField(default=False)
+    customers_import_count = models.IntegerField(default=0)
+    products_imported = models.BooleanField(default=False)
+    products_import_count = models.IntegerField(default=0)
+    invoices_imported = models.BooleanField(default=False)
+    invoices_import_count = models.IntegerField(default=0)
     
     # Preferences
-    default_currency = models.CharField(max_length=3, default="USD")
-    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    default_currency = models.CharField(max_length=3, default="NGN", choices=CURRENCY_CHOICES)
     invoice_prefix = models.CharField(max_length=10, default="INV")
-    invoice_style = models.CharField(max_length=50, default="modern")
-    primary_color = models.CharField(max_length=7, default="#6366f1")
-    timezone = models.CharField(max_length=63, default="UTC")
+    invoice_start_number = models.IntegerField(default=1)
+    invoice_numbering_format = models.CharField(max_length=50, default="{prefix}-{year}-{number:04d}")
+    date_format = models.CharField(max_length=20, default="DD/MM/YYYY")
+    timezone = models.CharField(max_length=63, default="Africa/Lagos")
+    locale = models.CharField(max_length=10, default="en-NG")
+    
+    # Team Settings
+    team_invites_sent = models.IntegerField(default=0)
     
     # Security/System
     failed_login_attempts = models.IntegerField(default=0)
@@ -44,13 +133,6 @@ class UserProfile(models.Model):
     password_reset_required = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    CURRENCY_CHOICES = [
-        ("USD", "$ - US Dollar"),
-        ("EUR", "€ - Euro"),
-        ("GBP", "£ - British Pound"),
-        ("NGN", "₦ - Nigerian Naira"),
-    ]
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
