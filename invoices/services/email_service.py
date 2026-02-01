@@ -1,16 +1,13 @@
 """
 Email Service - Business logic for email delivery.
 
-Responsibilities:
-- Invoice email delivery
-- Payment receipt emails
-- Standardized email operations
+Uses the fully async email service to ensure email operations
+NEVER block HTTP requests or cause 500 errors.
 """
 
 from __future__ import annotations
 
 import logging
-import threading
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -19,102 +16,60 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _get_async_service():
+    """Lazy import to avoid circular imports."""
+    from .async_email_service import get_async_email_service
+    return get_async_email_service()
+
+
 class EmailService:
-    """Standardized email delivery service."""
+    """
+    Standardized email delivery service.
+    All operations are fully async and non-blocking.
+    """
 
     @staticmethod
     def send_invoice(invoice: "Invoice", recipient: str) -> bool:
-        """
-        Send invoice email to recipient.
-        
-        Args:
-            invoice: The invoice to send
-            recipient: Email address of recipient
-            
-        Returns:
-            True if email was sent successfully
-        """
-        from invoices.sendgrid_service import SendGridEmailService
-
+        """Queue invoice email - returns immediately."""
         try:
-            return SendGridEmailService().send_invoice(invoice, recipient)
+            return _get_async_service().send_invoice_ready_async(invoice, recipient)
         except Exception as e:
-            logger.error(f"Failed to send invoice email: {e}")
+            logger.error(f"Failed to queue invoice email: {e}")
             return False
 
     @staticmethod
     def send_receipt(payment: "Payment") -> bool:
-        """
-        Send payment receipt email.
-        
-        Args:
-            payment: The payment to send receipt for
-            
-        Returns:
-            True if email was sent successfully
-        """
-        from invoices.sendgrid_service import SendGridEmailService
-
+        """Queue payment receipt email - returns immediately."""
         try:
             recipient = payment.invoice.client_email
-            return SendGridEmailService().send_invoice_paid(payment.invoice, recipient)
+            return _get_async_service().send_invoice_paid_async(payment.invoice, recipient)
         except Exception as e:
-            logger.error("Failed to send receipt email")
+            logger.error("Failed to queue receipt email")
             return False
 
     @staticmethod
     def send_reminder(invoice: "Invoice", recipient: str, template: str = "default") -> bool:
-        """
-        Send payment reminder email.
-        
-        Args:
-            invoice: The invoice to remind about
-            recipient: Email address of recipient
-            template: Reminder template name
-            
-        Returns:
-            True if email was sent successfully
-        """
-        from invoices.sendgrid_service import SendGridEmailService
-
+        """Queue payment reminder email - returns immediately."""
         try:
-            return SendGridEmailService().send_payment_reminder(invoice, recipient)
+            return _get_async_service().send_reminder_async(invoice, recipient)
         except Exception as e:
-            logger.error(f"Failed to send reminder email: {e}")
+            logger.error(f"Failed to queue reminder email: {e}")
             return False
 
     @staticmethod
     def send_verification_email(user, token: str) -> bool:
-        """
-        Send email verification email (Non-blocking).
-        """
-        from invoices.sendgrid_service import SendGridEmailService
-
-        def _send():
-            try:
-                SendGridEmailService().send_verification_email(user, token)
-            except Exception as e:
-                logger.error(f"Async verification email error: {e}")
-
-        thread = threading.Thread(target=_send)
-        thread.daemon = True
-        thread.start()
-        return True
+        """Queue verification email - returns immediately."""
+        try:
+            return _get_async_service().send_verification_email_async(user, token)
+        except Exception as e:
+            logger.error(f"Failed to queue verification email: {e}")
+            return False
 
     @staticmethod
     def send_password_reset_email(user, token: str) -> bool:
-        """
-        Send password reset email (Non-blocking).
-        """
-        from invoices.sendgrid_service import SendGridEmailService
-
-        def _send():
-            try:
-                SendGridEmailService().send_password_reset_email(user, token)
-            except Exception as e:
-                logger.error(f"Async password reset email error: {e}")
-
-        thread = threading.Thread(target=_send)
-        thread.daemon = True
-        thread.start()
-        return True
+        """Queue password reset email - returns immediately."""
+        try:
+            return _get_async_service().send_password_reset_async(user, token)
+        except Exception as e:
+            logger.error(f"Failed to queue password reset email: {e}")
+            return False

@@ -459,49 +459,27 @@ class AuthService:
         # Create verification token
         token = EmailToken.create_token(user, EmailToken.TokenType.VERIFY, hours=24)
 
-        # CRITICAL: Non-blocking email sending with strict timeout
-        # Signup MUST succeed even if email fails (credit exceeded, API down, slow API)
-        email_sent = False
-        email_error = None
-        
-        def _send_email_async():
-            """Send email in background thread with timeout."""
-            try:
-                result = EmailService.send_verification_email(user, token)
-                return result if isinstance(result, bool) else result.get('status') == 'sent'
-            except Exception as e:
-                logger.debug(f"Email send error in thread: {e}")
-                return False
-        
+        # CRITICAL: Fully async email sending - returns IMMEDIATELY
+        # Email is queued and processed in background worker thread
+        # Signup NEVER blocks on SendGrid regardless of API state
         try:
-            # Use ThreadPoolExecutor with strict 3-second timeout
-            # This ensures signup is NEVER blocked by slow SendGrid response
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(_send_email_async)
-                try:
-                    email_sent = future.result(timeout=3.0)
-                except (FuturesTimeoutError, TimeoutError):
-                    logger.debug("Email send timed out - signup will continue")
-                    email_sent = False
+            from .services.async_email_service import get_async_email_service
+            email_queued = get_async_email_service().send_verification_email_async(user, token.token)
         except Exception as e:
-            email_error = str(e)
-            logger.debug(f"SendGrid wrapper error (non-fatal): {email_error}")
+            logger.debug(f"Email queue error (non-fatal): {e}")
+            email_queued = False
 
         # Log security events (also gracefully handle failures)
         if request:
             try:
                 SecurityService.log_event(user, SecurityEventType.SIGNUP, request)
-                if email_sent:
+                if email_queued:
                     SecurityService.log_event(user, SecurityEventType.EMAIL_VERIFICATION_SENT, request)
             except Exception as log_error:
                 logger.warning(f"Failed to log security event: {log_error}")
 
-        # Return success with appropriate message
-        if email_sent:
-            return user, "Account created! Please check your email to verify your account."
-        else:
-            # Account created but email failed - user can request resend
-            return user, "Account created! We couldn't send the verification email right now. Please use 'Resend Verification' on the login page."
+        # Return success - email sending is async so we report it as queued
+        return user, "Account created! Please check your email to verify your account."
 
     @classmethod
     def authenticate_user(cls, request, username_or_email: str, password: str) -> Tuple[Optional[Any], str, bool]:

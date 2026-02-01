@@ -209,12 +209,15 @@ CACHE_TIMEOUT_TOP_CLIENTS = 300
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "invoiceflow.resilience_middleware.DatabaseResilienceMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "invoiceflow.resilience_middleware.SessionResilienceMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "invoiceflow.resilience_middleware.SafeRedirectMiddleware",
     "invoiceflow.unified_middleware.UnifiedMiddleware",
     "invoiceflow.unified_middleware.OptimizedRateLimitMiddleware",
     "invoiceflow.mfa_middleware.MFAEnforcementMiddleware",
@@ -271,41 +274,38 @@ if DATABASE_URL:
     if "channel_binding=" in _db_url:
         import re
         _db_url = re.sub(r'[?&]channel_binding=[^&]+', '', _db_url)
-        # Fix possible leading/trailing &
         _db_url = _db_url.replace('?&', '?').rstrip('&')
     
     try:
-        # Parse database URL with production-ready settings
         db_config = dj_database_url.parse(
             _db_url,
             conn_max_age=600,
-            ssl_require=IS_PRODUCTION  # Only require SSL in production
+            ssl_require=IS_PRODUCTION
         )
         if db_config and db_config.get('ENGINE'):
-            # Fix for dj_database_url returning empty string engine or mismatched engine
             if db_config['ENGINE'] == 'django.db.backends.':
                 db_config['ENGINE'] = 'django.db.backends.postgresql'
             
-            # Production SSL Hardening
+            # Production-grade connection hardening
+            db_config['OPTIONS'] = db_config.get('OPTIONS', {})
+            db_config['OPTIONS']['connect_timeout'] = 10
+            db_config['OPTIONS']['options'] = '-c statement_timeout=30000'
+            
             if IS_PRODUCTION:
-                db_config['OPTIONS'] = db_config.get('OPTIONS', {})
                 db_config['OPTIONS']['sslmode'] = 'require'
-                # Disable SSL cert verification if it's unstable or internal, 
-                # but 'require' is the baseline. For some providers, 'prefer' or 'require' is enough.
-                # However, user mentioned 'unstable database SSL connections', so we'll ensure 
-                # stable connection parameters.
-                db_config['OPTIONS']['connect_timeout'] = 10
+            else:
+                db_config['OPTIONS']['sslmode'] = 'prefer'
+            
+            db_config['CONN_HEALTH_CHECKS'] = True
             
             DATABASES["default"] = dict(db_config)
         else:
-            # Fallback for empty/invalid configurations
             db_config = dj_database_url.config(default=_db_url, conn_max_age=600, ssl_require=IS_PRODUCTION)
             if db_config and db_config.get('ENGINE'):
                 if db_config['ENGINE'] == 'django.db.backends.':
                     db_config['ENGINE'] = 'django.db.backends.postgresql'
                 DATABASES["default"] = dict(db_config)
     except Exception as e:
-        # Final fallback check or raise if in production
         if IS_PRODUCTION:
              raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
         print(f"Warning: Database configuration failed, falling back to SQLite: {e}")
