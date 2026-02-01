@@ -17,6 +17,7 @@ urlpatterns = [
     path('password-reset/', views.password_reset_request, name='password_reset'),
     path('password-reset/confirm/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
     path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
+    path('verification-sent/', views.verification_sent, name='verification_sent'),
     path('onboarding/', onboarding_views.onboarding_router, name='onboarding_router'),
     path('onboarding/welcome/', onboarding_views.onboarding_welcome, name='onboarding_welcome'),
     path('onboarding/business/', onboarding_views.onboarding_business, name='onboarding_business'),
@@ -58,7 +59,6 @@ urlpatterns = [
     path("integrations/", views.integrations_view, name="integrations"),
     path("resources/", views.resources_view, name="resources"),
 
-    path('clients/', invoice_views.invoice_list, name='client_list'),
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),
     path("api/faq/", views.faq_api, name="faq_api"),
 
@@ -67,7 +67,20 @@ urlpatterns = [
 
     path('invoices/', invoice_views.invoice_list, name='invoice_list'),
     path('invoices/create/', invoice_views.invoice_create, name='invoice_create'),
-    path('invoices/<str:invoice_number>/', invoice_views.invoice_detail, name='invoice_detail'),
-    path('invoices/<str:invoice_number>/edit/', invoice_views.invoice_edit, name='invoice_edit'),
+    path('invoices/export/csv/', invoice_views.invoice_export_csv, name='invoice_export_csv'),
+    path('invoices/<int:invoice_id>/', invoice_views.invoice_detail, name='invoice_detail'),
+    path('invoices/<int:invoice_id>/edit/', invoice_views.invoice_edit, name='invoice_edit'),
+    path('invoices/<int:invoice_id>/preview/', invoice_views.invoice_preview, name='invoice_preview'),
+    path('invoices/<int:invoice_id>/pdf/', invoice_views.invoice_pdf, name='invoice_pdf'),
+    path('invoices/<int:invoice_id>/send/', invoice_views.invoice_send, name='invoice_send'),
+    path('invoices/<int:invoice_id>/share/', invoice_views.invoice_share_link, name='invoice_share'),
+    path('invoices/<int:invoice_id>/payment/', invoice_views.invoice_record_payment, name='invoice_record_payment'),
+    path('invoices/<int:invoice_id>/void/', invoice_views.invoice_void, name='invoice_void'),
+    path('invoices/<int:invoice_id>/duplicate/', invoice_views.invoice_duplicate, name='invoice_duplicate'),
+
     path('i/<str:token>/', invoice_views.public_invoice_view, name='public_invoice'),
+    path('i/<str:token>/pdf/', invoice_views.public_invoice_pdf, name='public_invoice_pdf'),
+
+    path('api/invoices/calculate/', invoice_views.api_invoice_calculate, name='api_invoice_calculate'),
+    path('api/clients/search/', invoice_views.api_clients_search, name='api_clients_search'),
 ]

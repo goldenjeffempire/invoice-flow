@@ -337,6 +337,21 @@ class Invoice(models.Model):
         VOID = "void", "Void"
         WRITE_OFF = "write_off", "Write-off"
 
+    class SourceType(models.TextChoices):
+        MANUAL = "manual", "Manual"
+        ESTIMATE = "estimate", "From Estimate"
+        RECURRING = "recurring", "From Recurring"
+        DUPLICATE = "duplicate", "Duplicated"
+        API = "api", "API Created"
+
+    class TaxMode(models.TextChoices):
+        EXCLUSIVE = "exclusive", "Tax Exclusive (added on top)"
+        INCLUSIVE = "inclusive", "Tax Inclusive (included in price)"
+
+    class DiscountType(models.TextChoices):
+        PERCENTAGE = "percentage", "Percentage"
+        FLAT = "flat", "Fixed Amount"
+
     CURRENCY_CHOICES = [
         ("NGN", "₦ - Nigerian Naira"),
         ("USD", "$ - US Dollar"),
@@ -345,83 +360,293 @@ class Invoice(models.Model):
         ("ZAR", "R - South African Rand"),
         ("GHS", "₵ - Ghanaian Cedi"),
         ("KES", "KSh - Kenyan Shilling"),
+        ("CAD", "$ - Canadian Dollar"),
+        ("AUD", "$ - Australian Dollar"),
+        ("INR", "₹ - Indian Rupee"),
     ]
+
+    CURRENCY_SYMBOLS = {
+        "NGN": "₦", "USD": "$", "EUR": "€", "GBP": "£",
+        "ZAR": "R", "GHS": "₵", "KES": "KSh", "CAD": "$",
+        "AUD": "$", "INR": "₹",
+    }
 
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="invoices")
     client = models.ForeignKey('Client', on_delete=models.CASCADE, related_name="invoices")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_invoices")
     invoice_number = models.CharField(max_length=50, db_index=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
-    
-    # Dates
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
+
+    source_type = models.CharField(max_length=20, choices=SourceType.choices, default=SourceType.MANUAL)
+    source_id = models.IntegerField(null=True, blank=True)
+    parent_invoice = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='child_invoices')
+
     issue_date = models.DateField(default=timezone.now)
     due_date = models.DateField()
+    sent_at = models.DateTimeField(null=True, blank=True)
+    first_viewed_at = models.DateTimeField(null=True, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
-    
-    # Financials
-    currency = models.CharField(max_length=3, default="USD")
+    voided_at = models.DateTimeField(null=True, blank=True)
+    void_reason = models.TextField(blank=True)
+
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="NGN")
+    base_currency = models.CharField(max_length=3, default="NGN")
     exchange_rate = models.DecimalField(max_digits=15, decimal_places=6, default=Decimal('1.000000'))
-    
+    exchange_rate_date = models.DateField(null=True, blank=True)
+
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     tax_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     discount_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     amount_paid = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     amount_due = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    
-    # Configuration
-    tax_type = models.CharField(max_length=20, default="exclusive") # inclusive, exclusive
-    discount_type = models.CharField(max_length=20, default="flat") # percentage, flat
-    global_discount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    
-    # Content
-    client_memo = models.TextField(blank=True)
-    internal_notes = models.TextField(blank=True)
+
+    tax_mode = models.CharField(max_length=20, choices=TaxMode.choices, default=TaxMode.EXCLUSIVE)
+    default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    discount_type = models.CharField(max_length=20, choices=DiscountType.choices, default=DiscountType.FLAT)
+    global_discount_value = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    global_discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+
+    client_memo = models.TextField(blank=True, help_text="Visible to client on invoice")
+    internal_notes = models.TextField(blank=True, help_text="Private notes, not visible to client")
     terms_conditions = models.TextField(blank=True)
-    
-    # Security/Tracking
-    public_token = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe)
+    footer_note = models.TextField(blank=True)
+    payment_instructions = models.TextField(blank=True)
+
+    public_token = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe, db_index=True)
     view_count = models.IntegerField(default=0)
     last_viewed_at = models.DateTimeField(null=True, blank=True)
-    
+    last_viewed_ip = models.GenericIPAddressField(null=True, blank=True)
+
+    is_recurring = models.BooleanField(default=False)
+    recurring_schedule = models.JSONField(default=dict, blank=True)
+
+    reminder_enabled = models.BooleanField(default=True)
+    reminder_days_before = models.IntegerField(default=3)
+    last_reminder_sent_at = models.DateTimeField(null=True, blank=True)
+    reminder_count = models.IntegerField(default=0)
+
+    delivery_email_sent = models.BooleanField(default=False)
+    delivery_email_opened = models.BooleanField(default=False)
+    delivery_whatsapp_sent = models.BooleanField(default=False)
+
+    version = models.IntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('workspace', 'invoice_number')
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['workspace', 'status']),
+            models.Index(fields=['workspace', 'due_date']),
+            models.Index(fields=['client', 'status']),
+            models.Index(fields=['public_token']),
+        ]
 
     def __str__(self):
         return f"{self.invoice_number} - {self.client.name}"
 
+    @property
+    def currency_symbol(self):
+        return self.CURRENCY_SYMBOLS.get(self.currency, self.currency)
+
+    @property
+    def is_overdue(self):
+        if self.status in [self.Status.PAID, self.Status.VOID, self.Status.WRITE_OFF]:
+            return False
+        return self.due_date < timezone.now().date() and self.amount_due > 0
+
+    @property
+    def days_until_due(self):
+        return (self.due_date - timezone.now().date()).days
+
+    @property
+    def days_overdue(self):
+        if not self.is_overdue:
+            return 0
+        return (timezone.now().date() - self.due_date).days
+
+    @property
+    def payment_progress(self):
+        if self.total_amount == 0:
+            return 0
+        return int((self.amount_paid / self.total_amount) * 100)
+
+    @property
+    def can_edit(self):
+        return self.status == self.Status.DRAFT
+
+    @property
+    def can_send(self):
+        return self.status in [self.Status.DRAFT, self.Status.SENT, self.Status.VIEWED]
+
+    @property
+    def can_void(self):
+        return self.status not in [self.Status.VOID, self.Status.WRITE_OFF, self.Status.PAID]
+
+    @property
+    def can_record_payment(self):
+        return self.status not in [self.Status.VOID, self.Status.WRITE_OFF, self.Status.PAID] and self.amount_due > 0
+
+    def get_public_url(self):
+        from django.urls import reverse
+        return reverse('invoices:public_invoice', kwargs={'token': self.public_token})
+
+    def regenerate_token(self):
+        self.public_token = secrets.token_urlsafe(32)
+        self.save(update_fields=['public_token'])
+
 class LineItem(models.Model):
+    class ItemType(models.TextChoices):
+        SERVICE = "service", "Service"
+        PRODUCT = "product", "Product"
+        EXPENSE = "expense", "Expense"
+        DISCOUNT = "discount", "Discount Line"
+        OTHER = "other", "Other"
+
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
-    description = models.CharField(max_length=255)
+    item_type = models.CharField(max_length=20, choices=ItemType.choices, default=ItemType.SERVICE)
+    product_id_ref = models.IntegerField(null=True, blank=True)
+
+    description = models.CharField(max_length=500)
     long_description = models.TextField(blank=True)
-    quantity = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('1.00'))
-    unit_price = models.DecimalField(max_digits=15, decimal_places=2)
-    
+    unit = models.CharField(max_length=50, blank=True, default="unit")
+    quantity = models.DecimalField(max_digits=15, decimal_places=4, default=Decimal('1.0000'))
+    unit_price = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    discount_type = models.CharField(max_length=20, choices=Invoice.DiscountType.choices, default=Invoice.DiscountType.FLAT)
+    discount_value = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    
-    subtotal = models.DecimalField(max_digits=15, decimal_places=2)
-    total = models.DecimalField(max_digits=15, decimal_places=2)
-    
+
+    subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+
     sort_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def calculate_totals(self, tax_mode='exclusive'):
+        line_subtotal = self.quantity * self.unit_price
+
+        if self.discount_type == Invoice.DiscountType.PERCENTAGE:
+            self.discount_amount = (line_subtotal * self.discount_value) / Decimal('100')
+        else:
+            self.discount_amount = self.discount_value
+
+        after_discount = line_subtotal - self.discount_amount
+
+        if tax_mode == 'inclusive':
+            base_amount = after_discount / (1 + self.tax_rate / Decimal('100'))
+            self.tax_amount = after_discount - base_amount
+            self.subtotal = base_amount
+            self.total = after_discount
+        else:
+            self.tax_amount = (after_discount * self.tax_rate) / Decimal('100')
+            self.subtotal = after_discount
+            self.total = after_discount + self.tax_amount
+
 
 class InvoiceActivity(models.Model):
+    class ActionType(models.TextChoices):
+        CREATED = "created", "Invoice Created"
+        UPDATED = "updated", "Invoice Updated"
+        SENT = "sent", "Invoice Sent"
+        VIEWED = "viewed", "Invoice Viewed"
+        PAYMENT_RECEIVED = "payment_received", "Payment Received"
+        PAYMENT_FAILED = "payment_failed", "Payment Failed"
+        STATUS_CHANGED = "status_changed", "Status Changed"
+        REMINDER_SENT = "reminder_sent", "Reminder Sent"
+        VOIDED = "voided", "Invoice Voided"
+        WRITTEN_OFF = "written_off", "Invoice Written Off"
+        DUPLICATED = "duplicated", "Invoice Duplicated"
+        ATTACHMENT_ADDED = "attachment_added", "Attachment Added"
+        ATTACHMENT_REMOVED = "attachment_removed", "Attachment Removed"
+        COMMENT_ADDED = "comment_added", "Comment Added"
+        DOWNLOADED = "downloaded", "PDF Downloaded"
+        SHARED = "shared", "Link Shared"
+
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="activities")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    action = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=50, choices=ActionType.choices)
     description = models.TextField()
     metadata = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    is_system = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name_plural = "Invoice activities"
+
+
 class InvoiceAttachment(models.Model):
+    class AttachmentType(models.TextChoices):
+        DOCUMENT = "document", "Document"
+        IMAGE = "image", "Image"
+        CONTRACT = "contract", "Contract"
+        RECEIPT = "receipt", "Receipt"
+        OTHER = "other", "Other"
+
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="attachments")
-    file = models.FileField(upload_to="invoice_attachments/")
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    file = models.FileField(upload_to="invoice_attachments/%Y/%m/")
     filename = models.CharField(max_length=255)
-    file_size = models.IntegerField()
+    file_type = models.CharField(max_length=20, choices=AttachmentType.choices, default=AttachmentType.DOCUMENT)
+    mime_type = models.CharField(max_length=100, blank=True)
+    file_size = models.IntegerField(default=0)
+    description = models.CharField(max_length=255, blank=True)
+    is_visible_to_client = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+class InvoicePayment(models.Model):
+    class PaymentMethod(models.TextChoices):
+        CARD = "card", "Card Payment"
+        BANK_TRANSFER = "bank_transfer", "Bank Transfer"
+        CASH = "cash", "Cash"
+        MOBILE_MONEY = "mobile_money", "Mobile Money"
+        PAYSTACK = "paystack", "Paystack"
+        STRIPE = "stripe", "Stripe"
+        CHECK = "check", "Check/Cheque"
+        OTHER = "other", "Other"
+
+    class PaymentStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+        REFUNDED = "refunded", "Refunded"
+        CANCELLED = "cancelled", "Cancelled"
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    reference = models.CharField(max_length=255, unique=True, db_index=True)
+    external_reference = models.CharField(max_length=255, blank=True, db_index=True)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    currency = models.CharField(max_length=3, default="NGN")
+    payment_method = models.CharField(max_length=30, choices=PaymentMethod.choices, default=PaymentMethod.BANK_TRANSFER)
+    status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    payment_date = models.DateField(default=timezone.now)
+    notes = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    is_partial = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.reference} - {self.amount} {self.currency}"
 
 
 class Payment(models.Model):

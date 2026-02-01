@@ -23,10 +23,8 @@ from ..forms import (
 from ..models import UserSession, WorkspaceInvitation, MFAProfile
 
 
-from django.views.decorators.cache import cache_page
-
-@cache_page(60 * 15)
 def landing_view(request):
+    """Fast landing page - no cache to avoid user state issues."""
     if request.user.is_authenticated:
         return redirect('invoices:dashboard')
     return render(request, "pages/landing.html")
@@ -55,66 +53,95 @@ def custom_500_view(request):
 @csrf_protect
 @ratelimit(key='ip', rate='10/m', method='POST', block=True)
 def signup_view(request):
-    if request.user.is_authenticated:
-        return redirect('invoices:onboarding_router')
+    """
+    Production-grade signup view with:
+    - Comprehensive error handling (never returns 500)
+    - Graceful degradation on service failures
+    - Proper user feedback for all scenarios
+    """
+    try:
+        if request.user.is_authenticated:
+            return redirect('invoices:onboarding_router')
 
-    if request.method == 'POST':
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            user, message = AuthService.register_user(
-                username=form.cleaned_data['username'],
-                email=form.cleaned_data['email'],
-                password=form.cleaned_data['password'],
-                request=request
-            )
-            if user:
-                # In development or if auto-verify is needed, we could login here
-                # but following the production service pattern:
-                messages.success(request, message)
-                return redirect('invoices:verification_sent')
-            else:
-                messages.error(request, message)
-    else:
-        form = SignUpForm()
+        if request.method == 'POST':
+            form = SignUpForm(request.POST)
+            if form.is_valid():
+                try:
+                    user, message = AuthService.register_user(
+                        username=form.cleaned_data['username'],
+                        email=form.cleaned_data['email'],
+                        password=form.cleaned_data['password'],
+                        request=request
+                    )
+                    if user:
+                        messages.success(request, message)
+                        return redirect('invoices:verification_sent')
+                    else:
+                        messages.error(request, message)
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).error(f"Signup error: {e}")
+                    messages.error(request, "We couldn't create your account right now. Please try again in a moment.")
+        else:
+            form = SignUpForm()
 
-    return render(request, 'pages/auth/signup.html', {'form': form})
+        return render(request, 'pages/auth/signup.html', {'form': form})
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Critical signup view error: {e}")
+        messages.error(request, "Something went wrong. Please try again.")
+        return render(request, 'pages/auth/signup.html', {'form': SignUpForm()})
 
 
 @csrf_protect
 @ratelimit(key='ip', rate='10/m', method='POST', block=True)
 def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('invoices:onboarding_router')
+    """
+    Production-grade login view with comprehensive error handling.
+    """
+    try:
+        if request.user.is_authenticated:
+            return redirect('invoices:onboarding_router')
 
-    if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            user, message, requires_mfa = AuthService.authenticate_user(
-                request=request,
-                username_or_email=form.cleaned_data['username_or_email'],
-                password=form.cleaned_data['password']
-            )
+        if request.method == 'POST':
+            form = LoginForm(request.POST)
+            if form.is_valid():
+                try:
+                    user, message, requires_mfa = AuthService.authenticate_user(
+                        request=request,
+                        username_or_email=form.cleaned_data['username_or_email'],
+                        password=form.cleaned_data['password']
+                    )
 
-            if user:
-                if requires_mfa:
-                    request.session['pending_user_id'] = user.id
-                    request.session['pending_login_remember'] = form.cleaned_data.get('remember_me', False)
-                    return redirect('invoices:mfa_verify')
-                else:
-                    AuthService.complete_login(request, user)
+                    if user:
+                        if requires_mfa:
+                            request.session['pending_user_id'] = user.id
+                            request.session['pending_login_remember'] = form.cleaned_data.get('remember_me', False)
+                            return redirect('invoices:mfa_verify')
+                        else:
+                            AuthService.complete_login(request, user)
 
-                    if not form.cleaned_data.get('remember_me'):
-                        request.session.set_expiry(0)
+                            if not form.cleaned_data.get('remember_me'):
+                                request.session.set_expiry(0)
 
-                    messages.success(request, "Welcome back!")
-                    next_url = request.GET.get('next', 'invoices:dashboard')
-                    return redirect(next_url)
-            else:
-                messages.error(request, message)
-    else:
-        form = LoginForm()
+                            messages.success(request, "Welcome back!")
+                            next_url = request.GET.get('next', 'invoices:dashboard')
+                            return redirect(next_url)
+                    else:
+                        messages.error(request, message)
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).error(f"Login error: {e}")
+                    messages.error(request, "Login failed. Please try again.")
+        else:
+            form = LoginForm()
 
-    return render(request, 'pages/auth/login.html', {'form': form})
+        return render(request, 'pages/auth/login.html', {'form': form})
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Critical login view error: {e}")
+        messages.error(request, "Something went wrong. Please try again.")
+        return render(request, 'pages/auth/login.html', {'form': LoginForm()})
 
 
 def logout_view(request):

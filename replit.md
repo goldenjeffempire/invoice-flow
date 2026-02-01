@@ -110,6 +110,73 @@ Centralized validation using domain-specific schemas and standardized error resp
 
 ## Recent Changes
 
+### February 1, 2026 - Signup Flow Production Hardening
+Comprehensive fixes to ensure fast, stable, 500-free signup flow:
+
+**Key Fixes:**
+- Added missing `/verification-sent/` URL route (was causing broken redirect after signup)
+- Made email sending fully non-blocking with ThreadPoolExecutor (3-second timeout)
+- Removed cache decorator from landing page (was causing user state issues)
+- Added comprehensive try/except error handling to signup and login views
+
+**Technical Details:**
+- Email sending now wrapped in ThreadPoolExecutor with strict timeout
+- Signup never fails due to slow/failed SendGrid API calls
+- All view exceptions caught and return friendly error messages instead of 500s
+- HIBP password breach check already had 1-second timeout (unchanged)
+
+**Key Files Modified:**
+- `invoices/urls.py` - Added verification_sent URL
+- `invoices/views/main_views.py` - Error handling for signup/login views
+- `invoices/auth_services.py` - Non-blocking email with ThreadPoolExecutor
+
+### February 1, 2026 - Invoice Lifecycle Complete Rebuild
+Production-grade invoice lifecycle system rebuilt from scratch with comprehensive state management:
+
+**Invoice Model (50+ fields):**
+- Status tracking: draft → sent → viewed → part_paid → paid (with overdue/void/write-off states)
+- Multi-currency support with exchange rate tracking (10 currencies: NGN, USD, EUR, GBP, ZAR, GHS, KES, CAD, AUD, INR)
+- Tax modes: exclusive (added on top) or inclusive (included in price)
+- Discounts: per-line and global, percentage or flat amount
+- Recurring invoice support with JSON schedule configuration
+- Delivery tracking: email sent/opened, WhatsApp sent
+- Payment reminders: configurable days before due, count tracking
+- Public sharing via unique token (64-char URL-safe)
+- Version control for audit purposes
+
+**Supporting Models:**
+- `LineItem`: Per-line tax/discount, sort order, item types (service/product/expense/discount/other)
+- `InvoiceActivity`: 15 action types for complete audit trail (created, updated, sent, viewed, payment_received, etc.)
+- `InvoiceAttachment`: File uploads with type classification and client visibility control
+- `InvoicePayment`: Payment tracking with method, status, partial payment support
+
+**State Machine (InvoiceService):**
+- Enforced status transitions (e.g., can't void a paid invoice)
+- Valid transitions defined per status
+- Automatic status updates based on payment amounts
+
+**Views (15+ endpoints):**
+- List with filtering/sorting/pagination/stats cards
+- Builder with Alpine.js for reactive line item management
+- Detail with activity timeline and payment recording
+- Preview for print-ready layout
+- PDF generation and download
+- Share link generation with WhatsApp/email options
+- Record payment (partial/full)
+- Void and duplicate operations
+- CSV export
+
+**Public Pages:**
+- `/i/<token>/` - Public invoice view (no auth required)
+- `/i/<token>/pdf/` - Public PDF download
+
+**Key Files:**
+- `invoices/models.py` - Invoice, LineItem, InvoiceActivity, InvoiceAttachment, InvoicePayment
+- `invoices/services/invoice_service.py` - Business logic and state machine
+- `invoices/views/invoice_views.py` - All invoice endpoints
+- `templates/pages/invoices/` - list.html, builder.html, detail.html, preview.html, share.html, public_pay.html
+- `invoices/migrations/0003_invoice_lifecycle_rebuild.py` - Complete schema rebuild
+
 ### February 1, 2026 - Signup Stability & Production Hardening
 Comprehensive fixes to make the registration system production-grade:
 

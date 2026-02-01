@@ -29,6 +29,5 @@ urlpatterns = [
     path("robots.txt", views.robots_txt_view, name="robots_txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
     path("api/v1/", include("invoices.api.urls")),
-    path("invoices/", include(("invoices.urls", "invoices"), namespace="invoices_legacy")),
     path("", include("invoices.urls", namespace="invoices")),
 ]

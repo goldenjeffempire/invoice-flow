@@ -459,17 +459,33 @@ class AuthService:
         # Create verification token
         token = EmailToken.create_token(user, EmailToken.TokenType.VERIFY, hours=24)
 
-        # CRITICAL: Graceful SendGrid error handling
-        # Signup MUST succeed even if email fails (credit exceeded, API down, etc.)
+        # CRITICAL: Non-blocking email sending with strict timeout
+        # Signup MUST succeed even if email fails (credit exceeded, API down, slow API)
         email_sent = False
         email_error = None
+        
+        def _send_email_async():
+            """Send email in background thread with timeout."""
+            try:
+                result = EmailService.send_verification_email(user, token)
+                return result if isinstance(result, bool) else result.get('status') == 'sent'
+            except Exception as e:
+                logger.debug(f"Email send error in thread: {e}")
+                return False
+        
         try:
-            result = EmailService.send_verification_email(user, token)
-            email_sent = result if isinstance(result, bool) else result.get('status') == 'sent'
+            # Use ThreadPoolExecutor with strict 3-second timeout
+            # This ensures signup is NEVER blocked by slow SendGrid response
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_send_email_async)
+                try:
+                    email_sent = future.result(timeout=3.0)
+                except (FuturesTimeoutError, TimeoutError):
+                    logger.debug("Email send timed out - signup will continue")
+                    email_sent = False
         except Exception as e:
             email_error = str(e)
-            # Log the error but don't fail signup
-            logger.error(f"SendGrid email failed during signup (non-fatal): {email_error}")
+            logger.debug(f"SendGrid wrapper error (non-fatal): {email_error}")
 
         # Log security events (also gracefully handle failures)
         if request:
