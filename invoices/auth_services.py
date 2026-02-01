@@ -9,7 +9,9 @@ import re
 import secrets
 import urllib.request
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import timedelta
+from decimal import Decimal
 from typing import Optional, Tuple, List, Dict, Any
 
 import pyotp
@@ -100,10 +102,23 @@ class PasswordValidator:
 
     @classmethod
     def check_breach(cls, password: str) -> Tuple[bool, int]:
+        """
+        Check if password has been exposed in data breaches.
+        Uses non-blocking approach with strict timeout to never slow down signup.
+        """
         # Quick exit if disabled or empty
         if not password:
             return False, 0
             
+        def _fetch_hibp(prefix: str) -> str:
+            """Inner function for timeout-controlled HIBP fetch."""
+            req = urllib.request.Request(
+                f"{cls.HIBP_API_URL}{prefix}",
+                headers={"User-Agent": "InvoiceFlow-Security-Check"}
+            )
+            with urllib.request.urlopen(req, timeout=1.0) as response:
+                return response.read().decode('utf-8')
+        
         try:
             sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
             prefix = sha1_hash[:5]
@@ -113,25 +128,28 @@ class PasswordValidator:
             cached_result = cache.get(cache_key)
 
             if cached_result is None:
-                # Optimized: Very short timeout for HIBP to avoid slow signup
-                req = urllib.request.Request(
-                    f"{cls.HIBP_API_URL}{prefix}",
-                    headers={"User-Agent": "InvoiceFlow-Security-Check"}
-                )
-                # Reduced timeout from 3s to 1.5s for faster signup
-                with urllib.request.urlopen(req, timeout=1.5) as response:
-                    cached_result = response.read().decode('utf-8')
-                    cache.set(cache_key, cached_result, cls.CACHE_DURATION)
+                # Use ThreadPoolExecutor for strict timeout control
+                # This ensures signup is NEVER blocked by slow HIBP response
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(_fetch_hibp, prefix)
+                    try:
+                        # 1 second hard timeout - fail gracefully if exceeded
+                        cached_result = future.result(timeout=1.0)
+                        cache.set(cache_key, cached_result, cls.CACHE_DURATION)
+                    except (FuturesTimeoutError, TimeoutError):
+                        logger.debug("HIBP check timed out - allowing password")
+                        return False, 0
 
-            for line in cached_result.splitlines():
-                parts = line.split(':')
-                if len(parts) == 2 and parts[0] == suffix:
-                    return True, int(parts[1])
+            if cached_result:
+                for line in cached_result.splitlines():
+                    parts = line.split(':')
+                    if len(parts) == 2 and parts[0] == suffix:
+                        return True, int(parts[1])
 
             return False, 0
         except Exception as e:
             # Silently fail breach check to avoid breaking signup if HIBP is down or slow
-            logger.warning(f"HIBP check failed or timed out: {e}")
+            logger.debug(f"HIBP check failed (non-fatal): {e}")
             return False, 0
 
 
@@ -317,19 +335,29 @@ class AuthService:
     @classmethod
     @transaction.atomic
     def register_user(cls, username: str, email: str, password: str, request=None) -> Tuple[Optional[Any], str]:
+        """
+        Production-grade user registration with:
+        - Atomic transaction for user + profile creation
+        - Safe defaults for all non-nullable UserProfile fields
+        - Graceful SendGrid error handling (signup never fails due to email)
+        - Non-blocking password breach check
+        """
         email_lower = email.lower().strip()
         username_clean = username.strip()
 
+        # Check for existing accounts first (before any DB modifications)
         if User.objects.filter(email__iexact=email_lower).exists():
             return None, "An account with this email already exists."
 
         if User.objects.filter(username__iexact=username_clean).exists():
             return None, "This username is already taken."
 
-        is_valid, errors = PasswordValidator.validate(password)
+        # Validate password (breach check is already non-blocking with timeout)
+        is_valid, errors = PasswordValidator.validate(password, check_breach=True)
         if not is_valid:
             return None, errors[0]
 
+        # Create user with is_active=False (requires email verification)
         user = User.objects.create_user(
             username=username_clean,
             email=email_lower,
@@ -337,37 +365,127 @@ class AuthService:
             is_active=False
         )
 
-        # Robust UserProfile creation with safe defaults
-        profile, created = UserProfile.objects.get_or_create(
-            user=user,
-            defaults={
-                "last_password_change": timezone.now(),
-                "notify_invoice_created": True,
-                "notify_payment_received": True,
-                "notify_invoice_viewed": True,
-                "notify_invoice_overdue": True,
-                "notify_weekly_summary": True,
-                "notify_security_alerts": True,
-                "notify_password_changes": True,
-            }
-        )
-        if not created:
-            profile.last_password_change = timezone.now()
-            profile.save()
+        # Deterministic UserProfile creation with ALL required defaults
+        # Using create() instead of get_or_create since we just created the user
+        # This avoids race conditions and ensures all fields have proper values
+        profile_defaults = {
+            "user": user,
+            "email_verified": False,
+            "two_factor_enabled": False,
+            "onboarding_completed": False,
+            "onboarding_step": 1,
+            "onboarding_data": {},
+            "company_name": "",
+            "business_type": "",
+            "business_email": "",
+            "business_phone": "",
+            "business_address": "",
+            "business_city": "",
+            "business_state": "",
+            "business_country": "",
+            "business_postal_code": "",
+            "business_website": "",
+            "region": "",
+            "primary_color": "#6366f1",
+            "secondary_color": "#8b5cf6",
+            "accent_color": "#10b981",
+            "invoice_style": "modern",
+            "tax_id_number": "",
+            "tax_id_type": "",
+            "vat_registered": False,
+            "vat_number": "",
+            "vat_rate": Decimal('0.00'),
+            "wht_applicable": False,
+            "wht_rate": Decimal('0.00'),
+            "default_tax_rate": Decimal('0.00'),
+            "bank_name": "",
+            "bank_account_name": "",
+            "bank_account_number": "",
+            "bank_routing_number": "",
+            "bank_swift_code": "",
+            "accept_card_payments": False,
+            "accept_bank_transfers": True,
+            "accept_mobile_money": False,
+            "payment_instructions": "",
+            "paystack_enabled": False,
+            "paystack_subaccount_code": "",
+            "paystack_subaccount_active": False,
+            "stripe_enabled": False,
+            "stripe_account_id": "",
+            "tax_id": "",
+            "tax_name": "",
+            "webhook_secret": "",
+            "customers_imported": False,
+            "customers_import_count": 0,
+            "products_imported": False,
+            "products_import_count": 0,
+            "invoices_imported": False,
+            "invoices_import_count": 0,
+            "default_currency": "NGN",
+            "invoice_prefix": "INV",
+            "invoice_start_number": 1,
+            "invoice_numbering_format": "{prefix}-{year}-{number:04d}",
+            "date_format": "DD/MM/YYYY",
+            "timezone": "Africa/Lagos",
+            "locale": "en-NG",
+            "team_invites_sent": 0,
+            "notify_invoice_created": True,
+            "notify_payment_received": True,
+            "notify_invoice_viewed": True,
+            "notify_invoice_overdue": True,
+            "notify_weekly_summary": True,
+            "notify_security_alerts": True,
+            "notify_password_changes": True,
+            "failed_login_attempts": 0,
+            "locked_until": None,
+            "last_password_change": timezone.now(),
+            "password_reset_required": False,
+        }
+        
+        try:
+            profile = UserProfile.objects.create(**profile_defaults)
+        except Exception as profile_error:
+            # If profile creation fails (e.g., integrity error from race condition),
+            # try get_or_create as fallback
+            logger.warning(f"Profile create failed, using get_or_create fallback: {profile_error}")
+            profile, _ = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={
+                    "last_password_change": timezone.now(),
+                    "paystack_enabled": False,
+                }
+            )
 
+        # Create verification token
         token = EmailToken.create_token(user, EmailToken.TokenType.VERIFY, hours=24)
 
-        # Non-blocking email attempt (SendGrid credit issues shouldn't break signup)
+        # CRITICAL: Graceful SendGrid error handling
+        # Signup MUST succeed even if email fails (credit exceeded, API down, etc.)
+        email_sent = False
+        email_error = None
         try:
-            EmailService.send_verification_email(user, token)
+            result = EmailService.send_verification_email(user, token)
+            email_sent = result if isinstance(result, bool) else result.get('status') == 'sent'
         except Exception as e:
-            logger.error(f"Failed to send verification email during registration: {e}")
+            email_error = str(e)
+            # Log the error but don't fail signup
+            logger.error(f"SendGrid email failed during signup (non-fatal): {email_error}")
 
+        # Log security events (also gracefully handle failures)
         if request:
-            SecurityService.log_event(user, SecurityEventType.SIGNUP, request)
-            SecurityService.log_event(user, SecurityEventType.EMAIL_VERIFICATION_SENT, request)
+            try:
+                SecurityService.log_event(user, SecurityEventType.SIGNUP, request)
+                if email_sent:
+                    SecurityService.log_event(user, SecurityEventType.EMAIL_VERIFICATION_SENT, request)
+            except Exception as log_error:
+                logger.warning(f"Failed to log security event: {log_error}")
 
-        return user, "Account created! Please check your email to verify your account."
+        # Return success with appropriate message
+        if email_sent:
+            return user, "Account created! Please check your email to verify your account."
+        else:
+            # Account created but email failed - user can request resend
+            return user, "Account created! We couldn't send the verification email right now. Please use 'Resend Verification' on the login page."
 
     @classmethod
     def authenticate_user(cls, request, username_or_email: str, password: str) -> Tuple[Optional[Any], str, bool]:

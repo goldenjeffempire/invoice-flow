@@ -28,10 +28,65 @@ class ProfileService:
 
     @staticmethod
     def get_or_create_profile(user: "User") -> "UserProfile":
-        """Get or create a user profile."""
+        """Get or create a user profile with safe defaults for all fields."""
         from invoices.models import UserProfile
+        from decimal import Decimal
+        from django.utils import timezone
 
-        profile, created = UserProfile.objects.get_or_create(user=user)
+        # Define comprehensive defaults for deterministic profile creation
+        defaults = {
+            "email_verified": False,
+            "two_factor_enabled": False,
+            "onboarding_completed": False,
+            "onboarding_step": 1,
+            "onboarding_data": {},
+            "primary_color": "#6366f1",
+            "secondary_color": "#8b5cf6",
+            "accent_color": "#10b981",
+            "invoice_style": "modern",
+            "vat_registered": False,
+            "vat_rate": Decimal('0.00'),
+            "wht_applicable": False,
+            "wht_rate": Decimal('0.00'),
+            "default_tax_rate": Decimal('0.00'),
+            "accept_card_payments": False,
+            "accept_bank_transfers": True,
+            "accept_mobile_money": False,
+            "paystack_enabled": False,
+            "paystack_subaccount_code": "",
+            "paystack_subaccount_active": False,
+            "stripe_enabled": False,
+            "stripe_account_id": "",
+            "tax_id": "",
+            "tax_name": "",
+            "webhook_secret": "",
+            "customers_imported": False,
+            "customers_import_count": 0,
+            "products_imported": False,
+            "products_import_count": 0,
+            "invoices_imported": False,
+            "invoices_import_count": 0,
+            "default_currency": "NGN",
+            "invoice_prefix": "INV",
+            "invoice_start_number": 1,
+            "invoice_numbering_format": "{prefix}-{year}-{number:04d}",
+            "date_format": "DD/MM/YYYY",
+            "timezone": "Africa/Lagos",
+            "locale": "en-NG",
+            "team_invites_sent": 0,
+            "notify_invoice_created": True,
+            "notify_payment_received": True,
+            "notify_invoice_viewed": True,
+            "notify_invoice_overdue": True,
+            "notify_weekly_summary": True,
+            "notify_security_alerts": True,
+            "notify_password_changes": True,
+            "failed_login_attempts": 0,
+            "password_reset_required": False,
+            "last_password_change": timezone.now(),
+        }
+
+        profile, created = UserProfile.objects.get_or_create(user=user, defaults=defaults)
         if created:
             logger.info(f"Created profile for user {user.id}")
         return profile

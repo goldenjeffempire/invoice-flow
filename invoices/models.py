@@ -129,6 +129,16 @@ class UserProfile(models.Model):
     # Workspace Context
     current_workspace = models.ForeignKey('Workspace', on_delete=models.SET_NULL, null=True, blank=True)
 
+    # Payment Gateway Integration
+    paystack_enabled = models.BooleanField(default=False)
+    paystack_subaccount_code = models.CharField(max_length=100, blank=True)
+    paystack_subaccount_active = models.BooleanField(default=False)
+    stripe_enabled = models.BooleanField(default=False)
+    stripe_account_id = models.CharField(max_length=255, blank=True)
+    tax_id = models.CharField(max_length=100, blank=True)
+    tax_name = models.CharField(max_length=100, blank=True)
+    webhook_secret = models.CharField(max_length=255, blank=True)
+
     # Notification Preferences
     notify_invoice_created = models.BooleanField(default=True)
     notify_payment_received = models.BooleanField(default=True)
