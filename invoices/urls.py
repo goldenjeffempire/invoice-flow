@@ -7,6 +7,7 @@ from .views import ux_views
 from .views import dashboard_views
 from .views import invoice_views
 from .views import payment_views
+from .views import client_views
 
 app_name = "invoices"
 
@@ -67,6 +68,12 @@ urlpatterns = [
     path("payments/<int:payment_id>/", payment_views.payment_detail, name="payment_detail"),
     path("invoices/<int:invoice_id>/record-payment/", payment_views.record_offline_payment, name="record_offline_payment"),
     path("webhooks/paystack/", payment_views.paystack_webhook, name="paystack_webhook"),
+
+    # Clients
+    path('clients/', client_views.client_list, name='client_list'),
+    path('clients/new/', client_views.client_create, name='client_create'),
+    path('clients/<int:client_id>/', client_views.client_detail, name='client_detail'),
+    path('clients/<int:client_id>/edit/', client_views.client_edit, name='client_edit'),
 
     path('invoices/', invoice_views.invoice_list, name='invoice_list'),
     path('invoices/create/', invoice_views.invoice_create, name='invoice_create'),
