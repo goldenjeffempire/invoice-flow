@@ -11,7 +11,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from invoices.models import Invoice, InvoiceActivity
-from invoices.services import AnalyticsService, PDFService
+from invoices.services import ReportsService, PDFService
 
 from .response import APIResponse
 from .serializers import (
@@ -105,13 +105,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         instance = serializer.save()
-        AnalyticsService.invalidate_user_cache(self.request.user.id)
+        ReportsService.invalidate_workspace_cache(instance.workspace_id)
         return instance
 
     def perform_destroy(self, instance):
-        user_id = self.request.user.id
+        workspace_id = instance.workspace_id
         instance.delete()
-        AnalyticsService.invalidate_user_cache(user_id)
+        ReportsService.invalidate_workspace_cache(workspace_id)
 
     @extend_schema(
         summary="Update invoice status",
@@ -198,9 +198,12 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=["get"], url_path="stats")
     def stats(self, request: Request, version: Optional[str] = None) -> Response:
-        stats = AnalyticsService.get_user_dashboard_stats(request.user)
+        from invoices.services.reports_service import DateRange
+        workspace = request.user.profile.current_workspace
+        date_range = DateRange.from_preset('this_month')
+        stats = ReportsService.get_reports_home_data(workspace, date_range)
         return APIResponse.success(
-            data=stats,
+            data=stats.get('kpis', {}),
             message="Dashboard statistics loaded.",
         )
 

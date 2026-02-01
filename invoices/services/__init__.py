@@ -13,7 +13,7 @@ All business logic should flow through these services.
 from .invoice_service import InvoiceService
 from .user_service import UserService, ProfileService, NotificationService, PaymentSettingsService
 from .payment_service import PaymentService
-from .analytics_service import AnalyticsService
+from .reports_service import ReportsService
 from .email_service import EmailService
 from .pdf_service import PDFService
 from .admin_service import AdminService
@@ -27,7 +27,7 @@ __all__ = [
     "NotificationService",
     "PaymentSettingsService",
     "PaymentService",
-    "AnalyticsService",
+    "ReportsService",
     "EmailService",
     "PDFService",
     "AdminService",

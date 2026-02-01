@@ -46,9 +46,18 @@ The frontend uses **Tailwind CSS** for styling with server-side rendered Django 
 ### Background Tasks
 A **ThreadPoolExecutor-based system** handles asynchronous tasks with retry logic.
 
-### Dashboard & Analytics
-- **Financial Insights**: Real-time KPI widgets for total revenue, monthly performance, overdue totals, and pending receivables.
-- **Export Engine**: CSV export functionality for all critical data including Transactions and Client lists for external accounting.
+### Reports & Analytics
+A production-grade SaaS reporting module with comprehensive financial analysis:
+- **ReportsService**: Centralized service class with 7 report types, KPI calculations, date-range filtering (13 presets), trend analysis, and forecasting.
+- **Report Types**: Revenue, A/R Aging, Cashflow, Client Profitability, Tax Summary, Expense Analysis, Forecast.
+- **KPI Dashboard**: Total revenue, outstanding balance, overdue amount, collection rate, average invoice value, invoice counts, trend indicators.
+- **Date Range System**: 13 presets (today, yesterday, this_week, last_week, this_month, last_month, this_quarter, last_quarter, this_year, last_year, last_30/90/365_days, all_time) plus custom ranges.
+- **Exports Hub**: 9 export types with CSV generation, export history tracking, and row count logging.
+- **Shared Report Links**: Create shareable links with optional password protection (SHA256 hash), expiration dates, and access audit logging.
+- **Audit Logging**: Full access tracking for shared links including IP address, user agent, and timestamps.
+- **Models**: `SharedReportLink`, `ReportAccessLog`, `ReportExport`.
+- **Views**: Reports home, individual report views, CSV export handlers, shared link management, public shared report viewing.
+- **Workspace-Based**: All reports are filtered by workspace for multi-tenant isolation.
 
 ### Client Management
 - **CRM Lite**: Comprehensive client profiles with billing/shipping management, financial summaries, internal notes, and automated activity tracking.

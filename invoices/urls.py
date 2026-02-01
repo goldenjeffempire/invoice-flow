@@ -11,6 +11,7 @@ from .views import client_views
 from .views import export_views
 from .views import recurring_views
 from .views import expense_views
+from .views import report_views
 
 app_name = "invoices"
 
@@ -137,4 +138,20 @@ urlpatterns = [
 
     # Billable Expenses to Invoice
     path('invoices/<int:invoice_id>/add-expenses/', expense_views.billable_expenses_select, name='billable_expenses_select'),
+
+    # Reports & Analytics
+    path('reports/', report_views.reports_home, name='reports_home'),
+    path('reports/revenue/', report_views.revenue_report, name='revenue_report'),
+    path('reports/aging/', report_views.aging_report, name='aging_report'),
+    path('reports/cashflow/', report_views.cashflow_report, name='cashflow_report'),
+    path('reports/profitability/', report_views.profitability_report, name='profitability_report'),
+    path('reports/tax/', report_views.tax_report, name='tax_report'),
+    path('reports/expense/', report_views.expense_report, name='expense_analysis'),
+    path('reports/forecast/', report_views.forecast_report, name='forecast_report'),
+    path('reports/exports/', report_views.exports_hub, name='exports_hub'),
+    path('reports/export/<str:report_type>/csv/', report_views.export_report_csv, name='export_report_csv'),
+    path('reports/shared/', report_views.shared_links_list, name='shared_links_list'),
+    path('reports/shared/create/', report_views.create_shared_link, name='create_shared_link'),
+    path('reports/shared/<str:token>/', report_views.shared_report_view, name='shared_report_view'),
+    path('reports/shared/<str:token>/revoke/', report_views.revoke_shared_link, name='revoke_shared_link'),
 ]

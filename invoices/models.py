@@ -590,7 +590,7 @@ class Payment(models.Model):
         CHEQUE = "cheque", "Cheque"
         OTHER = "other", "Other"
 
-    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payments")
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payments", null=True, blank=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="USD")

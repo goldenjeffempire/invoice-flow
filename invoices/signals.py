@@ -78,16 +78,16 @@ def handle_invoice_paid(sender, instance, created: bool, **kwargs):
 @receiver(post_delete, sender='invoices.Invoice')
 def invalidate_cache_on_invoice_delete(sender, instance, **kwargs):
     try:
-        from .services import AnalyticsService
-        AnalyticsService.invalidate_user_cache(instance.user_id)
+        from .services import ReportsService
+        ReportsService.invalidate_workspace_cache(instance.workspace_id)
     except Exception as exc:
         logger.warning("Cache invalidation failed (invoice delete): %s", exc)
 
 @receiver(post_delete, sender='invoices.LineItem')
 def invalidate_cache_on_lineitem_delete(sender, instance, **kwargs):
     try:
-        if instance.invoice_id:
-            from .services import AnalyticsService
-            AnalyticsService.invalidate_user_cache(instance.invoice.user_id)
+        if instance.invoice_id and instance.invoice.workspace_id:
+            from .services import ReportsService
+            ReportsService.invalidate_workspace_cache(instance.invoice.workspace_id)
     except Exception as exc:
         logger.warning("Cache invalidation failed (line item delete): %s", exc)

@@ -613,23 +613,23 @@ class AsyncTaskService:
         def _compute():
             from django.contrib.auth import get_user_model
 
-            from .services import AnalyticsService
+            from .services import ReportsService
+            from .services.reports_service import DateRange
 
             User = get_user_model()
             try:
                 user = User.objects.get(id=user_id)
-                dashboard_stats = AnalyticsService.get_user_dashboard_stats(user)
-                analytics_stats = AnalyticsService.get_user_analytics_stats(user)
-                top_clients = AnalyticsService.get_top_clients(user)
+                workspace = user.profile.current_workspace if hasattr(user, 'profile') else None
+                if not workspace:
+                    return {"user_id": user_id, "error": "No workspace found"}
+                
+                date_range = DateRange.from_preset('this_month')
+                dashboard_stats = ReportsService.get_reports_home_data(workspace, date_range)
 
                 logger.info(f"Computed analytics for user {user_id}")
                 return {
                     "user_id": user_id,
-                    "dashboard_stats": dashboard_stats,
-                    "analytics_stats": {
-                        k: v for k, v in analytics_stats.items() if k != "all_invoices"
-                    },
-                    "top_clients_count": len(top_clients),
+                    "dashboard_stats": dashboard_stats.get('kpis', {}),
                 }
             except Exception as e:
                 logger.error(f"Analytics computation failed for user {user_id}: {e}")

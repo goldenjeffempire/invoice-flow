@@ -5,7 +5,7 @@ This module re-exports all services from the new modular services/ directory.
 For new code, import directly from invoices.services instead.
 
 Example:
-    from invoices.services import InvoiceService, AnalyticsService
+    from invoices.services import InvoiceService, ReportsService
 """
 
 from .services import (
@@ -15,7 +15,7 @@ from .services import (
     NotificationService,
     PaymentSettingsService,
     PaymentService,
-    AnalyticsService,
+    ReportsService,
     EmailService,
     PDFService,
 )
@@ -27,7 +27,7 @@ __all__ = [
     "NotificationService",
     "PaymentSettingsService",
     "PaymentService",
-    "AnalyticsService",
+    "ReportsService",
     "EmailService",
     "PDFService",
 ]
