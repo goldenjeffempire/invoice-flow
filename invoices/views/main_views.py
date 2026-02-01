@@ -56,7 +56,7 @@ def custom_500_view(request):
 @ratelimit(key='ip', rate='10/m', method='POST', block=True)
 def signup_view(request):
     if request.user.is_authenticated:
-        return redirect('invoices:dashboard')
+        return redirect('invoices:onboarding_router')
 
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -68,6 +68,8 @@ def signup_view(request):
                 request=request
             )
             if user:
+                # In development or if auto-verify is needed, we could login here
+                # but following the production service pattern:
                 messages.success(request, message)
                 return redirect('invoices:verification_sent')
             else:
@@ -82,7 +84,7 @@ def signup_view(request):
 @ratelimit(key='ip', rate='10/m', method='POST', block=True)
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('invoices:dashboard')
+        return redirect('invoices:onboarding_router')
 
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -136,8 +138,18 @@ def verification_sent(request):
 def verify_email(request, token):
     success, message = AuthService.verify_email(token, request)
     if success:
-        messages.success(request, message)
-        return redirect('invoices:login')
+        from django.contrib.auth import get_user_model
+        from ..models import EmailToken
+        try:
+            email_token = EmailToken.objects.get(token=token)
+            user = email_token.user
+            # Auto-login after verification for better UX
+            AuthService.complete_login(request, user)
+            messages.success(request, "Email verified successfully! Welcome to InvoiceFlow.")
+            return redirect('invoices:onboarding_router')
+        except Exception:
+            messages.success(request, message)
+            return redirect('invoices:login')
     else:
         return render(request, 'pages/auth/verification_failed.html', {
             'message': message,
