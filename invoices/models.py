@@ -704,6 +704,7 @@ class InvoiceAttachment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+# Legacy Payment Model (Deprecated)
 class InvoicePayment(models.Model):
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="invoice_payments")
     amount = models.DecimalField(max_digits=15, decimal_places=2)

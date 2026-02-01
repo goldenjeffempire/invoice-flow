@@ -46,6 +46,13 @@ The frontend uses **Tailwind CSS** for styling with server-side rendered Django 
 ### Background Tasks
 A **ThreadPoolExecutor-based system** handles asynchronous tasks with retry logic.
 
+### Dashboard & Analytics
+- **Financial Insights**: Real-time KPI widgets for total revenue, monthly performance, overdue totals, and pending receivables.
+- **Export Engine**: CSV export functionality for all critical data including Transactions and Client lists for external accounting.
+
+### Client Management
+- **CRM Lite**: Comprehensive client profiles with billing/shipping management, financial summaries, internal notes, and automated activity tracking.
+
 ### Monitoring & Observability
 Structured JSON logging, health check endpoints, performance monitoring middleware, and **Sentry** integration are in place.
 
