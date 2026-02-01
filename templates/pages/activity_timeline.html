@@ -1,0 +1,37 @@
+{% extends "base/layout_app.html" %}
+{% block title %}Activity Timeline | InvoiceFlow{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-900 mb-8">Activity Timeline</h1>
+    <div class="flow-root">
+        <ul role="list" class="-mb-8">
+            {% for activity in activities %}
+            <li>
+                <div class="relative pb-8">
+                    {% if not forloop.last %}<span class="absolute left-5 top-5 -ml-px h-full w-0.5 bg-slate-200" aria-hidden="true"></span>{% endif %}
+                    <div class="relative flex items-start space-x-3">
+                        <div class="relative">
+                            <div class="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center ring-8 ring-white">
+                                <span class="text-indigo-600 font-bold text-xs">{{ activity.user.username|first|upper }}</span>
+                            </div>
+                        </div>
+                        <div class="min-w-0 flex-1 py-1.5">
+                            <div class="text-sm text-slate-500">
+                                <span class="font-bold text-slate-900">{{ activity.user.get_full_name|default:activity.user.username }}</span>
+                                {{ activity.action }}
+                                <span class="font-medium text-slate-900">{{ activity.resource_type }} {{ activity.resource_id }}</span>
+                                <span class="whitespace-nowrap ml-2">{{ activity.timestamp|timesince }} ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            {% empty %}
+            <div class="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                <p class="text-slate-500 italic">No activity recorded yet.</p>
+            </div>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

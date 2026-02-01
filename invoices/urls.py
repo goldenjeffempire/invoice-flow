@@ -2,11 +2,15 @@ from django.urls import path
 from .views import main_views as views
 from .views import onboarding_views
 from .views import workspace_views
+from .views import ux_views
 
 app_name = "invoices"
 
 urlpatterns = [
     path('', views.landing_view, name='home'),
+    path('api/search/', ux_views.global_search, name='global_search_api'),
+    path('activity/', ux_views.activity_timeline, name='activity_timeline'),
+    path('notifications/mark-read/<int:pk>/', ux_views.mark_notification_read, name='mark_notification_read'),
 
     path('onboarding/', onboarding_views.onboarding_router, name='onboarding'),
     path('onboarding/welcome/', onboarding_views.onboarding_welcome, name='onboarding_welcome'),

@@ -410,6 +410,37 @@ class Waitlist(models.Model):
     subscribed_at = models.DateTimeField(auto_now_add=True)
 
 
+class Notification(models.Model):
+    class Type(models.TextChoices):
+        INFO = "info", "Information"
+        SUCCESS = "success", "Success"
+        WARNING = "warning", "Warning"
+        ERROR = "error", "Error"
+        INVOICE = "invoice", "Invoice Activity"
+        PAYMENT = "payment", "Payment Received"
+        TEAM = "team", "Team Invitation"
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, null=True, blank=True)
+    notification_type = models.CharField(max_length=20, choices=Type.choices, default=Type.INFO)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    link = models.CharField(max_length=255, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ["-created_at"]
+
+class ActivityLog(models.Model):
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="activities")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    action = models.CharField(max_length=255)
+    resource_type = models.CharField(max_length=50) # invoice, client, etc.
+    resource_id = models.CharField(max_length=255, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
 class ContactSubmission(models.Model):
     name = models.CharField(max_length=200)
     email = models.EmailField()
