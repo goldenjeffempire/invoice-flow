@@ -32,9 +32,6 @@ def landing_view(request):
     return render(request, "pages/landing.html")
 
 
-from django.views.decorators.cache import cache_page
-
-@cache_page(60 * 60 * 24)  # Cache favicon for 24 hours
 def favicon_view(request):
     return HttpResponse(status=204)
 
