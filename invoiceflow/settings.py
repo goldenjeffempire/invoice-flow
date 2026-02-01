@@ -287,14 +287,10 @@ if DATABASE_URL:
                 db_config['ENGINE'] = 'django.db.backends.postgresql'
             
             # Production-grade connection hardening
+            # Note: Neon pooler doesn't support statement_timeout in options
             db_config['OPTIONS'] = db_config.get('OPTIONS', {})
             db_config['OPTIONS']['connect_timeout'] = 10
-            db_config['OPTIONS']['options'] = '-c statement_timeout=30000'
-            
-            if IS_PRODUCTION:
-                db_config['OPTIONS']['sslmode'] = 'require'
-            else:
-                db_config['OPTIONS']['sslmode'] = 'prefer'
+            db_config['OPTIONS']['sslmode'] = 'require'
             
             db_config['CONN_HEALTH_CHECKS'] = True
             
