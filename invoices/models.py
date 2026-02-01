@@ -307,49 +307,101 @@ class KnownDevice(models.Model):
         ordering = ['-last_used']
 
 
-class InvoiceTemplate(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    name = models.CharField(max_length=200)
-    business_name = models.CharField(max_length=200)
-    currency = models.CharField(max_length=3, default="USD")
-    is_default = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-
 class Invoice(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
+        SENT = "sent", "Sent"
+        VIEWED = "viewed", "Viewed"
+        PART_PAID = "part_paid", "Partially Paid"
         PAID = "paid", "Paid"
-        UNPAID = "unpaid", "Unpaid"
+        OVERDUE = "overdue", "Overdue"
+        VOID = "void", "Void"
+        WRITE_OFF = "write_off", "Write-off"
 
     CURRENCY_CHOICES = [
-        ("USD", "USD - US Dollar"),
-        ("EUR", "EUR - Euro"),
-        ("GBP", "GBP - British Pound"),
-        ("NGN", "NGN - Nigerian Naira"),
+        ("NGN", "₦ - Nigerian Naira"),
+        ("USD", "$ - US Dollar"),
+        ("EUR", "€ - Euro"),
+        ("GBP", "£ - British Pound"),
+        ("ZAR", "R - South African Rand"),
+        ("GHS", "₵ - Ghanaian Cedi"),
+        ("KES", "KSh - Kenyan Shilling"),
     ]
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    invoice_id = models.CharField(max_length=32, unique=True)
-    client_name = models.CharField(max_length=200)
-    business_name = models.CharField(max_length=200)
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="invoices")
+    client = models.ForeignKey('Client', on_delete=models.CASCADE, related_name="invoices")
+    invoice_number = models.CharField(max_length=50, db_index=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    
+    # Dates
+    issue_date = models.DateField(default=timezone.now)
+    due_date = models.DateField()
+    paid_at = models.DateTimeField(null=True, blank=True)
+    
+    # Financials
     currency = models.CharField(max_length=3, default="USD")
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    exchange_rate = models.DecimalField(max_digits=15, decimal_places=6, default=Decimal('1.000000'))
+    
+    subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    tax_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    discount_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    amount_paid = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    amount_due = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    
+    # Configuration
+    tax_type = models.CharField(max_length=20, default="exclusive") # inclusive, exclusive
+    discount_type = models.CharField(max_length=20, default="flat") # percentage, flat
+    global_discount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    
+    # Content
+    client_memo = models.TextField(blank=True)
+    internal_notes = models.TextField(blank=True)
+    terms_conditions = models.TextField(blank=True)
+    
+    # Security/Tracking
+    public_token = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe)
+    view_count = models.IntegerField(default=0)
+    last_viewed_at = models.DateTimeField(null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        unique_together = ('workspace', 'invoice_number')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.invoice_number} - {self.client.name}"
 
 class LineItem(models.Model):
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="line_items")
-    description = models.CharField(max_length=500)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2)
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
+    description = models.CharField(max_length=255)
+    long_description = models.TextField(blank=True)
+    quantity = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('1.00'))
+    unit_price = models.DecimalField(max_digits=15, decimal_places=2)
+    
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    
+    subtotal = models.DecimalField(max_digits=15, decimal_places=2)
+    total = models.DecimalField(max_digits=15, decimal_places=2)
+    
+    sort_order = models.IntegerField(default=0)
 
-
-class InvoiceHistory(models.Model):
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="history")
+class InvoiceActivity(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="activities")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     action = models.CharField(max_length=100)
+    description = models.TextField()
+    metadata = models.JSONField(default=dict, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+class InvoiceAttachment(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="attachments")
+    file = models.FileField(upload_to="invoice_attachments/")
+    filename = models.CharField(max_length=255)
+    file_size = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
 

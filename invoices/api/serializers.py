@@ -1,7 +1,7 @@
 from decimal import Decimal
 from rest_framework import serializers
 
-from invoices.models import Invoice, InvoiceHistory, InvoiceTemplate, LineItem
+from invoices.models import Invoice, LineItem, InvoiceActivity
 from invoices.validators import InvoiceBusinessRules
 
 
@@ -24,19 +24,18 @@ class InvoiceListSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             "id",
-            "invoice_id",
-            "client_name",
-            "client_email",
-            "invoice_date",
+            "invoice_number",
+            "client",
+            "issue_date",
             "due_date",
             "status",
             "currency",
             "subtotal",
-            "total",
+            "total_amount",
             "line_items_count",
             "created_at",
         ]
-        read_only_fields = ["id", "invoice_id", "subtotal", "total", "created_at"]
+        read_only_fields = ["id", "invoice_number", "subtotal", "total_amount", "created_at"]
         # Security: account_number removed from list view - sensitive data not exposed in list
 
     def get_line_items_count(self, obj) -> int:
@@ -44,110 +43,78 @@ class InvoiceListSerializer(serializers.ModelSerializer):
 
 
 class InvoiceDetailSerializer(serializers.ModelSerializer):
-    line_items = LineItemSerializer(many=True, read_only=True)
-    available_transitions = serializers.SerializerMethodField()
+    items = LineItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = Invoice
         fields = [
             "id",
-            "invoice_id",
-            "business_name",
-            "business_email",
-            "business_phone",
-            "business_address",
-            "client_name",
-            "client_email",
-            "client_phone",
-            "client_address",
-            "invoice_date",
+            "invoice_number",
+            "client",
+            "issue_date",
             "due_date",
             "status",
-            "available_transitions",
             "currency",
-            "tax_rate",
             "subtotal",
-            "tax_amount",
-            "total",
-            "notes",
-            "line_items",
+            "tax_total",
+            "total_amount",
+            "client_memo",
+            "internal_notes",
+            "items",
             "created_at",
             "updated_at",
         ]
         read_only_fields = [
             "id",
-            "invoice_id",
+            "invoice_number",
             "subtotal",
-            "tax_amount",
-            "total",
-            "available_transitions",
+            "tax_total",
+            "total_amount",
             "created_at",
             "updated_at",
         ]
 
-    def get_available_transitions(self, obj) -> list:
-        return obj.get_available_transitions()
-
 
 class InvoiceCreateSerializer(serializers.ModelSerializer):
-    line_items = LineItemSerializer(many=True)
+    items = LineItemSerializer(many=True)
     currency = serializers.ChoiceField(choices=Invoice.CURRENCY_CHOICES)
-    tax_rate = serializers.DecimalField(max_digits=5, decimal_places=2, min_value=Decimal("0"), max_value=Decimal("100"))
 
     class Meta:
         model = Invoice
         fields = [
-            "business_name",
-            "business_email",
-            "business_phone",
-            "business_address",
-            "client_name",
-            "client_email",
-            "client_phone",
-            "client_address",
-            "invoice_date",
+            "client",
+            "issue_date",
             "due_date",
             "currency",
-            "tax_rate",
-            "notes",
-            "line_items",
+            "client_memo",
+            "internal_notes",
+            "items",
         ]
 
-    def validate_line_items(self, value):
-        try:
-            InvoiceBusinessRules.validate_line_items(value)
-        except Exception as exc:
-            raise serializers.ValidationError(str(exc)) from exc
+    def validate_items(self, value):
         return value
 
     def validate(self, attrs):
-        try:
-            InvoiceBusinessRules.validate_due_date(
-                attrs.get("invoice_date"),
-                attrs.get("due_date"),
-            )
-        except Exception as exc:
-            raise serializers.ValidationError(str(exc)) from exc
         return attrs
 
     def create(self, validated_data):
-        line_items_data = validated_data.pop("line_items")
-        invoice = Invoice.objects.create(**validated_data)  # type: ignore[attr-defined]
-        for item_data in line_items_data:
-            LineItem.objects.create(invoice=invoice, **item_data)  # type: ignore[attr-defined]
+        items_data = validated_data.pop("items")
+        invoice = Invoice.objects.create(**validated_data)
+        for item_data in items_data:
+            LineItem.objects.create(invoice=invoice, **item_data)
         return invoice
 
     def update(self, instance, validated_data):
-        line_items_data = validated_data.pop("line_items", None)
+        items_data = validated_data.pop("items", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        if line_items_data is not None:
-            instance.line_items.all().delete()
-            for item_data in line_items_data:
-                LineItem.objects.create(invoice=instance, **item_data)  # type: ignore[attr-defined]
+        if items_data is not None:
+            instance.items.all().delete()
+            for item_data in items_data:
+                LineItem.objects.create(invoice=instance, **item_data)
 
         return instance
 
@@ -158,40 +125,21 @@ class InvoiceStatusSerializer(serializers.Serializer):
 
 
 class InvoiceHistorySerializer(serializers.ModelSerializer):
-    action_display = serializers.CharField(source="get_action_display", read_only=True)
+    action_display = serializers.CharField(source="action", read_only=True)
     user_email = serializers.EmailField(source="user.email", read_only=True, allow_null=True)
 
     class Meta:
-        model = InvoiceHistory
+        model = InvoiceActivity
         fields = [
             "id",
             "action",
             "action_display",
-            "old_value",
-            "new_value",
             "description",
             "user_email",
-            "created_at",
+            "timestamp",
         ]
         read_only_fields = fields
 
 
-class InvoiceTemplateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InvoiceTemplate
-        fields = [
-            "id",
-            "name",
-            "description",
-            "business_name",
-            "business_email",
-            "business_phone",
-            "business_address",
-            "currency",
-            "tax_rate",
-            "bank_name",
-            "account_name",
-            "is_default",
-            "created_at",
-        ]
-        read_only_fields = ["id", "created_at"]
+class InvoiceTemplateSerializer(serializers.Serializer):
+    pass

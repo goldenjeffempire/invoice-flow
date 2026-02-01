@@ -6,7 +6,7 @@ from .views import ux_views
 
 from .views import dashboard_views
 
-from .views import client_views
+from .views import invoice_views
 
 app_name = "invoices"
 
@@ -48,20 +48,16 @@ urlpatterns = [
     path("integrations/", views.integrations_view, name="integrations"),
     path("resources/", views.resources_view, name="resources"),
 
-    path("clients/", views.profile_update_ajax, name="clients"),
+    path('clients/', invoice_views.invoice_list, name='client_list'),
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),
     path("api/faq/", views.faq_api, name="faq_api"),
 
     path("payments/history/", views.payment_history, name="payment_history"),
     path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
 
-    path("invoices/create/", views.invoice_create, name="invoice_create"),
-    path("workspace/switch/<slug:workspace_slug>/", workspace_views.switch_workspace, name="switch_workspace"),
-    path("workspace/onboarding/", workspace_views.onboarding_step, name="onboarding_wizard"),
-    path("workspace/import/", workspace_views.import_csv, name="import_csv"),
-    path("list/", views.invoices_list, name="invoices_list"),
-    path("invoice/<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
-    path("<str:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),
-    path("<str:invoice_id>/delete/", views.invoice_delete, name="invoice_delete"),
-    path("<str:invoice_id>/pdf/", views.invoice_pdf, name="invoice_pdf"),
+    path('invoices/', invoice_views.invoice_list, name='invoice_list'),
+    path('invoices/create/', invoice_views.invoice_create, name='invoice_create'),
+    path('invoices/<str:invoice_number>/', invoice_views.invoice_detail, name='invoice_detail'),
+    path('invoices/<str:invoice_number>/edit/', invoice_views.invoice_edit, name='invoice_edit'),
+    path('i/<str:token>/', invoice_views.public_invoice_view, name='public_invoice'),
 ]

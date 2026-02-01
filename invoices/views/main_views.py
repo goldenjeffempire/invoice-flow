@@ -13,7 +13,7 @@ from django_ratelimit.decorators import ratelimit
 
 from ..auth_services import (
     AuthService, MFAService, SessionService, InvitationService,
-    SecurityService, SecurityEventType
+    SecurityService
 )
 from ..forms import (
     SignUpForm, LoginForm, MFAVerifyForm, MFASetupVerifyForm, MFADisableForm,

@@ -1,8 +1,9 @@
 from django.contrib import admin
 from .models import (
     UserProfile, MFAProfile, SecurityEvent, UserSession, EmailToken,
-    Invoice, InvoiceTemplate, LineItem, Payment, WorkspaceInvitation,
-    RecurringInvoice, Waitlist, SocialAccount, Client, ClientNote, CommunicationLog
+    Invoice, LineItem, Payment, WorkspaceInvitation,
+    RecurringInvoice, Waitlist, SocialAccount, Client, ClientNote, CommunicationLog,
+    InvoiceActivity, InvoiceAttachment
 )
 
 @admin.register(UserProfile)
@@ -11,7 +12,17 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
-    list_display = ('invoice_id', 'client_name', 'status', 'created_at')
+    list_display = ('invoice_number', 'client', 'status', 'total_amount', 'created_at')
+    list_filter = ('status', 'workspace')
+    search_fields = ('invoice_number', 'client__name')
+
+@admin.register(InvoiceActivity)
+class InvoiceActivityAdmin(admin.ModelAdmin):
+    list_display = ('invoice', 'action', 'user', 'timestamp')
+
+@admin.register(InvoiceAttachment)
+class InvoiceAttachmentAdmin(admin.ModelAdmin):
+    list_display = ('invoice', 'filename', 'created_at')
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
@@ -31,7 +42,7 @@ admin.site.register(MFAProfile)
 admin.site.register(SecurityEvent)
 admin.site.register(UserSession)
 admin.site.register(EmailToken)
-admin.site.register(InvoiceTemplate)
+# admin.site.register(InvoiceTemplate)
 admin.site.register(LineItem)
 admin.site.register(Payment)
 admin.site.register(WorkspaceInvitation)
