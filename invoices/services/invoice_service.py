@@ -397,7 +397,7 @@ class InvoiceService:
     @transaction.atomic
     def record_payment(cls, invoice: Invoice, user, amount: Decimal, payment_method: str = 'bank_transfer',
                        reference: str = None, external_reference: str = "", payment_date: date = None,
-                       notes: str = "", metadata: Dict = None) -> Tuple[Invoice, InvoicePayment]:
+                       notes: str = "", metadata: Dict = None) -> Tuple[Invoice, Any]:
 
         if not invoice.can_record_payment:
             raise InvoiceStateError(f"Cannot record payment for invoice in status '{invoice.status}'")
@@ -410,6 +410,7 @@ class InvoiceService:
 
         reference = reference or f"PAY-{secrets.token_hex(8).upper()}"
 
+        from ..models import InvoicePayment
         payment = InvoicePayment.objects.create(
             invoice=invoice,
             recorded_by=user,

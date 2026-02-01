@@ -656,7 +656,7 @@ class PaymentAuditLog(models.Model):
     def calculate_totals(self, tax_mode='exclusive'):
         line_subtotal = self.quantity * self.unit_price
 
-        if self.discount_type == Invoice.DiscountType.PERCENTAGE:
+        if self.discount_type == 'percentage':
             self.discount_amount = (line_subtotal * self.discount_value) / Decimal('100')
         else:
             self.discount_amount = self.discount_value

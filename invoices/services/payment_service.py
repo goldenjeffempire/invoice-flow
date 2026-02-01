@@ -36,6 +36,7 @@ class PaymentService:
             
     @staticmethod
     def _process_successful_charge(data):
+        from ..models import Payment, Transaction, Invoice
         reference = data.get('reference')
         amount = Decimal(str(data.get('amount'))) / 100
         metadata = data.get('metadata', {})
