@@ -19,6 +19,7 @@ urlpatterns = [
     path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
     path('mfa/setup/', views.mfa_setup, name='mfa_setup'),
     path('mfa/verify/', views.mfa_verify, name='mfa_verify'),
+    path('resend-verification/', views.resend_verification, name='resend_verification'),
     path('api/search/', ux_views.global_search, name='global_search_api'),
     path('activity/', ux_views.activity_timeline, name='activity_timeline'),
     path('notifications/mark-read/<int:pk>/', ux_views.mark_notification_read, name='mark_notification_read'),
