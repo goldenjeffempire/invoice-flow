@@ -486,7 +486,7 @@ class Invoice(models.Model):
         return self.status not in [self.Status.VOID, self.Status.WRITE_OFF, self.Status.PAID]
 
     @property
-    def can_record_payment(self):
+    def can_record_payment(self, payment_id):
         return self.status not in [self.Status.VOID, self.Status.WRITE_OFF, self.Status.PAID] and self.amount_due > 0
 
     def get_public_url(self):
@@ -496,6 +496,81 @@ class Invoice(models.Model):
     def regenerate_token(self):
         self.public_token = secrets.token_urlsafe(32)
         self.save(update_fields=['public_token'])
+
+
+class Estimate(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SENT = "sent", "Sent"
+        VIEWED = "viewed", "Viewed"
+        APPROVED = "approved", "Approved"
+        DECLINED = "declined", "Declined"
+        EXPIRED = "expired", "Expired"
+        INVOICED = "invoiced", "Invoiced"
+        VOID = "void", "Void"
+
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="estimates")
+    client = models.ForeignKey('Client', on_delete=models.CASCADE, related_name="estimates")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_estimates")
+    estimate_number = models.CharField(max_length=50, db_index=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
+    
+    issue_date = models.DateField(default=timezone.now)
+    expiry_date = models.DateField()
+    sent_at = models.DateTimeField(null=True, blank=True)
+    viewed_at = models.DateTimeField(null=True, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    declined_at = models.DateTimeField(null=True, blank=True)
+    
+    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="NGN")
+    subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    tax_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    discount_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    
+    client_notes = models.TextField(blank=True)
+    internal_notes = models.TextField(blank=True)
+    terms_conditions = models.TextField(blank=True)
+    
+    public_token = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe, db_index=True)
+    version = models.IntegerField(default=1)
+    parent_estimate = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='revisions')
+    
+    converted_invoice = models.OneToOneField(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='source_estimate')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('workspace', 'estimate_number')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.estimate_number} - {self.client.name}"
+
+    def get_public_url(self):
+        from django.urls import reverse
+        return reverse('invoices:public_estimate', kwargs={'token': self.public_token})
+
+
+class EstimateItem(models.Model):
+    estimate = models.ForeignKey(Estimate, on_delete=models.CASCADE, related_name="items")
+    description = models.CharField(max_length=500)
+    quantity = models.DecimalField(max_digits=15, decimal_places=4, default=Decimal('1.0000'))
+    unit_price = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    sort_order = models.IntegerField(default=0)
+
+
+class EstimateActivity(models.Model):
+    estimate = models.ForeignKey(Estimate, on_delete=models.CASCADE, related_name="activities")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    action = models.CharField(max_length=100)
+    details = models.TextField(blank=True)
+    client_ip = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class LineItem(models.Model):
     class ItemType(models.TextChoices):
