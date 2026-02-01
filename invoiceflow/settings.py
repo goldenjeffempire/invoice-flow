@@ -66,6 +66,7 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_COOKIE_AGE = 1209600 # 2 weeks
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # Security Headers & Rotation
 SESSION_SAVE_EVERY_REQUEST = True  # Facilitates session rotation on some level
@@ -284,6 +285,17 @@ if DATABASE_URL:
             # Fix for dj_database_url returning empty string engine or mismatched engine
             if db_config['ENGINE'] == 'django.db.backends.':
                 db_config['ENGINE'] = 'django.db.backends.postgresql'
+            
+            # Production SSL Hardening
+            if IS_PRODUCTION:
+                db_config['OPTIONS'] = db_config.get('OPTIONS', {})
+                db_config['OPTIONS']['sslmode'] = 'require'
+                # Disable SSL cert verification if it's unstable or internal, 
+                # but 'require' is the baseline. For some providers, 'prefer' or 'require' is enough.
+                # However, user mentioned 'unstable database SSL connections', so we'll ensure 
+                # stable connection parameters.
+                db_config['OPTIONS']['connect_timeout'] = 10
+            
             DATABASES["default"] = dict(db_config)
         else:
             # Fallback for empty/invalid configurations

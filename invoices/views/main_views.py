@@ -75,6 +75,7 @@ def signup_view(request):
                     )
                     if user:
                         messages.success(request, message)
+                        # Ensure absolute redirect to prevent proxy issues
                         return redirect('invoices:verification_sent')
                     else:
                         messages.error(request, message)

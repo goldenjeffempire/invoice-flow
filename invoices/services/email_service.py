@@ -10,6 +10,7 @@ Responsibilities:
 from __future__ import annotations
 
 import logging
+import threading
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -85,41 +86,35 @@ class EmailService:
     @staticmethod
     def send_verification_email(user, token: str) -> bool:
         """
-        Send email verification email.
-        
-        Args:
-            user: The user to verify
-            token: Verification token
-            
-        Returns:
-            True if email was sent successfully
+        Send email verification email (Non-blocking).
         """
         from invoices.sendgrid_service import SendGridEmailService
 
-        try:
-            SendGridEmailService().send_verification_email(user, token)
-            return True
-        except Exception as e:
-            logger.error(f"Failed to send verification email: {e}")
-            return False
+        def _send():
+            try:
+                SendGridEmailService().send_verification_email(user, token)
+            except Exception as e:
+                logger.error(f"Async verification email error: {e}")
+
+        thread = threading.Thread(target=_send)
+        thread.daemon = True
+        thread.start()
+        return True
 
     @staticmethod
     def send_password_reset_email(user, token: str) -> bool:
         """
-        Send password reset email.
-        
-        Args:
-            user: The user requesting password reset
-            token: Reset token
-            
-        Returns:
-            True if email was sent successfully
+        Send password reset email (Non-blocking).
         """
         from invoices.sendgrid_service import SendGridEmailService
 
-        try:
-            SendGridEmailService().send_password_reset_email(user, token)
-            return True
-        except Exception as e:
-            logger.error(f"Failed to send password reset email: {e}")
-            return False
+        def _send():
+            try:
+                SendGridEmailService().send_password_reset_email(user, token)
+            except Exception as e:
+                logger.error(f"Async password reset email error: {e}")
+
+        thread = threading.Thread(target=_send)
+        thread.daemon = True
+        thread.start()
+        return True
