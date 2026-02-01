@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from ..models import Workspace, WorkspaceMember, WorkspaceInvitation, ActivityLog
+from ..models import Workspace, WorkspaceMember, WorkspaceInvitation, ActivityLog, Invoice, Payment, Client
 from django.http import JsonResponse
 import csv
 import io

@@ -8,6 +8,7 @@ from .views import dashboard_views
 from .views import invoice_views
 from .views import payment_views
 from .views import client_views
+from .views import export_views
 
 app_name = "invoices"
 
@@ -98,4 +99,8 @@ urlpatterns = [
     path('settings/workspace/', workspace_views.workspace_settings, name='workspace_settings'),
     path('settings/workspace/invitations/<int:invite_id>/revoke/', workspace_views.revoke_invitation, name='revoke_invitation'),
     path('settings/workspace/members/<int:member_id>/remove/', workspace_views.remove_member, name='remove_member'),
+
+    # Exports
+    path('export/clients/csv/', export_views.export_clients_csv, name='export_clients_csv'),
+    path('export/transactions/csv/', export_views.export_transactions_csv, name='export_transactions_csv'),
 ]

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto p-6">
+    {% if no_workspace %}
+    <div class="text-center py-20">
+        <h2 class="text-2xl font-bold text-gray-900">Welcome to InvoiceFlow!</h2>
+        <p class="text-gray-500 mt-2">Please set up your workspace to get started.</p>
+        <a href="{% url 'invoices:onboarding_welcome' %}" class="mt-6 inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg font-bold">Start Onboarding</a>
+    </div>
+    {% else %}
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p class="text-gray-500">Overview of {{ workspace.name }} financials</p>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative group">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Revenue</p>
+            <p class="text-2xl font-bold text-gray-900">NGN {{ total_revenue|floatformat:2 }}</p>
+            <a href="{% url 'invoices:export_transactions_csv' %}" class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-indigo-600 font-bold">Export CSV</a>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <p class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">Monthly Revenue</p>
+            <p class="text-2xl font-bold text-indigo-600">NGN {{ monthly_revenue|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <p class="text-xs font-bold text-red-400 uppercase tracking-wider mb-1">Total Overdue</p>
+            <p class="text-2xl font-bold text-red-600">NGN {{ overdue_total|floatformat:2 }}</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <p class="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-1">Total Pending</p>
+            <p class="text-2xl font-bold text-yellow-600">NGN {{ pending_total|floatformat:2 }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Recent Invoices -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-gray-900">Recent Invoices</h3>
+                <a href="{% url 'invoices:invoice_list' %}" class="text-xs font-bold text-indigo-600 hover:underline">View All</a>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for inv in recent_invoices %}
+                    <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location.href='{% url 'invoices:invoice_detail' inv.id %}'">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">#{{ inv.invoice_number }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ inv.client.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold">{{ inv.currency }} {{ inv.total_amount }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <span class="px-2 py-1 text-xs font-bold rounded-full bg-{{ inv.status }}-100 text-{{ inv.status }}-800">
+                                {{ inv.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="px-6 py-12 text-center text-gray-400 italic text-sm">No recent invoices.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Recent Payments -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-gray-900">Recent Payments</h3>
+                <a href="{% url 'invoices:transaction_list' %}" class="text-xs font-bold text-indigo-600 hover:underline">View All</a>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for pay in recent_payments %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ pay.completed_at|date:"M d" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ pay.invoice.client.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">+ {{ pay.currency }} {{ pay.amount }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-xs text-gray-400">
+                            {{ pay.get_payment_method_display }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="px-6 py-12 text-center text-gray-400 italic text-sm">No recent payments.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
