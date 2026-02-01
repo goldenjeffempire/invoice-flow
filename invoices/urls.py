@@ -12,9 +12,8 @@ app_name = "invoices"
 
 urlpatterns = [
     path('', views.landing_view, name='home'),
-    path('clients/', client_views.client_list, name='client_list'),
-    path('clients/create/', client_views.client_create, name='client_create'),
-    path('clients/<int:pk>/', client_views.client_profile, name='client_profile'),
+    path('login/', views.login_view, name='login'),
+    path('signup/', views.signup_view, name='signup'),
     path('api/search/', ux_views.global_search, name='global_search_api'),
     path('activity/', ux_views.activity_timeline, name='activity_timeline'),
     path('notifications/mark-read/<int:pk>/', ux_views.mark_notification_read, name='mark_notification_read'),
