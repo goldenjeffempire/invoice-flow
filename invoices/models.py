@@ -1231,3 +1231,226 @@ class RecurringScheduleAuditLog(models.Model):
 
     def __str__(self):
         return f"{self.action} on Schedule #{self.schedule_id} at {self.timestamp}"
+
+
+class ExpenseCategory(models.Model):
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='expense_categories')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    color = models.CharField(max_length=7, default='#6366f1', help_text='Hex color code')
+    icon = models.CharField(max_length=50, blank=True, help_text='Icon name/class')
+    is_active = models.BooleanField(default=True)
+    is_tax_deductible = models.BooleanField(default=False, help_text='Whether expenses in this category are tax deductible')
+    gl_account_code = models.CharField(max_length=20, blank=True, help_text='General ledger account code')
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='subcategories')
+    sort_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['sort_order', 'name']
+        unique_together = ['workspace', 'name']
+        verbose_name_plural = 'Expense categories'
+
+    def __str__(self):
+        return self.name
+
+
+class Vendor(models.Model):
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='vendors')
+    name = models.CharField(max_length=255)
+    contact_name = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=50, blank=True)
+    website = models.URLField(blank=True)
+    address_line1 = models.CharField(max_length=255, blank=True)
+    address_line2 = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    postal_code = models.CharField(max_length=20, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    tax_id = models.CharField(max_length=50, blank=True, help_text='Vendor tax ID/VAT number')
+    payment_terms = models.CharField(max_length=100, blank=True, help_text='e.g., Net 30, Due on receipt')
+    default_category = models.ForeignKey(ExpenseCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    total_expenses = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    expense_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = ['workspace', 'name']
+
+    def __str__(self):
+        return self.name
+
+    def update_totals(self):
+        from django.db.models import Sum, Count
+        aggregates = self.expenses.filter(status='approved').aggregate(
+            total=Sum('total_amount'),
+            count=Count('id')
+        )
+        self.total_expenses = aggregates['total'] or Decimal('0.00')
+        self.expense_count = aggregates['count'] or 0
+        self.save(update_fields=['total_expenses', 'expense_count'])
+
+
+class Expense(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'draft', 'Draft'
+        PENDING = 'pending', 'Pending Approval'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+        REIMBURSED = 'reimbursed', 'Reimbursed'
+        BILLED = 'billed', 'Billed to Client'
+
+    class PaymentMethod(models.TextChoices):
+        CASH = 'cash', 'Cash'
+        CREDIT_CARD = 'credit_card', 'Credit Card'
+        DEBIT_CARD = 'debit_card', 'Debit Card'
+        BANK_TRANSFER = 'bank_transfer', 'Bank Transfer'
+        CHECK = 'check', 'Check'
+        PETTY_CASH = 'petty_cash', 'Petty Cash'
+        COMPANY_CARD = 'company_card', 'Company Card'
+        OTHER = 'other', 'Other'
+
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='expenses')
+    expense_number = models.CharField(max_length=50, db_index=True)
+    description = models.CharField(max_length=500)
+    notes = models.TextField(blank=True)
+    category = models.ForeignKey(ExpenseCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses')
+    vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses')
+    expense_date = models.DateField(db_index=True)
+    amount = models.DecimalField(max_digits=15, decimal_places=2, help_text='Pre-tax amount')
+    tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    total_amount = models.DecimalField(max_digits=15, decimal_places=2, help_text='Amount including tax')
+    currency = models.CharField(max_length=3, default='USD', choices=Invoice.CURRENCY_CHOICES)
+    exchange_rate = models.DecimalField(max_digits=12, decimal_places=6, default=Decimal('1.000000'), help_text='Exchange rate to base currency')
+    base_currency_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'), help_text='Amount in workspace base currency')
+    payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.OTHER)
+    reference_number = models.CharField(max_length=100, blank=True, help_text='Receipt/invoice number from vendor')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
+    is_billable = models.BooleanField(default=False, help_text='Whether this expense can be billed to a client')
+    is_billed = models.BooleanField(default=False)
+    markup_percent = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), help_text='Markup percentage when billing to client')
+    billable_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'), help_text='Amount to bill client (including markup)')
+    client = models.ForeignKey('Client', on_delete=models.SET_NULL, null=True, blank=True, related_name='expenses', help_text='Client to bill for this expense')
+    project_name = models.CharField(max_length=255, blank=True, help_text='Optional project or job reference')
+    invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='billed_expenses', help_text='Invoice where this expense was billed')
+    billed_at = models.DateTimeField(null=True, blank=True)
+    tags = models.JSONField(default=list, blank=True, help_text='List of tags for filtering')
+    is_recurring = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_expenses')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True)
+    reimbursed_at = models.DateTimeField(null=True, blank=True)
+    reimbursement_reference = models.CharField(max_length=100, blank=True)
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='submitted_expenses')
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_expenses')
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-expense_date', '-created_at']
+        indexes = [
+            models.Index(fields=['workspace', 'status']),
+            models.Index(fields=['workspace', 'expense_date']),
+            models.Index(fields=['workspace', 'category']),
+            models.Index(fields=['workspace', 'is_billable', 'is_billed']),
+            models.Index(fields=['client', 'is_billed']),
+        ]
+
+    def __str__(self):
+        return f"{self.expense_number} - {self.description[:50]}"
+
+    def save(self, *args, **kwargs):
+        if not self.expense_number:
+            self.expense_number = self.generate_expense_number()
+        self.calculate_totals()
+        super().save(*args, **kwargs)
+
+    def generate_expense_number(self):
+        import secrets
+        prefix = "EXP"
+        today = timezone.now().strftime('%Y%m')
+        random_suffix = secrets.token_hex(3).upper()
+        return f"{prefix}-{today}-{random_suffix}"
+
+    def calculate_totals(self):
+        self.tax_amount = (self.amount * self.tax_rate / Decimal('100')).quantize(Decimal('0.01'))
+        self.total_amount = self.amount + self.tax_amount
+        self.base_currency_amount = (self.total_amount * self.exchange_rate).quantize(Decimal('0.01'))
+        if self.is_billable:
+            markup = (self.total_amount * self.markup_percent / Decimal('100')).quantize(Decimal('0.01'))
+            self.billable_amount = self.total_amount + markup
+        else:
+            self.billable_amount = Decimal('0.00')
+
+
+class ExpenseAttachment(models.Model):
+    class FileType(models.TextChoices):
+        RECEIPT = 'receipt', 'Receipt'
+        INVOICE = 'invoice', 'Invoice'
+        CONTRACT = 'contract', 'Contract'
+        OTHER = 'other', 'Other'
+
+    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name='attachments')
+    file_name = models.CharField(max_length=255)
+    original_file_name = models.CharField(max_length=255)
+    file_path = models.CharField(max_length=500, help_text='Storage path or URL')
+    file_type = models.CharField(max_length=20, choices=FileType.choices, default=FileType.RECEIPT)
+    mime_type = models.CharField(max_length=100)
+    file_size = models.PositiveIntegerField(help_text='File size in bytes')
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    description = models.CharField(max_length=255, blank=True)
+    is_primary = models.BooleanField(default=False, help_text='Primary receipt image')
+    thumbnail_path = models.CharField(max_length=500, blank=True)
+    ocr_text = models.TextField(blank=True, help_text='OCR extracted text from receipt')
+    ocr_processed = models.BooleanField(default=False)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-is_primary', '-created_at']
+
+    def __str__(self):
+        return f"{self.original_file_name} for {self.expense.expense_number}"
+
+
+class ExpenseAuditLog(models.Model):
+    class Action(models.TextChoices):
+        CREATED = 'created', 'Expense Created'
+        UPDATED = 'updated', 'Expense Updated'
+        SUBMITTED = 'submitted', 'Expense Submitted'
+        APPROVED = 'approved', 'Expense Approved'
+        REJECTED = 'rejected', 'Expense Rejected'
+        REIMBURSED = 'reimbursed', 'Expense Reimbursed'
+        BILLED = 'billed', 'Expense Billed to Client'
+        ATTACHMENT_ADDED = 'attachment_added', 'Attachment Added'
+        ATTACHMENT_REMOVED = 'attachment_removed', 'Attachment Removed'
+        DELETED = 'deleted', 'Expense Deleted'
+
+    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name='audit_logs')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=50, choices=Action.choices)
+    description = models.TextField(blank=True)
+    old_values = models.JSONField(default=dict, blank=True)
+    new_values = models.JSONField(default=dict, blank=True)
+    related_invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['expense', 'action']),
+        ]
+
+    def __str__(self):
+        return f"{self.action} on {self.expense.expense_number} at {self.timestamp}"
