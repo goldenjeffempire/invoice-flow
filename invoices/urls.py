@@ -11,6 +11,7 @@ urlpatterns = [
     path('api/search/', ux_views.global_search, name='global_search_api'),
     path('activity/', ux_views.activity_timeline, name='activity_timeline'),
     path('notifications/mark-read/<int:pk>/', ux_views.mark_notification_read, name='mark_notification_read'),
+    path('api/appearance/', ux_views.set_appearance_preference, name='set_appearance'),
 
     path('onboarding/', onboarding_views.onboarding_router, name='onboarding'),
     path('onboarding/welcome/', onboarding_views.onboarding_welcome, name='onboarding_welcome'),

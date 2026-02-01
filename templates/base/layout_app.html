@@ -1,6 +1,15 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50">
+<html lang="en" class="h-full" x-data="{ 
+    darkMode: localStorage.getItem('darkMode') === 'true',
+    sidebarOpen: false,
+    searchOpen: false,
+    notificationsOpen: false,
+    toggleDark() {
+        this.darkMode = !this.darkMode;
+        localStorage.setItem('darkMode', this.darkMode);
+    }
+}" :class="{ 'dark': darkMode }">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,206 +17,201 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
+                            400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
+                            800: '#1e40af', 900: '#1e3a8a', 950: '#172554',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
         [x-cloak] { display: none !important; }
         .glass-header {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            @apply backdrop-blur-md bg-white/80 dark:bg-slate-900/80 sticky top-0 z-40 border-b border-slate-200 dark:border-slate-800;
         }
     </style>
 </head>
-<body class="h-full" x-data="{ sidebarOpen: false, searchOpen: false, notificationsOpen: false }">
-    <!-- Global Search Modal -->
-    <div x-show="searchOpen" 
-         class="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20" 
-         role="dialog" aria-modal="true" x-cloak
-         @keydown.window.escape="searchOpen = false"
-         @keydown.window.k.prevent.meta="searchOpen = true"
-         @keydown.window.k.prevent.ctrl="searchOpen = true">
-        <div class="fixed inset-0 bg-slate-500/75 transition-opacity" @click="searchOpen = false"></div>
-        <div class="relative mx-auto max-w-2xl transform divide-y divide-slate-100 overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/5 transition-all">
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <!-- Search Modal -->
+    <div x-show="searchOpen" class="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20" role="dialog" aria-modal="true" x-cloak
+         @keydown.window.escape="searchOpen = false" @keydown.window.k.prevent.meta="searchOpen = true" @keydown.window.k.prevent.ctrl="searchOpen = true">
+        <div class="fixed inset-0 bg-slate-500/75 dark:bg-slate-900/80 transition-opacity" @click="searchOpen = false"></div>
+        <div class="relative mx-auto max-w-2xl transform divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-2xl ring-1 ring-black/5 transition-all">
             <div class="relative">
                 <svg class="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
-                <input type="text" class="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-slate-900 placeholder:text-slate-400 focus:ring-0 sm:text-sm" placeholder="Search... (⌘K)" autofocus>
+                <input type="text" class="h-12 w-full border-0 bg-transparent pl-11 pr-4 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-0 sm:text-sm" 
+                       placeholder="Search invoices, clients, payments... (⌘K)" autofocus
+                       @input.debounce.300ms="fetch('/api/search/?q=' + $el.value).then(r => r.json()).then(d => { $data.searchResults = d.results })">
             </div>
-            <div class="p-4 text-center text-sm text-slate-500">
-                Start typing to search across invoices, clients, and payments.
+            <div class="max-h-96 overflow-y-auto p-2" x-data="{ searchResults: [] }">
+                <template x-for="result in searchResults" :key="result.url">
+                    <a :href="result.url" class="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 group">
+                        <div class="p-2 rounded bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                            <span x-text="result.type[0]"></span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-semibold" x-text="result.title"></p>
+                            <p class="text-xs text-slate-500" x-text="result.meta"></p>
+                        </div>
+                    </a>
+                </template>
+                <div x-show="!searchResults.length" class="p-4 text-center text-sm text-slate-500">No recent results</div>
             </div>
         </div>
     </div>
 
+    <!-- Main Shell -->
     <div class="min-h-full">
         <!-- Sidebar -->
-        <div x-show="sidebarOpen" class="relative z-50 lg:hidden" x-cloak>
-            <div class="fixed inset-0 bg-slate-900/80 transition-opacity"></div>
-            <div class="fixed inset-0 flex">
-                <div class="relative mr-16 flex w-full max-w-xs flex-1 transform transition duration-300 ease-in-out" @click.away="sidebarOpen = false">
-                    <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4">
-                        <div class="flex h-16 shrink-0 items-center">
-                            <span class="text-2xl font-black text-indigo-600">InvoiceFlow</span>
-                        </div>
-                        <nav class="flex flex-1 flex-col">
-                            <ul role="list" class="flex flex-1 flex-col gap-y-7">
-                                <li>
-                                    <ul role="list" class="-mx-2 space-y-1">
-                                        <li><a href="{% url 'invoices:dashboard' %}" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-slate-700 hover:bg-slate-50 hover:text-indigo-600">Dashboard</a></li>
-                                        <li><a href="{% url 'invoices:invoices_list' %}" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-slate-700 hover:bg-slate-50 hover:text-indigo-600">Invoices</a></li>
-                                        <li><a href="{% url 'invoices:payment_history' %}" class="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-slate-700 hover:bg-slate-50 hover:text-indigo-600">Payments</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
+        <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" class="fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-300 lg:translate-x-0">
+            <div class="flex flex-col h-full">
+                <div class="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-800">
+                    <span class="text-2xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">InvoiceFlow</span>
                 </div>
-            </div>
-        </div>
-
-        <!-- Desktop Sidebar -->
-        <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-            <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-slate-200 bg-white px-6 pb-4">
-                <div class="flex h-16 shrink-0 items-center">
-                    <span class="text-2xl font-black text-indigo-600 tracking-tight">InvoiceFlow</span>
-                </div>
-                <nav class="flex flex-1 flex-col">
-                    <ul role="list" class="flex flex-1 flex-col gap-y-7">
-                        <li>
-                            <ul role="list" class="-mx-2 space-y-1">
-                                <li>
-                                    <a href="{% url 'invoices:dashboard' %}" class="group flex gap-x-3 rounded-xl p-2.5 text-sm font-semibold leading-6 {% if request.path == '/dashboard/' %}bg-indigo-50 text-indigo-600 shadow-sm{% else %}text-slate-600 hover:bg-slate-50 hover:text-indigo-600{% endif %}">
-                                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" /></svg>
-                                        Dashboard
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'invoices:invoices_list' %}" class="group flex gap-x-3 rounded-xl p-2.5 text-sm font-semibold leading-6 {% if '/list/' in request.path %}bg-indigo-50 text-indigo-600 shadow-sm{% else %}text-slate-600 hover:bg-slate-50 hover:text-indigo-600{% endif %}">
-                                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
-                                        Invoices
-                                    </a>
-                                </li>
-                                <li>
-                                    <a href="{% url 'invoices:payment_history' %}" class="group flex gap-x-3 rounded-xl p-2.5 text-sm font-semibold leading-6 {% if '/payments/' in request.path %}bg-indigo-50 text-indigo-600 shadow-sm{% else %}text-slate-600 hover:bg-slate-50 hover:text-indigo-600{% endif %}">
-                                        <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" /></svg>
-                                        Payments
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
+                <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+                    <a href="{% url 'invoices:dashboard' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if request.path == '/dashboard/' %}bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        Dashboard
+                    </a>
+                    <a href="{% url 'invoices:invoices_list' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if '/list/' in request.path %}bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        Invoices
+                    </a>
+                    <a href="{% url 'invoices:payment_history' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if '/payments/' in request.path %}bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                        Payments
+                    </a>
+                    <div class="pt-4 pb-2 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider">System</div>
+                    <a href="{% url 'invoices:activity_timeline' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if '/activity/' in request.path %}bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Activity Log
+                    </a>
+                    <a href="{% url 'invoices:settings' %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {% if '/settings/' in request.path %}bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400{% else %}text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800{% endif %}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Settings
+                    </a>
                 </nav>
+                <div class="p-4 border-t border-slate-100 dark:border-slate-800">
+                    <button @click="toggleDark()" class="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800">
+                        <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                        <svg x-show="darkMode" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14 7 7 0 000-14z"/></svg>
+                        <span x-text="darkMode ? 'Light Mode' : 'Dark Mode'"></span>
+                    </button>
+                </div>
             </div>
-        </div>
+        </aside>
 
-        <div class="lg:pl-72">
+        <!-- Main Content Wrapper -->
+        <div class="lg:pl-72 flex flex-col min-h-screen">
             <!-- Topbar -->
-            <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-slate-200 glass-header px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-                <button @click="sidebarOpen = true" type="button" class="-m-2.5 p-2.5 text-slate-700 lg:hidden">
-                    <span class="sr-only">Open sidebar</span>
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+            <header class="glass-header h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8">
+                <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 text-slate-600 dark:text-slate-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
-
-                <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-                    <div class="relative flex flex-1">
-                        <button @click="searchOpen = true" class="flex items-center gap-x-2 text-slate-400 hover:text-slate-500 w-full text-left">
-                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" /></svg>
-                            <span class="text-sm">Search invoices, clients... <kbd class="hidden sm:inline-block ml-2 px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-[10px] font-bold">⌘K</kbd></span>
+                <div class="flex-1 flex justify-center lg:justify-start lg:ml-4">
+                    <button @click="searchOpen = true" class="max-w-md w-full flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 dark:text-slate-400 hover:ring-2 hover:ring-indigo-500/20 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <span class="text-sm">Quick Search...</span>
+                        <kbd class="hidden sm:inline-block ml-auto text-[10px] font-bold opacity-50">⌘K</kbd>
+                    </button>
+                </div>
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <!-- Notifications Trigger -->
+                    <button @click="notificationsOpen = true" class="relative p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        {% if unread_notifications_count %}<span class="absolute top-2 right-2 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white dark:ring-slate-900"></span>{% endif %}
+                    </button>
+                    <!-- User Menu -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs">{{ user.username|first|upper }}</div>
                         </button>
-                    </div>
-                    <div class="flex items-center gap-x-4 lg:gap-x-6">
-                        <!-- Notifications -->
-                        <button @click="notificationsOpen = !notificationsOpen" class="relative p-2.5 text-slate-400 hover:text-slate-500">
-                            <span class="sr-only">View notifications</span>
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7c0-2.485-2.099-4.5-4.688-4.5-.933 0-1.799.274-2.527.742a4.494 4.494 0 01-3.473-.742c-2.589 0-4.688 2.015-4.688 4.5V9.75c0 3.321-1.815 6.168-4.5 7.332 1.636.528 3.351.866 5.143 1.002a2.333 2.333 0 004.451 0c.18-.013.356-.032.53-.058z" /></svg>
-                            {% if unread_notifications_count %}
-                            <span class="absolute top-2 right-2 flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span></span>
-                            {% endif %}
-                        </button>
-                        <!-- Profile -->
-                        <div class="relative group" x-data="{ open: false }">
-                            <button @click="open = !open" type="button" class="-m-1.5 flex items-center p-1.5">
-                                <div class="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-xs">{{ user.username|first|upper }}</div>
-                                <span class="hidden lg:flex lg:items-center ml-2">
-                                    <span class="text-sm font-semibold leading-6 text-slate-900" aria-hidden="true">{{ user.get_full_name|default:user.username }}</span>
-                                    <svg class="ml-2 h-5 w-5 text-slate-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
-                                </span>
-                            </button>
-                            <div x-show="open" @click.away="open = false" class="absolute right-0 z-10 mt-2.5 w-48 origin-top-right rounded-md bg-white py-2 shadow-lg ring-1 ring-slate-900/5 focus:outline-none" x-cloak>
-                                <a href="{% url 'invoices:settings' %}" class="block px-3 py-1 text-sm leading-6 text-slate-900 hover:bg-slate-50">Profile</a>
-                                <a href="{% url 'invoices:logout' %}" class="block px-3 py-1 text-sm leading-6 text-slate-900 hover:bg-slate-50">Sign out</a>
+                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/5 py-1 z-50">
+                            <div class="px-4 py-2 border-b dark:border-slate-800">
+                                <p class="text-sm font-bold truncate">{{ user.get_full_name|default:user.username }}</p>
+                                <p class="text-[10px] text-slate-500 truncate">{{ user.email }}</p>
                             </div>
+                            <a href="{% url 'invoices:settings' %}" class="block px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800">Profile Settings</a>
+                            <a href="{% url 'invoices:logout' %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Sign Out</a>
                         </div>
                     </div>
                 </div>
-            </div>
+            </header>
 
-            <main class="py-10">
-                <div class="px-4 sm:px-6 lg:px-8">
-                    {% if messages %}
-                    <div class="mb-8 space-y-4">
-                        {% for message in messages %}
-                        <div class="p-4 rounded-xl border {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-700{% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-indigo-50 border-indigo-200 text-indigo-700{% endif %} flex items-center gap-3">
-                            <span class="flex-1 text-sm font-medium">{{ message }}</span>
-                            <button @click="$el.parentElement.remove()" class="text-current opacity-50 hover:opacity-100">&times;</button>
-                        </div>
-                        {% endfor %}
+            <!-- Page Content -->
+            <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+                {% if messages %}
+                <div class="max-w-4xl mx-auto mb-6 space-y-2">
+                    {% for message in messages %}
+                    <div x-data="{ show: true }" x-show="open" x-init="setTimeout(() => show = false, 5000)" class="flex items-center gap-3 p-4 rounded-xl border {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-700{% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-700{% else %}bg-indigo-50 border-indigo-200 text-indigo-700{% endif %} shadow-sm animate-fade-in">
+                        <span class="flex-1 text-sm font-medium">{{ message }}</span>
+                        <button @click="show = false" class="opacity-50 hover:opacity-100">&times;</button>
                     </div>
-                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="max-w-7xl mx-auto">
                     {% block content %}{% endblock %}
                 </div>
             </main>
         </div>
     </div>
 
+    <!-- Help & Support -->
+    <div class="fixed bottom-6 right-6 z-40" x-data="{ open: false }">
+        <div x-show="open" @click.away="open = false" x-transition class="absolute bottom-16 right-0 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 mb-2">
+            <h3 class="font-bold mb-3">Help Center</h3>
+            <div class="space-y-2">
+                <a href="#" class="block p-3 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group">
+                    <p class="text-sm font-bold group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Documentation</p>
+                    <p class="text-[10px] text-slate-500">Guides and tutorials</p>
+                </a>
+                <a href="#" class="block p-3 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors group">
+                    <p class="text-sm font-bold group-hover:text-indigo-600 dark:group-hover:text-indigo-400">Direct Support</p>
+                    <p class="text-[10px] text-slate-500">Chat with our team</p>
+                </a>
+            </div>
+        </div>
+        <button @click="open = !open" class="w-12 h-12 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 flex items-center justify-center transform active:scale-95 transition-all">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </button>
+    </div>
+
     <!-- Notification Side Panel -->
     <div x-show="notificationsOpen" class="relative z-50" x-cloak>
-        <div class="fixed inset-0 bg-slate-900/80 transition-opacity"></div>
-        <div class="fixed inset-0 overflow-hidden">
-            <div class="absolute inset-0 overflow-hidden">
-                <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-                    <div class="pointer-events-auto w-screen max-w-md transform transition duration-500 ease-in-out" @click.away="notificationsOpen = false">
-                        <div class="flex h-full flex-col overflow-y-scroll bg-white py-6 shadow-xl">
-                            <div class="px-4 sm:px-6 flex items-center justify-between border-b border-slate-100 pb-4">
-                                <h2 class="text-lg font-bold text-slate-900">Notifications</h2>
-                                <button @click="notificationsOpen = false" class="text-slate-400 hover:text-slate-500">
-                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                            </div>
-                            <div class="relative mt-6 flex-1 px-4 sm:px-6">
-                                <div class="space-y-4">
-                                    {% for notification in notifications %}
-                                    <div class="p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors {% if not notification.is_read %}border-indigo-100 bg-indigo-50/30{% endif %}">
-                                        <p class="text-sm font-bold text-slate-900">{{ notification.title }}</p>
-                                        <p class="text-xs text-slate-500 mt-1">{{ notification.message }}</p>
-                                        <p class="text-[10px] text-slate-400 mt-2">{{ notification.created_at|timesince }} ago</p>
-                                    </div>
-                                    {% empty %}
-                                    <div class="text-center py-12">
-                                        <p class="text-sm text-slate-500 italic">All caught up! No new notifications.</p>
-                                    </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
+        <div class="fixed inset-0 bg-slate-900/80 transition-opacity" @click="notificationsOpen = false"></div>
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md transform transition-transform duration-500" x-show="notificationsOpen" x-transition:enter="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="translate-x-0" x-transition:leave-end="translate-x-full">
+                <div class="h-full flex flex-col bg-white dark:bg-slate-900 shadow-2xl">
+                    <div class="px-6 py-4 border-b dark:border-slate-800 flex items-center justify-between">
+                        <h2 class="text-lg font-bold">Notifications</h2>
+                        <button @click="notificationsOpen = false" class="text-slate-400 hover:text-slate-500"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12" /></svg></button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-6 space-y-4">
+                        {% for notification in notifications %}
+                        <div class="p-4 rounded-xl border dark:border-slate-800 {% if not notification.is_read %}bg-indigo-50/30 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/30{% endif %}"
+                             @click="fetch('/notifications/mark-read/{{ notification.pk }}/')">
+                            <p class="text-sm font-bold">{{ notification.title }}</p>
+                            <p class="text-xs text-slate-500 mt-1">{{ notification.message }}</p>
+                            <p class="text-[10px] text-slate-400 mt-2">{{ notification.created_at|timesince }} ago</p>
                         </div>
+                        {% empty %}
+                        <div class="text-center py-12"><p class="text-sm text-slate-500 italic">No new notifications</p></div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Help Widget -->
-    <div class="fixed bottom-6 right-6 z-40 group" x-data="{ open: false }">
-        <div x-show="open" @click.away="open = false" class="absolute bottom-16 right-0 w-64 bg-white rounded-2xl shadow-2xl border border-slate-200 p-4 mb-2 overflow-hidden" x-cloak>
-            <h3 class="font-bold text-slate-900 mb-2">Help & Support</h3>
-            <ul class="space-y-2">
-                <li><a href="#" class="block p-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg">📖 Documentation</a></li>
-                <li><a href="#" class="block p-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg">💬 Live Chat</a></li>
-                <li><a href="#" class="block p-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg">✉️ Email Support</a></li>
-            </ul>
-        </div>
-        <button @click="open = !open" class="h-12 w-12 rounded-full bg-indigo-600 text-white shadow-lg flex items-center justify-center hover:bg-indigo-700 transition-all transform hover:scale-105 active:scale-95">
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" /></svg>
-        </button>
     </div>
 
     {% block scripts %}{% endblock %}

@@ -8,6 +8,7 @@ def workspace_context(request):
     context = {
         'notifications': notifications,
         'unread_notifications_count': unread_count,
+        'dark_mode_preference': request.session.get('dark_mode', False),
     }
     
     if hasattr(request, 'workspace'):
