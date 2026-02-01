@@ -3,7 +3,8 @@ from .models import (
     UserProfile, MFAProfile, SecurityEvent, UserSession, EmailToken,
     Invoice, Payment, WorkspaceInvitation,
     Waitlist, SocialAccount, Client, ClientNote, CommunicationLog,
-    InvoiceActivity, RecurringSchedule, ScheduleExecution, PaymentAttempt
+    InvoiceActivity, RecurringSchedule, ScheduleExecution, PaymentAttempt,
+    RecurringScheduleAuditLog
 )
 
 @admin.register(UserProfile)
@@ -65,3 +66,11 @@ class PaymentAttemptAdmin(admin.ModelAdmin):
     list_display = ('id', 'execution', 'attempt_number', 'status', 'attempted_at')
     list_filter = ('status',)
     readonly_fields = ('attempted_at',)
+
+
+@admin.register(RecurringScheduleAuditLog)
+class RecurringScheduleAuditLogAdmin(admin.ModelAdmin):
+    list_display = ('id', 'schedule', 'action', 'user', 'timestamp')
+    list_filter = ('action',)
+    search_fields = ('schedule__client__name', 'description')
+    readonly_fields = ('timestamp',)

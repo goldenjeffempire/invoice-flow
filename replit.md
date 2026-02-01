@@ -74,6 +74,19 @@ A comprehensive invoice lifecycle system supports:
 - **State Machine**: Enforces status transitions via `InvoiceService`.
 - **Views**: List, builder, detail, preview, PDF generation, share link, record payment, void, duplicate, CSV export, and public invoice viewing.
 
+### Recurring Billing System
+A production-grade recurring billing and subscription management system:
+- **Models**: `RecurringSchedule`, `ScheduleExecution`, `PaymentAttempt`, `RecurringScheduleAuditLog`.
+- **Interval Types**: Weekly, biweekly, monthly, quarterly, yearly, and custom day intervals.
+- **Features**: Proration support, timezone-aware scheduling, anchor day billing, configurable payment terms.
+- **Retry Logic**: Exponential backoff with configurable max attempts and interval multiplier.
+- **Idempotent Generation**: Prevents duplicate invoices via compound idempotency keys (schedule_id + date).
+- **Failure Notifications**: Email alerts when payment retries are exhausted.
+- **Audit Logging**: Complete audit trail of all schedule actions, invoice generation, and payment attempts.
+- **Views**: Schedule list, create, detail (with execution history), edit, pause/resume, and cancel.
+- **Management Command**: `process_recurring_schedules` for automated scheduled processing.
+- **Service Layer**: `RecurringBillingService` handles all business logic including invoice generation, payment processing, and retry orchestration.
+
 ## External Dependencies
 
 ### Payment Gateway

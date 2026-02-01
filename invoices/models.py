@@ -593,9 +593,9 @@ class Payment(models.Model):
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payments")
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
-    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES)
+    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="USD")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
-    payment_method = models.CharField(max_length=20, choices=Method.choices)
+    payment_method = models.CharField(max_length=20, choices=Method.choices, default="other")
     
     transaction_id = models.CharField(max_length=255, blank=True, db_index=True)
     provider_reference = models.CharField(max_length=255, blank=True)
@@ -628,9 +628,9 @@ class Transaction(models.Model):
 
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="transactions")
     payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name="transactions")
-    transaction_type = models.CharField(max_length=20, choices=Type.choices)
+    transaction_type = models.CharField(max_length=20, choices=Type.choices, default="payment")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
-    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES)
+    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="USD")
     
     status = models.CharField(max_length=20, default="succeeded")
     external_id = models.CharField(max_length=255, blank=True, db_index=True)
@@ -948,54 +948,6 @@ class ImportJob(models.Model):
     stats = models.JSONField(default=dict, blank=True) # {total: 100, success: 90, failed: 10}
     created_at = models.DateTimeField(auto_now_add=True)
 
-class Payment(models.Model):
-    class Status(models.TextChoices):
-        PENDING = "pending", "Pending"
-        COMPLETED = "completed", "Completed"
-        FAILED = "failed", "Failed"
-        REFUNDED = "refunded", "Refunded"
-        REVERSED = "reversed", "Reversed"
-
-    class Method(models.TextChoices):
-        PAYSTACK = "paystack", "Paystack"
-        BANK_TRANSFER = "bank_transfer", "Bank Transfer"
-        CASH = "cash", "Cash"
-        OTHER = "other", "Other"
-
-    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="workspace_payments")
-    invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name="invoice_payments_v2")
-    amount = models.DecimalField(max_digits=15, decimal_places=2)
-    tip_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    currency = models.CharField(max_length=3)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    payment_method = models.CharField(max_length=20, choices=Method.choices)
-    provider_reference = models.CharField(max_length=255, blank=True, db_index=True)
-    idempotency_key = models.CharField(max_length=255, unique=True, null=True, blank=True)
-    notes = models.TextField(blank=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-class Transaction(models.Model):
-    class Type(models.TextChoices):
-        PAYMENT = "payment", "Payment"
-        REFUND = "refund", "Refund"
-        PAYOUT = "payout", "Payout"
-        ADJUSTMENT = "adjustment", "Adjustment"
-
-    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="transactions")
-    payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name="transactions")
-    transaction_type = models.CharField(max_length=20, choices=Type.choices)
-    amount = models.DecimalField(max_digits=15, decimal_places=2)
-    currency = models.CharField(max_length=3)
-    description = models.TextField(blank=True)
-    provider_transaction_id = models.CharField(max_length=255, blank=True, db_index=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
 class Payout(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"
@@ -1025,14 +977,6 @@ class Dispute(models.Model):
     reason = models.CharField(max_length=255)
     provider_dispute_id = models.CharField(max_length=255, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-class PaymentAuditLog(models.Model):
-    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="audit_logs")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    action = models.CharField(max_length=100)
-    details = models.JSONField(default=dict)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
 
 class PaymentSettings(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Recurring Schedules - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Recurring Schedules</h1>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage automated recurring billing for your clients</p>
+            </div>
+            <div class="mt-4 sm:mt-0">
+                <a href="{% url 'invoices:schedule_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Create Schedule
+                </a>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <div class="flex flex-wrap gap-2" role="tablist" aria-label="Filter schedules by status">
+                <a href="{% url 'invoices:schedule_list' %}" 
+                   class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if not status_filter %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300{% else %}bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}"
+                   role="tab" aria-selected="{% if not status_filter %}true{% else %}false{% endif %}">
+                    All <span class="ml-1 text-xs">({{ status_counts.all }})</span>
+                </a>
+                <a href="{% url 'invoices:schedule_list' %}?status=active" 
+                   class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if status_filter == 'active' %}bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300{% else %}bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}"
+                   role="tab" aria-selected="{% if status_filter == 'active' %}true{% else %}false{% endif %}">
+                    Active <span class="ml-1 text-xs">({{ status_counts.active }})</span>
+                </a>
+                <a href="{% url 'invoices:schedule_list' %}?status=paused" 
+                   class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if status_filter == 'paused' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300{% else %}bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}"
+                   role="tab" aria-selected="{% if status_filter == 'paused' %}true{% else %}false{% endif %}">
+                    Paused <span class="ml-1 text-xs">({{ status_counts.paused }})</span>
+                </a>
+                <a href="{% url 'invoices:schedule_list' %}?status=cancelled" 
+                   class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if status_filter == 'cancelled' %}bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% else %}bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}"
+                   role="tab" aria-selected="{% if status_filter == 'cancelled' %}true{% else %}false{% endif %}">
+                    Cancelled <span class="ml-1 text-xs">({{ status_counts.cancelled }})</span>
+                </a>
+                <a href="{% url 'invoices:schedule_list' %}?status=failed" 
+                   class="px-4 py-2 text-sm font-medium rounded-lg transition-colors {% if status_filter == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300{% else %}bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700{% endif %}"
+                   role="tab" aria-selected="{% if status_filter == 'failed' %}true{% else %}false{% endif %}">
+                    Failed <span class="ml-1 text-xs">({{ status_counts.failed }})</span>
+                </a>
+            </div>
+        </div>
+
+        {% if schedules %}
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Client</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Interval</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Next Run</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {% for schedule in schedules %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ schedule.client.name }}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ schedule.client.email }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900 dark:text-white max-w-xs truncate">{{ schedule.description }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900 dark:text-white">{{ schedule.get_interval_type_display }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ schedule.currency }} {{ schedule.base_amount }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900 dark:text-white">
+                                    {% if schedule.next_run_date %}
+                                        {{ schedule.next_run_date|date:"M d, Y" }}
+                                        {% if schedule.days_until_next_run is not None %}
+                                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                                ({% if schedule.days_until_next_run == 0 %}Today{% elif schedule.days_until_next_run == 1 %}Tomorrow{% elif schedule.days_until_next_run < 0 %}Overdue{% else %}in {{ schedule.days_until_next_run }} days{% endif %})
+                                            </span>
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if schedule.status == 'active' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">Active</span>
+                                {% elif schedule.status == 'paused' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">Paused</span>
+                                {% elif schedule.status == 'cancelled' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Cancelled</span>
+                                {% elif schedule.status == 'completed' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">Completed</span>
+                                {% elif schedule.status == 'failed' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">Failed</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="{% url 'invoices:schedule_detail' schedule.id %}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No recurring schedules</h3>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Get started by creating your first recurring billing schedule.</p>
+            <div class="mt-6">
+                <a href="{% url 'invoices:schedule_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Create Schedule
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
