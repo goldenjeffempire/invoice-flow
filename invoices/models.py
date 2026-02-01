@@ -781,12 +781,6 @@ class WorkspaceInvitation(models.Model):
         return self.accepted_at is not None
 
 
-class RecurringInvoice(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    client_name = models.CharField(max_length=200)
-    frequency = models.CharField(max_length=20)
-    status = models.CharField(max_length=20, default="active")
-    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Waitlist(models.Model):
@@ -1043,3 +1037,253 @@ class PaymentAuditLog(models.Model):
 class PaymentSettings(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class RecurringSchedule(models.Model):
+    class IntervalType(models.TextChoices):
+        WEEKLY = "weekly", "Weekly"
+        BIWEEKLY = "biweekly", "Every 2 Weeks"
+        MONTHLY = "monthly", "Monthly"
+        QUARTERLY = "quarterly", "Quarterly"
+        YEARLY = "yearly", "Yearly"
+        CUSTOM = "custom", "Custom Interval"
+
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        PAUSED = "paused", "Paused"
+        CANCELLED = "cancelled", "Cancelled"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed (Retry Exhausted)"
+
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="recurring_schedules")
+    client = models.ForeignKey('Client', on_delete=models.CASCADE, related_name="recurring_schedules")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_schedules")
+
+    description = models.CharField(max_length=255, help_text="Brief description of recurring charge")
+    interval_type = models.CharField(max_length=20, choices=IntervalType.choices, default=IntervalType.MONTHLY)
+    custom_interval_days = models.PositiveIntegerField(null=True, blank=True, help_text="Days between invoices for custom interval")
+    
+    start_date = models.DateField(help_text="When to start generating invoices")
+    end_date = models.DateField(null=True, blank=True, help_text="Optional end date for the schedule")
+    next_run_date = models.DateField(db_index=True, help_text="Next scheduled invoice generation date")
+    last_run_date = models.DateField(null=True, blank=True)
+    
+    timezone = models.CharField(max_length=50, default="UTC", help_text="Timezone for schedule execution")
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, db_index=True)
+    paused_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancellation_reason = models.TextField(blank=True)
+    
+    proration_enabled = models.BooleanField(default=False, help_text="Prorate partial periods")
+    anchor_day = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Day of month to anchor billing (1-31)")
+
+    currency = models.CharField(max_length=3, default="USD")
+    base_amount = models.DecimalField(max_digits=15, decimal_places=2, help_text="Base invoice amount before tax")
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    
+    line_items_template = models.JSONField(default=list, blank=True, help_text="Template line items for generated invoices")
+    invoice_terms = models.TextField(blank=True, help_text="Terms to include on generated invoices")
+    invoice_notes = models.TextField(blank=True, help_text="Notes to include on generated invoices")
+    payment_terms_days = models.PositiveIntegerField(default=30, help_text="Days until due date from issue")
+    
+    auto_send = models.BooleanField(default=True, help_text="Automatically send invoice to client")
+    
+    retry_enabled = models.BooleanField(default=True)
+    max_retry_attempts = models.PositiveSmallIntegerField(default=3, help_text="Max payment retry attempts")
+    retry_interval_hours = models.PositiveIntegerField(default=24, help_text="Hours between retry attempts")
+    retry_backoff_multiplier = models.DecimalField(max_digits=3, decimal_places=1, default=Decimal('2.0'), help_text="Backoff multiplier for retries")
+    current_retry_count = models.PositiveSmallIntegerField(default=0)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    
+    failure_notification_sent = models.BooleanField(default=False)
+    
+    idempotency_key = models.CharField(max_length=64, unique=True, db_index=True)
+    total_invoices_generated = models.PositiveIntegerField(default=0)
+    total_amount_billed = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'next_run_date']),
+            models.Index(fields=['workspace', 'status']),
+        ]
+
+    def __str__(self):
+        return f"Schedule #{self.id} - {self.client.name} ({self.interval_type})"
+
+    def save(self, *args, **kwargs):
+        if not self.idempotency_key:
+            self.idempotency_key = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+    def calculate_next_run_date(self, from_date=None):
+        from dateutil.relativedelta import relativedelta
+        base = from_date or self.next_run_date or self.start_date
+        if self.interval_type == self.IntervalType.WEEKLY:
+            return base + timedelta(days=7)
+        elif self.interval_type == self.IntervalType.BIWEEKLY:
+            return base + timedelta(days=14)
+        elif self.interval_type == self.IntervalType.MONTHLY:
+            next_date = base + relativedelta(months=1)
+            if self.anchor_day:
+                try:
+                    next_date = next_date.replace(day=min(self.anchor_day, 28))
+                except ValueError:
+                    pass
+            return next_date
+        elif self.interval_type == self.IntervalType.QUARTERLY:
+            return base + relativedelta(months=3)
+        elif self.interval_type == self.IntervalType.YEARLY:
+            return base + relativedelta(years=1)
+        elif self.interval_type == self.IntervalType.CUSTOM and self.custom_interval_days:
+            return base + timedelta(days=self.custom_interval_days)
+        return base + timedelta(days=30)
+
+    def get_retry_delay_hours(self):
+        base_delay = self.retry_interval_hours
+        return int(base_delay * (float(self.retry_backoff_multiplier) ** self.current_retry_count))
+
+    @property
+    def can_retry(self):
+        return self.retry_enabled and self.current_retry_count < self.max_retry_attempts
+
+    @property
+    def is_active(self):
+        return self.status == self.Status.ACTIVE
+
+    @property
+    def days_until_next_run(self):
+        if self.next_run_date:
+            delta = self.next_run_date - timezone.now().date()
+            return delta.days
+        return None
+
+
+class ScheduleExecution(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+        SKIPPED = "skipped", "Skipped"
+
+    schedule = models.ForeignKey(RecurringSchedule, on_delete=models.CASCADE, related_name="executions")
+    invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name="schedule_executions")
+    
+    period_start = models.DateField(help_text="Start of billing period")
+    period_end = models.DateField(help_text="End of billing period")
+    
+    scheduled_date = models.DateField(help_text="When this execution was scheduled to run")
+    executed_at = models.DateTimeField(auto_now_add=True)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    
+    amount_generated = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    prorated_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True, help_text="Prorated amount if applicable")
+    
+    error_message = models.TextField(blank=True)
+    retry_count = models.PositiveSmallIntegerField(default=0)
+    
+    idempotency_key = models.CharField(max_length=64, unique=True, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ['-executed_at']
+        indexes = [
+            models.Index(fields=['schedule', 'status']),
+            models.Index(fields=['scheduled_date']),
+        ]
+
+    def __str__(self):
+        return f"Execution #{self.id} for Schedule #{self.schedule_id}"
+
+    def save(self, *args, **kwargs):
+        if not self.idempotency_key:
+            self.idempotency_key = f"{self.schedule_id}-{self.scheduled_date.isoformat()}-{secrets.token_urlsafe(8)}"
+        super().save(*args, **kwargs)
+
+
+class PaymentAttempt(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    execution = models.ForeignKey(ScheduleExecution, on_delete=models.CASCADE, related_name="payment_attempts")
+    invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name="recurring_payment_attempts")
+    
+    attempt_number = models.PositiveSmallIntegerField(default=1)
+    attempted_at = models.DateTimeField(auto_now_add=True)
+    
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    
+    payment_method = models.CharField(max_length=50, blank=True)
+    provider = models.CharField(max_length=50, blank=True)
+    provider_transaction_id = models.CharField(max_length=255, blank=True)
+    
+    error_code = models.CharField(max_length=50, blank=True)
+    error_message = models.TextField(blank=True)
+    
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ['-attempted_at']
+        indexes = [
+            models.Index(fields=['execution', 'status']),
+        ]
+
+    def __str__(self):
+        return f"Attempt #{self.attempt_number} for Execution #{self.execution_id}"
+
+
+class RecurringScheduleAuditLog(models.Model):
+    class Action(models.TextChoices):
+        CREATED = "created", "Schedule Created"
+        UPDATED = "updated", "Schedule Updated"
+        PAUSED = "paused", "Schedule Paused"
+        RESUMED = "resumed", "Schedule Resumed"
+        CANCELLED = "cancelled", "Schedule Cancelled"
+        INVOICE_GENERATED = "invoice_generated", "Invoice Generated"
+        PAYMENT_ATTEMPTED = "payment_attempted", "Payment Attempted"
+        PAYMENT_SUCCESS = "payment_success", "Payment Successful"
+        PAYMENT_FAILED = "payment_failed", "Payment Failed"
+        RETRY_SCHEDULED = "retry_scheduled", "Retry Scheduled"
+        RETRY_EXHAUSTED = "retry_exhausted", "Retry Attempts Exhausted"
+        NOTIFICATION_SENT = "notification_sent", "Notification Sent"
+
+    schedule = models.ForeignKey(RecurringSchedule, on_delete=models.CASCADE, related_name="audit_logs")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    action = models.CharField(max_length=50, choices=Action.choices)
+    description = models.TextField(blank=True)
+    
+    related_invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True)
+    related_execution = models.ForeignKey(ScheduleExecution, on_delete=models.SET_NULL, null=True, blank=True)
+    related_attempt = models.ForeignKey(PaymentAttempt, on_delete=models.SET_NULL, null=True, blank=True)
+    
+    old_values = models.JSONField(default=dict, blank=True)
+    new_values = models.JSONField(default=dict, blank=True)
+    
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+    
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['schedule', 'action']),
+        ]
+
+    def __str__(self):
+        return f"{self.action} on Schedule #{self.schedule_id} at {self.timestamp}"
