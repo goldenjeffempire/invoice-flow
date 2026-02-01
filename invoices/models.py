@@ -572,37 +572,83 @@ class EstimateActivity(models.Model):
     client_ip = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-class LineItem(models.Model):
-    class ItemType(models.TextChoices):
-        SERVICE = "service", "Service"
-        PRODUCT = "product", "Product"
-        EXPENSE = "expense", "Expense"
-        DISCOUNT = "discount", "Discount Line"
+class Payment(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+        REFUNDED = "refunded", "Refunded"
+        PARTIALLY_REFUNDED = "partially_refunded", "Partially Refunded"
+        DISPUTED = "disputed", "Disputed"
+        VOID = "void", "Void"
+
+    class Method(models.TextChoices):
+        STRIPE = "stripe", "Stripe"
+        PAYSTACK = "paystack", "Paystack"
+        BANK_TRANSFER = "bank_transfer", "Bank Transfer"
+        CASH = "cash", "Cash"
+        CHEQUE = "cheque", "Cheque"
         OTHER = "other", "Other"
 
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
-    item_type = models.CharField(max_length=20, choices=ItemType.choices, default=ItemType.SERVICE)
-    product_id_ref = models.IntegerField(null=True, blank=True)
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payments")
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    payment_method = models.CharField(max_length=20, choices=Method.choices)
+    
+    transaction_id = models.CharField(max_length=255, blank=True, db_index=True)
+    provider_reference = models.CharField(max_length=255, blank=True)
+    
+    fee_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    net_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    
+    payment_date = models.DateTimeField(default=timezone.now)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    metadata = models.JSONField(default=dict, blank=True)
+    notes = models.TextField(blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-    description = models.CharField(max_length=500)
-    long_description = models.TextField(blank=True)
-    unit = models.CharField(max_length=50, blank=True, default="unit")
-    quantity = models.DecimalField(max_digits=15, decimal_places=4, default=Decimal('1.0000'))
-    unit_price = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    class Meta:
+        ordering = ['-payment_date']
 
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
-    tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    discount_type = models.CharField(max_length=20, choices=Invoice.DiscountType.choices, default=Invoice.DiscountType.FLAT)
-    discount_value = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    discount_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    def __str__(self):
+        return f"Payment {self.id} for Invoice {self.invoice.invoice_number}"
 
-    subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
 
-    sort_order = models.IntegerField(default=0)
+class Transaction(models.Model):
+    class Type(models.TextChoices):
+        PAYMENT = "payment", "Payment"
+        REFUND = "refund", "Refund"
+        CHARGEBACK = "chargeback", "Chargeback"
+        PAYOUT = "payout", "Payout"
+
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="transactions")
+    payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name="transactions")
+    transaction_type = models.CharField(max_length=20, choices=Type.choices)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES)
+    
+    status = models.CharField(max_length=20, default="succeeded")
+    external_id = models.CharField(max_length=255, blank=True, db_index=True)
+    
+    description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        ordering = ['-created_at']
+
+
+class PaymentAuditLog(models.Model):
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="audit_logs")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    action = models.CharField(max_length=100)
+    details = models.JSONField(default=dict)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
         ordering = ['sort_order', 'id']
 
     def calculate_totals(self, tax_mode='exclusive'):
