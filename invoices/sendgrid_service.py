@@ -520,7 +520,15 @@ The InvoiceFlow Team"""
 
             if self.client is None:
                 return {"status": "error", "message": "SendGrid client not initialized"}
+            
+            # Send with timeout and credit handling
             response = self.client.send(message)
+            
+            # Handle credit exceeded or other non-2xx but non-exception cases if any
+            if 400 <= response.status_code < 600:
+                logger.error(f"SendGrid returned error status: {response.status_code}")
+                return {"status": "error", "message": f"SendGrid error: {response.status_code}", "response": response.status_code}
+
             return {
                 "status": "sent",
                 "response": response.status_code,
@@ -531,7 +539,13 @@ The InvoiceFlow Team"""
         except Exception as e:
             error_detail = self._parse_sendgrid_error(e)
             status_code = getattr(e, "status_code", None)
-            logger.error(f"❌ SendGrid API Error: {error_detail}")
+            
+            # Specifically log credit exceeded (403 or similar)
+            if status_code == 403:
+                logger.error(f"❌ SendGrid Credit Exceeded or Forbidden: {error_detail}")
+            else:
+                logger.error(f"❌ SendGrid API Error: {error_detail}")
+                
             return {"status": "error", "message": error_detail, "code": status_code}
 
     def _send_simple_email(self, from_email, from_name, to_email, subject, data, reply_to_email=None):

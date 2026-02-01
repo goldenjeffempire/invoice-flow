@@ -128,6 +128,15 @@ class UserProfile(models.Model):
     
     # Workspace Context
     current_workspace = models.ForeignKey('Workspace', on_delete=models.SET_NULL, null=True, blank=True)
+
+    # Notification Preferences
+    notify_invoice_created = models.BooleanField(default=True)
+    notify_payment_received = models.BooleanField(default=True)
+    notify_invoice_viewed = models.BooleanField(default=True)
+    notify_invoice_overdue = models.BooleanField(default=True)
+    notify_weekly_summary = models.BooleanField(default=True)
+    notify_security_alerts = models.BooleanField(default=True)
+    notify_password_changes = models.BooleanField(default=True)
     
     # Security/System
     failed_login_attempts = models.IntegerField(default=0)

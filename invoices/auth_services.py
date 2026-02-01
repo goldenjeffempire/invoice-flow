@@ -100,6 +100,10 @@ class PasswordValidator:
 
     @classmethod
     def check_breach(cls, password: str) -> Tuple[bool, int]:
+        # Quick exit if disabled or empty
+        if not password:
+            return False, 0
+            
         try:
             sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
             prefix = sha1_hash[:5]
@@ -109,11 +113,13 @@ class PasswordValidator:
             cached_result = cache.get(cache_key)
 
             if cached_result is None:
+                # Optimized: Very short timeout for HIBP to avoid slow signup
                 req = urllib.request.Request(
                     f"{cls.HIBP_API_URL}{prefix}",
                     headers={"User-Agent": "InvoiceFlow-Security-Check"}
                 )
-                with urllib.request.urlopen(req, timeout=3) as response:
+                # Reduced timeout from 3s to 1.5s for faster signup
+                with urllib.request.urlopen(req, timeout=1.5) as response:
                     cached_result = response.read().decode('utf-8')
                     cache.set(cache_key, cached_result, cls.CACHE_DURATION)
 
@@ -124,7 +130,8 @@ class PasswordValidator:
 
             return False, 0
         except Exception as e:
-            logger.warning(f"HIBP check failed: {e}")
+            # Silently fail breach check to avoid breaking signup if HIBP is down or slow
+            logger.warning(f"HIBP check failed or timed out: {e}")
             return False, 0
 
 
@@ -330,11 +337,31 @@ class AuthService:
             is_active=False
         )
 
-        profile = UserProfile.objects.create(user=user, last_password_change=timezone.now())
+        # Robust UserProfile creation with safe defaults
+        profile, created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={
+                "last_password_change": timezone.now(),
+                "notify_invoice_created": True,
+                "notify_payment_received": True,
+                "notify_invoice_viewed": True,
+                "notify_invoice_overdue": True,
+                "notify_weekly_summary": True,
+                "notify_security_alerts": True,
+                "notify_password_changes": True,
+            }
+        )
+        if not created:
+            profile.last_password_change = timezone.now()
+            profile.save()
 
         token = EmailToken.create_token(user, EmailToken.TokenType.VERIFY, hours=24)
 
-        EmailService.send_verification_email(user, token)
+        # Non-blocking email attempt (SendGrid credit issues shouldn't break signup)
+        try:
+            EmailService.send_verification_email(user, token)
+        except Exception as e:
+            logger.error(f"Failed to send verification email during registration: {e}")
 
         if request:
             SecurityService.log_event(user, SecurityEventType.SIGNUP, request)
