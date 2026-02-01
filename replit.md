@@ -110,6 +110,27 @@ Centralized validation using domain-specific schemas and standardized error resp
 
 ## Recent Changes
 
+### February 1, 2026 - Signup Stability & Production Hardening
+Comprehensive fixes to make the registration system production-grade:
+
+**Key Improvements:**
+- Deterministic UserProfile creation with 50+ fields and safe defaults via atomic transactions
+- SendGrid email failures are now non-blocking (signup succeeds even if email API fails)
+- HIBP password breach check uses ThreadPoolExecutor with 1-second timeout to prevent slow signups
+- Database migrations synced with existing columns using fake-apply strategy
+- Updated ProfileService and user_service.py with comprehensive defaults matching model structure
+
+**Technical Details:**
+- UserProfile model now includes: paystack_enabled, paystack_subaccount_code, paystack_subaccount_active, stripe_enabled, stripe_account_id, tax_id, tax_name, webhook_secret, and all notification preferences
+- All get_or_create operations use explicit defaults dict for deterministic behavior
+- Race conditions eliminated with atomic transaction wrappers
+
+**Key Files Modified:**
+- `invoices/models.py` - Updated UserProfile with payment gateway fields
+- `invoices/auth_services.py` - Atomic profile creation with comprehensive defaults
+- `invoices/services/user_service.py` - Safe get_or_create with defaults
+- `invoices/migrations/0002_sync_model_with_db.py` - Database sync migration
+
 ### February 1, 2026 - Onboarding System Rebuild
 Complete rebuild of the onboarding and workspace setup system to production-grade SaaS standards:
 
