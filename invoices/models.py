@@ -649,7 +649,9 @@ class PaymentAuditLog(models.Model):
     details = models.JSONField(default=dict)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-        ordering = ['sort_order', 'id']
+
+    class Meta:
+        ordering = ['-created_at']
 
     def calculate_totals(self, tax_mode='exclusive'):
         line_subtotal = self.quantity * self.unit_price
@@ -670,6 +672,35 @@ class PaymentAuditLog(models.Model):
             self.tax_amount = (after_discount * self.tax_rate) / Decimal('100')
             self.subtotal = after_discount
             self.total = after_discount + self.tax_amount
+
+
+class LineItem(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
+    description = models.CharField(max_length=500)
+    quantity = models.DecimalField(max_digits=15, decimal_places=4, default=Decimal('1.0000'))
+    unit_price = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    sort_order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+
+class InvoiceAttachment(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="attachments")
+    filename = models.CharField(max_length=255)
+    file = models.FileField(upload_to="invoice_attachments/")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class InvoicePayment(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="invoice_payments")
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    payment_date = models.DateField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class InvoiceActivity(models.Model):
@@ -704,79 +735,6 @@ class InvoiceActivity(models.Model):
     class Meta:
         ordering = ['-timestamp']
         verbose_name_plural = "Invoice activities"
-
-
-class InvoiceAttachment(models.Model):
-    class AttachmentType(models.TextChoices):
-        DOCUMENT = "document", "Document"
-        IMAGE = "image", "Image"
-        CONTRACT = "contract", "Contract"
-        RECEIPT = "receipt", "Receipt"
-        OTHER = "other", "Other"
-
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="attachments")
-    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    file = models.FileField(upload_to="invoice_attachments/%Y/%m/")
-    filename = models.CharField(max_length=255)
-    file_type = models.CharField(max_length=20, choices=AttachmentType.choices, default=AttachmentType.DOCUMENT)
-    mime_type = models.CharField(max_length=100, blank=True)
-    file_size = models.IntegerField(default=0)
-    description = models.CharField(max_length=255, blank=True)
-    is_visible_to_client = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-
-class InvoicePayment(models.Model):
-    class PaymentMethod(models.TextChoices):
-        CARD = "card", "Card Payment"
-        BANK_TRANSFER = "bank_transfer", "Bank Transfer"
-        CASH = "cash", "Cash"
-        MOBILE_MONEY = "mobile_money", "Mobile Money"
-        PAYSTACK = "paystack", "Paystack"
-        STRIPE = "stripe", "Stripe"
-        CHECK = "check", "Check/Cheque"
-        OTHER = "other", "Other"
-
-    class PaymentStatus(models.TextChoices):
-        PENDING = "pending", "Pending"
-        PROCESSING = "processing", "Processing"
-        COMPLETED = "completed", "Completed"
-        FAILED = "failed", "Failed"
-        REFUNDED = "refunded", "Refunded"
-        CANCELLED = "cancelled", "Cancelled"
-
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments")
-    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    reference = models.CharField(max_length=255, unique=True, db_index=True)
-    external_reference = models.CharField(max_length=255, blank=True, db_index=True)
-    amount = models.DecimalField(max_digits=15, decimal_places=2)
-    currency = models.CharField(max_length=3, default="NGN")
-    payment_method = models.CharField(max_length=30, choices=PaymentMethod.choices, default=PaymentMethod.BANK_TRANSFER)
-    status = models.CharField(max_length=20, choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
-    payment_date = models.DateField(default=timezone.now)
-    notes = models.TextField(blank=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    is_partial = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"{self.reference} - {self.amount} {self.currency}"
-
-
-class Payment(models.Model):
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    reference = models.CharField(max_length=255, unique=True)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    status = models.CharField(max_length=20, default="pending")
-    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class WorkspaceInvitation(models.Model):

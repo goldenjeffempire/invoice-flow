@@ -1,9 +1,9 @@
 from django.contrib import admin
 from .models import (
     UserProfile, MFAProfile, SecurityEvent, UserSession, EmailToken,
-    Invoice, LineItem, Payment, WorkspaceInvitation,
+    Invoice, Payment, WorkspaceInvitation,
     RecurringInvoice, Waitlist, SocialAccount, Client, ClientNote, CommunicationLog,
-    InvoiceActivity, InvoiceAttachment
+    InvoiceActivity
 )
 
 @admin.register(UserProfile)
@@ -19,10 +19,6 @@ class InvoiceAdmin(admin.ModelAdmin):
 @admin.register(InvoiceActivity)
 class InvoiceActivityAdmin(admin.ModelAdmin):
     list_display = ('invoice', 'action', 'user', 'timestamp')
-
-@admin.register(InvoiceAttachment)
-class InvoiceAttachmentAdmin(admin.ModelAdmin):
-    list_display = ('invoice', 'filename', 'created_at')
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
@@ -43,7 +39,6 @@ admin.site.register(SecurityEvent)
 admin.site.register(UserSession)
 admin.site.register(EmailToken)
 # admin.site.register(InvoiceTemplate)
-admin.site.register(LineItem)
 admin.site.register(Payment)
 admin.site.register(WorkspaceInvitation)
 admin.site.register(RecurringInvoice)
