@@ -1,0 +1,57 @@
+{% extends "base/layout_app.html" %}
+{% block title %}{{ client.name }} | Client Profile{% endblock %}
+{% block content %}
+<div class="space-y-8">
+    <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-3xl bg-indigo-600 flex items-center justify-center text-white text-2xl font-black">
+            {{ client.name|first|upper }}
+        </div>
+        <div>
+            <h1 class="text-3xl font-bold">{{ client.name }}</h1>
+            <p class="text-slate-500">{{ client.email }} &bull; Client since {{ client.created_at|date:"M Y" }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="md:col-span-2 space-y-8">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6">
+                <h3 class="font-bold text-lg mb-4">Billing Information</h3>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p class="text-slate-500 font-bold uppercase text-[10px]">Tax ID</p>
+                        <p class="mt-1">{{ client.tax_id|default:"Not provided" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500 font-bold uppercase text-[10px]">Currency</p>
+                        <p class="mt-1">{{ client.currency }}</p>
+                    </div>
+                    <div class="col-span-2">
+                        <p class="text-slate-500 font-bold uppercase text-[10px]">Billing Address</p>
+                        <p class="mt-1 whitespace-pre-wrap">{{ client.billing_address|default:"Not provided" }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6">
+                <h3 class="font-bold text-lg mb-4">Recent Invoices</h3>
+                <p class="text-slate-500 italic text-sm">No invoices found for this client.</p>
+            </div>
+        </div>
+        
+        <div class="space-y-6">
+            <div class="bg-indigo-50 dark:bg-indigo-900/10 rounded-3xl p-6 border border-indigo-100 dark:border-indigo-900/30">
+                <h3 class="font-bold text-indigo-900 dark:text-indigo-400 mb-2">Internal Notes</h3>
+                <p class="text-sm text-indigo-700 dark:text-indigo-500">{{ client.notes|default:"No notes added." }}</p>
+            </div>
+            
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6">
+                <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
+                <div class="space-y-2">
+                    <button class="w-full text-left p-3 rounded-xl border border-slate-100 hover:bg-slate-50 text-sm font-bold">Create Invoice</button>
+                    <button class="w-full text-left p-3 rounded-xl border border-slate-100 hover:bg-slate-50 text-sm font-bold text-indigo-600">Download Statement</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -6,7 +6,7 @@ import re
 from django import forms
 from django.contrib.auth.models import User
 from django.core.validators import EmailValidator
-from .models import UserProfile, ContactSubmission
+from .models import UserProfile
 
 
 class BaseFormMixin:
@@ -293,31 +293,6 @@ class ResendVerificationForm(forms.Form, BaseFormMixin):
             'autofocus': True,
         })
     )
-
-
-class ContactSubmissionForm(forms.ModelForm):
-    class Meta:
-        model = ContactSubmission
-        fields = ['name', 'email', 'subject', 'message']
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                'placeholder': 'Your name',
-            }),
-            'email': forms.EmailInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                'placeholder': 'Your email',
-            }),
-            'subject': forms.TextInput(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                'placeholder': 'Subject',
-            }),
-            'message': forms.Textarea(attrs={
-                'class': 'w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-                'placeholder': 'Your message',
-                'rows': 5,
-            }),
-        }
 
 
 class InvoiceForm(forms.Form):
