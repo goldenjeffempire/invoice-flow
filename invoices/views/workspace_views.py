@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
-from ..models import Workspace, WorkspaceMember, ImportJob
+from ..models import Workspace, WorkspaceMember, WorkspaceInvitation, ActivityLog
 from django.http import JsonResponse
 import csv
 import io
@@ -11,48 +11,52 @@ import io
 def switch_workspace(request, workspace_slug):
     try:
         member = WorkspaceMember.objects.get(user=request.user, workspace__slug=workspace_slug)
-        request.session['current_workspace_id'] = member.workspace.id
+        request.user.profile.current_workspace = member.workspace
+        request.user.profile.save()
         messages.success(request, f"Switched to workspace: {member.workspace.name}")
     except WorkspaceMember.DoesNotExist:
         messages.error(request, "You do not have access to this workspace.")
     return redirect(request.META.get('HTTP_REFERER', reverse('invoices:dashboard')))
 
 @login_required
-def onboarding_step(request):
-    member = request.workspace_member
-    if not member:
-        return redirect('invoices:dashboard')
+def workspace_settings(request):
+    workspace = request.user.profile.current_workspace
+    members = workspace.members.all().select_related('user')
+    invitations = WorkspaceInvitation.objects.filter(inviter=request.user, accepted_at__isnull=True, is_revoked=False)
     
     if request.method == 'POST':
-        step = int(request.POST.get('step', 1))
-        data = request.POST.dict()
-        member.onboarding_data.update(data)
-        member.onboarding_step = step + 1
-        if step >= 5: # Assuming 5 steps
-            member.onboarding_completed = True
-        member.save()
-        return JsonResponse({'status': 'success', 'next_step': member.onboarding_step})
-    
-    return render(request, 'invoices/onboarding/wizard.html', {'member': member})
+        action = request.POST.get('action')
+        if action == 'invite':
+            email = request.POST.get('email', '').lower()
+            role = request.POST.get('role', 'member')
+            if email:
+                WorkspaceInvitation.create_invitation(request.user, email, role)
+                messages.success(request, f"Invitation sent to {email}")
+                return redirect('invoices:workspace_settings')
+                
+    return render(request, 'pages/workspace/settings.html', {
+        'workspace': workspace,
+        'members': members,
+        'invitations': invitations
+    })
 
 @login_required
-def import_csv(request):
-    if request.method == 'POST' and request.FILES.get('file'):
-        csv_file = request.FILES['file']
-        resource_type = request.POST.get('resource_type', 'customers')
-        
-        job = ImportJob.objects.create(
-            workspace=request.workspace,
-            user=request.user,
-            resource_type=resource_type,
-            file=csv_file
-        )
-        
-        # Simple validation & background processing mock
-        job.status = 'processing'
-        job.save()
-        
-        # In a real app, this would be a Celery task
-        return JsonResponse({'status': 'success', 'job_id': job.id})
+def revoke_invitation(request, invite_id):
+    invitation = get_object_or_404(WorkspaceInvitation, id=invite_id, inviter=request.user)
+    invitation.is_revoked = True
+    invitation.save()
+    messages.success(request, "Invitation revoked.")
+    return redirect('invoices:workspace_settings')
+
+@login_required
+def remove_member(request, member_id):
+    workspace = request.user.profile.current_workspace
+    member = get_object_or_404(WorkspaceMember, id=member_id, workspace=workspace)
     
-    return render(request, 'invoices/import/upload.html')
+    if member.user == request.user:
+        messages.error(request, "You cannot remove yourself.")
+    else:
+        member.delete()
+        messages.success(request, f"Member {member.user.email} removed.")
+        
+    return redirect('invoices:workspace_settings')

@@ -93,4 +93,9 @@ urlpatterns = [
 
     path('api/invoices/calculate/', invoice_views.api_invoice_calculate, name='api_invoice_calculate'),
     path('api/clients/search/', invoice_views.api_clients_search, name='api_clients_search'),
+
+    # Workspace & Team
+    path('settings/workspace/', workspace_views.workspace_settings, name='workspace_settings'),
+    path('settings/workspace/invitations/<int:invite_id>/revoke/', workspace_views.revoke_invitation, name='revoke_invitation'),
+    path('settings/workspace/members/<int:member_id>/remove/', workspace_views.remove_member, name='remove_member'),
 ]
