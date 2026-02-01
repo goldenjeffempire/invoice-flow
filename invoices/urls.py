@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import main_views as views
 from .views import onboarding_views
+from .views import workspace_views
 
 app_name = "invoices"
 
@@ -75,6 +76,9 @@ urlpatterns = [
     path("payments/<int:payment_id>/", views.payment_detail, name="payment_detail"),
 
     path("invoices/create/", views.invoice_create, name="invoice_create"),
+    path("workspace/switch/<slug:workspace_slug>/", workspace_views.switch_workspace, name="switch_workspace"),
+    path("workspace/onboarding/", workspace_views.onboarding_step, name="onboarding_wizard"),
+    path("workspace/import/", workspace_views.import_csv, name="import_csv"),
     path("list/", views.invoices_list, name="invoices_list"),
     path("invoice/<str:invoice_id>/", views.invoice_detail, name="invoice_detail"),
     path("<str:invoice_id>/edit/", views.invoice_edit, name="invoice_edit"),

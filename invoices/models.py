@@ -126,6 +126,9 @@ class UserProfile(models.Model):
     # Team Settings
     team_invites_sent = models.IntegerField(default=0)
     
+    # Workspace Context
+    current_workspace = models.ForeignKey('Workspace', on_delete=models.SET_NULL, null=True, blank=True)
+    
     # Security/System
     failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
@@ -427,6 +430,75 @@ class SocialAccount(models.Model):
     uid = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
+
+class Workspace(models.Model):
+    name = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+    
+    # Business Details
+    company_name = models.CharField(max_length=255, blank=True)
+    company_logo = models.FileField(upload_to="company_logos/", null=True, blank=True)
+    business_type = models.CharField(max_length=100, blank=True, choices=UserProfile.BUSINESS_TYPE_CHOICES)
+    business_email = models.EmailField(blank=True)
+    business_phone = models.CharField(max_length=50, blank=True)
+    business_address = models.TextField(blank=True)
+    business_city = models.CharField(max_length=100, blank=True)
+    business_state = models.CharField(max_length=100, blank=True)
+    business_country = models.CharField(max_length=100, blank=True, choices=UserProfile.REGION_CHOICES)
+    business_postal_code = models.CharField(max_length=20, blank=True)
+    
+    # Branding
+    primary_color = models.CharField(max_length=7, default="#6366f1")
+    secondary_color = models.CharField(max_length=7, default="#8b5cf6")
+    accent_color = models.CharField(max_length=7, default="#10b981")
+    invoice_style = models.CharField(max_length=50, default="modern", choices=UserProfile.INVOICE_STYLE_CHOICES)
+    
+    # Compliance
+    tax_id_number = models.CharField(max_length=50, blank=True)
+    vat_number = models.CharField(max_length=50, blank=True)
+    vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class WorkspaceMember(models.Model):
+    class Role(models.TextChoices):
+        OWNER = "owner", "Owner"
+        ADMIN = "admin", "Admin"
+        MEMBER = "member", "Member"
+    
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="members")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="workspace_memberships")
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.MEMBER)
+    
+    # Onboarding Persistence
+    onboarding_step = models.IntegerField(default=1)
+    onboarding_completed = models.BooleanField(default=False)
+    onboarding_data = models.JSONField(default=dict, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ("workspace", "user")
+
+class ImportJob(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        COMPLETED = "completed", "Completed"
+        FAILED = "failed", "Failed"
+
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="import_jobs")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    resource_type = models.CharField(max_length=50) # customers, products, invoices
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    file = models.FileField(upload_to="imports/")
+    error_report = models.FileField(upload_to="import_errors/", null=True, blank=True)
+    stats = models.JSONField(default=dict, blank=True) # {total: 100, success: 90, failed: 10}
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class PaymentSettings(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
