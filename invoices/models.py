@@ -441,12 +441,51 @@ class ActivityLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     metadata = models.JSONField(default=dict, blank=True)
 
-class ContactSubmission(models.Model):
-    name = models.CharField(max_length=200)
+class Client(models.Model):
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="clients")
+    name = models.CharField(max_length=255)
     email = models.EmailField()
-    subject = models.CharField(max_length=50)
-    message = models.TextField()
-    submitted_at = models.DateTimeField(auto_now_add=True)
+    phone = models.CharField(max_length=50, blank=True)
+    tax_id = models.CharField(max_length=50, blank=True)
+    
+    # Billing Address
+    billing_address = models.TextField(blank=True)
+    billing_city = models.CharField(max_length=100, blank=True)
+    billing_state = models.CharField(max_length=100, blank=True)
+    billing_country = models.CharField(max_length=100, blank=True)
+    billing_zip = models.CharField(max_length=20, blank=True)
+    
+    # Shipping Address
+    shipping_address = models.TextField(blank=True)
+    shipping_city = models.CharField(max_length=100, blank=True)
+    shipping_state = models.CharField(max_length=100, blank=True)
+    shipping_country = models.CharField(max_length=100, blank=True)
+    shipping_zip = models.CharField(max_length=20, blank=True)
+    
+    # Settings
+    currency = models.CharField(max_length=3, default="USD")
+    discount_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    notes = models.TextField(blank=True)
+    tags = models.CharField(max_length=255, blank=True) # comma separated
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+class ClientNote(models.Model):
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="client_notes")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class CommunicationLog(models.Model):
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="comms_logs")
+    subject = models.CharField(max_length=255)
+    medium = models.CharField(max_length=50) # email, sms, manual
+    sent_at = models.DateTimeField(auto_now_add=True)
+    content = models.TextField(blank=True)
 
 
 class ReminderRule(models.Model):
