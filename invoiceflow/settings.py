@@ -182,6 +182,30 @@ INSTALLED_APPS = [
     "invoices.apps.InvoicesConfig",
 ]
 
+# =============================================================================
+# CACHING & PERFORMANCE
+# =============================================================================
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-snowflake",
+    }
+}
+
+if IS_PRODUCTION:
+    REDIS_URL = os.getenv("REDIS_URL")
+    if REDIS_URL:
+        CACHES = {
+            "default": {
+                "BACKEND": "django_redis.cache.RedisCache",
+                "LOCATION": REDIS_URL,
+                "OPTIONS": {
+                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                    "IGNORE_EXCEPTIONS": True,
+                }
+            }
+        }
+
 # Analytics Cache Settings
 CACHE_TIMEOUT_DASHBOARD = 60
 CACHE_TIMEOUT_ANALYTICS = 120
