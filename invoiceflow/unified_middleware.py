@@ -26,6 +26,16 @@ class UnifiedMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Block common bot/exploit patterns immediately
+        path = request.path.lower()
+        bot_patterns = [
+            ".php", "wp-admin", "wp-login", "xmlrpc", ".env", ".git", 
+            "cgi-bin", "telescope", "actuator", "config/getconfig"
+        ]
+        if any(pattern in path for pattern in bot_patterns):
+            # Fail silently for bots to avoid log noise and resource consumption
+            return HttpResponseForbidden("Not found", content_type="text/plain")
+
         # In development, prevent 304 by stripping conditional request headers
         if settings.DEBUG:
             headers_to_remove = ["HTTP_IF_MODIFIED_SINCE", "HTTP_IF_NONE_MATCH"]

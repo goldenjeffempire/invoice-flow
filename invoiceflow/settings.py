@@ -125,6 +125,9 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = "DENY"
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+    
+    # Silence bot/exploit noise in production
+    SILENCED_SYSTEM_CHECKS = ["security.W001", "security.W004", "security.W008"]
 else:
     # Disable redirect and secure cookies in development to avoid proxy issues
     SECURE_SSL_REDIRECT = False

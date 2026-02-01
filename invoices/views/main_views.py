@@ -23,8 +23,11 @@ from ..forms import (
 from ..models import UserSession, WorkspaceInvitation, MFAProfile
 
 
+from django.views.decorators.cache import cache_page
+
+@cache_page(60 * 15) # Cache for 15 minutes
 def landing_view(request):
-    """Fast landing page - no cache to avoid user state issues."""
+    """Fast landing page - cached for 15 minutes."""
     if request.user.is_authenticated:
         return redirect('invoices:dashboard')
     return render(request, "pages/landing.html")
