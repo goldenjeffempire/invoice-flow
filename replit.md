@@ -1,65 +1,40 @@
 # InvoiceFlow - Professional Invoicing Platform
 
 ## Overview
-
-InvoiceFlow is a production-ready professional invoicing platform designed to enable users to create, manage, and send professional invoices. Key capabilities include PDF generation, email and WhatsApp distribution, multi-currency support, recurring invoices, and integrated payment processing via Paystack. The platform features a robust security system with password breach detection, suspicious login detection, device and session management, and comprehensive security event logging. It also includes an automated payment reminder system and a detailed invoice history/audit log. The public-facing marketing website has been rebuilt with a unified design system and narrative-driven content.
+InvoiceFlow is a production-ready professional invoicing platform designed to enable users to create, manage, and send professional invoices. Key capabilities include PDF generation, email and WhatsApp distribution, multi-currency support, recurring invoices, and integrated payment processing. The platform features robust security with password breach detection, suspicious login detection, device and session management, and comprehensive security event logging. It also includes an automated payment reminder system and a detailed invoice history/audit log. The public-facing marketing website and authentication UI are built with a unified, modern design system.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
 ### Backend
-The platform is built on **Django 5.2.9** following a monolithic architecture with a single `invoices` app. It employs a **strict layered architecture** separating models, services, views, and templates, with all business logic residing in service classes. **Gunicorn** serves as the WSGI server, and **WhiteNoise** handles static files.
+The platform is built on **Django 5.2.9** with a monolithic architecture, employing a strict layered approach separating models, services, views, and templates. Business logic resides in service classes. **Gunicorn** serves as the WSGI server, and **WhiteNoise** handles static files. An **Async Email Service** handles email sending in the background to prevent blocking.
 
 ### Database
-**PostgreSQL** is the primary database, utilizing Django's ORM.
+**PostgreSQL** is the primary database.
 
 ### Authentication & Security
-**Production-grade authentication system rebuilt on January 31, 2026** with the following features:
-- **Sign Up**: User registration with strong password validation (min 8 chars, uppercase, lowercase, numbers, special characters)
-- **Login**: Username or email authentication with rate limiting and account lockout protection
-- **Email Verification**: Token-based verification with 24-hour expiry and resend functionality
-- **Password Reset**: Secure token-based reset with 1-hour expiry
-- **Multi-Factor Authentication (MFA)**: TOTP-based 2FA with QR code setup and 10 backup recovery codes
-- **Password Breach Detection**: Integration with Have I Been Pwned API (k-anonymity model)
-- **Suspicious Login Detection**: Detects new devices, new locations, unusual times, and failed attempt patterns
-- **Device/Session Management**: Track and revoke active sessions, trusted device management
-- **Workspace Invitations**: Token-based invitations with role assignment and email-based acceptance
-- **Security Event Logging**: Comprehensive audit log for all authentication events
-- **Rate Limiting**: IP-based rate limiting on login, signup, and password reset endpoints
-- **CSRF Protection**: Django's built-in CSRF protection on all forms
-
-Service classes: `AuthService`, `MFAService`, `SessionService`, `SecurityService`, `EmailService`, `InvitationService`
+A production-grade authentication system is implemented with:
+- **User Management**: Sign up with strong password validation, login with rate limiting, email verification, secure password reset, workspace invitations.
+- **Multi-Factor Authentication (MFA)**: TOTP-based 2FA with backup codes.
+- **Proactive Security**: Password breach detection (Have I Been Pwned API), suspicious login detection, device/session management.
+- **Auditing & Resilience**: Comprehensive security event logging, IP-based rate limiting, CSRF protection, and a resilience middleware stack for database, redirect, and session issues.
 
 ### Payment Processing
-**Paystack** is the primary payment gateway, featuring a payment reconciliation service, idempotency keys, webhook handling with signature verification, and atomic transactions.
+**Paystack** is the primary payment gateway, including reconciliation, idempotency keys, webhook handling, and atomic transactions.
 
 ### Email Services
-**SendGrid** is used for transactional emails, including invoice delivery, reminders, and verification.
+**SendGrid** is used for all transactional emails.
 
 ### PDF Generation
-**WeasyPrint** is used for HTML-to-PDF invoice generation, with **ReportLab** as an alternative.
+**WeasyPrint** is used for HTML-to-PDF invoice generation.
 
 ### Frontend
-The frontend uses **Tailwind CSS** for styling, with server-side rendered Django templates. It includes a comprehensive design system with reusable components, states, micro-interactions, and accessibility features. The public-facing website features a modern design with a fixed header, mobile menu, and a narrative-driven layout with scroll-triggered animations.
-
-**Authentication UI (Enhanced January 31, 2026)**: All authentication pages feature modern SaaS-grade design with:
-- Glass morphism card effects with blur and shadows
-- Real-time password strength indicators with visual checklists
-- Password visibility toggles
-- Staggered animations and micro-interactions
-- Full reduced-motion accessibility support
-- Semantic HTML with ARIA attributes for screen readers
-- MFA code auto-formatting (6-digit TOTP or 8-char recovery codes)
-- Form submission loading states
-- Responsive layouts for mobile/desktop
-
-Key files: `static/css/auth-enhanced.css`, `static/js/auth-interactions.js`
+The frontend uses **Tailwind CSS** for styling with server-side rendered Django templates. It features a comprehensive design system, responsive layouts, and accessibility compliance. The authentication UI incorporates glass morphism effects, real-time password strength indicators, and staggered animations. An 8-step onboarding flow guides users through setup, including business profile, branding, tax, payments, and team invitations.
 
 ### Caching
-**Django-Redis** provides the caching layer for performance optimization.
+**Django-Redis** provides the caching layer.
 
 ### API Architecture
 **Django REST Framework** is used for API endpoints, with **drf-spectacular** for OpenAPI schema generation, versioning at `/api/v1/`, and standardized error handling.
@@ -68,172 +43,50 @@ Key files: `static/css/auth-enhanced.css`, `static/js/auth-interactions.js`
 A **ThreadPoolExecutor-based system** handles asynchronous tasks with retry logic.
 
 ### Monitoring & Observability
-Structured JSON logging, health check endpoints, performance monitoring middleware, and **Sentry** integration are in place for error tracking.
+Structured JSON logging, health check endpoints, performance monitoring middleware, and **Sentry** integration are in place.
 
 ### Key Design Patterns
 - **Strict Layered Architecture**: Models, Services, Views, Templates separation.
-- **Service Layer**: Centralizes all business logic in modular service classes (e.g., `InvoiceService`, `PaymentService`).
-- **Repository Pattern**: Custom model managers for query encapsulation.
-- **Decorator Pattern**: Used for authentication, rate limiting, and monitoring.
-- **Middleware Stack**: For security headers, request logging, and MFA enforcement.
+- **Service Layer**: Centralizes business logic.
+- **Repository Pattern**: Custom model managers.
+- **Decorator Pattern**: For authentication, rate limiting, monitoring.
+- **Middleware Stack**: For security headers, logging, MFA enforcement.
 
 ### Validation and Error Handling
-Centralized validation using domain-specific schemas and standardized error responses with consistent HTTP status codes. Frontend error utilities provide toast notifications and inline field error display.
+Centralized validation with domain-specific schemas, standardized error responses, and frontend error utilities.
+
+### Invoice Lifecycle
+A comprehensive invoice lifecycle system supports:
+- **Status Tracking**: Draft, sent, viewed, part_paid, paid (with overdue/void/write-off states).
+- **Features**: Multi-currency, tax modes (exclusive/inclusive), per-line and global discounts, recurring invoices, delivery tracking, payment reminders, public sharing via unique token, and version control.
+- **Supporting Models**: `LineItem`, `InvoiceActivity` (audit trail), `InvoiceAttachment`, `InvoicePayment`.
+- **State Machine**: Enforces status transitions via `InvoiceService`.
+- **Views**: List, builder, detail, preview, PDF generation, share link, record payment, void, duplicate, CSV export, and public invoice viewing.
 
 ## External Dependencies
 
 ### Payment Gateway
-- **Paystack API**: For payment processing.
+- **Paystack API**
 
 ### Email Service
-- **SendGrid API**: For transactional email delivery.
+- **SendGrid API**
 
 ### OAuth Providers
 - **Google OAuth**
 - **GitHub OAuth**
 
 ### CAPTCHA
-- **hCaptcha**: For bot protection (optional).
+- **hCaptcha**
 
 ### Database
-- **PostgreSQL**: Primary data store.
+- **PostgreSQL**
 
 ### Caching
-- **Redis**: For session and cache storage.
+- **Redis**
 
 ### Error Monitoring
-- **Sentry**: For error tracking and performance monitoring.
+- **Sentry**
 
 ### Deployment Platform
-- **Replit**: Development environment with hot reload and instant previews.
-- **Render**: Production deployment target with autoscaling and health checks (see render.yaml).
-
-## Recent Changes
-
-### February 1, 2026 - Signup Flow Production Hardening
-Comprehensive fixes to ensure fast, stable, 500-free signup flow:
-
-**Key Fixes:**
-- Added missing `/verification-sent/` URL route (was causing broken redirect after signup)
-- Made email sending fully non-blocking with ThreadPoolExecutor (3-second timeout)
-- Removed cache decorator from landing page (was causing user state issues)
-- Added comprehensive try/except error handling to signup and login views
-
-**Technical Details:**
-- Email sending now wrapped in ThreadPoolExecutor with strict timeout
-- Signup never fails due to slow/failed SendGrid API calls
-- All view exceptions caught and return friendly error messages instead of 500s
-- HIBP password breach check already had 1-second timeout (unchanged)
-
-**Key Files Modified:**
-- `invoices/urls.py` - Added verification_sent URL
-- `invoices/views/main_views.py` - Error handling for signup/login views
-- `invoices/auth_services.py` - Non-blocking email with ThreadPoolExecutor
-
-### February 1, 2026 - Invoice Lifecycle Complete Rebuild
-Production-grade invoice lifecycle system rebuilt from scratch with comprehensive state management:
-
-**Invoice Model (50+ fields):**
-- Status tracking: draft → sent → viewed → part_paid → paid (with overdue/void/write-off states)
-- Multi-currency support with exchange rate tracking (10 currencies: NGN, USD, EUR, GBP, ZAR, GHS, KES, CAD, AUD, INR)
-- Tax modes: exclusive (added on top) or inclusive (included in price)
-- Discounts: per-line and global, percentage or flat amount
-- Recurring invoice support with JSON schedule configuration
-- Delivery tracking: email sent/opened, WhatsApp sent
-- Payment reminders: configurable days before due, count tracking
-- Public sharing via unique token (64-char URL-safe)
-- Version control for audit purposes
-
-**Supporting Models:**
-- `LineItem`: Per-line tax/discount, sort order, item types (service/product/expense/discount/other)
-- `InvoiceActivity`: 15 action types for complete audit trail (created, updated, sent, viewed, payment_received, etc.)
-- `InvoiceAttachment`: File uploads with type classification and client visibility control
-- `InvoicePayment`: Payment tracking with method, status, partial payment support
-
-**State Machine (InvoiceService):**
-- Enforced status transitions (e.g., can't void a paid invoice)
-- Valid transitions defined per status
-- Automatic status updates based on payment amounts
-
-**Views (15+ endpoints):**
-- List with filtering/sorting/pagination/stats cards
-- Builder with Alpine.js for reactive line item management
-- Detail with activity timeline and payment recording
-- Preview for print-ready layout
-- PDF generation and download
-- Share link generation with WhatsApp/email options
-- Record payment (partial/full)
-- Void and duplicate operations
-- CSV export
-
-**Public Pages:**
-- `/i/<token>/` - Public invoice view (no auth required)
-- `/i/<token>/pdf/` - Public PDF download
-
-**Key Files:**
-- `invoices/models.py` - Invoice, LineItem, InvoiceActivity, InvoiceAttachment, InvoicePayment
-- `invoices/services/invoice_service.py` - Business logic and state machine
-- `invoices/views/invoice_views.py` - All invoice endpoints
-- `templates/pages/invoices/` - list.html, builder.html, detail.html, preview.html, share.html, public_pay.html
-- `invoices/migrations/0003_invoice_lifecycle_rebuild.py` - Complete schema rebuild
-
-### February 1, 2026 - Signup Stability & Production Hardening
-Comprehensive fixes to make the registration system production-grade:
-
-**Key Improvements:**
-- Deterministic UserProfile creation with 50+ fields and safe defaults via atomic transactions
-- SendGrid email failures are now non-blocking (signup succeeds even if email API fails)
-- HIBP password breach check uses ThreadPoolExecutor with 1-second timeout to prevent slow signups
-- Database migrations synced with existing columns using fake-apply strategy
-- Updated ProfileService and user_service.py with comprehensive defaults matching model structure
-
-**Technical Details:**
-- UserProfile model now includes: paystack_enabled, paystack_subaccount_code, paystack_subaccount_active, stripe_enabled, stripe_account_id, tax_id, tax_name, webhook_secret, and all notification preferences
-- All get_or_create operations use explicit defaults dict for deterministic behavior
-- Race conditions eliminated with atomic transaction wrappers
-
-**Key Files Modified:**
-- `invoices/models.py` - Updated UserProfile with payment gateway fields
-- `invoices/auth_services.py` - Atomic profile creation with comprehensive defaults
-- `invoices/services/user_service.py` - Safe get_or_create with defaults
-- `invoices/migrations/0002_sync_model_with_db.py` - Database sync migration
-
-### February 1, 2026 - Onboarding System Rebuild
-Complete rebuild of the onboarding and workspace setup system to production-grade SaaS standards:
-
-**8-Step Onboarding Flow:**
-1. **Welcome**: Choose usage type (personal, small business, freelancer, agency, enterprise)
-2. **Business Profile**: Company details, address, industry, size
-3. **Branding**: Logo upload, color customization, tagline
-4. **Tax & Compliance**: VAT/tax registration, tax ID, regional tax settings
-5. **Payments**: Bank transfer details, card payments, mobile money (regional)
-6. **Data Import**: Import customers, products, invoices from other platforms
-7. **Templates**: Select and customize invoice template style
-8. **Team**: Send team member invitations with role assignments
-
-**Smart Features:**
-- Region-based contextual defaults (Nigeria, US, UK, EU, South Africa, Ghana, Kenya)
-- Automatic currency, locale, and tax configuration based on country
-- Business-type suggestions for invoice numbering formats
-- Progress tracking with completion percentage
-- Time-to-first-invoice tracking for analytics
-- Skip-able steps with smart defaults
-
-**Technical Implementation:**
-- `OnboardingService` class handles all business logic (service layer pattern)
-- Extended `UserProfile` model with 38+ new fields for comprehensive onboarding data
-- 9 responsive, accessible templates with stepper UI and mobile-first design
-- WCAG accessibility compliance with proper ARIA labels and focus management
-- CSRF protection on all forms, file upload validation (5MB limit, image types only)
-
-**Key Files:**
-- `invoices/services/onboarding_service.py` - Business logic
-- `invoices/views/onboarding_views.py` - Thin controller views
-- `invoices/templates/pages/onboarding/` - 9 template files
-- `invoices/migrations/0004_onboarding_extended_fields.py` - Model changes
-
-**Routes:**
-- `/onboarding/` - Router (redirects to current step)
-- `/onboarding/welcome/` through `/onboarding/team/` - Individual steps
-- `/onboarding/complete/` - Completion celebration page
-- `/api/onboarding/status/` - AJAX status endpoint
+- **Replit** (development)
+- **Render** (production)
