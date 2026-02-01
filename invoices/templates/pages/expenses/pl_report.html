@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Profit & Loss Report - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Profit & Loss Report</h1>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Financial summary for the selected period</p>
+            </div>
+            <div class="mt-4 sm:mt-0">
+                <button type="button" onclick="exportReport()" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" aria-label="Export report">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Export
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
+            <form method="get" action="{% url 'invoices:pl_report' %}" class="flex flex-wrap items-end gap-4" role="search" aria-label="Filter report by date range">
+                <div>
+                    <label for="date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">From</label>
+                    <input type="date" id="date_from" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500" aria-label="Start date">
+                </div>
+                <div>
+                    <label for="date_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">To</label>
+                    <input type="date" id="date_to" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:ring-indigo-500 focus:border-indigo-500" aria-label="End date">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors" aria-label="Apply date filter">
+                    Apply
+                </button>
+                <div class="flex gap-2 ml-auto">
+                    <a href="?period=this_month" class="px-3 py-2 text-sm rounded-lg {% if period == 'this_month' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} transition-colors">This Month</a>
+                    <a href="?period=last_month" class="px-3 py-2 text-sm rounded-lg {% if period == 'last_month' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} transition-colors">Last Month</a>
+                    <a href="?period=this_quarter" class="px-3 py-2 text-sm rounded-lg {% if period == 'this_quarter' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} transition-colors">This Quarter</a>
+                    <a href="?period=this_year" class="px-3 py-2 text-sm rounded-lg {% if period == 'this_year' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} transition-colors">This Year</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</p>
+                        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ currency_symbol }}{{ summary.revenue|default:"0.00" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+                        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Expenses</p>
+                        <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ currency_symbol }}{{ summary.expenses|default:"0.00" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 {% if summary.profit >= 0 %}bg-indigo-100 dark:bg-indigo-900{% else %}bg-orange-100 dark:bg-orange-900{% endif %} rounded-lg">
+                        <svg class="w-6 h-6 {% if summary.profit >= 0 %}text-indigo-600 dark:text-indigo-400{% else %}text-orange-600 dark:text-orange-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Net Profit</p>
+                        <p class="text-2xl font-bold {% if summary.profit >= 0 %}text-indigo-600 dark:text-indigo-400{% else %}text-orange-600 dark:text-orange-400{% endif %}">{{ currency_symbol }}{{ summary.profit|default:"0.00" }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                        <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Profit Margin</p>
+                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ summary.margin|default:"0" }}%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Expenses by Category</h2>
+                </div>
+                {% if category_breakdown %}
+                <div class="p-6">
+                    <ul class="space-y-4" role="list" aria-label="Expense categories breakdown">
+                        {% for item in category_breakdown %}
+                        <li>
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full mr-2" style="background-color: {{ item.color }};" aria-hidden="true"></span>
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ item.name }}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-sm font-medium text-gray-900 dark:text-white">{{ currency_symbol }}{{ item.total }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-2">({{ item.percentage }}%)</span>
+                                </div>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div class="h-2 rounded-full" style="width: {{ item.percentage }}%; background-color: {{ item.color }};" role="progressbar" aria-valuenow="{{ item.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% else %}
+                <div class="p-12 text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">No expense data for this period</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Income Statement</h2>
+                </div>
+                <div class="p-6">
+                    <dl class="space-y-4">
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Revenue</dt>
+                            <div class="mt-2 space-y-2">
+                                <div class="flex justify-between">
+                                    <dd class="text-sm text-gray-900 dark:text-white">Invoice Payments</dd>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white">{{ currency_symbol }}{{ summary.invoice_revenue|default:"0.00" }}</dd>
+                                </div>
+                                <div class="flex justify-between">
+                                    <dd class="text-sm text-gray-900 dark:text-white">Billable Expenses Recovered</dd>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white">{{ currency_symbol }}{{ summary.billable_expenses_recovered|default:"0.00" }}</dd>
+                                </div>
+                            </div>
+                            <div class="flex justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-600">
+                                <dd class="text-sm font-medium text-gray-900 dark:text-white">Total Revenue</dd>
+                                <dd class="text-sm font-bold text-green-600 dark:text-green-400">{{ currency_symbol }}{{ summary.revenue|default:"0.00" }}</dd>
+                            </div>
+                        </div>
+
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Expenses</dt>
+                            <div class="mt-2 space-y-2">
+                                <div class="flex justify-between">
+                                    <dd class="text-sm text-gray-900 dark:text-white">Operating Expenses</dd>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white">{{ currency_symbol }}{{ summary.operating_expenses|default:"0.00" }}</dd>
+                                </div>
+                                <div class="flex justify-between">
+                                    <dd class="text-sm text-gray-900 dark:text-white">Taxes Paid</dd>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white">{{ currency_symbol }}{{ summary.tax_expenses|default:"0.00" }}</dd>
+                                </div>
+                            </div>
+                            <div class="flex justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-600">
+                                <dd class="text-sm font-medium text-gray-900 dark:text-white">Total Expenses</dd>
+                                <dd class="text-sm font-bold text-red-600 dark:text-red-400">{{ currency_symbol }}{{ summary.expenses|default:"0.00" }}</dd>
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            <div class="flex justify-between items-center">
+                                <dt class="text-lg font-semibold text-gray-900 dark:text-white">Net Profit</dt>
+                                <dd class="text-xl font-bold {% if summary.profit >= 0 %}text-indigo-600 dark:text-indigo-400{% else %}text-orange-600 dark:text-orange-400{% endif %}">{{ currency_symbol }}{{ summary.profit|default:"0.00" }}</dd>
+                            </div>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReport() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'csv');
+    window.location.href = window.location.pathname + '?' + params.toString();
+}
+</script>
+{% endblock %}

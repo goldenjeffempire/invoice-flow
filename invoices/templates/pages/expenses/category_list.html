@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Expense Categories - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2">
+                    <li><a href="{% url 'invoices:expense_list' %}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">Expenses</a></li>
+                    <li><span class="text-gray-400 dark:text-gray-500">/</span></li>
+                    <li><span class="text-gray-900 dark:text-white">Categories</span></li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Expense Categories</h1>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Organize your expenses with categories</p>
+            </div>
+            <div class="mt-4 sm:mt-0">
+                <form method="post" class="inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_defaults">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" aria-label="Create default categories">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                        </svg>
+                        Create Default Categories
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg mb-6">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h2 class="text-lg font-medium text-gray-900 dark:text-white">Add New Category</h2>
+            </div>
+            <form method="post" class="p-6">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" required maxlength="100" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., Office Supplies" aria-required="true">
+                    </div>
+                    <div>
+                        <label for="color" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
+                        <input type="color" id="color" name="color" value="#6366f1" class="w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 cursor-pointer">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                            Add Category
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                        <input type="text" id="description" name="description" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Optional description">
+                    </div>
+                    <div>
+                        <label for="gl_account_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">GL Account Code</label>
+                        <input type="text" id="gl_account_code" name="gl_account_code" maxlength="20" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Optional">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" name="is_tax_deductible" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Tax Deductible</span>
+                    </label>
+                </div>
+            </form>
+        </div>
+
+        {% if categories %}
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+            <ul class="divide-y divide-gray-200 dark:divide-gray-700" role="list" aria-label="Categories list">
+                {% for category in categories %}
+                <li class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center min-w-0">
+                            <span class="w-4 h-4 rounded-full flex-shrink-0" style="background-color: {{ category.color }};" aria-hidden="true"></span>
+                            <div class="ml-4 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                    {{ category.name }}
+                                    {% if not category.is_active %}
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">Inactive</span>
+                                    {% endif %}
+                                    {% if category.is_tax_deductible %}
+                                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400">Tax Deductible</span>
+                                    {% endif %}
+                                </p>
+                                {% if category.description %}
+                                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ category.description }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if category.gl_account_code %}
+                            <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">{{ category.gl_account_code }}</span>
+                            {% endif %}
+                            <button type="button" onclick="openEditModal({{ category.id }}, '{{ category.name|escapejs }}', '{{ category.description|escapejs }}', '{{ category.color }}', {{ category.is_tax_deductible|yesno:'true,false' }}, {{ category.is_active|yesno:'true,false' }}, '{{ category.gl_account_code|escapejs }}')" class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" aria-label="Edit {{ category.name }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No categories yet</h3>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Create your first category or use the default set.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="edit-modal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="edit-modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeEditModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <form method="post" id="edit-form">
+                {% csrf_token %}
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4" id="edit-modal-title">Edit Category</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label for="edit-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                        <input type="text" id="edit-name" name="name" required class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label for="edit-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                        <input type="text" id="edit-description" name="description" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="edit-color" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Color</label>
+                            <input type="color" id="edit-color" name="color" class="mt-1 w-full h-10 rounded-lg border-gray-300 dark:border-gray-600 cursor-pointer">
+                        </div>
+                        <div>
+                            <label for="edit-gl_account_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300">GL Account Code</label>
+                            <input type="text" id="edit-gl_account_code" name="gl_account_code" maxlength="20" class="mt-1 w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="flex gap-6">
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="edit-is_tax_deductible" name="is_tax_deductible" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Tax Deductible</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="checkbox" id="edit-is_active" name="is_active" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Active</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                    <button type="submit" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:col-start-2 sm:text-sm">Save Changes</button>
+                    <button type="button" onclick="closeEditModal()" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openEditModal(id, name, description, color, isTaxDeductible, isActive, glAccountCode) {
+    document.getElementById('edit-form').action = "{% url 'invoices:category_edit' 0 %}".replace('0', id);
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-description').value = description;
+    document.getElementById('edit-color').value = color;
+    document.getElementById('edit-is_tax_deductible').checked = isTaxDeductible;
+    document.getElementById('edit-is_active').checked = isActive;
+    document.getElementById('edit-gl_account_code').value = glAccountCode;
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+function closeEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+}
+</script>
+{% endblock %}

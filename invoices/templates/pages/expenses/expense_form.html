@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if editing %}Edit Expense{% else %}New Expense{% endif %} - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2">
+                    <li><a href="{% url 'invoices:expense_list' %}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">Expenses</a></li>
+                    <li><span class="text-gray-400 dark:text-gray-500">/</span></li>
+                    <li><span class="text-gray-900 dark:text-white">{% if editing %}Edit {{ expense.expense_number }}{% else %}New Expense{% endif %}</span></li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h1 class="text-xl font-semibold text-gray-900 dark:text-white">{% if editing %}Edit Expense{% else %}Record New Expense{% endif %}</h1>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="p-6 space-y-6" novalidate>
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description <span class="text-red-500" aria-label="required">*</span></label>
+                        <input type="text" id="description" name="description" value="{{ expense.description|default:'' }}" required maxlength="500" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="What was this expense for?" aria-required="true">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Briefly describe the expense</p>
+                    </div>
+
+                    <div>
+                        <label for="expense_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date <span class="text-red-500" aria-label="required">*</span></label>
+                        <input type="date" id="expense_date" name="expense_date" value="{% if expense %}{{ expense.expense_date|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" aria-required="true">
+                    </div>
+
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                        <select id="category" name="category" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if expense.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="vendor" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Vendor</label>
+                        <select id="vendor" name="vendor" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select vendor</option>
+                            {% for v in vendors %}
+                            <option value="{{ v.id }}" {% if expense.vendor_id == v.id %}selected{% endif %}>{{ v.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount <span class="text-red-500" aria-label="required">*</span></label>
+                        <div class="relative">
+                            <input type="number" id="amount" name="amount" value="{{ expense.amount|default:'' }}" required min="0" step="0.01" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 pl-12" placeholder="0.00" aria-required="true">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 dark:text-gray-400 sm:text-sm" id="currency-symbol">$</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="currency" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Currency</label>
+                        <select id="currency" name="currency" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                            {% for code, label in currencies %}
+                            <option value="{{ code }}" {% if expense.currency == code %}selected{% elif code == 'USD' and not expense %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="tax_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tax Rate (%)</label>
+                        <input type="number" id="tax_rate" name="tax_rate" value="{{ expense.tax_rate|default:'0' }}" min="0" max="100" step="0.01" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00">
+                    </div>
+
+                    <div>
+                        <label for="payment_method" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Payment Method</label>
+                        <select id="payment_method" name="payment_method" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                            {% for value, label in payment_methods %}
+                            <option value="{{ value }}" {% if expense.payment_method == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="reference_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Reference Number</label>
+                        <input type="text" id="reference_number" name="reference_number" value="{{ expense.reference_number|default:'' }}" maxlength="100" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Receipt or invoice number">
+                    </div>
+
+                    <div>
+                        <label for="project_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project Name</label>
+                        <input type="text" id="project_name" name="project_name" value="{{ expense.project_name|default:'' }}" maxlength="255" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Associated project or job">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                        <textarea id="notes" name="notes" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="Additional details about this expense">{{ expense.notes|default:'' }}</textarea>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
+                        <input type="text" id="tags" name="tags" value="{% if expense.tags %}{{ expense.tags|join:', ' }}{% endif %}" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="travel, office, client-abc (comma-separated)">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Separate tags with commas</p>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            <input type="checkbox" id="is_billable" name="is_billable" {% if expense.is_billable %}checked{% endif %} class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded" onchange="toggleBillableFields()">
+                        </div>
+                        <div class="ml-3">
+                            <label for="is_billable" class="font-medium text-gray-700 dark:text-gray-300">Billable Expense</label>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">This expense can be billed to a client</p>
+                        </div>
+                    </div>
+
+                    <div id="billable-fields" class="mt-4 pl-7 grid grid-cols-1 md:grid-cols-2 gap-4 {% if not expense.is_billable %}hidden{% endif %}">
+                        <div>
+                            <label for="client" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Client</label>
+                            <select id="client" name="client" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">Select client</option>
+                                {% for c in clients %}
+                                <option value="{{ c.id }}" {% if expense.client_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="markup_percent" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Markup (%)</label>
+                            <input type="number" id="markup_percent" name="markup_percent" value="{{ expense.markup_percent|default:'0' }}" min="0" max="200" step="0.01" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Percentage to add when billing</p>
+                        </div>
+                    </div>
+                </div>
+
+                {% if not editing %}
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <label for="receipt" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Receipt</label>
+                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <div class="flex text-sm text-gray-600 dark:text-gray-400">
+                                <label for="receipt" class="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                                    <span>Upload a file</span>
+                                    <input id="receipt" name="receipt" type="file" class="sr-only" accept="image/*,.pdf" aria-describedby="receipt-help">
+                                </label>
+                                <p class="pl-1">or drag and drop</p>
+                            </div>
+                            <p id="receipt-help" class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, PDF up to 10MB</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="flex items-center justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <a href="{% if editing %}{% url 'invoices:expense_detail' expense.id %}{% else %}{% url 'invoices:expense_list' %}{% endif %}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</a>
+                    <button type="submit" class="px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                        {% if editing %}Update Expense{% else %}Create Expense{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleBillableFields() {
+    const checkbox = document.getElementById('is_billable');
+    const fields = document.getElementById('billable-fields');
+    if (checkbox.checked) {
+        fields.classList.remove('hidden');
+    } else {
+        fields.classList.add('hidden');
+    }
+}
+</script>
+{% endblock %}
