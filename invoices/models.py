@@ -1454,3 +1454,100 @@ class ExpenseAuditLog(models.Model):
 
     def __str__(self):
         return f"{self.action} on {self.expense.expense_number} at {self.timestamp}"
+
+class SharedReportLink(models.Model):
+    """Shareable report links with permissions and audit logging."""
+    
+    class ReportType(models.TextChoices):
+        REVENUE = "revenue", "Revenue Report"
+        AGING = "aging", "A/R Aging Report"
+        CASHFLOW = "cashflow", "Cash Flow Report"
+        PROFITABILITY = "profitability", "Client Profitability"
+        TAX = "tax", "Tax Summary"
+        EXPENSE = "expense", "Expense Report"
+        CUSTOM = "custom", "Custom Report"
+    
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='shared_reports')
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_shared_reports')
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    report_type = models.CharField(max_length=50, choices=ReportType.choices)
+    report_params = models.JSONField(default=dict, blank=True, help_text="Report parameters like date range, filters")
+    name = models.CharField(max_length=255, blank=True, help_text="Optional name for the shared report")
+    
+    is_active = models.BooleanField(default=True)
+    expires_at = models.DateTimeField()
+    password_hash = models.CharField(max_length=64, blank=True, null=True, help_text="SHA256 hash of password if protected")
+    
+    view_count = models.PositiveIntegerField(default=0)
+    last_viewed_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['token']),
+            models.Index(fields=['workspace', 'is_active']),
+        ]
+    
+    def __str__(self):
+        return f"Shared {self.report_type} report - {self.token[:8]}..."
+    
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+    
+    @property
+    def is_accessible(self):
+        return self.is_active and not self.is_expired
+    
+    def increment_view_count(self):
+        self.view_count += 1
+        self.last_viewed_at = timezone.now()
+        self.save(update_fields=['view_count', 'last_viewed_at'])
+
+
+class ReportAccessLog(models.Model):
+    """Audit log for shared report accesses."""
+    
+    shared_link = models.ForeignKey(SharedReportLink, on_delete=models.CASCADE, related_name='access_logs')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.CharField(max_length=500, blank=True)
+    accessed_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-accessed_at']
+        indexes = [
+            models.Index(fields=['shared_link', '-accessed_at']),
+        ]
+    
+    def __str__(self):
+        return f"Access to {self.shared_link.token[:8]} at {self.accessed_at}"
+
+
+class ReportExport(models.Model):
+    """Track report exports for audit purposes."""
+    
+    class ExportFormat(models.TextChoices):
+        CSV = "csv", "CSV"
+        PDF = "pdf", "PDF"
+        EXCEL = "excel", "Excel"
+    
+    workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='report_exports')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    report_type = models.CharField(max_length=50)
+    report_params = models.JSONField(default=dict, blank=True)
+    export_format = models.CharField(max_length=10, choices=ExportFormat.choices)
+    file_name = models.CharField(max_length=255)
+    file_size = models.PositiveIntegerField(default=0, help_text="File size in bytes")
+    row_count = models.PositiveIntegerField(default=0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.report_type} export by {self.user} at {self.created_at}"
