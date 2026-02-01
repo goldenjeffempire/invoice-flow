@@ -38,11 +38,11 @@ def favicon_view(request):
 
 
 def robots_txt_view(request):
-    return HttpResponse("User-agent: *\nDisallow: /admin/", content_type="text/plain")
+    return HttpResponse(b"User-agent: *\nDisallow: /admin/", content_type="text/plain")
 
 
 def health_check_view(request):
-    return HttpResponse("OK")
+    return HttpResponse(b"OK")
 
 
 def custom_404_view(request, exception=None):

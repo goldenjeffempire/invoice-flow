@@ -34,7 +34,7 @@ class UnifiedMiddleware:
         ]
         if any(pattern in path for pattern in bot_patterns):
             # Fail silently for bots to avoid log noise and resource consumption
-            return HttpResponseForbidden("Not found", content_type="text/plain")
+            return HttpResponseForbidden(b"Not found", content_type="text/plain")
 
         # In development, prevent 304 by stripping conditional request headers
         if settings.DEBUG:
@@ -51,7 +51,7 @@ class UnifiedMiddleware:
         start = time.time()
 
         if request.method not in ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]:
-            return HttpResponseForbidden("Method not allowed")
+            return HttpResponseForbidden(b"Method not allowed")
 
         response = self.get_response(request)
 
