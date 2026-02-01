@@ -23,6 +23,9 @@ from ..forms import (
 from ..models import UserSession, WorkspaceInvitation, MFAProfile
 
 
+from django.views.decorators.cache import cache_page
+
+@cache_page(60 * 15)
 def landing_view(request):
     if request.user.is_authenticated:
         return redirect('invoices:dashboard')
