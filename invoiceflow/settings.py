@@ -269,6 +269,9 @@ DATABASES = {
 # PostgreSQL connection using the provisioned DATABASE_URL
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
+# Performance Optimization: Database Connection Pooling
+CONN_MAX_AGE = 600
+
 # Only use PostgreSQL if DATABASE_URL is provided
 if DATABASE_URL:
     # Remove unsupported parameters from the connection string if they exist

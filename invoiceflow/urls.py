@@ -9,7 +9,10 @@ handler500 = "invoices.views.custom_500_view"
 
 from django.views.decorators.cache import cache_page
 
+from django.views.generic import TemplateView
+
 urlpatterns = [
+    path("sw.js", TemplateView.as_view(template_name="sw.js", content_type="application/javascript"), name="service_worker"),
     re_path(r'^favicon\.ico/?$', cache_page(60 * 60 * 24)(views.favicon_view), name="favicon"),
     path("admin/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path("admin/users/", admin_views.admin_users, name="admin_users"),
