@@ -4,6 +4,8 @@ from .views import onboarding_views
 from .views import workspace_views
 from .views import ux_views
 
+from .views import dashboard_views
+
 app_name = "invoices"
 
 urlpatterns = [
@@ -13,44 +15,7 @@ urlpatterns = [
     path('notifications/mark-read/<int:pk>/', ux_views.mark_notification_read, name='mark_notification_read'),
     path('api/appearance/', ux_views.set_appearance_preference, name='set_appearance'),
 
-    path('onboarding/', onboarding_views.onboarding_router, name='onboarding'),
-    path('onboarding/welcome/', onboarding_views.onboarding_welcome, name='onboarding_welcome'),
-    path('onboarding/business/', onboarding_views.onboarding_business, name='onboarding_business'),
-    path('onboarding/branding/', onboarding_views.onboarding_branding, name='onboarding_branding'),
-    path('onboarding/tax/', onboarding_views.onboarding_tax, name='onboarding_tax'),
-    path('onboarding/payments/', onboarding_views.onboarding_payments, name='onboarding_payments'),
-    path('onboarding/import/', onboarding_views.onboarding_import, name='onboarding_import'),
-    path('onboarding/templates/', onboarding_views.onboarding_templates, name='onboarding_templates'),
-    path('onboarding/team/', onboarding_views.onboarding_team, name='onboarding_team'),
-    path('onboarding/complete/', onboarding_views.onboarding_complete, name='onboarding_complete'),
-    path('api/onboarding/status/', onboarding_views.onboarding_status_api, name='onboarding_status_api'),
-
-    path('signup/', views.signup_view, name='signup'),
-    path('login/', views.login_view, name='login'),
-    path('logout/', views.logout_view, name='logout'),
-
-    path('verification-sent/', views.verification_sent, name='verification_sent'),
-    path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
-    path('resend-verification/', views.resend_verification, name='resend_verification'),
-
-    path('password-reset/', views.password_reset_request, name='password_reset'),
-    path('password-reset/done/', views.password_reset_done, name='password_reset_done'),
-    path('password-reset-confirm/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),
-
-    path('mfa/setup/', views.mfa_setup, name='mfa_setup'),
-    path('mfa/verify/', views.mfa_verify, name='mfa_verify'),
-    path('mfa/disable/', views.mfa_disable, name='mfa_disable'),
-    path('mfa/backup-codes/', views.mfa_backup_codes, name='mfa_backup_codes'),
-
-    path('settings/security/', views.security_settings, name='security_settings'),
-    path('settings/security/revoke/<int:session_id>/', views.revoke_session, name='revoke_session'),
-    path('settings/security/revoke-all/', views.revoke_all_sessions, name='revoke_all_sessions'),
-    path('settings/security/activity/', views.security_activity, name='security_activity'),
-    path('security-settings/', views.security_settings, name='security_settings_legacy'),
-
-    path('invitation/<str:token>/', views.accept_invitation, name='accept_invitation'),
-
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard/', dashboard_views.dashboard_overview, name='dashboard'),
     path('settings/', views.settings_page, name='settings'),
     path('settings/profile/', views.profile_update_ajax, name='settings_profile_update'),
     path('settings/security/update/', views.security_update_ajax, name='settings_security_update'),
