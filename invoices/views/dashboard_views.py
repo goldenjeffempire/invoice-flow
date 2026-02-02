@@ -2,6 +2,7 @@
 Production-Grade Dashboard Views
 Real-time command center with KPIs, cashflow, invoice aging, quick actions, and smart alerts.
 """
+import json
 import logging
 from datetime import timedelta
 from decimal import Decimal
@@ -43,12 +44,26 @@ def dashboard_overview(request):
         last_90_days = today - timedelta(days=90)
         
         kpis = _calculate_kpis(workspace, today, start_of_month, last_30_days)
-        cashflow_data = _get_cashflow_data(workspace, last_90_days, today)
-        aging_data = _get_aging_data(workspace, today)
+        cashflow_raw = _get_cashflow_data(workspace, last_90_days, today)
+        aging_raw = _get_aging_data(workspace, today)
         recent_invoices = _get_recent_invoices(workspace)
         upcoming_payments = _get_upcoming_payments(workspace, today)
         smart_alerts = _generate_smart_alerts(workspace, today, kpis)
         quick_stats = _get_quick_stats(workspace, today, start_of_month)
+        
+        total_aging = sum(float(v.get('amount', 0)) for v in aging_raw.values()) if aging_raw else 1
+        aging_data = {
+            'current': float(aging_raw.get('current', {}).get('amount', 0)),
+            'current_percent': (float(aging_raw.get('current', {}).get('amount', 0)) / total_aging * 100) if total_aging > 0 else 0,
+            'days_31_60': float(aging_raw.get('31_60', {}).get('amount', 0)),
+            'days_31_60_percent': (float(aging_raw.get('31_60', {}).get('amount', 0)) / total_aging * 100) if total_aging > 0 else 0,
+            'days_61_90': float(aging_raw.get('61_90', {}).get('amount', 0)),
+            'days_61_90_percent': (float(aging_raw.get('61_90', {}).get('amount', 0)) / total_aging * 100) if total_aging > 0 else 0,
+            'days_90_plus': float(aging_raw.get('90_plus', {}).get('amount', 0)),
+            'days_90_plus_percent': (float(aging_raw.get('90_plus', {}).get('amount', 0)) / total_aging * 100) if total_aging > 0 else 0,
+        }
+        
+        cashflow_data = json.dumps(cashflow_raw) if cashflow_raw else '[]'
         
         return render(request, 'pages/dashboard/overview.html', {
             'profile': profile,
