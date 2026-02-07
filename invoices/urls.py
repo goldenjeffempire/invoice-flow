@@ -12,10 +12,18 @@ from .views import export_views
 from .views import recurring_views
 from .views import expense_views
 from .views import report_views
+from .views import portal_views
 
 app_name = "invoices"
 
 urlpatterns = [
+    # ... existing patterns ...
+    path('portal/login/', portal_views.portal_login, name='portal_login'),
+    path('portal/auth/<str:token>/', portal_views.portal_authenticate, name='portal_authenticate'),
+    path('portal/dashboard/', portal_views.portal_dashboard, name='portal_dashboard'),
+    path('portal/invoices/<int:invoice_id>/', portal_views.portal_invoice_detail, name='portal_invoice_detail'),
+    path('portal/profile/', portal_views.portal_profile, name='portal_profile'),
+    path('portal/logout/', portal_views.portal_logout, name='portal_logout'),
     path('', views.landing_view, name='home'),
     path('login/', views.login_view, name='login'),
     path('signup/', views.signup_view, name='signup'),
@@ -45,6 +53,14 @@ urlpatterns = [
     path('activity/', ux_views.activity_timeline, name='activity_timeline'),
     path('notifications/mark-read/<int:pk>/', ux_views.mark_notification_read, name='mark_notification_read'),
     path('api/appearance/', ux_views.set_appearance_preference, name='set_appearance'),
+
+    # Client Portal
+    path('portal/login/', portal_views.portal_login, name='portal_login'),
+    path('portal/auth/<str:token>/', portal_views.portal_authenticate, name='portal_authenticate'),
+    path('portal/dashboard/', portal_views.portal_dashboard, name='portal_dashboard'),
+    path('portal/invoices/<int:invoice_id>/', portal_views.portal_invoice_detail, name='portal_invoice_detail'),
+    path('portal/profile/', portal_views.portal_profile, name='portal_profile'),
+    path('portal/logout/', portal_views.portal_logout, name='portal_logout'),
 
     path('dashboard/', dashboard_views.dashboard_overview, name='dashboard'),
     path('settings/', views.settings_page, name='settings'),

@@ -498,6 +498,37 @@ class Invoice(models.Model):
         self.save(update_fields=['public_token'])
 
 
+class ClientPortalToken(models.Model):
+    client = models.ForeignKey('Client', on_delete=models.CASCADE, related_name="portal_tokens")
+    token = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    @property
+    def is_valid(self):
+        return self.used_at is None and self.expires_at > timezone.now()
+
+    def mark_used(self):
+        self.used_at = timezone.now()
+        self.save(update_fields=['used_at'])
+
+
+class ClientPortalSession(models.Model):
+    client = models.ForeignKey('Client', on_delete=models.CASCADE, related_name="portal_sessions")
+    session_key = models.CharField(max_length=64, unique=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    last_activity = models.DateTimeField(auto_now=True)
+    expires_at = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+
+    @property
+    def is_valid(self):
+        return self.is_active and self.expires_at > timezone.now()
+
+
 class Estimate(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
