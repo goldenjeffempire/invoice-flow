@@ -59,6 +59,7 @@ urlpatterns = [
     path('portal/auth/<str:token>/', portal_views.portal_authenticate, name='portal_authenticate'),
     path('portal/dashboard/', portal_views.portal_dashboard, name='portal_dashboard'),
     path('portal/invoices/<int:invoice_id>/', portal_views.portal_invoice_detail, name='portal_invoice_detail'),
+    path('portal/invoices/<int:invoice_id>/pdf/', portal_views.portal_invoice_pdf, name='portal_invoice_pdf'),
     path('portal/profile/', portal_views.portal_profile, name='portal_profile'),
     path('portal/logout/', portal_views.portal_logout, name='portal_logout'),
 
