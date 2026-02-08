@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Sum, Q
+from django.http import HttpResponse
 from ..models import Client, ClientPortalToken, ClientPortalSession, Invoice, InvoicePayment
 from ..services.portal_service import ClientPortalService
 from ..services import PDFService
@@ -71,6 +72,32 @@ def portal_dashboard(request):
         }
     }
     return render(request, 'invoices/portal/dashboard.html', context)
+
+def portal_invoice_detail(request, invoice_id):
+    session = get_portal_session(request)
+    if not session:
+        return redirect('invoices:portal_login')
+    
+    invoice = get_object_or_404(Invoice, id=invoice_id, client=session.client)
+    payments = invoice.payments.filter(status=InvoicePayment.PaymentStatus.COMPLETED)
+    
+    return render(request, 'invoices/portal/invoice_detail.html', {
+        'invoice': invoice,
+        'payments': payments
+    })
+
+def portal_invoice_pdf(request, invoice_id):
+    session = get_portal_session(request)
+    if not session:
+        return redirect('invoices:portal_login')
+    
+    invoice = get_object_or_404(Invoice, id=invoice_id, client=session.client)
+    pdf_service = PDFService()
+    pdf_content = pdf_service.generate_invoice_pdf(invoice)
+    
+    response = HttpResponse(pdf_content, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_number}.pdf"'
+    return response
 
 def portal_profile(request):
     session = get_portal_session(request)
