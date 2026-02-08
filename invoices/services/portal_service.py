@@ -12,14 +12,17 @@ logger = logging.getLogger(__name__)
 
 class ClientPortalService:
     @staticmethod
-    def generate_magic_link(client, ip_address=None):
+    def generate_magic_link(client, ip_address=None, user_agent=""):
+        token_str = secrets.token_urlsafe(64)
         expires_at = timezone.now() + timedelta(hours=1)
-        token = ClientPortalToken.objects.create(
+        ClientPortalToken.objects.create(
             client=client,
+            token=token_str,
             expires_at=expires_at,
-            ip_address=ip_address
+            ip_address=ip_address,
+            user_agent=user_agent
         )
-        return f"{settings.SITE_URL}{reverse('invoices:portal_authenticate', kwargs={'token': token.token})}"
+        return f"{settings.SITE_URL}{reverse('invoices:portal_authenticate', kwargs={'token': token_str})}"
 
     @staticmethod
     def send_magic_link(client, magic_link):
@@ -28,8 +31,9 @@ class ClientPortalService:
                 'client_name': client.name,
                 'magic_link': magic_link,
                 'business_name': client.workspace.profile.company_name or "InvoiceFlow",
+                'expires_in': "1 hour"
             }
-            subject = f"Access your Client Portal - {context['business_name']}"
+            subject = f"Secure access to your client portal - {context['business_name']}"
             html_message = render_to_string('invoices/emails/portal_magic_link.html', context)
             plain_message = render_to_string('invoices/emails/portal_magic_link.txt', context)
             
@@ -48,12 +52,16 @@ class ClientPortalService:
 
     @staticmethod
     def create_session(client, request):
-        session_key = secrets.token_urlsafe(32)
+        session_key = secrets.token_urlsafe(64)
         expires_at = timezone.now() + timedelta(days=7)
         return ClientPortalSession.objects.create(
             client=client,
             session_key=session_key,
             ip_address=request.META.get('REMOTE_ADDR'),
             user_agent=request.META.get('HTTP_USER_AGENT', ''),
-            expires_at=expires_at
+            expires_at=expires_at,
+            device_info={
+                'browser': request.META.get('HTTP_USER_AGENT', 'Unknown'),
+                'last_ip': request.META.get('REMOTE_ADDR')
+            }
         )

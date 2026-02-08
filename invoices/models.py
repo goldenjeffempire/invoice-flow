@@ -500,11 +500,12 @@ class Invoice(models.Model):
 
 class ClientPortalToken(models.Model):
     client = models.ForeignKey('Client', on_delete=models.CASCADE, related_name="portal_tokens")
-    token = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe)
+    token = models.CharField(max_length=128, unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
 
     @property
     def is_valid(self):
@@ -517,12 +518,13 @@ class ClientPortalToken(models.Model):
 
 class ClientPortalSession(models.Model):
     client = models.ForeignKey('Client', on_delete=models.CASCADE, related_name="portal_sessions")
-    session_key = models.CharField(max_length=64, unique=True)
+    session_key = models.CharField(max_length=128, unique=True, db_index=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
     last_activity = models.DateTimeField(auto_now=True)
     expires_at = models.DateTimeField()
     is_active = models.BooleanField(default=True)
+    device_info = models.JSONField(default=dict, blank=True)
 
     @property
     def is_valid(self):

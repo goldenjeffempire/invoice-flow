@@ -1,84 +1,76 @@
-{% extends "base/layout.html" %}
-{% block title %}Client Dashboard - InvoiceFlow{% endblock %}
+{% extends "base.html" %}
 {% block content %}
-<div class="min-h-screen bg-slate-50">
-    <!-- Navbar -->
-    <nav class="bg-white border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <span class="text-xl font-bold text-indigo-600">InvoiceFlow</span>
-                    <span class="ml-2 text-slate-500">| Portal</span>
+<div class="bg-gray-100 min-h-screen">
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="px-4 py-6 sm:px-0">
+            <h1 class="text-2xl font-semibold text-gray-900">Welcome, {{ client.name }}</h1>
+            
+            <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <dt class="text-sm font-medium text-gray-500 truncate">Total Invoiced</dt>
+                        <dd class="mt-1 text-3xl font-semibold text-gray-900">{{ client.currency }} {{ stats.total_invoiced }}</dd>
+                    </div>
                 </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-sm text-slate-600">Welcome, {{ client.name }}</span>
-                    <a href="{% url 'invoices:portal_logout' %}" class="text-sm font-medium text-red-600 hover:text-red-700">Logout</a>
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <dt class="text-sm font-medium text-gray-500 truncate">Total Paid</dt>
+                        <dd class="mt-1 text-3xl font-semibold text-green-600">{{ client.currency }} {{ stats.total_paid }}</dd>
+                    </div>
+                </div>
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="px-4 py-5 sm:p-6">
+                        <dt class="text-sm font-medium text-gray-500 truncate">Outstanding Balance</dt>
+                        <dd class="mt-1 text-3xl font-semibold text-red-600">{{ client.currency }} {{ stats.total_outstanding }}</dd>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8">
+                <h2 class="text-lg font-medium text-gray-900">Recent Invoices</h2>
+                <div class="mt-4 flex flex-col">
+                    <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                        <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                            <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                                <table class="min-w-full divide-y divide-gray-200 bg-white">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Number</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th class="px-6 py-3"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200">
+                                        {% for invoice in invoices %}
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ invoice.invoice_number }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ invoice.issue_date }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ invoice.due_date }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ invoice.currency }} {{ invoice.total_amount }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                    {% if invoice.status == 'paid' %}bg-green-100 text-green-800
+                                                    {% elif invoice.status == 'overdue' %}bg-red-100 text-red-800
+                                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                                    {{ invoice.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <a href="{{ invoice.get_public_url }}" class="text-indigo-600 hover:text-indigo-900">View</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
-
-    <main class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
-            <div class="bg-white overflow-hidden shadow rounded-xl border border-slate-200 p-6">
-                <dt class="text-sm font-medium text-slate-500 truncate">Total Outstanding</dt>
-                <dd class="mt-1 text-3xl font-semibold text-slate-900">{{ client.currency }} {{ summary.total_outstanding }}</dd>
-            </div>
-            <div class="bg-white overflow-hidden shadow rounded-xl border border-slate-200 p-6">
-                <dt class="text-sm font-medium text-slate-500 truncate">Paid Invoices</dt>
-                <dd class="mt-1 text-3xl font-semibold text-green-600">{{ summary.paid_count }}</dd>
-            </div>
-            <div class="bg-white overflow-hidden shadow rounded-xl border border-slate-200 p-6">
-                <dt class="text-sm font-medium text-slate-500 truncate">Pending Invoices</dt>
-                <dd class="mt-1 text-3xl font-semibold text-orange-500">{{ summary.pending_count }}</dd>
-            </div>
-        </div>
-
-        <!-- Invoices Table -->
-        <div class="bg-white shadow rounded-xl border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-                <h3 class="text-lg font-bold text-slate-900">Your Invoices</h3>
-                <a href="{% url 'invoices:portal_profile' %}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">Update Billing Details</a>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Number</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Due Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Amount</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-slate-200">
-                        {% for invoice in invoices %}
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-600">
-                                <a href="{% url 'invoices:portal_invoice_detail' invoice.id %}">{{ invoice.invoice_number }}</a>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ invoice.issue_date }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{{ invoice.due_date }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">{{ invoice.currency }} {{ invoice.total_amount }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    {% if invoice.status == 'paid' %}bg-green-100 text-green-800
-                                    {% elif invoice.status == 'overdue' %}bg-red-100 text-red-800
-                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
-                                    {{ invoice.get_status_display }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="{% url 'invoices:portal_invoice_detail' invoice.id %}" class="text-indigo-600 hover:text-indigo-900">View</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
+    </div>
 </div>
 {% endblock %}
