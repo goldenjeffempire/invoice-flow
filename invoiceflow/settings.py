@@ -6,10 +6,10 @@ Domain: https://invoiceflow.com.ng
 from pathlib import Path
 import os
 import sys
+import re
 from typing import Any, cast, Dict
 import environ
 import dj_database_url
-
 from django.core.exceptions import ImproperlyConfigured
 
 # =============================================================================
@@ -18,43 +18,35 @@ from django.core.exceptions import ImproperlyConfigured
 BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 
-# Fail-fast environment validation
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-
 IS_PRODUCTION = os.getenv("PRODUCTION", "false").lower() == "true"
 DEBUG = os.getenv("DEBUG", "true").lower() == "true"
 
 # =============================================================================
-# DOMAIN
+# ENVIRONMENT VALIDATION (FAIL-FAST)
 # =============================================================================
-PRODUCTION_DOMAIN = "invoiceflow.com.ng"
-PRODUCTION_URL = f"https://{PRODUCTION_DOMAIN}"
-SITE_URL = PRODUCTION_URL if IS_PRODUCTION else "http://localhost:5000"
+from invoiceflow.env_validation import validate_env
+validate_env()
 
 # =============================================================================
 # SECURITY
 # =============================================================================
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY and IS_PRODUCTION:
-    raise ImproperlyConfigured("SECRET_KEY is required in production.")
-SECRET_KEY = SECRET_KEY or "django-insecure-dev-only-change-in-production"
+SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-production")
 
 # Build ALLOWED_HOSTS based on environment
 if IS_PRODUCTION:
+    PRODUCTION_DOMAIN = "invoiceflow.com.ng"
     ALLOWED_HOSTS = [PRODUCTION_DOMAIN, f"www.{PRODUCTION_DOMAIN}"]
     render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
     if render_hostname:
         ALLOWED_HOSTS.append(render_hostname)
 else:
-    # In development, prioritize Replit domains for correctness
     ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if "*" not in host]
 if not IS_PRODUCTION:
-    # Explicitly trust Replit origins for CSRF
     CSRF_TRUSTED_ORIGINS.extend(["https://*.replit.dev", "https://*.repl.co", "https://*.replit.app"])
 
-# Handle Replit proxy HTTPS
+# Handle proxy HTTPS
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
@@ -67,54 +59,11 @@ SESSION_COOKIE_AGE = 1209600 # 2 weeks
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
-
-# Security Headers & Rotation
-SESSION_SAVE_EVERY_REQUEST = True  # Facilitates session rotation on some level
-CSRF_USE_SESSIONS = True           # Store CSRF token in session instead of cookie for extra security
-CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-
-# Email Configuration
-# Always use console backend for development in Replit environment
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "noreply@invoiceflow.replit.dev"
-
-# Replit Mail Integration (if available)
-REPLIT_MAIL_ENABLED = True
-
-# Rate Limiting
-RATELIMIT_ENABLE = True
-RATELIMIT_USE_CACHE = 'default'
-ACCOUNT_LOCKOUT_THRESHOLD = 5
-ACCOUNT_LOCKOUT_DURATION = 900 # 15 minutes
-
-# Password Policy and Hashing
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {
-            'min_length': 12,
-        }
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.Argon2PasswordHasher',
-    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
-]
+SESSION_SAVE_EVERY_REQUEST = True
+CSRF_USE_SESSIONS = True
 
 # Production Security Headers
-if not DEBUG:
+if IS_PRODUCTION:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -126,15 +75,43 @@ if not DEBUG:
     X_FRAME_OPTIONS = "DENY"
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
     
-    # Silence bot/exploit noise in production
+    # Hardened CSP
+    CSP_DEFAULT_SRC = ("'self'",)
+    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net")
+    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net")
+    CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
+    CSP_IMG_SRC = ("'self'", "data:", "https:")
+    
     SILENCED_SYSTEM_CHECKS = ["security.W001", "security.W004", "security.W008"]
 else:
-    # Disable redirect and secure cookies in development to avoid proxy issues
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
-    # Allow insecure requests for the development server behind Replit proxy
     SECURE_REDIRECT_EXEMPT = [r'.*']
+
+# Rate Limiting
+RATE_LIMIT_ENABLED = os.getenv("RATE_LIMIT_ENABLED", "true").lower() == "true"
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+RATE_LIMIT_EXEMPT_PATHS = os.getenv("RATE_LIMIT_EXEMPT_PATHS", "/static/,/media/").split(",")
+
+RATELIMIT_ENABLE = RATE_LIMIT_ENABLED
+RATELIMIT_USE_CACHE = 'default'
+ACCOUNT_LOCKOUT_THRESHOLD = int(os.getenv("ACCOUNT_LOCKOUT_THRESHOLD", "5"))
+ACCOUNT_LOCKOUT_DURATION = int(os.getenv("ACCOUNT_LOCKOUT_DURATION", "900")) # 15 mins
+
+# Password Policy
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 12}},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+]
 
 # Structured Logging
 LOGGING = {
@@ -147,7 +124,7 @@ LOGGING = {
     },
     'filters': {
         'request_id': {
-            '()': 'invoiceflow.logging_filters.RequestIDFilter',
+            '()': 'invoiceflow.middleware.RequestIDFilter',
         },
     },
     'handlers': {
@@ -174,8 +151,33 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "csp",
     "invoices.apps.InvoicesConfig",
 ]
+
+# =============================================================================
+# DATABASE
+# =============================================================================
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+DATABASES = {
+    "default": dj_database_url.config(
+        default="sqlite:///" + str(BASE_DIR / "db.sqlite3"),
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=IS_PRODUCTION
+    )
+}
+
+if DATABASE_URL and IS_PRODUCTION:
+    # Strip unsupported params for production PostgreSQL (e.g. Neon)
+    clean_url = re.sub(r'[?&]channel_binding=[^&]+', '', DATABASE_URL).replace('?&', '?').rstrip('&')
+    DATABASES["default"] = dj_database_url.parse(
+        clean_url,
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=True
+    )
+    DATABASES["default"]["OPTIONS"] = {"connect_timeout": 10, "sslmode": "require"}
 
 # =============================================================================
 # CACHING & PERFORMANCE
@@ -190,21 +192,14 @@ CACHES = {
 if IS_PRODUCTION:
     REDIS_URL = os.getenv("REDIS_URL")
     if REDIS_URL:
-        CACHES = {
-            "default": {
-                "BACKEND": "django_redis.cache.RedisCache",
-                "LOCATION": REDIS_URL,
-                "OPTIONS": {
-                    "CLIENT_CLASS": "django_redis.client.DefaultClient",
-                    "IGNORE_EXCEPTIONS": True,
-                }
+        CACHES["default"] = {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "IGNORE_EXCEPTIONS": True,
             }
         }
-
-# Analytics Cache Settings
-CACHE_TIMEOUT_DASHBOARD = 60
-CACHE_TIMEOUT_ANALYTICS = 120
-CACHE_TIMEOUT_TOP_CLIENTS = 300
 
 # =============================================================================
 # MIDDLEWARE
@@ -212,27 +207,18 @@ CACHE_TIMEOUT_TOP_CLIENTS = 300
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    "invoiceflow.resilience_middleware.DatabaseResilienceMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "invoiceflow.resilience_middleware.SessionResilienceMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "invoiceflow.resilience_middleware.SafeRedirectMiddleware",
-    "invoiceflow.unified_middleware.UnifiedMiddleware",
-    "invoiceflow.unified_middleware.OptimizedRateLimitMiddleware",
-    "invoiceflow.mfa_middleware.MFAEnforcementMiddleware",
+    "csp.middleware.CSPMiddleware",
     "invoiceflow.middleware.RequestIDMiddleware",
-    "invoices.validation.middleware.ErrorHandlingMiddleware",
 ]
 
 ROOT_URLCONF = "invoiceflow.urls"
 
-# =============================================================================
-# TEMPLATES
-# =============================================================================
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -244,117 +230,18 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "invoices.context_processors.workspace_context",
             ],
         },
     }
 ]
 
-# MFA Settings
-MFA_ENABLED = True
-MFA_ISSUER_NAME = "InvoiceFlow"
-
-# =============================================================================
-# DATABASE
-# =============================================================================
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
-
-# PostgreSQL connection using the provisioned DATABASE_URL
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-
-# Performance Optimization: Database Connection Pooling
-CONN_MAX_AGE = 600
-
-# Only use PostgreSQL if DATABASE_URL is provided
-if DATABASE_URL:
-    # Remove unsupported parameters from the connection string if they exist
-    _db_url = DATABASE_URL
-    if "channel_binding=" in _db_url:
-        import re
-        _db_url = re.sub(r'[?&]channel_binding=[^&]+', '', _db_url)
-        _db_url = _db_url.replace('?&', '?').rstrip('&')
-    
-    try:
-        db_config = dj_database_url.parse(
-            _db_url,
-            conn_max_age=600,
-            ssl_require=IS_PRODUCTION
-        )
-        if db_config and db_config.get('ENGINE'):
-            if db_config['ENGINE'] == 'django.db.backends.':
-                db_config['ENGINE'] = 'django.db.backends.postgresql'
-            
-            # Production-grade connection hardening
-            # Note: Neon pooler doesn't support statement_timeout in options
-            db_config['OPTIONS'] = db_config.get('OPTIONS', {})
-            db_config['OPTIONS']['connect_timeout'] = 10
-            db_config['OPTIONS']['sslmode'] = 'require'
-            
-            db_config['CONN_HEALTH_CHECKS'] = True
-            
-            DATABASES["default"] = dict(db_config)
-        else:
-            db_config = dj_database_url.config(default=_db_url, conn_max_age=600, ssl_require=IS_PRODUCTION)
-            if db_config and db_config.get('ENGINE'):
-                if db_config['ENGINE'] == 'django.db.backends.':
-                    db_config['ENGINE'] = 'django.db.backends.postgresql'
-                DATABASES["default"] = dict(db_config)
-    except Exception as e:
-        if IS_PRODUCTION:
-             raise ImproperlyConfigured(f"Failed to configure database from DATABASE_URL: {e}")
-        print(f"Warning: Database configuration failed, falling back to SQLite: {e}")
-
-# =============================================================================
-# STATIC / MEDIA
-# =============================================================================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
 STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-LOGIN_URL = "invoices:login"
-LOGIN_REDIRECT_URL = "invoices:dashboard"
-LOGOUT_REDIRECT_URL = "invoices:home"
-
-# =============================================================================
-# DJANGO REST FRAMEWORK
-# =============================================================================
-REST_FRAMEWORK = {
-    "EXCEPTION_HANDLER": "invoices.validation.api_exceptions.custom_exception_handler",
-    "DEFAULT_RENDERER_CLASSES": [
-        "rest_framework.renderers.JSONRenderer",
-    ],
-    "DEFAULT_PARSER_CLASSES": [
-        "rest_framework.parsers.JSONParser",
-        "rest_framework.parsers.FormParser",
-        "rest_framework.parsers.MultiPartParser",
-    ],
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticated",
-    ],
-    "NON_FIELD_ERRORS_KEY": "__all__",
-}
-
-# =============================================================================
-# ENVIRONMENT VALIDATION (FAIL-FAST)
-# =============================================================================
-# Run validation at the end of settings to ensure all required vars are set
-from invoiceflow.env_validation import validate_env
-validate_env()
