@@ -127,82 +127,6 @@ def health_check(request):
     return response
 
 
-def readiness_check(request):
-    """
-    Readiness check - verifies database connectivity and app readiness.
-    Used by Kubernetes/Render to know when to route traffic.
-    """
-    checks = {
-        "database": False,
-        "migrations": False,
-        "cache": False,
-    }
-    status = 200
-    details = {}
-
-    db_start = time.perf_counter()
-    try:
-        connections["default"].ensure_connection()
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-            result = cursor.fetchone()
-            checks["database"] = result is not None and result[0] == 1
-        details["database_latency_ms"] = round((time.perf_counter() - db_start) * 1000, 2)
-    except OperationalError as e:
-        checks["database"] = False
-        details["database_error"] = str(e)
-        status = 503
-
-    try:
-        from django.db.migrations.executor import MigrationExecutor
-
-        executor = MigrationExecutor(connection)
-        targets = executor.loader.graph.leaf_nodes()
-        pending = executor.migration_plan(targets)
-        checks["migrations"] = len(pending) == 0
-        if pending:
-            details["pending_migrations"] = len(pending)
-    except Exception:
-        checks["migrations"] = True
-
-    cache_start = time.perf_counter()
-    try:
-        cache_key = "_health_check_test"
-        cache.set(cache_key, "ok", 10)
-        cached_value = cache.get(cache_key)
-        checks["cache"] = cached_value == "ok"
-        cache.delete(cache_key)
-        details["cache_latency_ms"] = round((time.perf_counter() - cache_start) * 1000, 2)
-        if not checks["cache"]:
-            status = 503
-    except Exception as e:
-        checks["cache"] = False
-        details["cache_error"] = str(e)
-        status = 503
-
-    all_ready = checks["database"] and checks["migrations"] and checks["cache"]
-
-    if not checks["migrations"]:
-        status = 503
-    if not checks["cache"]:
-        status = 503
-
-    response = JsonResponse(
-        {
-            "status": "ready" if all_ready else "not_ready",
-            "checks": checks,
-            "details": details,
-            "version": APP_VERSION,
-            "timestamp": timezone.now().isoformat(),
-        },
-        status=status,
-    )
-    # Prevent caching of readiness status
-    response["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
-    response["Pragma"] = "no-cache"
-    return response
-
-
 def liveness_check(request):
     """
     Liveness check - verifies app is still responsive.
@@ -225,6 +149,16 @@ def liveness_check(request):
     response["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
     response["Pragma"] = "no-cache"
     return response
+
+def readiness_check(request):
+    """Readiness check - checks database connectivity."""
+    db_conn = connections['default']
+    try:
+        db_conn.cursor()
+    except OperationalError:
+        return JsonResponse({"status": "not_ready", "database": "down"}, status=503)
+    else:
+        return JsonResponse({"status": "ready", "database": "up"})
 
 
 def detailed_health_impl(data):

@@ -12,9 +12,12 @@ logger = logging.getLogger(__name__)
 
 
 class InvoicesConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"  # type: ignore[misc]
+    default_auto_field = "django.db.models.BigAutoField"
     name = "invoices"
 
     def ready(self):
         # Only import and connect signals when the app is ready to prevent early model loading
-        from . import signals  # noqa
+        try:
+            from . import signals  # noqa
+        except ImportError:
+            pass

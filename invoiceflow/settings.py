@@ -215,6 +215,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "csp.middleware.CSPMiddleware",
     "invoiceflow.middleware.RequestIDMiddleware",
+    "invoices.validation.middleware.ErrorHandlingMiddleware",
 ]
 
 ROOT_URLCONF = "invoiceflow.urls"
@@ -230,10 +231,26 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "invoices.context_processors.workspace_context",
             ],
         },
     }
 ]
+
+# ... existing code ...
+
+# =============================================================================
+# REST FRAMEWORK
+# =============================================================================
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "EXCEPTION_HANDLER": "invoices.validation.api_exceptions.custom_exception_handler",
+}
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
