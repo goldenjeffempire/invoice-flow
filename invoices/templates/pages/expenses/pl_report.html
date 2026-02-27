@@ -1,0 +1,275 @@
+{% extends 'base/layout_app.html' %}
+{% load static %}
+
+{% block title %}Profit & Loss Report - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Profit & Loss Report</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Financial summary for the selected period</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="exportReport()" class="inline-flex items-center px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Export CSV
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <form method="get" class="flex flex-wrap items-end gap-4">
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">From</label>
+                    <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">To</label>
+                    <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-indigo-500">
+                </div>
+            </div>
+            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-sm">
+                Apply
+            </button>
+            <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-800/50 p-1 rounded-xl ml-auto">
+                <a href="?period=this_month" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all {% if period == 'this_month' %}bg-white dark:bg-slate-900 text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-700{% endif %}">This Month</a>
+                <a href="?period=last_month" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all {% if period == 'last_month' %}bg-white dark:bg-slate-900 text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-700{% endif %}">Last Month</a>
+                <a href="?period=this_quarter" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all {% if period == 'this_quarter' %}bg-white dark:bg-slate-900 text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-700{% endif %}">This Quarter</a>
+                <a href="?period=this_year" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all {% if period == 'this_year' %}bg-white dark:bg-slate-900 text-indigo-600 shadow-sm{% else %}text-slate-500 hover:text-slate-700{% endif %}">This Year</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg text-emerald-600 dark:text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Revenue</span>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ currency_symbol }}{{ summary.revenue|default:"0.00" }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <div class="p-2 bg-rose-50 dark:bg-rose-900/30 rounded-lg text-rose-600 dark:text-rose-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Expenses</span>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ currency_symbol }}{{ summary.expenses|default:"0.00" }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <div class="p-2 {% if summary.profit >= 0 %}bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400{% else %}bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400{% endif %} rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                </div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Net Profit</span>
+            </div>
+            <p class="text-2xl font-bold {% if summary.profit >= 0 %}text-indigo-600 dark:text-indigo-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">{{ currency_symbol }}{{ summary.profit|default:"0.00" }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <div class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                </div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Margin</span>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ summary.margin|default:"0" }}%</p>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Performance Trend</h3>
+            </div>
+            <div class="h-80">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Expense Distribution</h3>
+            </div>
+            <div class="h-80">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Expenses by Category -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Expenses by Category</h3>
+            </div>
+            <div class="p-6">
+                {% if category_breakdown %}
+                <div class="space-y-6">
+                    {% for item in category_breakdown %}
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full" style="background-color: {{ item.color }};"></span>
+                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ item.name }}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ currency_symbol }}{{ item.total }}</span>
+                                <span class="text-[10px] font-bold text-slate-400 ml-1">({{ item.percentage }}%)</span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: {{ item.percentage }}%; background-color: {{ item.color }};"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <p class="text-sm text-slate-500">No expense data for this period</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Income Statement -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Income Statement</h3>
+            </div>
+            <div class="p-6 space-y-8">
+                <!-- Revenue -->
+                <div>
+                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Revenue</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-600 dark:text-slate-400">Invoice Payments</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ currency_symbol }}{{ summary.invoice_revenue|default:"0.00" }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-600 dark:text-slate-400">Billable Recoveries</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ currency_symbol }}{{ summary.billable_expenses_recovered|default:"0.00" }}</span>
+                        </div>
+                        <div class="flex justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <span class="font-bold text-slate-900 dark:text-white">Total Revenue</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ currency_symbol }}{{ summary.revenue|default:"0.00" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expenses -->
+                <div>
+                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Expenses</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-600 dark:text-slate-400">Operating Expenses</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ currency_symbol }}{{ summary.operating_expenses|default:"0.00" }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-600 dark:text-slate-400">Taxes Paid</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ currency_symbol }}{{ summary.tax_expenses|default:"0.00" }}</span>
+                        </div>
+                        <div class="flex justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                            <span class="font-bold text-slate-900 dark:text-white">Total Expenses</span>
+                            <span class="font-bold text-rose-600 dark:text-rose-400">{{ currency_symbol }}{{ summary.expenses|default:"0.00" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Net -->
+                <div class="pt-6 border-t-2 border-slate-100 dark:border-slate-800">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-bold text-slate-900 dark:text-white">Net Profit</span>
+                        <span class="text-2xl font-bold {% if summary.profit >= 0 %}text-indigo-600 dark:text-indigo-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">
+                            {{ currency_symbol }}{{ summary.profit|default:"0.00" }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportReport() {
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'csv');
+    window.location.href = window.location.pathname + '?' + params.toString();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Performance Chart
+    const perfCtx = document.getElementById('performanceChart').getContext('2d');
+    new Chart(perfCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], // Mock data - would be dynamic
+            datasets: [{
+                label: 'Revenue',
+                data: [12000, 19000, 15000, 25000, 22000, 30000],
+                borderColor: '#10b981',
+                backgroundColor: '#10b98110',
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Expenses',
+                data: [8000, 12000, 9000, 15000, 13000, 18000],
+                borderColor: '#f43f5e',
+                backgroundColor: '#f43f5e10',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#94a3b8', font: { weight: 'bold' } }
+                }
+            },
+            scales: {
+                y: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+            }
+        }
+    });
+
+    // Category Chart
+    const catCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for item in category_breakdown %}'{{ item.name }}',{% endfor %}],
+            datasets: [{
+                data: [{% for item in category_breakdown %}{{ item.total }},{% endfor %}],
+                backgroundColor: [{% for item in category_breakdown %}'{{ item.color }}',{% endfor %}],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#94a3b8', font: { weight: 'bold' } }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+});
+</script>
+{% endblock %}

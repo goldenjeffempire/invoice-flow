@@ -1,0 +1,164 @@
+{% extends "pages/onboarding/base_onboarding.html" %}
+
+{% block step_content %}
+<div class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Tax & Compliance</h2>
+    <p class="text-gray-600">Set up your tax information. This will be used to calculate taxes on your invoices.</p>
+</div>
+
+<form method="post" action="{% url 'invoices:onboarding_tax' %}">
+    {% csrf_token %}
+    
+    {% if errors %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center gap-2 text-red-800 font-medium">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Please fix the errors below
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <p class="text-blue-800 font-medium">Based on your region ({{ profile.get_region_display|default:"Not set" }})</p>
+                <p class="text-blue-700 text-sm">We've pre-filled common tax rates. You can adjust these as needed.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid md:grid-cols-2 gap-6 mb-8">
+        <div class="form-group">
+            <label for="tax_id_type" class="form-label">Tax ID Type</label>
+            <select id="tax_id_type" name="tax_id_type" class="form-input">
+                <option value="">Select type</option>
+                <option value="TIN" {% if profile.tax_id_type == "TIN" %}selected{% endif %}>TIN (Tax Identification Number)</option>
+                <option value="VAT" {% if profile.tax_id_type == "VAT" %}selected{% endif %}>VAT Number</option>
+                <option value="EIN" {% if profile.tax_id_type == "EIN" %}selected{% endif %}>EIN (Employer ID)</option>
+                <option value="PIN" {% if profile.tax_id_type == "PIN" %}selected{% endif %}>PIN (Personal ID Number)</option>
+                <option value="OTHER" {% if profile.tax_id_type == "OTHER" %}selected{% endif %}>Other</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="tax_id_number" class="form-label">Tax ID Number</label>
+            <input type="text" id="tax_id_number" name="tax_id_number" 
+                   value="{{ profile.tax_id_number }}" 
+                   class="form-input"
+                   placeholder="Enter your tax ID">
+        </div>
+    </div>
+    
+    <div class="border rounded-lg p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="font-semibold text-gray-900">VAT (Value Added Tax)</h3>
+                <p class="text-gray-500 text-sm">Enable if your business is VAT registered</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="vat_registered" id="vat_registered" 
+                       {% if profile.vat_registered %}checked{% endif %}
+                       class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+        </div>
+        
+        <div id="vat_fields" class="grid md:grid-cols-2 gap-4 {% if not profile.vat_registered %}hidden{% endif %}">
+            <div class="form-group mb-0">
+                <label for="vat_number" class="form-label">VAT Registration Number</label>
+                <input type="text" id="vat_number" name="vat_number" 
+                       value="{{ profile.vat_number }}" 
+                       class="form-input {% if errors.vat_number %}error{% endif %}"
+                       placeholder="e.g., NG12345678">
+                {% if errors.vat_number %}
+                <p class="form-error">{{ errors.vat_number }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="form-group mb-0">
+                <label for="vat_rate" class="form-label">VAT Rate (%)</label>
+                <input type="number" id="vat_rate" name="vat_rate" 
+                       value="{{ profile.vat_rate }}" 
+                       class="form-input {% if errors.vat_rate %}error{% endif %}"
+                       step="0.01" min="0" max="100"
+                       placeholder="7.5">
+                {% if errors.vat_rate %}
+                <p class="form-error">{{ errors.vat_rate }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="border rounded-lg p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="font-semibold text-gray-900">WHT (Withholding Tax)</h3>
+                <p class="text-gray-500 text-sm">Enable if withholding tax applies to your invoices</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="wht_applicable" id="wht_applicable" 
+                       {% if profile.wht_applicable %}checked{% endif %}
+                       class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+        </div>
+        
+        <div id="wht_fields" class="{% if not profile.wht_applicable %}hidden{% endif %}">
+            <div class="form-group mb-0">
+                <label for="wht_rate" class="form-label">WHT Rate (%)</label>
+                <input type="number" id="wht_rate" name="wht_rate" 
+                       value="{{ profile.wht_rate }}" 
+                       class="form-input {% if errors.wht_rate %}error{% endif %}"
+                       step="0.01" min="0" max="100"
+                       placeholder="5.0" style="max-width: 200px;">
+                {% if errors.wht_rate %}
+                <p class="form-error">{{ errors.wht_rate }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="form-group">
+        <label for="default_tax_rate" class="form-label">Default Tax Rate (%)</label>
+        <p class="form-hint mb-2">This will be applied to new invoices by default</p>
+        <input type="number" id="default_tax_rate" name="default_tax_rate" 
+               value="{{ profile.default_tax_rate }}" 
+               class="form-input {% if errors.default_tax_rate %}error{% endif %}"
+               step="0.01" min="0" max="100"
+               placeholder="0.00" style="max-width: 200px;">
+        {% if errors.default_tax_rate %}
+        <p class="form-error">{{ errors.default_tax_rate }}</p>
+        {% endif %}
+    </div>
+    
+    <div class="flex justify-between items-center mt-8 pt-6 border-t">
+        <a href="{% url 'invoices:onboarding_branding' %}" class="btn-secondary">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+            </svg>
+            Back
+        </a>
+        <button type="submit" class="btn-primary">
+            Continue
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+        </button>
+    </div>
+</form>
+
+<script>
+document.getElementById('vat_registered').addEventListener('change', function() {
+    document.getElementById('vat_fields').classList.toggle('hidden', !this.checked);
+});
+
+document.getElementById('wht_applicable').addEventListener('change', function() {
+    document.getElementById('wht_fields').classList.toggle('hidden', !this.checked);
+});
+</script>
+{% endblock %}

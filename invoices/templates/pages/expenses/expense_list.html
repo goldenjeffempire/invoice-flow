@@ -1,0 +1,218 @@
+{% extends 'base/layout_app.html' %}
+{% load static %}
+
+{% block title %}Expenses - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Expenses</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Track and manage your business spending</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{% url 'invoices:category_list' %}" class="inline-flex items-center px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                Categories
+            </a>
+            <a href="{% url 'invoices:vendor_list' %}" class="inline-flex items-center px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                Vendors
+            </a>
+            <a href="{% url 'invoices:expense_create' %}" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-glow transition-all">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                New Expense
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl text-indigo-600 dark:text-indigo-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Expenses</span>
+                    <span class="text-[10px] text-emerald-500 font-bold mt-1">+12.5% vs last month</span>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ summary.total_amount|default:"0.00" }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending Approval</span>
+                    <span class="text-[10px] text-amber-500 font-bold mt-1">Requires action</span>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ summary.pending_count|default:"0" }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Approved (MTD)</span>
+                    <span class="text-[10px] text-slate-400 font-bold mt-1">Current month</span>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ summary.approved_count|default:"0" }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-all hover:shadow-md">
+            <div class="flex items-center justify-between mb-4">
+                <div class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl text-blue-600 dark:text-blue-400">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Reimbursable</span>
+                    <span class="text-[10px] text-blue-500 font-bold mt-1">To be billed</span>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ summary.billable_unbilled_count|default:"0" }}</p>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div>
+                <select name="status" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">All Statuses</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <select name="category" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if filters.category_id == cat.id|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <input type="date" name="date_from" value="{{ filters.date_from|date:'Y-m-d' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
+                <input type="date" name="date_to" value="{{ filters.date_to|date:'Y-m-d' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div class="flex gap-2">
+                <div class="relative flex-1">
+                    <input type="text" name="search" value="{{ filters.search|default:'' }}" placeholder="Search..." class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm pl-9 focus:ring-indigo-500 focus:border-indigo-500">
+                    <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <button type="submit" class="p-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    {% if expenses %}
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Category</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                        <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                    {% for expense in expenses %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                        <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                            {{ expense.expense_date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-bold text-slate-900 dark:text-white">{{ expense.description }}</div>
+                            <div class="text-xs text-slate-500">{{ expense.vendor.name|default:"No Vendor" }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if expense.category %}
+                            <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium" style="background-color: {{ expense.category.color }}15; color: {{ expense.category.color }};">
+                                <span class="w-1.5 h-1.5 rounded-full" style="background-color: {{ expense.category.color }};"></span>
+                                {{ expense.category.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-xs text-slate-400">Uncategorized</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="text-sm font-bold text-slate-900 dark:text-white">{{ expense.currency }} {{ expense.total_amount }}</div>
+                            {% if expense.is_billable %}
+                            <span class="text-[10px] font-bold text-blue-500 uppercase tracking-tight">Billable</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            {% if expense.status == 'draft' %}
+                                <span class="px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase">Draft</span>
+                            {% elif expense.status == 'pending' %}
+                                <span class="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase">Pending</span>
+                            {% elif expense.status == 'approved' %}
+                                <span class="px-2 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase">Approved</span>
+                            {% elif expense.status == 'rejected' %}
+                                <span class="px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-[10px] font-bold uppercase">Rejected</span>
+                            {% elif expense.status == 'reimbursed' %}
+                                <span class="px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase">Reimbursed</span>
+                            {% elif expense.status == 'billed' %}
+                                <span class="px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase">Billed</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'invoices:expense_detail' expense.id %}" class="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if expenses.has_other_pages %}
+        <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Showing {{ expenses.start_index }}-{{ expenses.end_index }} of {{ expenses.paginator.count }}
+            </p>
+            <div class="flex gap-2">
+                {% if expenses.has_previous %}
+                <a href="?page={{ expenses.previous_page_number }}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 transition-colors">Prev</a>
+                {% endif %}
+                {% if expenses.has_next %}
+                <a href="?page={{ expenses.next_page_number }}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 transition-colors">Next</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="bg-white dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center">
+        <div class="w-16 h-16 bg-slate-50 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-400">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">No expenses found</h3>
+        <p class="text-slate-500 dark:text-slate-400 mb-6">Start tracking your business spending by recording your first expense.</p>
+        <a href="{% url 'invoices:expense_create' %}" class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-glow transition-all">
+            Add Your First Expense
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends 'base/layout_app.html' %}
+{% load static %}
+
+{% block title %}{% if editing %}Edit Vendor{% else %}New Vendor{% endif %} - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{% if editing %}Edit Vendor{% else %}New Vendor{% endif %}</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Manage your supplier and service provider information</p>
+        </div>
+        <a href="{% url 'invoices:vendor_list' %}" class="text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">
+            Back to List
+        </a>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Basic & Contact Info -->
+            <div class="space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Basic Information</h3>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Vendor Name</label>
+                        <input type="text" name="name" value="{{ vendor.name|default:'' }}" required class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="e.g., Amazon Web Services">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Contact Person</label>
+                        <input type="text" name="contact_name" value="{{ vendor.contact_name|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Primary contact name">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email</label>
+                            <input type="email" name="email" value="{{ vendor.email|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="vendor@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Phone</label>
+                            <input type="tel" name="phone" value="{{ vendor.phone|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="+1 (555) 000-0000">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Website</label>
+                        <input type="url" name="website" value="{{ vendor.website|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="https://example.com">
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Financial Settings</h3>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Default Expense Category</label>
+                        <select name="default_category" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                            <option value="">No default category</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}" {% if vendor.default_category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tax ID</label>
+                            <input type="text" name="tax_id" value="{{ vendor.tax_id|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="VAT/Tax Number">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Payment Terms</label>
+                            <input type="text" name="payment_terms" value="{{ vendor.payment_terms|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="e.g., Net 30">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 pt-2">
+                        <input type="checkbox" name="is_active" id="id_is_active" {% if vendor.is_active or not editing %}checked{% endif %} class="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-900">
+                        <label for="id_is_active" class="text-sm font-bold text-slate-700 dark:text-slate-300">Active Vendor</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Address & Notes -->
+            <div class="space-y-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Address</h3>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Street Address</label>
+                        <input type="text" name="address_line1" value="{{ vendor.address_line1|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all mb-2" placeholder="Line 1">
+                        <input type="text" name="address_line2" value="{{ vendor.address_line2|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Line 2 (Optional)">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">City</label>
+                            <input type="text" name="city" value="{{ vendor.city|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">State/Province</label>
+                            <input type="text" name="state" value="{{ vendor.state|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Postal Code</label>
+                            <input type="text" name="postal_code" value="{{ vendor.postal_code|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Country</label>
+                            <input type="text" name="country" value="{{ vendor.country|default:'' }}" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Internal Notes</h3>
+                    <textarea name="notes" rows="4" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Private notes about this vendor...">{{ vendor.notes|default:'' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3 pt-4">
+            <a href="{% if editing %}{% url 'invoices:vendor_detail' vendor.id %}{% else %}{% url 'invoices:vendor_list' %}{% endif %}" class="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 transition-colors">Cancel</a>
+            <button type="submit" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-glow transition-all">
+                {% if editing %}Update Vendor{% else %}Save Vendor{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

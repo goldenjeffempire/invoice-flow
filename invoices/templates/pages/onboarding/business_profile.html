@@ -1,0 +1,144 @@
+{% extends "pages/onboarding/base_onboarding.html" %}
+
+{% block step_content %}
+<div class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Business Profile</h2>
+    <p class="text-gray-600">Tell us about your business. This information will appear on your invoices.</p>
+</div>
+
+<form method="post" action="{% url 'invoices:onboarding_business' %}">
+    {% csrf_token %}
+    
+    {% if errors %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center gap-2 text-red-800 font-medium mb-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Please fix the errors below
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="grid md:grid-cols-2 gap-6">
+        <div class="form-group md:col-span-2">
+            <label for="company_name" class="form-label required">Business / Company Name</label>
+            <input type="text" id="company_name" name="company_name" 
+                   value="{{ profile.company_name }}" 
+                   class="form-input {% if errors.company_name %}error{% endif %}"
+                   placeholder="e.g., Acme Consulting Ltd"
+                   required
+                   aria-describedby="company_name_error">
+            {% if errors.company_name %}
+            <p class="form-error" id="company_name_error">{{ errors.company_name }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="business_type" class="form-label required">Business Type</label>
+            <select id="business_type" name="business_type" 
+                    class="form-input {% if errors.business_type %}error{% endif %}"
+                    required>
+                <option value="">Select your business type</option>
+                {% for code, label in business_types %}
+                <option value="{{ code }}" {% if profile.business_type == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            {% if errors.business_type %}
+            <p class="form-error">{{ errors.business_type }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="region" class="form-label">Region</label>
+            <select id="region" name="region" class="form-input">
+                {% for code, name in regions %}
+                <option value="{{ code }}" {% if profile.region == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+            <p class="form-hint">This sets your default currency and tax rates</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="business_email" class="form-label">Business Email</label>
+            <input type="email" id="business_email" name="business_email" 
+                   value="{{ profile.business_email|default:user.email }}" 
+                   class="form-input {% if errors.business_email %}error{% endif %}"
+                   placeholder="invoices@yourcompany.com">
+            {% if errors.business_email %}
+            <p class="form-error">{{ errors.business_email }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="business_phone" class="form-label">Business Phone</label>
+            <input type="tel" id="business_phone" name="business_phone" 
+                   value="{{ profile.business_phone }}" 
+                   class="form-input"
+                   placeholder="+234 800 123 4567">
+        </div>
+        
+        <div class="form-group md:col-span-2">
+            <label for="business_address" class="form-label">Business Address</label>
+            <textarea id="business_address" name="business_address" 
+                      class="form-input" rows="2"
+                      placeholder="Street address">{{ profile.business_address }}</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="business_city" class="form-label">City</label>
+            <input type="text" id="business_city" name="business_city" 
+                   value="{{ profile.business_city }}" 
+                   class="form-input"
+                   placeholder="Lagos">
+        </div>
+        
+        <div class="form-group">
+            <label for="business_state" class="form-label">State / Region</label>
+            <input type="text" id="business_state" name="business_state" 
+                   value="{{ profile.business_state }}" 
+                   class="form-input"
+                   placeholder="Lagos State">
+        </div>
+        
+        <div class="form-group">
+            <label for="business_country" class="form-label">Country</label>
+            <input type="text" id="business_country" name="business_country" 
+                   value="{{ profile.business_country }}" 
+                   class="form-input"
+                   placeholder="Nigeria">
+        </div>
+        
+        <div class="form-group">
+            <label for="business_postal_code" class="form-label">Postal / ZIP Code</label>
+            <input type="text" id="business_postal_code" name="business_postal_code" 
+                   value="{{ profile.business_postal_code }}" 
+                   class="form-input"
+                   placeholder="100001">
+        </div>
+        
+        <div class="form-group md:col-span-2">
+            <label for="business_website" class="form-label">Website (Optional)</label>
+            <input type="url" id="business_website" name="business_website" 
+                   value="{{ profile.business_website }}" 
+                   class="form-input"
+                   placeholder="https://www.yourcompany.com">
+        </div>
+    </div>
+    
+    <div class="flex justify-between items-center mt-8 pt-6 border-t">
+        <a href="{% url 'invoices:onboarding_welcome' %}" class="btn-secondary">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+            </svg>
+            Back
+        </a>
+        <button type="submit" class="btn-primary">
+            Continue
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+        </button>
+    </div>
+</form>
+{% endblock %}

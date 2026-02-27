@@ -1,0 +1,308 @@
+{% extends 'base/layout_app.html' %}
+{% load static %}
+
+{% block title %}Schedule #{{ schedule.id }} - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="space-y-8 animate-fade-in" x-data="{ cancelModal: false }">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+            <a href="{% url 'invoices:schedule_list' %}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600 transition-colors mb-4">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Back to Schedules
+            </a>
+            <div class="flex items-center gap-3">
+                <h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">{{ schedule.description }}</h1>
+                {% if schedule.status == 'active' %}
+                    <span class="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-100 dark:border-emerald-900/30 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Active
+                    </span>
+                {% elif schedule.status == 'paused' %}
+                    <span class="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-lg border border-amber-100 dark:border-amber-900/30 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        Paused
+                    </span>
+                {% elif schedule.status == 'cancelled' %}
+                    <span class="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold rounded-lg border border-slate-100 dark:border-slate-700 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                        Cancelled
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            {% if schedule.status == 'active' %}
+            <form method="post" action="{% url 'invoices:schedule_pause' schedule.id %}">
+                {% csrf_token %}
+                <button type="submit" class="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 rounded-xl font-bold hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Pause
+                </button>
+            </form>
+            {% elif schedule.status == 'paused' %}
+            <form method="post" action="{% url 'invoices:schedule_resume' schedule.id %}">
+                {% csrf_token %}
+                <button type="submit" class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Resume
+                </button>
+            </form>
+            {% endif %}
+
+            {% if schedule.status != 'cancelled' %}
+            <a href="{% url 'invoices:schedule_edit' schedule.id %}" class="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit
+            </a>
+            <button @click="cancelModal = true" class="flex items-center gap-2 px-4 py-2.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30 rounded-xl font-bold hover:bg-rose-100 dark:hover:bg-rose-900/30 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                Cancel
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Stats & Info -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Pricing Details</p>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <div class="text-3xl font-black text-slate-900 dark:text-white">{{ schedule.currency }} {{ schedule.base_amount }}</div>
+                            <p class="text-sm text-slate-500 mt-1">Every {{ schedule.get_interval_type_display|lower }}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-slate-400">Tax Rate</p>
+                            <p class="text-lg font-bold text-slate-900 dark:text-white">{{ schedule.tax_rate }}%</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Total Value Billed</p>
+                    <div class="flex items-end justify-between">
+                        <div>
+                            <div class="text-3xl font-black text-indigo-600 dark:text-indigo-400">{{ schedule.currency }} {{ schedule.total_amount_billed }}</div>
+                            <p class="text-sm text-slate-500 mt-1">Across {{ schedule.total_invoices_generated }} invoices</p>
+                        </div>
+                        <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Execution History -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Execution History</h3>
+                </div>
+                {% if executions %}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50 dark:bg-slate-800/50">
+                                <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Invoice</th>
+                                <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Amount</th>
+                                <th class="px-6 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            {% for execution in executions %}
+                            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <p class="text-sm font-medium text-slate-900 dark:text-white">{{ execution.executed_at|date:"M d, Y" }}</p>
+                                    <p class="text-[10px] text-slate-500">{{ execution.executed_at|date:"H:i" }}</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if execution.invoice %}
+                                    <a href="{% url 'invoices:invoice_detail' execution.invoice.id %}" class="text-sm font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                        {{ execution.invoice.invoice_number }}
+                                    </a>
+                                    {% else %}
+                                    <span class="text-slate-400">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">
+                                    {{ schedule.currency }} {{ execution.amount_generated }}
+                                    {% if execution.prorated_amount %}<span class="ml-1 text-[10px] text-amber-500 font-bold uppercase tracking-widest">Prorated</span>{% endif %}
+                                </td>
+                                <td class="px-6 py-4">
+                                    {% if execution.status == 'success' %}
+                                        <span class="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-md uppercase tracking-widest">Success</span>
+                                    {% elif execution.status == 'failed' %}
+                                        <span class="px-2 py-0.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 text-[10px] font-bold rounded-md uppercase tracking-widest">Failed</span>
+                                    {% else %}
+                                        <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-bold rounded-md uppercase tracking-widest">{{ execution.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-12 text-center text-slate-500 dark:text-slate-400">
+                    No executions recorded yet.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Activity / Audit Log -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Activity Log</h3>
+                </div>
+                <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for log in audit_logs %}
+                    <div class="p-6">
+                        <div class="flex gap-4">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 {% if log.action == 'created' %}bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600{% elif log.action == 'paused' %}bg-amber-50 dark:bg-amber-900/30 text-amber-600{% elif log.action == 'invoice_generated' %}bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600{% else %}bg-slate-50 dark:bg-slate-800 text-slate-500{% endif %}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    {% if log.action == 'created' %}<path d="M12 4v16m8-8H4"/>
+                                    {% elif log.action == 'paused' %}<path d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    {% elif log.action == 'invoice_generated' %}<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    {% else %}<path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>{% endif %}
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white">{{ log.get_action_display }}</p>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ log.description }}</p>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{{ log.timestamp|date:"M d, H:i" }}</span>
+                                    {% if log.user %}<span class="text-[10px] text-slate-300">•</span><span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{{ log.user.username }}</span>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="p-12 text-center text-slate-500 dark:text-slate-400">
+                        No activity recorded yet.
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Info -->
+        <div class="space-y-8">
+            <!-- Schedule Status -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6">Execution Status</h3>
+                <div class="space-y-6">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-2 tracking-widest">Next Run</p>
+                        {% if schedule.next_run_date and schedule.status == 'active' %}
+                        <div class="flex items-center gap-4">
+                            <div class="p-3 bg-indigo-600 text-white rounded-xl text-center min-w-[60px]">
+                                <p class="text-lg font-black leading-tight">{{ schedule.next_run_date|date:"d" }}</p>
+                                <p class="text-[10px] font-bold uppercase">{{ schedule.next_run_date|date:"M" }}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm font-bold text-slate-900 dark:text-white">
+                                    {% if schedule.days_until_next_run == 0 %}Today{% elif schedule.days_until_next_run == 1 %}Tomorrow{% else %}In {{ schedule.days_until_next_run }} days{% endif %}
+                                </p>
+                                <p class="text-xs text-slate-500">{{ schedule.next_run_date|date:"l, Y" }}</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-sm font-medium text-slate-400 italic">No upcoming run scheduled</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="pt-6 border-t border-slate-100 dark:border-slate-800">
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-3 tracking-widest">Billing Period</p>
+                        <div class="space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500">Started</span>
+                                <span class="font-bold text-slate-900 dark:text-white">{{ schedule.start_date|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500">Ends</span>
+                                <span class="font-bold text-slate-900 dark:text-white">{{ schedule.end_date|default:"Never"|date:"M d, Y" }}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500">Anchor Day</span>
+                                <span class="font-bold text-slate-900 dark:text-white">Day {{ schedule.anchor_day|default:schedule.start_date.day }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Info Card -->
+            <div class="bg-indigo-600 rounded-2xl p-6 text-white shadow-xl shadow-indigo-500/20">
+                <h3 class="text-xs font-bold text-indigo-200 uppercase tracking-wider mb-6">Client Information</h3>
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center font-black text-xl">
+                        {{ schedule.client.name|first|upper }}
+                    </div>
+                    <div>
+                        <p class="font-bold text-lg leading-tight">{{ schedule.client.name }}</p>
+                        <p class="text-indigo-200 text-xs mt-0.5">{{ schedule.client.email }}</p>
+                    </div>
+                </div>
+                <div class="space-y-3 pt-6 border-t border-white/10">
+                    <a href="{% url 'invoices:client_detail' schedule.client.id %}" class="flex items-center justify-between text-sm font-bold text-white hover:text-indigo-100 transition-colors group">
+                        View Client Profile
+                        <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Retry Settings -->
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Auto-Retry Plan</h3>
+                {% if retry_plan.enabled %}
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-500">Max Attempts</span>
+                        <span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md text-xs font-black">{{ retry_plan.max_attempts }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-500">Current Retry</span>
+                        <span class="text-xs font-black">{{ retry_plan.current_retry_count }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-500">Next Retry</span>
+                        <span class="text-xs font-black">{% if retry_plan.next_retry_at %}{{ retry_plan.next_retry_at|date:"M d, H:i" }}{% else %}N/A{% endif %}</span>
+                    </div>
+                    <div class="mt-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-[10px] text-slate-500 leading-relaxed italic">
+                        Retry logic uses exponential backoff to ensure maximum deliverability while preventing server overload.
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-sm font-medium text-slate-400 italic">Auto-retry is disabled for this schedule.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Modal -->
+    <div x-show="cancelModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" x-cloak>
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="cancelModal = false"></div>
+        <div class="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 animate-slide-up">
+            <div class="w-16 h-16 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white text-center mb-2">Cancel Schedule?</h3>
+            <p class="text-slate-500 dark:text-slate-400 text-center text-sm mb-8">This will stop all future invoices from being generated. This action cannot be undone.</p>
+            
+            <form method="post" action="{% url 'invoices:schedule_cancel' schedule.id %}" class="space-y-4">
+                {% csrf_token %}
+                <textarea name="reason" placeholder="Optional: Why are you cancelling?" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500/20 text-sm"></textarea>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" @click="cancelModal = false" class="px-4 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-200 transition-all">Keep Active</button>
+                    <button type="submit" class="px-4 py-3 bg-rose-600 text-white rounded-xl font-bold shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all">Confirm Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

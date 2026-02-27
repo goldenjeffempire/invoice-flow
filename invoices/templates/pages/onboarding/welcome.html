@@ -1,0 +1,75 @@
+{% extends "pages/onboarding/base_onboarding.html" %}
+
+{% block step_content %}
+<div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 mb-6">
+        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/>
+        </svg>
+    </div>
+    <h1 class="text-3xl font-bold text-gray-900 mb-3">Welcome to InvoiceFlow, {{ user.first_name|default:user.username }}!</h1>
+    <p class="text-lg text-gray-600 max-w-xl mx-auto">
+        Let's set up your account in just a few minutes. We'll help you create professional invoices in no time.
+    </p>
+</div>
+
+<form method="post" action="{% url 'invoices:onboarding_welcome' %}">
+    {% csrf_token %}
+    
+    <div class="mb-8">
+        <label class="form-label">Where is your business primarily located?</label>
+        <p class="form-hint mb-4">This helps us set up the right currency, tax rates, and format preferences.</p>
+        
+        <div class="card-grid">
+            {% for code, name in regions %}
+            <label class="selectable-card {% if profile.region == code %}selected{% endif %}">
+                <input type="radio" name="region" value="{{ code }}" {% if profile.region == code %}checked{% endif %}>
+                <div class="text-2xl mb-2">
+                    {% if code == "ng" %}🇳🇬{% elif code == "us" %}🇺🇸{% elif code == "gb" %}🇬🇧{% elif code == "eu" %}🇪🇺{% elif code == "za" %}🇿🇦{% elif code == "gh" %}🇬🇭{% elif code == "ke" %}🇰🇪{% else %}🌍{% endif %}
+                </div>
+                <div class="font-medium text-gray-900">{{ name }}</div>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="bg-indigo-50 rounded-lg p-6 mb-8">
+        <h3 class="font-semibold text-indigo-900 mb-3">What you'll set up:</h3>
+        <ul class="space-y-2 text-indigo-800">
+            <li class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Your business profile and contact details
+            </li>
+            <li class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Brand colors and invoice design
+            </li>
+            <li class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Tax settings (VAT, WHT, etc.)
+            </li>
+            <li class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Payment methods and bank details
+            </li>
+        </ul>
+    </div>
+    
+    <div class="flex justify-end">
+        <button type="submit" class="btn-primary">
+            Let's Get Started
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+        </button>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends "pages/onboarding/base_onboarding.html" %}
+
+{% block step_content %}
+<div class="mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Choose Your Invoice Template</h2>
+    <p class="text-gray-600">Select a template style and customize your invoice numbering.</p>
+</div>
+
+<form method="post" action="{% url 'invoices:onboarding_templates' %}">
+    {% csrf_token %}
+    
+    {% if errors %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div class="flex items-center gap-2 text-red-800 font-medium">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Please fix the errors below
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="mb-8">
+        <label class="form-label">Invoice Template Style</label>
+        <p class="form-hint mb-4">Click to preview and select</p>
+        
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {% for code, label in invoice_styles %}
+            <label class="selectable-card {% if profile.invoice_style == code %}selected{% endif %} p-3">
+                <input type="radio" name="invoice_style" value="{{ code }}" {% if profile.invoice_style == code %}checked{% endif %}>
+                <div class="aspect-[3/4] rounded border-2 border-gray-200 mb-2 overflow-hidden relative"
+                     style="{% if code == 'modern' %}background: linear-gradient(135deg, #6366f1, #8b5cf6);{% elif code == 'classic' %}background: #1f2937;{% elif code == 'minimal' %}background: #ffffff;{% elif code == 'professional' %}background: linear-gradient(to bottom, #1e3a5f, #2563eb);{% elif code == 'bold' %}background: #dc2626;{% endif %}">
+                    <div class="absolute inset-2 {% if code == 'minimal' %}bg-gray-50{% else %}bg-white bg-opacity-90{% endif %} rounded p-2">
+                        <div class="h-2 w-12 {% if code == 'minimal' %}bg-gray-300{% else %}bg-gray-200{% endif %} rounded mb-2"></div>
+                        <div class="h-1 w-8 bg-gray-200 rounded mb-3"></div>
+                        <div class="space-y-1">
+                            <div class="h-1 w-full bg-gray-100 rounded"></div>
+                            <div class="h-1 w-full bg-gray-100 rounded"></div>
+                            <div class="h-1 w-3/4 bg-gray-100 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="font-medium text-gray-900 text-sm">{{ label }}</div>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="border rounded-lg p-6 mb-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Invoice Numbering</h3>
+        
+        <div class="grid md:grid-cols-3 gap-4">
+            <div class="form-group mb-0">
+                <label for="invoice_prefix" class="form-label">Invoice Prefix</label>
+                <input type="text" id="invoice_prefix" name="invoice_prefix" 
+                       value="{{ profile.invoice_prefix }}" 
+                       class="form-input {% if errors.invoice_prefix %}error{% endif %}"
+                       placeholder="INV" maxlength="10">
+                {% if errors.invoice_prefix %}
+                <p class="form-error">{{ errors.invoice_prefix }}</p>
+                {% endif %}
+                <p class="form-hint">Max 10 characters</p>
+            </div>
+            
+            <div class="form-group mb-0">
+                <label for="invoice_start_number" class="form-label">Starting Number</label>
+                <input type="number" id="invoice_start_number" name="invoice_start_number" 
+                       value="{{ profile.invoice_start_number }}" 
+                       class="form-input {% if errors.invoice_start_number %}error{% endif %}"
+                       min="1" placeholder="1">
+                {% if errors.invoice_start_number %}
+                <p class="form-error">{{ errors.invoice_start_number }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="form-group mb-0">
+                <label class="form-label">Preview</label>
+                <div class="form-input bg-gray-50 text-gray-600" id="invoice_preview">
+                    {{ profile.invoice_prefix }}-{{ current_year }}-0001
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="border rounded-lg p-6">
+        <h3 class="font-semibold text-gray-900 mb-4">Currency & Date Format</h3>
+        
+        <div class="grid md:grid-cols-2 gap-4">
+            <div class="form-group mb-0">
+                <label for="default_currency" class="form-label">Default Currency</label>
+                <select id="default_currency" name="default_currency" class="form-input">
+                    {% for code, label in currencies %}
+                    <option value="{{ code }}" {% if profile.default_currency == code %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group mb-0">
+                <label for="date_format" class="form-label">Date Format</label>
+                <select id="date_format" name="date_format" class="form-input">
+                    <option value="DD/MM/YYYY" {% if profile.date_format == "DD/MM/YYYY" %}selected{% endif %}>DD/MM/YYYY (31/12/2026)</option>
+                    <option value="MM/DD/YYYY" {% if profile.date_format == "MM/DD/YYYY" %}selected{% endif %}>MM/DD/YYYY (12/31/2026)</option>
+                    <option value="YYYY-MM-DD" {% if profile.date_format == "YYYY-MM-DD" %}selected{% endif %}>YYYY-MM-DD (2026-12-31)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="flex justify-between items-center mt-8 pt-6 border-t">
+        <a href="{% url 'invoices:onboarding_import' %}" class="btn-secondary">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+            </svg>
+            Back
+        </a>
+        <button type="submit" class="btn-primary">
+            Continue
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+            </svg>
+        </button>
+    </div>
+</form>
+
+<script>
+const prefixInput = document.getElementById('invoice_prefix');
+const startInput = document.getElementById('invoice_start_number');
+const preview = document.getElementById('invoice_preview');
+const year = new Date().getFullYear();
+
+function updatePreview() {
+    const prefix = prefixInput.value.toUpperCase() || 'INV';
+    const start = String(startInput.value || 1).padStart(4, '0');
+    preview.textContent = `${prefix}-${year}-${start}`;
+}
+
+prefixInput.addEventListener('input', updatePreview);
+startInput.addEventListener('input', updatePreview);
+</script>
+{% endblock %}

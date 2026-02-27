@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Select Billable Expenses - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="mb-8">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="flex items-center space-x-2">
+                    <li><a href="{% url 'invoices:invoice_list' %}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">Invoices</a></li>
+                    <li><span class="text-gray-400 dark:text-gray-500">/</span></li>
+                    <li><a href="{% url 'invoices:invoice_detail' invoice.id %}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">{{ invoice.invoice_number }}</a></li>
+                    <li><span class="text-gray-400 dark:text-gray-500">/</span></li>
+                    <li><span class="text-gray-900 dark:text-white">Add Billable Expenses</span></li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Add Billable Expenses to Invoice</h1>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Select expenses to add to invoice {{ invoice.invoice_number }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Invoice for</p>
+                    <p class="text-lg font-medium text-gray-900 dark:text-white">{{ invoice.client.name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" id="expenses-form">
+            {% csrf_token %}
+            
+            {% if billable_expenses %}
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden mb-6">
+                <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">Available Expenses</h2>
+                    <label class="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
+                        <input type="checkbox" id="select-all" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded mr-2">
+                        Select All
+                    </label>
+                </div>
+                <ul class="divide-y divide-gray-200 dark:divide-gray-700" role="list" aria-label="Billable expenses list">
+                    {% for expense in billable_expenses %}
+                    <li class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <label class="flex items-start cursor-pointer">
+                            <input type="checkbox" name="expense_ids" value="{{ expense.id }}" data-amount="{{ expense.billable_amount }}" class="expense-checkbox h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded mt-0.5">
+                            <div class="ml-4 flex-1">
+                                <div class="flex items-start justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ expense.description }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ expense.expense_number }} | {{ expense.expense_date|date:"M d, Y" }}</p>
+                                        {% if expense.category %}
+                                        <p class="mt-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" style="background-color: {{ expense.category.color }}20; color: {{ expense.category.color }};">
+                                                <span class="w-1.5 h-1.5 rounded-full mr-1" style="background-color: {{ expense.category.color }};"></span>
+                                                {{ expense.category.name }}
+                                            </span>
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-right ml-4">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ expense.currency }} {{ expense.billable_amount }}</p>
+                                        {% if expense.markup_percent > 0 %}
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ expense.currency }} {{ expense.total_amount }} + {{ expense.markup_percent }}% markup</p>
+                                        {% endif %}
+                                        {% if expense.project_name %}
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ expense.project_name }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 sticky bottom-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Selected Total</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white" id="selected-total">{{ invoice.currency }} 0.00</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400" id="selected-count">0 expenses selected</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Cancel</a>
+                        <button type="submit" id="submit-btn" disabled class="px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Add to Invoice
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2zM10 8.5a.5.5 0 11-1 0 .5.5 0 011 0zm5 5a.5.5 0 11-1 0 .5.5 0 011 0z"/>
+                </svg>
+                <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No billable expenses available</h3>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">There are no unbilled expenses for {{ invoice.client.name }}.</p>
+                <div class="mt-6 flex justify-center gap-3">
+                    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Back to Invoice
+                    </a>
+                    <a href="{% url 'invoices:expense_create' %}?client={{ invoice.client.id }}&is_billable=true" class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Create Billable Expense
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.expense-checkbox');
+    const selectAllCheckbox = document.getElementById('select-all');
+    const totalElement = document.getElementById('selected-total');
+    const countElement = document.getElementById('selected-count');
+    const submitBtn = document.getElementById('submit-btn');
+    const currency = '{{ invoice.currency }}';
+
+    function updateTotal() {
+        let total = 0;
+        let count = 0;
+        checkboxes.forEach(function(checkbox) {
+            if (checkbox.checked) {
+                total += parseFloat(checkbox.dataset.amount);
+                count++;
+            }
+        });
+        totalElement.textContent = currency + ' ' + total.toFixed(2);
+        countElement.textContent = count + ' expense' + (count !== 1 ? 's' : '') + ' selected';
+        submitBtn.disabled = count === 0;
+    }
+
+    checkboxes.forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            updateTotal();
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = document.querySelectorAll('.expense-checkbox:checked').length === checkboxes.length;
+            }
+        });
+    });
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            updateTotal();
+        });
+    }
+});
+</script>
+{% endblock %}

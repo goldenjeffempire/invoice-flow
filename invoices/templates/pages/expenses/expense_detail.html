@@ -1,0 +1,267 @@
+{% extends 'base/layout_app.html' %}
+{% load static %}
+
+{% block title %}{{ expense.expense_number }} - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-glow">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ expense.expense_number }}</h1>
+                    {% if expense.status == 'draft' %}
+                        <span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider">Draft</span>
+                    {% elif expense.status == 'pending' %}
+                        <span class="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">Pending Approval</span>
+                    {% elif expense.status == 'approved' %}
+                        <span class="px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-wider">Approved</span>
+                    {% elif expense.status == 'rejected' %}
+                        <span class="px-2 py-0.5 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 text-[10px] font-bold uppercase tracking-wider">Rejected</span>
+                    {% elif expense.status == 'reimbursed' %}
+                        <span class="px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider">Reimbursed</span>
+                    {% elif expense.status == 'billed' %}
+                        <span class="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase tracking-wider">Billed</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ expense.expense_date|date:"F d, Y" }}</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if can_edit %}
+            <a href="{% url 'invoices:expense_edit' expense.id %}" class="inline-flex items-center px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-all">
+                Edit Expense
+            </a>
+            {% endif %}
+            
+            {% if can_submit %}
+            <form method="post" action="{% url 'invoices:expense_submit' expense.id %}">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-glow transition-all">
+                    Submit for Approval
+                </button>
+            </form>
+            {% endif %}
+
+            {% if can_approve %}
+            <form method="post" action="{% url 'invoices:expense_approve' expense.id %}" class="flex gap-2">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-glow transition-all">
+                    Approve
+                </button>
+                <button type="button" onclick="document.getElementById('reject-modal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold shadow-glow transition-all">
+                    Reject
+                </button>
+            </form>
+            {% endif %}
+
+            {% if can_reimburse %}
+            <button type="button" onclick="document.getElementById('reimburse-modal').classList.remove('hidden')" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-glow transition-all">
+                Mark Reimbursed
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Info -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="p-8">
+                    <div class="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Description</h3>
+                            <p class="text-xl font-bold text-slate-900 dark:text-white">{{ expense.description }}</p>
+                        </div>
+                        <div class="sm:text-right">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Amount</h3>
+                            <p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ expense.currency }} {{ expense.total_amount }}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                        <div>
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Category</h4>
+                            {% if expense.category %}
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full" style="background-color: {{ expense.category.color }};"></span>
+                                <span class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ expense.category.name }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-sm text-slate-400">Uncategorized</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Vendor</h4>
+                            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ expense.vendor.name|default:"-" }}</span>
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Payment</h4>
+                            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ expense.get_payment_method_display }}</span>
+                        </div>
+                        <div>
+                            <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Billable</h4>
+                            <span class="text-sm font-bold {% if expense.is_billable %}text-blue-500{% else %}text-slate-400{% endif %}">
+                                {{ expense.is_billable|yesno:"Yes,No" }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if expense.notes %}
+                    <div class="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Notes</h4>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{{ expense.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if expense.rejected_reason %}
+            <div class="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-2xl p-6">
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 bg-rose-100 dark:bg-rose-900/50 rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-rose-900 dark:text-rose-300 uppercase tracking-wider mb-1">Rejection Reason</h4>
+                        <p class="text-sm text-rose-700 dark:text-rose-400">{{ expense.rejected_reason }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Activity Log -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="p-6 border-b border-slate-100 dark:border-slate-800">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Activity Log</h3>
+                </div>
+                <div class="p-6">
+                    <div class="flow-root">
+                        <ul class="-mb-8">
+                            {% for log in audit_logs %}
+                            <li class="relative pb-8">
+                                {% if not forloop.last %}
+                                <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-100 dark:bg-slate-800" aria-hidden="true"></span>
+                                {% endif %}
+                                <div class="relative flex space-x-3">
+                                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </div>
+                                    <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
+                                        <div>
+                                            <p class="text-sm font-medium text-slate-900 dark:text-white">
+                                                {{ log.get_action_display }}
+                                                {% if log.user %}<span class="text-slate-500 font-normal">by {{ log.user.get_full_name|default:log.user.username }}</span>{% endif %}
+                                            </p>
+                                            {% if log.description %}
+                                            <p class="text-xs text-slate-500 mt-0.5">{{ log.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="whitespace-nowrap text-right text-xs text-slate-500">
+                                            {{ log.timestamp|date:"M d, H:i" }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Attachments -->
+        <div class="space-y-6">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Receipts</h3>
+                    <span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500">{{ attachments|length }}</span>
+                </div>
+
+                <div class="space-y-4">
+                    {% for attachment in attachments %}
+                    <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl group transition-all border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center text-slate-400 border border-slate-200 dark:border-slate-800">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-slate-900 dark:text-white truncate">{{ attachment.original_file_name }}</p>
+                                <p class="text-[10px] text-slate-500 uppercase">{{ attachment.get_file_type_display }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {% if attachment.file %}
+                            <a href="{{ attachment.file.url }}" target="_blank" class="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </a>
+                            {% endif %}
+                            <form method="post" action="{% url 'invoices:expense_delete_attachment' expense.id attachment.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="p-1.5 text-slate-400 hover:text-rose-600 transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl">
+                        <svg class="w-8 h-8 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                        <p class="text-xs text-slate-400 font-medium">No receipts uploaded</p>
+                    </div>
+                    {% endfor %}
+
+                    <form method="post" action="{% url 'invoices:expense_upload_receipt' expense.id %}" enctype="multipart/form-data" class="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                        {% csrf_token %}
+                        <div class="relative group">
+                            <input type="file" name="receipt" required onchange="this.form.submit()" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <div class="w-full px-4 py-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl text-center text-xs font-bold text-slate-500 group-hover:border-indigo-500/50 group-hover:text-indigo-600 transition-all">
+                                + Add Receipt
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div id="reject-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden">
+        <form method="post" action="{% url 'invoices:expense_reject' expense.id %}">
+            {% csrf_token %}
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Reject Expense</h3>
+                <p class="text-sm text-slate-500 mb-4">Please provide a reason for rejecting this expense.</p>
+                <textarea name="reason" required class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-rose-500 transition-all" rows="4" placeholder="Reason for rejection..."></textarea>
+            </div>
+            <div class="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('reject-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors">Cancel</button>
+                <button type="submit" class="px-6 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-bold shadow-glow transition-all">Reject Expense</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="reimburse-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl w-full max-w-md overflow-hidden">
+        <form method="post" action="{% url 'invoices:expense_reimburse' expense.id %}">
+            {% csrf_token %}
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2">Mark as Reimbursed</h3>
+                <p class="text-sm text-slate-500 mb-4">Confirm this expense has been paid back to the employee.</p>
+                <input type="text" name="reference" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="Payment reference (optional)">
+            </div>
+            <div class="p-6 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('reimburse-modal').classList.add('hidden')" class="px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors">Cancel</button>
+                <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-glow transition-all">Mark Reimbursed</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
