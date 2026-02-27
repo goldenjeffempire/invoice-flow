@@ -1,0 +1,47 @@
+{% extends "base/layout.html" %}
+
+{% block title %}Verify Two-Factor Authentication | InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
+    <div class="max-w-md w-full">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="shield" class="w-8 h-8 text-indigo-600"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900">Two-Factor Verification</h1>
+            <p class="text-slate-600 mt-2">Enter the 6-digit code from your authenticator app.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">Verification Code</label>
+                    <input type="text" name="token" maxlength="6" pattern="[0-9]{6}" required autofocus
+                           class="w-full text-center text-2xl font-bold tracking-widest rounded-xl border border-slate-200 py-4 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           placeholder="000000">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors">
+                    Verify
+                </button>
+            </form>
+
+            <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+                <p class="text-sm text-slate-500">Lost access to your authenticator?</p>
+                <a href="#" class="text-sm font-semibold text-indigo-600 hover:underline">Use a backup code</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base/layout.html" %}
+{% block title %}Tax Settings - InvoiceFlow Setup{% endblock %}
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 transition-colors duration-200">
+    <div class="max-w-3xl mx-auto">
+        {% include "pages/onboarding/_progress.html" %}
+        <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl p-8 border border-slate-100 dark:border-slate-800 mt-8 animate-fade-in-up" x-data="{ vatRegistered: {{ profile.vat_registered|yesno:'true,false' }}, whtApplicable: {{ profile.wht_applicable|yesno:'true,false' }} }">
+            <div class="mb-10 flex items-center gap-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-amber-500/30 transform -rotate-6">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Tax & Compliance</h1>
+                    <p class="text-slate-600 dark:text-slate-400 text-lg">Set up your tax information to ensure compliance</p>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-8">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-[0.2em]">Tax ID Number</label>
+                        <input type="text" name="tax_id_number" value="{{ profile.tax_id_number }}" class="w-full px-4 py-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all dark:text-white" placeholder="e.g., RC 1234567">
+                    </div>
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-[0.2em]">Tax ID Type</label>
+                        <select name="tax_id_type" class="w-full px-4 py-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all dark:text-white appearance-none">
+                            <option value="">Select type...</option>
+                            <option value="TIN" {% if profile.tax_id_type == 'TIN' %}selected{% endif %}>TIN (Tax Identification Number)</option>
+                            <option value="EIN" {% if profile.tax_id_type == 'EIN' %}selected{% endif %}>EIN (Employer ID)</option>
+                            <option value="VAT" {% if profile.tax_id_type == 'VAT' %}selected{% endif %}>VAT Number</option>
+                            <option value="PIN" {% if profile.tax_id_type == 'PIN' %}selected{% endif %}>PIN (Personal ID)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- VAT Section -->
+                    <div class="p-6 rounded-[1.5rem] border-2 transition-all duration-300" :class="vatRegistered ? 'border-indigo-600 bg-indigo-50/50 dark:border-indigo-500 dark:bg-indigo-900/20 shadow-lg shadow-indigo-500/10' : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50'">
+                        <label class="flex items-center gap-5 cursor-pointer">
+                            <div class="relative flex items-center justify-center">
+                                <input type="checkbox" name="vat_registered" x-model="vatRegistered" class="peer sr-only">
+                                <div class="w-12 h-7 bg-slate-200 dark:bg-slate-700 rounded-full peer-checked:bg-indigo-600 transition-colors"></div>
+                                <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow-sm"></div>
+                            </div>
+                            <div>
+                                <span class="font-black text-slate-900 dark:text-white uppercase tracking-wider">VAT/GST Registered</span>
+                                <p class="text-sm text-slate-500">Enable this if you collect value added tax</p>
+                            </div>
+                        </label>
+                        
+                        <div x-show="vatRegistered" x-collapse x-cloak class="mt-8 pt-8 border-t border-indigo-200 dark:border-indigo-800 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest">VAT Number</label>
+                                <input type="text" name="vat_number" value="{{ profile.vat_number }}" class="w-full px-4 py-3 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl dark:text-white focus:border-indigo-500 transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest">Default VAT Rate (%)</label>
+                                <div class="relative">
+                                    <input type="number" name="vat_rate" value="{{ profile.vat_rate }}" step="0.01" class="w-full pl-4 pr-10 py-3 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl dark:text-white focus:border-indigo-500 transition-all">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WHT Section -->
+                    <div class="p-6 rounded-[1.5rem] border-2 transition-all duration-300" :class="whtApplicable ? 'border-indigo-600 bg-indigo-50/50 dark:border-indigo-500 dark:bg-indigo-900/20 shadow-lg shadow-indigo-500/10' : 'border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50'">
+                        <label class="flex items-center gap-5 cursor-pointer">
+                            <div class="relative flex items-center justify-center">
+                                <input type="checkbox" name="wht_applicable" x-model="whtApplicable" class="peer sr-only">
+                                <div class="w-12 h-7 bg-slate-200 dark:bg-slate-700 rounded-full peer-checked:bg-indigo-600 transition-colors"></div>
+                                <div class="absolute left-1 top-1 w-5 h-5 bg-white rounded-full transition-transform peer-checked:translate-x-5 shadow-sm"></div>
+                            </div>
+                            <div>
+                                <span class="font-black text-slate-900 dark:text-white uppercase tracking-wider">WHT Applicable</span>
+                                <p class="text-sm text-slate-500">Withholding Tax deducted by clients</p>
+                            </div>
+                        </label>
+                        
+                        <div x-show="whtApplicable" x-collapse x-cloak class="mt-8 pt-8 border-t border-indigo-200 dark:border-indigo-800">
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest">Default WHT Rate (%)</label>
+                                <div class="relative max-w-[240px]">
+                                    <input type="number" name="wht_rate" value="{{ profile.wht_rate }}" step="0.01" class="w-full pl-4 pr-10 py-3 bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 rounded-xl dark:text-white focus:border-indigo-500 transition-all">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-4 pt-8 border-t border-slate-100 dark:border-slate-800">
+                    <form action="{% url 'invoices:onboarding_go_back' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-bold transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            Back
+                        </button>
+                    </form>
+                    <button type="submit" class="px-10 py-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-xl shadow-indigo-500/25 group flex items-center gap-3">
+                        Continue
+                        <svg class="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    [x-cloak] { display: none !important; }
+    @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+</style>
+{% endblock %}

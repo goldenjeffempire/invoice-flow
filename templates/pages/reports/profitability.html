@@ -1,0 +1,226 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Client Profitability - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'invoices:reports_home' %}" class="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Client Profitability</h1>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ date_range.label }}</p>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0 flex items-center gap-3">
+            <form method="get" class="flex items-center gap-2">
+                <select name="preset" onchange="this.form.submit()" class="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-2">
+                    {% for preset in presets %}
+                    <option value="{{ preset.value }}" {% if preset.value == current_preset %}selected{% endif %}>{{ preset.label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{% url 'invoices:export_report_csv' report_type='profitability' %}?preset={{ current_preset }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Export CSV
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Revenue</p>
+            <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">₦{{ totals.total_revenue|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-1 text-xs text-slate-500">Collected payments</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Expenses</p>
+            <p class="mt-2 text-2xl font-bold text-rose-600 dark:text-rose-400">₦{{ totals.total_expenses|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-1 text-xs text-slate-500">Business costs</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Profit</p>
+            <p class="mt-2 text-2xl font-bold {% if totals.total_profit >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">₦{{ totals.total_profit|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-1 text-xs text-slate-500">Net earnings</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Overall Margin</p>
+            <p class="mt-2 text-2xl font-bold {% if totals.overall_margin >= 0 %}text-blue-600 dark:text-blue-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">{{ totals.overall_margin|default:"0" }}%</p>
+            <p class="mt-1 text-xs text-slate-500">Avg profitability</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Profit Margin Analysis</h2>
+            {% if clients %}
+            <div class="h-64">
+                <canvas id="marginChart"></canvas>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400 text-center py-8">No data available</p>
+            {% endif %}
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Revenue vs Expenses</h2>
+            {% if totals.total_revenue > 0 %}
+            <div class="h-64">
+                <canvas id="revenueVsExpenseChart"></canvas>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400 text-center py-8">No data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const marginCtx = document.getElementById('marginChart');
+            if (marginCtx) {
+                new Chart(marginCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: [{% for client in clients|slice:":10" %}'{{ client.client_name|truncatechars:10 }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                        datasets: [{
+                            label: 'Margin %',
+                            data: [{% for client in clients|slice:":10" %}{{ client.margin|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                            backgroundColor: '#6366f1',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                ticks: { callback: value => value + '%' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            const revExpCtx = document.getElementById('revenueVsExpenseChart');
+            if (revExpCtx) {
+                new Chart(revExpCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Revenue', 'Expenses'],
+                        datasets: [{
+                            data: [{{ totals.total_revenue|default:0 }}, {{ totals.total_expenses|default:0 }}],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+        });
+    </script>
+
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Client Profitability Analysis</h2>
+        </div>
+        {% if clients %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-slate-50 dark:bg-slate-800/50">
+                    <tr>
+                        <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Client</th>
+                        <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Invoiced</th>
+                        <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Collected</th>
+                        <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Expenses</th>
+                        <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Profit</th>
+                        <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Margin</th>
+                        <th class="text-center py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Invoices</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for client in clients %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="py-3 px-6">
+                            <a href="{% url 'invoices:client_detail' client.client_id %}" class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">{{ client.client_name }}</a>
+                        </td>
+                        <td class="py-3 px-6 text-sm text-right text-slate-900 dark:text-white">₦{{ client.total_invoiced|floatformat:2|intcomma }}</td>
+                        <td class="py-3 px-6 text-sm text-right text-emerald-600 dark:text-emerald-400">₦{{ client.total_collected|floatformat:2|intcomma }}</td>
+                        <td class="py-3 px-6 text-sm text-right text-red-600 dark:text-red-400">₦{{ client.total_expenses|floatformat:2|intcomma }}</td>
+                        <td class="py-3 px-6 text-sm text-right font-semibold {% if client.profit >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-red-600 dark:text-red-400{% endif %}">₦{{ client.profit|floatformat:2|intcomma }}</td>
+                        <td class="py-3 px-6 text-sm text-right">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full {% if client.margin >= 20 %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% elif client.margin >= 0 %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% endif %}">
+                                {{ client.margin }}%
+                            </span>
+                        </td>
+                        <td class="py-3 px-6 text-sm text-center text-slate-500">{{ client.invoice_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">No client data for the selected period</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Most Profitable Clients</h2>
+            {% if top_profitable %}
+            <div class="space-y-3">
+                {% for client in top_profitable %}
+                <div class="flex items-center justify-between p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+                    <div>
+                        <p class="text-sm font-medium text-slate-900 dark:text-white">{{ client.client_name }}</p>
+                        <p class="text-xs text-slate-500">{{ client.margin }}% margin</p>
+                    </div>
+                    <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">₦{{ client.profit|floatformat:2|intcomma }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400 text-center py-8">No data available</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Least Profitable Clients</h2>
+            {% if least_profitable %}
+            <div class="space-y-3">
+                {% for client in least_profitable %}
+                <div class="flex items-center justify-between p-3 rounded-lg {% if client.profit < 0 %}bg-red-50 dark:bg-red-900/20{% else %}bg-amber-50 dark:bg-amber-900/20{% endif %}">
+                    <div>
+                        <p class="text-sm font-medium text-slate-900 dark:text-white">{{ client.client_name }}</p>
+                        <p class="text-xs text-slate-500">{{ client.margin }}% margin</p>
+                    </div>
+                    <span class="text-sm font-semibold {% if client.profit < 0 %}text-red-600 dark:text-red-400{% else %}text-amber-600 dark:text-amber-400{% endif %}">₦{{ client.profit|floatformat:2|intcomma }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400 text-center py-8">No data available</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

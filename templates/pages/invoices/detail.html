@@ -1,0 +1,468 @@
+{% extends "base/layout_app.html" %}
+{% block title %}Invoice {{ invoice.invoice_number }} - InvoiceFlow{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="{ 
+    showSendModal: false,
+    showPaymentModal: false,
+    showShareModal: false,
+    showVoidModal: false,
+    copyStatus: 'Copy Link'
+}">
+    <div class="mb-6 flex items-center justify-between">
+        <a href="{% url 'invoices:invoice_list' %}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            Back to Invoices
+        </a>
+    </div>
+
+    <!-- Header Section -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
+        <div class="flex items-start gap-4">
+            <div class="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">{{ invoice.invoice_number }}</h1>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider
+                        {% if invoice.status == 'paid' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+                        {% elif invoice.status == 'draft' %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400
+                        {% elif invoice.status == 'overdue' %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400
+                        {% elif invoice.status == 'part_paid' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+                        {% elif invoice.status == 'viewed' %}bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400
+                        {% elif invoice.status == 'sent' %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400
+                        {% elif invoice.status == 'void' %}bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-500
+                        {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400{% endif %}">
+                        {{ invoice.get_status_display }}
+                    </span>
+                </div>
+                <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">For {{ invoice.client.name }} • Total {{ invoice.currency_symbol }}{{ invoice.total_amount|floatformat:2 }}</p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            <div class="flex bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-1">
+                {% if can_edit %}
+                <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit
+                </a>
+                {% endif %}
+                <a href="{% url 'invoices:invoice_pdf' invoice.id %}" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    PDF
+                </a>
+                <button @click="showShareModal = true" class="inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+                    Share
+                </button>
+            </div>
+            
+            {% if can_send %}
+            <button @click="showSendModal = true" class="inline-flex items-center px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-600/20 text-sm font-bold transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                Send Invoice
+            </button>
+            {% endif %}
+
+            {% if can_record_payment %}
+            <button @click="showPaymentModal = true" class="inline-flex items-center px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-600/20 text-sm font-bold transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                Record Payment
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+        <!-- Main Invoice Display -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <!-- Invoice Header -->
+                <div class="p-8 sm:p-12 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex flex-col md:flex-row justify-between gap-12">
+                        <div class="space-y-6">
+                            {% if invoice.workspace.logo %}
+                            <img src="{{ invoice.workspace.logo.url }}" alt="{{ invoice.workspace.name }}" class="h-16 w-auto">
+                            {% else %}
+                            <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black">
+                                {{ invoice.workspace.name|first|upper }}
+                            </div>
+                            {% endif %}
+                            
+                            <div>
+                                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">From</h3>
+                                <p class="text-lg font-bold text-slate-900 dark:text-white">{{ invoice.workspace.name }}</p>
+                                <p class="text-slate-500 dark:text-slate-400 whitespace-pre-line mt-1">{{ invoice.workspace.address }}</p>
+                            </div>
+                        </div>
+
+                        <div class="md:text-right space-y-6">
+                            <h2 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Invoice</h2>
+                            
+                            <div class="space-y-1">
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Bill To</p>
+                                <p class="text-lg font-bold text-slate-900 dark:text-white">{{ invoice.client.name }}</p>
+                                <p class="text-slate-500 dark:text-slate-400">{{ invoice.client.email }}</p>
+                                <p class="text-slate-500 dark:text-slate-400 whitespace-pre-line mt-1">{{ invoice.client.billing_address }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice Details Bar -->
+                <div class="px-8 sm:px-12 py-6 bg-slate-50 dark:bg-slate-800/50 grid grid-cols-2 md:grid-cols-4 gap-8">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invoice Number</p>
+                        <p class="font-bold text-slate-900 dark:text-white">{{ invoice.invoice_number }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date Issued</p>
+                        <p class="font-bold text-slate-900 dark:text-white">{{ invoice.issue_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Due Date</p>
+                        <p class="font-bold {% if invoice.is_overdue %}text-rose-600{% else %}text-slate-900 dark:text-white{% endif %}">{{ invoice.due_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount Due</p>
+                        <p class="font-black text-indigo-600 dark:text-indigo-400 text-lg">{{ invoice.currency_symbol }}{{ invoice.amount_due|floatformat:2 }}</p>
+                    </div>
+                </div>
+
+                <!-- Line Items -->
+                <div class="p-0 overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-slate-50 dark:bg-slate-800/30 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-y border-slate-100 dark:border-slate-800">
+                            <tr>
+                                <th class="px-8 py-4 text-left">Description</th>
+                                <th class="px-8 py-4 text-right">Qty</th>
+                                <th class="px-8 py-4 text-right">Price</th>
+                                <th class="px-8 py-4 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            {% for item in invoice.items.all %}
+                            <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                <td class="px-8 py-6">
+                                    <p class="font-bold text-slate-900 dark:text-white">{{ item.description }}</p>
+                                    {% if item.long_description %}<p class="text-sm text-slate-500 dark:text-slate-400 mt-1">{{ item.long_description }}</p>{% endif %}
+                                </td>
+                                <td class="px-8 py-6 text-right text-slate-700 dark:text-slate-300 font-medium">{{ item.quantity }}</td>
+                                <td class="px-8 py-6 text-right text-slate-700 dark:text-slate-300 font-medium">{{ invoice.currency_symbol }}{{ item.unit_price|floatformat:2 }}</td>
+                                <td class="px-8 py-6 text-right font-bold text-slate-900 dark:text-white">{{ invoice.currency_symbol }}{{ item.total|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Totals Section -->
+                <div class="p-8 sm:p-12 bg-white dark:bg-slate-900">
+                    <div class="flex justify-end">
+                        <div class="w-full max-w-xs space-y-4">
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="font-bold text-slate-400 uppercase tracking-wider text-xs">Subtotal</span>
+                                <span class="font-bold text-slate-900 dark:text-white">{{ invoice.currency_symbol }}{{ invoice.subtotal|floatformat:2 }}</span>
+                            </div>
+                            {% if invoice.tax_total > 0 %}
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="font-bold text-slate-400 uppercase tracking-wider text-xs">Tax ({{ invoice.default_tax_rate }}%)</span>
+                                <span class="font-bold text-slate-900 dark:text-white">{{ invoice.currency_symbol }}{{ invoice.tax_total|floatformat:2 }}</span>
+                            </div>
+                            {% endif %}
+                            {% if invoice.discount_total > 0 %}
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="font-bold text-emerald-600 uppercase tracking-wider text-xs">Discount</span>
+                                <span class="font-bold text-emerald-600">-{{ invoice.currency_symbol }}{{ invoice.discount_total|floatformat:2 }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="flex justify-between items-center pt-4 border-t-2 border-slate-100 dark:border-slate-800">
+                                <span class="font-black text-slate-900 dark:text-white uppercase tracking-widest text-sm">Total</span>
+                                <span class="text-3xl font-black text-indigo-600 dark:text-indigo-400">{{ invoice.currency_symbol }}{{ invoice.total_amount|floatformat:2 }}</span>
+                            </div>
+                            {% if invoice.amount_paid > 0 %}
+                            <div class="flex justify-between items-center text-sm pt-2">
+                                <span class="font-bold text-emerald-600 uppercase tracking-wider text-xs">Amount Paid</span>
+                                <span class="font-bold text-emerald-600">{{ invoice.currency_symbol }}{{ invoice.amount_paid|floatformat:2 }}</span>
+                            </div>
+                            <div class="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <span class="font-black text-slate-900 dark:text-white uppercase tracking-widest text-sm">Balance Due</span>
+                                <span class="text-xl font-black {% if invoice.is_overdue %}text-rose-600{% else %}text-slate-900 dark:text-white{% endif %}">{{ invoice.currency_symbol }}{{ invoice.amount_due|floatformat:2 }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if invoice.client_memo or invoice.terms_conditions %}
+                <div class="p-8 sm:p-12 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 grid md:grid-cols-2 gap-12">
+                    {% if invoice.client_memo %}
+                    <div>
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Notes</h4>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line">{{ invoice.client_memo }}</p>
+                    </div>
+                    {% endif %}
+                    {% if invoice.terms_conditions %}
+                    <div>
+                        <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Terms & Conditions</h4>
+                        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line">{{ invoice.terms_conditions }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar Actions & Info -->
+        <div class="space-y-8">
+            <!-- Stats Summary -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Invoice Insights
+                </h3>
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Views</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-bold text-slate-900 dark:text-white">{{ invoice.view_count }}</span>
+                            <span class="px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 text-[10px] font-bold">LIVE</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Last Viewed</span>
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">
+                            {% if invoice.last_viewed_at %}{{ invoice.last_viewed_at|timesince }} ago{% else %}Never{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Created By</span>
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Timeline -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-sm border border-slate-200 dark:border-slate-800">
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Activity Log
+                </h3>
+                <div class="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 dark:before:via-slate-800 before:to-transparent">
+                    {% for activity in activities %}
+                    <div class="relative flex items-start gap-4">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 z-10">
+                            {% if activity.action == 'created' %}<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+                            {% elif activity.action == 'sent' %}<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            {% elif activity.action == 'viewed' %}<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            {% elif activity.action == 'payment_received' %}<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                            {% else %}<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{% endif %}
+                        </div>
+                        <div class="pt-1.5 flex flex-col">
+                            <p class="text-sm font-bold text-slate-900 dark:text-white">{{ activity.description }}</p>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{{ activity.timestamp|timesince }} ago</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="bg-rose-50 dark:bg-rose-900/10 rounded-3xl p-6 border border-rose-100 dark:border-rose-900/30">
+                <h3 class="text-sm font-bold text-rose-700 dark:text-rose-400 mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Danger Zone
+                </h3>
+                <div class="space-y-3">
+                    {% if can_void %}
+                    <button @click="showVoidModal = true" class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50 rounded-xl text-xs font-bold hover:bg-rose-600 hover:text-white dark:hover:bg-rose-600 transition-all shadow-sm">
+                        Void Invoice
+                    </button>
+                    {% endif %}
+                    <form method="POST" action="{% url 'invoices:invoice_duplicate' invoice.id %}" class="block">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm">
+                            Duplicate Invoice
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    
+    <!-- Send Email Modal -->
+    <div x-show="showSendModal" class="fixed inset-0 z-[60] overflow-y-auto" x-cloak>
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showSendModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" @click="showSendModal = false"></div>
+            <div x-show="showSendModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block w-full max-w-lg p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-slate-900 shadow-2xl rounded-3xl border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Send Invoice</h3>
+                    <button @click="showSendModal = false" class="text-slate-400 hover:text-slate-500 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <form action="{% url 'invoices:invoice_send' invoice.id %}" method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Recipient Email</label>
+                        <input type="email" name="email" value="{{ invoice.client.email }}" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-indigo-600 dark:text-white font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Subject</label>
+                        <input type="text" name="subject" value="Invoice {{ invoice.invoice_number }} from {{ invoice.workspace.name }}" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-indigo-600 dark:text-white font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Message</label>
+                        <textarea name="message" rows="4" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-indigo-600 dark:text-white font-medium">Hi {{ invoice.client.name }},
+
+Please find attached invoice {{ invoice.invoice_number }} for {{ invoice.currency_symbol }}{{ invoice.total_amount|floatformat:2 }}.
+
+You can view and pay the invoice online here: {{ request.build_absolute_uri }}
+
+Best regards,
+{{ invoice.workspace.name }}</textarea>
+                    </div>
+                    <div class="flex items-center gap-3 pt-4">
+                        <button type="submit" class="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-indigo-600/20 transition-all">
+                            Send Invoice
+                        </button>
+                        <button type="button" @click="showSendModal = false" class="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Payment Modal -->
+    <div x-show="showPaymentModal" class="fixed inset-0 z-[60] overflow-y-auto" x-cloak>
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showPaymentModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" @click="showPaymentModal = false"></div>
+            <div x-show="showPaymentModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block w-full max-w-lg p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-slate-900 shadow-2xl rounded-3xl border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Record Payment</h3>
+                    <button @click="showPaymentModal = false" class="text-slate-400 hover:text-slate-500 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <form action="{% url 'invoices:invoice_record_payment' invoice.id %}" method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Amount ({{ invoice.currency_symbol }})</label>
+                        <input type="number" step="0.01" name="amount" value="{{ invoice.amount_due }}" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-emerald-600 dark:text-white font-black text-2xl">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Payment Date</label>
+                            <input type="date" name="payment_date" value="{{ today|date:'Y-m-d' }}" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-indigo-600 dark:text-white font-medium text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Method</label>
+                            <select name="payment_method" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-indigo-600 dark:text-white font-medium text-sm">
+                                {% for key, label in payment_methods %}
+                                <option value="{{ key }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Reference / Notes</label>
+                        <input type="text" name="reference" placeholder="e.g. Check #123, Bank Transfer ID" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-indigo-600 dark:text-white font-medium">
+                    </div>
+                    <div class="flex items-center gap-3 pt-4">
+                        <button type="submit" class="flex-1 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/20 transition-all">
+                            Record Payment
+                        </button>
+                        <button type="button" @click="showPaymentModal = false" class="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div x-show="showShareModal" class="fixed inset-0 z-[60] overflow-y-auto" x-cloak>
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showShareModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" @click="showShareModal = false"></div>
+            <div x-show="showShareModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block w-full max-w-md p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-slate-900 shadow-2xl rounded-3xl border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Share Invoice</h3>
+                    <button @click="showShareModal = false" class="text-slate-400 hover:text-slate-500 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Share this secure link with your client to view and pay the invoice online.</p>
+                    
+                    <div class="relative">
+                        <input type="text" readonly value="{{ request.scheme }}://{{ request.get_host }}{% url 'invoices:public_invoice' invoice.public_token %}" class="w-full pl-4 pr-32 py-4 bg-slate-50 dark:bg-slate-800 border-0 rounded-2xl focus:ring-2 focus:ring-indigo-600 dark:text-white font-medium text-sm truncate">
+                        <button 
+                            @click="
+                                $el.innerText = 'Copied!'; 
+                                navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}{% url 'invoices:public_invoice' invoice.public_token %}');
+                                setTimeout(() => $el.innerText = 'Copy Link', 2000);
+                            "
+                            class="absolute right-2 top-2 bottom-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all"
+                        >
+                            Copy Link
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 pt-2">
+                        <a href="https://wa.me/?text=Hi, here is your invoice {{ invoice.invoice_number }} for {{ invoice.currency_symbol }}{{ invoice.total_amount }}: {{ request.scheme }}://{{ request.get_host }}{% url 'invoices:public_invoice' invoice.public_token %}" target="_blank" class="flex items-center justify-center gap-2 p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl font-bold text-sm hover:bg-emerald-100 transition-colors">
+                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                            WhatsApp
+                        </a>
+                        <a href="mailto:?subject=Invoice {{ invoice.invoice_number }} from {{ invoice.workspace.name }}&body=Hi, here is your invoice {{ invoice.invoice_number }} for {{ invoice.currency_symbol }}{{ invoice.total_amount }}: {{ request.scheme }}://{{ request.get_host }}{% url 'invoices:public_invoice' invoice.public_token %}" class="flex items-center justify-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl font-bold text-sm hover:bg-blue-100 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            Email
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Void Modal -->
+    <div x-show="showVoidModal" class="fixed inset-0 z-[60] overflow-y-auto" x-cloak>
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showVoidModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 transition-opacity bg-slate-900/60 backdrop-blur-sm" @click="showVoidModal = false"></div>
+            <div x-show="showVoidModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block w-full max-w-md p-8 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-slate-900 shadow-2xl rounded-3xl border border-slate-200 dark:border-slate-800">
+                <div class="flex items-center gap-4 mb-6 text-rose-600">
+                    <div class="p-3 bg-rose-100 dark:bg-rose-900/30 rounded-2xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <h3 class="text-xl font-black uppercase tracking-tighter">Void Invoice</h3>
+                </div>
+
+                <p class="text-slate-500 dark:text-slate-400 mb-8">Are you sure you want to void this invoice? This action cannot be undone and will cancel all outstanding balances.</p>
+
+                <form action="{% url 'invoices:invoice_void' invoice.id %}" method="POST" class="space-y-6">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Reason for Voiding</label>
+                        <textarea name="reason" rows="3" required placeholder="e.g. Duplicate invoice, Customer cancelled" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border-0 rounded-xl focus:ring-2 focus:ring-rose-600 dark:text-white font-medium"></textarea>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="submit" class="flex-1 px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-lg shadow-rose-600/20 transition-all">
+                            Void Invoice
+                        </button>
+                        <button type="button" @click="showVoidModal = false" class="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

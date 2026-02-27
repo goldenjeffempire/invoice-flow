@@ -1,0 +1,190 @@
+{% extends "base/layout.html" %}
+{% block title %}Branding - InvoiceFlow Setup{% endblock %}
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 transition-colors duration-200">
+    <div class="max-w-5xl mx-auto">
+        {% include "pages/onboarding/_progress.html" %}
+        
+        <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl p-8 border border-slate-100 dark:border-slate-800 mt-8 animate-fade-in-up" x-data="brandingSetup()">
+            <div class="mb-10 flex items-center gap-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-purple-500/30 transform rotate-3">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.828 2.828a2 2 0 010 2.828l-8.486 8.486L5 21l1.414-1.414 8.486-8.486z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Design Your Brand</h1>
+                    <p class="text-slate-600 dark:text-slate-400 text-lg">Customize how your invoices look to your clients with a live preview</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-12 items-start">
+                <!-- Form Side -->
+                <div class="space-y-8">
+                    <form method="post" id="branding-form">
+                        {% csrf_token %}
+                        <div class="space-y-8">
+                            <div>
+                                <h3 class="text-xs font-black text-slate-500 dark:text-slate-400 mb-6 uppercase tracking-[0.2em]">Color Palette</h3>
+                                <div class="grid grid-cols-3 gap-6">
+                                    <div class="space-y-3">
+                                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Primary</label>
+                                        <div class="relative group">
+                                            <input type="color" name="primary_color" x-model="primaryColor" class="w-full h-20 rounded-2xl cursor-pointer border-4 border-white dark:border-slate-800 shadow-lg group-hover:scale-105 transition-transform">
+                                            <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-slate-900 text-white text-[8px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity" x-text="primaryColor"></div>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Secondary</label>
+                                        <div class="relative group">
+                                            <input type="color" name="secondary_color" x-model="secondaryColor" class="w-full h-20 rounded-2xl cursor-pointer border-4 border-white dark:border-slate-800 shadow-lg group-hover:scale-105 transition-transform">
+                                            <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-slate-900 text-white text-[8px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity" x-text="secondaryColor"></div>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-3">
+                                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Accent</label>
+                                        <div class="relative group">
+                                            <input type="color" name="accent_color" x-model="accentColor" class="w-full h-20 rounded-2xl cursor-pointer border-4 border-white dark:border-slate-800 shadow-lg group-hover:scale-105 transition-transform">
+                                            <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-slate-900 text-white text-[8px] font-mono rounded opacity-0 group-hover:opacity-100 transition-opacity" x-text="accentColor"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 class="text-xs font-black text-slate-500 dark:text-slate-400 mb-6 uppercase tracking-[0.2em]">Invoice Layout Style</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    {% for code, name in styles %}
+                                    <label class="relative cursor-pointer group">
+                                        <input type="radio" name="invoice_style" value="{{ code }}" x-model="invoiceStyle" class="peer sr-only">
+                                        <div class="p-5 border-2 border-slate-100 dark:border-slate-800 rounded-2xl text-center transition-all peer-checked:border-indigo-600 dark:peer-checked:border-indigo-50/50 dark:peer-checked:bg-indigo-900/20 hover:border-slate-200 dark:hover:border-slate-700 group-hover:shadow-md">
+                                            <span class="text-sm font-bold text-slate-900 dark:text-white" :class="invoiceStyle === '{{ code }}' ? 'text-indigo-600 dark:text-indigo-400' : ''">{{ name }}</span>
+                                        </div>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Preview Side -->
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em]">Live Invoice Preview</h3>
+                        <span class="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold rounded-full uppercase tracking-widest">Real-time</span>
+                    </div>
+                    
+                    <div class="aspect-[3/4] bg-slate-100 dark:bg-slate-950 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-inner overflow-hidden relative group p-6">
+                        <!-- Mini Invoice Mockup -->
+                        <div class="bg-white dark:bg-slate-900 w-full h-full rounded-xl shadow-2xl p-8 overflow-hidden relative" :style="invoiceStyle === 'bold' ? 'border-top: 12px solid ' + primaryColor : 'border-top: 6px solid ' + primaryColor">
+                            <div class="flex justify-between items-start mb-10">
+                                <div>
+                                    <div class="w-12 h-12 rounded-[1rem] flex items-center justify-center text-white font-black text-sm mb-4 transform -rotate-6 shadow-lg" :style="'background: ' + primaryColor">IF</div>
+                                    <div class="space-y-1">
+                                        <div class="h-2 w-24 rounded-full bg-slate-100 dark:bg-slate-800"></div>
+                                        <div class="h-2 w-16 rounded-full bg-slate-50 dark:bg-slate-800/50"></div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <h4 class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-widest mb-1">Invoice</h4>
+                                    <p class="text-[10px] font-mono text-slate-400" :style="'color: ' + secondaryColor">#INV-2024-0001</p>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-end mb-10">
+                                <div class="space-y-2">
+                                    <div class="h-1.5 w-12 rounded-full bg-slate-100 dark:bg-slate-800"></div>
+                                    <div class="h-4 w-32 rounded-lg bg-slate-50 dark:bg-slate-800/50"></div>
+                                    <div class="h-2 w-24 rounded-full bg-slate-50 dark:bg-slate-800/50"></div>
+                                </div>
+                                <div class="text-right space-y-1">
+                                    <div class="h-1.5 w-12 ml-auto rounded-full bg-slate-100 dark:bg-slate-800"></div>
+                                    <div class="h-2 w-16 ml-auto rounded-full bg-slate-50 dark:bg-slate-800/50"></div>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-slate-100 dark:border-slate-800 pt-6">
+                                <table class="w-full mb-8">
+                                    <thead>
+                                        <tr class="text-left">
+                                            <th class="text-[8px] font-black text-slate-400 uppercase tracking-widest pb-4">Description</th>
+                                            <th class="text-[8px] font-black text-slate-400 uppercase tracking-widest pb-4 text-right">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="space-y-4">
+                                        <tr class="border-b border-slate-50 dark:border-slate-800/50">
+                                            <td class="py-3">
+                                                <div class="h-2.5 w-40 rounded-full bg-slate-100 dark:bg-slate-800"></div>
+                                            </td>
+                                            <td class="py-3 text-right">
+                                                <div class="h-2.5 w-16 ml-auto rounded-full bg-slate-100 dark:bg-slate-800"></div>
+                                            </td>
+                                        </tr>
+                                        <tr class="border-b border-slate-50 dark:border-slate-800/50">
+                                            <td class="py-3">
+                                                <div class="h-2.5 w-32 rounded-full bg-slate-100 dark:bg-slate-800"></div>
+                                            </td>
+                                            <td class="py-3 text-right">
+                                                <div class="h-2.5 w-12 ml-auto rounded-full bg-slate-100 dark:bg-slate-800"></div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="flex flex-col items-end gap-3 pt-6 border-t-2 border-slate-50 dark:border-slate-800">
+                                <div class="flex items-center gap-8">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Subtotal</span>
+                                    <div class="h-3 w-20 rounded-lg bg-slate-50 dark:bg-slate-800"></div>
+                                </div>
+                                <div class="flex items-center gap-8">
+                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest" :style="'color: ' + accentColor">Total Due</span>
+                                    <div class="h-6 w-28 rounded-xl bg-slate-900 dark:bg-white" :style="'background: ' + primaryColor"></div>
+                                </div>
+                            </div>
+
+                            <!-- Layout Specific Decorations -->
+                            <div x-show="invoiceStyle === 'modern'" class="absolute right-0 top-0 bottom-0 w-1 opacity-20" :style="'background: ' + secondaryColor"></div>
+                            <div x-show="invoiceStyle === 'minimal'" class="absolute inset-0 border-8 border-slate-50/50 dark:border-slate-800/50 pointer-events-none"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 pt-8 mt-12 border-t border-slate-100 dark:border-slate-800">
+                <form action="{% url 'invoices:onboarding_go_back' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-bold transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        Back
+                    </button>
+                </form>
+                <button type="submit" form="branding-form" class="px-10 py-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-xl shadow-indigo-500/25 group flex items-center gap-3">
+                    Continue
+                    <svg class="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function brandingSetup() {
+    return {
+        primaryColor: '{{ profile.primary_color|default:"#6366f1" }}',
+        secondaryColor: '{{ profile.secondary_color|default:"#8b5cf6" }}',
+        accentColor: '{{ profile.accent_color|default:"#10b981" }}',
+        invoiceStyle: '{{ profile.invoice_style|default:"modern" }}'
+    }
+}
+</script>
+
+<style>
+    @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+</style>
+{% endblock %}

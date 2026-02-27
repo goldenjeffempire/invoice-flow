@@ -1,0 +1,316 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Workspace Settings | InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto" x-data="{ activeTab: 'general' }">
+    <div class="mb-8">
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Workspace Settings</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Manage workspace configuration, team members, and payment methods.</p>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-8">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 flex-shrink-0">
+            <nav class="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+                <a href="{% url 'invoices:settings' %}" 
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Profile
+                </a>
+                <button @click="activeTab = 'general'" 
+                    :class="activeTab === 'general' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'"
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                    </svg>
+                    General
+                </button>
+                <button @click="activeTab = 'team'" 
+                    :class="activeTab === 'team' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'"
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    Team Members
+                </button>
+                <button @click="activeTab = 'payments'" 
+                    :class="activeTab === 'payments' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'"
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                    Payment Methods
+                </button>
+                <a href="{% url 'invoices:security_settings' %}" 
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    Security
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Area -->
+        <div class="flex-1">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <!-- General Settings -->
+                <div x-show="activeTab === 'general'" class="p-6 sm:p-8 space-y-8" x-cloak>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Workspace Configuration</h3>
+                        <p class="text-sm text-slate-500">Configure global settings for this workspace.</p>
+                    </div>
+
+                    <form method="POST" class="space-y-6">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_general">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Workspace Name</label>
+                                <input type="text" name="name" value="{{ workspace.name }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Default Currency</label>
+                                <select name="currency" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                                    <option value="NGN" {% if workspace.currency == 'NGN' %}selected{% endif %}>NGN (₦)</option>
+                                    <option value="USD" {% if workspace.currency == 'USD' %}selected{% endif %}>USD ($)</option>
+                                    <option value="EUR" {% if workspace.currency == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Invoice Prefix</label>
+                                <input type="text" name="invoice_prefix" value="{{ user.profile.invoice_prefix }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Next Invoice Number</label>
+                                <input type="number" name="invoice_start_number" value="{{ user.profile.invoice_start_number }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Default Payment Terms</label>
+                            <textarea name="default_terms" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">{{ user.profile.terms_conditions }}</textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/20">Save Configuration</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Team Management -->
+                <div x-show="activeTab === 'team'" class="p-0 space-y-0" x-cloak>
+                    <div class="p-6 sm:p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Team Members</h3>
+                            <p class="text-sm text-slate-500">Manage who has access to this workspace.</p>
+                        </div>
+                        <button onclick="document.getElementById('inviteModal').classList.remove('hidden')" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-primary-500/20">
+                            + Invite Member
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-slate-50 dark:bg-slate-800/50 text-left border-b border-slate-100 dark:border-slate-800">
+                                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Role</th>
+                                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                {% for member in members %}
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold">
+                                                {{ member.user.username|slice:":1"|upper }}
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-bold text-slate-900 dark:text-white">{{ member.user.get_full_name|default:member.user.username }}</p>
+                                                <p class="text-xs text-slate-500">{{ member.user.email }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg 
+                                            {% if member.role == 'owner' %}bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400
+                                            {% elif member.role == 'admin' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                                            {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400{% endif %}">
+                                            {{ member.get_role_display }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            Active
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        {% if member.user != request.user %}
+                                        <form method="POST" action="{% url 'invoices:remove_member' member.id %}" onsubmit="return confirm('Are you sure you want to remove this member?')" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="p-2 text-slate-400 hover:text-red-600 transition-colors">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                                <!-- Pending Invitations -->
+                                {% for invite in invitations %}
+                                <tr class="bg-slate-50/30 dark:bg-slate-800/10">
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 font-bold">?</div>
+                                            <div>
+                                                <p class="text-sm font-bold text-slate-500">{{ invite.email }}</p>
+                                                <p class="text-xs text-slate-400 italic">Invited by {{ invite.inviter.username }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-500">
+                                            {{ invite.role|title }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                            Pending
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <form method="POST" action="{% url 'invoices:revoke_invitation' invite.id %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-xs font-bold text-slate-400 hover:text-red-600 transition-colors uppercase tracking-wider">Revoke</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Payment Methods -->
+                <div x-show="activeTab === 'payments'" class="p-6 sm:p-8 space-y-8" x-cloak>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Payment Methods</h3>
+                            <p class="text-sm text-slate-500">Configure how you receive payments from clients.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Paystack Card -->
+                        <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                            <div class="flex items-center justify-between mb-6">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-xl bg-[#011b33] flex items-center justify-center">
+                                        <img src="https://paystack.com/favicon.ico" class="w-6 h-6">
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-900 dark:text-white">Paystack Integration</h4>
+                                        <p class="text-xs text-slate-500">Accept card, bank, and mobile money payments.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    {% if user.profile.paystack_enabled %}
+                                    <span class="px-2.5 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] font-bold uppercase rounded-lg">Connected</span>
+                                    {% else %}
+                                    <span class="px-2.5 py-1 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[10px] font-bold uppercase rounded-lg">Disconnected</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <form action="{% url 'invoices:onboarding_payments' %}" method="POST" class="space-y-4">
+                                {% csrf_token %}
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Paystack Secret Key</label>
+                                    <input type="password" name="paystack_secret_key" placeholder="sk_live_..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all font-mono text-sm">
+                                </div>
+                                <div class="flex justify-end">
+                                    <button type="submit" class="px-4 py-2 bg-slate-900 dark:bg-white dark:text-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition-all">Connect Paystack</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Bank Transfer Card -->
+                        <div class="p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+                            <div class="flex items-center gap-4 mb-6">
+                                <div class="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-900 dark:text-white">Bank Transfer Details</h4>
+                                    <p class="text-xs text-slate-500">Provide bank details for offline payments.</p>
+                                </div>
+                            </div>
+                            <form action="{% url 'invoices:onboarding_payments' %}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {% csrf_token %}
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Bank Name</label>
+                                    <input type="text" name="bank_name" value="{{ user.profile.bank_name }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Account Number</label>
+                                    <input type="text" name="bank_account_number" value="{{ user.profile.bank_account_number }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-mono">
+                                </div>
+                                <div class="md:col-span-2 space-y-2">
+                                    <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Account Name</label>
+                                    <input type="text" name="bank_account_name" value="{{ user.profile.bank_account_name }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm">
+                                </div>
+                                <div class="md:col-span-2 flex justify-end">
+                                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white text-sm font-bold rounded-xl hover:bg-primary-700 transition-all">Save Bank Details</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invite Modal (Enhanced) -->
+<div id="inviteModal" class="hidden fixed inset-0 z-[60] overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="document.getElementById('inviteModal').classList.add('hidden')"></div>
+    <div class="flex min-h-full items-center justify-center p-4">
+        <div class="relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 shadow-2xl transition-all">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Invite Team Member</h3>
+                <button onclick="document.getElementById('inviteModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="POST" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="invite">
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Email Address</label>
+                    <input type="email" name="email" required placeholder="colleague@example.com" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Role</label>
+                    <select name="role" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                        <option value="member">Member (Can create invoices)</option>
+                        <option value="admin">Admin (Can manage settings)</option>
+                    </select>
+                </div>
+                <div class="pt-4">
+                    <button type="submit" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/20">
+                        Send Invitation
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% endblock %}

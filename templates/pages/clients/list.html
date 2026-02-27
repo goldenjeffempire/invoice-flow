@@ -1,0 +1,210 @@
+{% extends 'base/layout_app.html' %}
+{% block title %}Clients - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ 
+    viewMode: 'grid',
+    searchQuery: '{{ query|default:'' }}',
+    statusFilter: '{{ status_filter|default:'active' }}'
+}">
+    <!-- Header Area -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Clients</h1>
+            <p class="text-sm text-slate-500 mt-1">Manage your customer relationships and billing history.</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 shadow-inner">
+                <button @click="viewMode = 'grid'" :class="viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600' : 'text-slate-400'" class="p-2 rounded-lg transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                </button>
+                <button @click="viewMode = 'table'" :class="viewMode === 'table' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600' : 'text-slate-400'" class="p-2 rounded-lg transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                </button>
+            </div>
+            <a href="{% url 'invoices:client_create' %}" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-bold hover:bg-primary-700 shadow-glow transition-all active:scale-95">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Add Client
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Clients</p>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">{{ clients|length }}</h3>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Now</p>
+            <h3 class="text-2xl font-black text-emerald-600">{{ clients|length }}</h3>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Invoiced</p>
+            <h3 class="text-2xl font-black text-slate-900 dark:text-white">
+                {% if clients %}
+                    {{ clients.0.currency }}
+                {% else %}
+                    $
+                {% endif %}
+                {% with total=0 %}
+                    {% for c in clients %}
+                        {% with total=total|add:c.total_invoiced %}{% endwith %}
+                    {% endfor %}
+                    {{ total|floatformat:2 }}
+                {% endwith %}
+            </h3>
+        </div>
+        <div class="bg-primary-600 p-6 rounded-2xl shadow-glow text-white">
+            <p class="text-[10px] font-black text-white/70 uppercase tracking-widest mb-1">Outstanding</p>
+            <h3 class="text-2xl font-black">$ {{ total_outstanding|default:"0.00" }}</h3>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-4">
+        <div class="flex-1 relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <form action="{% url 'invoices:client_list' %}" method="GET">
+                <input type="text" name="q" x-model="searchQuery" placeholder="Search by name, email or phone..." class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary-500/20 transition-all">
+            </form>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Status:</span>
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                <a href="?status=active" :class="statusFilter === 'active' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-3 py-1 text-xs font-bold rounded-md transition-all">Active</a>
+                <a href="?status=inactive" :class="statusFilter === 'inactive' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="px-3 py-1 text-xs font-bold rounded-md transition-all">Inactive</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    {% if not clients %}
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 p-20 text-center">
+        <div class="w-24 h-24 bg-primary-50 dark:bg-primary-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg class="w-12 h-12 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <h2 class="text-2xl font-black text-slate-900 dark:text-white mb-2">Build your client list</h2>
+        <p class="text-slate-500 max-w-sm mx-auto mb-8">Start by adding your first client to begin creating professional invoices and tracking payments.</p>
+        <a href="{% url 'invoices:client_create' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-black rounded-2xl hover:bg-primary-700 shadow-glow transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add First Client
+        </a>
+    </div>
+    {% else %}
+
+    <!-- Grid View -->
+    <div x-show="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4">
+        {% for client in clients %}
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4">
+                <div class="relative" x-data="{ open: false }">
+                    <button @click.stop="open = !open" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 relative z-10">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+                    </button>
+                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl ring-1 ring-black/5 z-20 py-1" x-cloak>
+                        <a href="{% url 'invoices:client_detail' client.id %}" class="block px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">View Profile</a>
+                        <a href="{% url 'invoices:client_edit' client.id %}" class="block px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700">Edit Details</a>
+                        <a href="{% url 'invoices:invoice_create' %}?client={{ client.id }}" class="block px-4 py-2 text-sm font-bold text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20">New Invoice</a>
+                        <div class="border-t border-slate-100 dark:border-slate-700 my-1"></div>
+                        <form action="{% url 'invoices:client_delete' client.id %}" method="POST" onsubmit="return confirm('Are you sure you want to delete this client?')">
+                            {% csrf_token %}
+                            <button type="submit" class="block w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">Delete Client</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-14 h-14 rounded-2xl bg-primary-600 flex items-center justify-center text-white text-xl font-black shadow-glow group-hover:scale-110 transition-transform">
+                    {{ client.name|slice:":1"|upper }}
+                </div>
+                <div>
+                    <h3 class="font-black text-slate-900 dark:text-white truncate max-w-[150px]">{{ client.name }}</h3>
+                    <p class="text-xs text-slate-500 truncate max-w-[150px]">{{ client.email }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Invoiced</p>
+                    <p class="text-sm font-black text-slate-900 dark:text-white">{{ client.currency }} {{ client.total_invoiced|floatformat:2 }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Outstanding</p>
+                    <p class="text-sm font-black text-orange-600 dark:text-orange-400">{{ client.currency }} {{ client.outstanding_amount|floatformat:2 }}</p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex items-center justify-between">
+                <div class="flex flex-col">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Last Invoice</p>
+                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300">
+                        {% if client.last_invoice_date %}{{ client.last_invoice_date|date:"M d, Y" }}{% else %}Never{% endif %}
+                    </p>
+                </div>
+                <span class="px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider">Active</span>
+            </div>
+            
+            <a href="{% url 'invoices:client_detail' client.id %}" class="absolute inset-0 z-0"></a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Table View -->
+    <div x-show="viewMode === 'table'" x-cloak class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50 dark:bg-slate-800/50">
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-wider text-slate-500">Client</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-wider text-slate-500">Total Invoiced</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-wider text-slate-500">Outstanding</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-wider text-slate-500">Last Invoice</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-wider text-slate-500">Status</th>
+                    <th class="px-6 py-4 text-[10px] font-black uppercase tracking-wider text-slate-500 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                {% for client in clients %}
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer" onclick="window.location='{% url 'invoices:client_detail' client.id %}'">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center font-black text-sm">
+                                {{ client.name|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <p class="text-sm font-black text-slate-900 dark:text-white">{{ client.name }}</p>
+                                <p class="text-xs text-slate-500">{{ client.email }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ client.currency }} {{ client.total_invoiced|floatformat:2 }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-sm font-black text-orange-600 dark:text-orange-400">{{ client.currency }} {{ client.outstanding_amount|floatformat:2 }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-xs text-slate-500 font-medium">{% if client.last_invoice_date %}{{ client.last_invoice_date|date:"M d, Y" }}{% else %}-{% endif %}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider">Active</span>
+                    </td>
+                    <td class="px-6 py-4 text-right" onclick="event.stopPropagation()">
+                        <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="{% url 'invoices:client_detail' client.id %}" class="p-2 text-slate-400 hover:text-primary-600 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </a>
+                            <a href="{% url 'invoices:client_edit' client.id %}" class="p-2 text-slate-400 hover:text-primary-600 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 00-2 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Setup Two-Factor Authentication | InvoiceFlow{% endblock %}
+
+{% block head %}
+<style>
+  .mfa-card {
+    animation: scaleIn 0.4s ease;
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .token-input {
+    width: 100%;
+    max-width: 200px;
+    padding: 1rem 1.25rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 1rem;
+    background: white;
+    transition: all 0.2s ease;
+  }
+
+  .token-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  }
+
+  .qr-container {
+    display: inline-block;
+    padding: 1rem;
+    background: white;
+    border-radius: 1rem;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  }
+
+  .secret-key {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.8125rem;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+  <div>
+    <div class="flex items-center gap-3 mb-2">
+      <span class="inline-flex items-center px-3 py-1 rounded-full bg-violet-50 text-violet-700 text-xs font-semibold uppercase tracking-wider">
+        <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+        Security
+      </span>
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Two-Factor Authentication</h1>
+    <p class="text-slate-500 mt-1">Add an extra layer of security to your account.</p>
+  </div>
+
+  <div class="mfa-card bg-white rounded-2xl border border-slate-200/60 shadow-soft p-6 sm:p-8 lg:p-10">
+    {% if not mfa_enabled %}
+    <div class="text-center">
+      <div class="w-16 h-16 sm:w-20 sm:h-20 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <svg class="w-8 h-8 sm:w-10 sm:h-10 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      
+      <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-3">Enable Two-Factor Authentication</h2>
+      <p class="text-slate-600 mb-8 max-w-md mx-auto">Scan the QR code below with your authenticator app (Google Authenticator, Authy, Microsoft Authenticator, etc.)</p>
+      
+      {% if qr_code %}
+      <div class="flex justify-center mb-6">
+        <div class="qr-container">
+          <img src="data:image/png;base64,{{ qr_code }}" alt="MFA QR Code" class="rounded-lg w-40 h-40 sm:w-48 sm:h-48">
+        </div>
+      </div>
+      {% endif %}
+      
+      {% if secret_key %}
+      <div class="bg-slate-50 rounded-xl p-4 sm:p-5 mb-8 max-w-md mx-auto">
+        <p class="text-xs text-slate-500 uppercase tracking-wider font-bold mb-2 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+          </svg>
+          Manual Entry Key
+        </p>
+        <code class="secret-key text-slate-900 block">{{ secret_key }}</code>
+        <button onclick="navigator.clipboard.writeText('{{ secret_key }}'); InvoiceFlow.showToast('Key copied!', 'success');" class="mt-3 text-sm text-primary-600 hover:text-primary-700 font-semibold inline-flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+          Copy key
+        </button>
+      </div>
+      {% endif %}
+
+      <form method="post" class="space-y-5 max-w-sm mx-auto">
+        {% csrf_token %}
+        <div>
+          <label for="token" class="block text-sm font-semibold text-slate-700 mb-3">Enter the 6-digit code from your app</label>
+          <input type="text" name="token" id="token" maxlength="6" pattern="[0-9]{6}" required
+                 class="token-input mx-auto block"
+                 placeholder="000000"
+                 inputmode="numeric"
+                 autocomplete="one-time-code">
+        </div>
+        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-500 hover:to-primary-600 shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 transition-all hover:-translate-y-0.5">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+          </svg>
+          Verify & Enable
+        </button>
+      </form>
+    </div>
+    {% else %}
+    <div class="text-center">
+      <div class="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <svg class="w-8 h-8 sm:w-10 sm:h-10 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      
+      <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mb-3">Two-Factor Authentication is Enabled</h2>
+      <p class="text-slate-600 mb-8 max-w-md mx-auto">Your account is protected with an extra layer of security. Make sure to save your backup codes in case you lose access to your authenticator app.</p>
+      
+      <div class="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
+        <a href="{% url 'invoices:mfa_backup_codes' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-100 text-slate-700 font-semibold hover:bg-slate-200 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+          </svg>
+          View Backup Codes
+        </a>
+        <a href="{% url 'invoices:mfa_disable' %}" class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-red-50 text-red-700 font-semibold hover:bg-red-100 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+          </svg>
+          Disable MFA
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 sm:p-6">
+    <div class="flex gap-4">
+      <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div>
+        <h3 class="font-semibold text-amber-900">Important</h3>
+        <p class="text-sm text-amber-800 mt-1">
+          Keep your backup codes in a safe place. If you lose access to your authenticator app and don't have backup codes, you won't be able to access your account.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="pt-4 border-t border-slate-100">
+    <a href="{% url 'invoices:settings' %}" class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 font-medium transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Back to Settings
+    </a>
+  </div>
+</div>
+{% endblock %}

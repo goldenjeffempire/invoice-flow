@@ -1,0 +1,338 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Invoice {{ invoice.invoice_id }} | InvoiceFlow{% endblock %}
+
+{% block head %}
+<style>
+  .invoice-header {
+    animation: fadeInDown 0.5s ease;
+  }
+
+  .invoice-card {
+    animation: fadeIn 0.5s ease 0.1s both;
+  }
+
+  .amount-card {
+    animation: fadeIn 0.5s ease 0.2s both;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .line-item-row {
+    transition: background-color 0.2s ease;
+  }
+
+  .line-item-row:hover {
+    background-color: rgba(59, 130, 246, 0.02);
+  }
+
+  @media print {
+    .no-print { display: none !important; }
+    body { background: white; }
+    .invoice-card { box-shadow: none; border: 1px solid #ddd; }
+  }
+
+  @media (max-width: 640px) {
+    .responsive-table thead { display: none; }
+    .responsive-table tbody tr {
+      display: block;
+      padding: 1rem 0;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .responsive-table tbody td {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border: none;
+    }
+    .responsive-table tbody td::before {
+      content: attr(data-label);
+      font-weight: 600;
+      color: #64748b;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 sm:space-y-8">
+  <div class="invoice-header flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase
+          {% if invoice.status == 'paid' %}bg-emerald-100 text-emerald-700
+          {% elif invoice.status == 'overdue' %}bg-red-100 text-red-700
+          {% else %}bg-amber-100 text-amber-700{% endif %}">
+          <span class="w-1.5 h-1.5 rounded-full
+            {% if invoice.status == 'paid' %}bg-emerald-500
+            {% elif invoice.status == 'overdue' %}bg-red-500
+            {% else %}bg-amber-500{% endif %}"></span>
+          {{ invoice.get_status_display }}
+        </span>
+        <span class="text-slate-400 text-sm font-medium">Invoice #{{ invoice.invoice_id }}</span>
+      </div>
+      <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">{{ invoice.business_name }}</h1>
+    </div>
+    
+    <div class="flex flex-wrap items-center gap-2 sm:gap-3 no-print">
+      <a href="{% url 'invoices:invoice_pdf' invoice.invoice_id %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-slate-800 to-slate-900 text-white text-sm font-semibold shadow-lg hover:from-slate-700 hover:to-slate-800 transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <span class="hidden sm:inline">Download</span> PDF
+      </a>
+      <a href="{% url 'invoices:invoice_edit' invoice.invoice_id %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-700 text-sm font-semibold border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        Edit
+      </a>
+      <button onclick="window.print()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-slate-700 text-sm font-semibold border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all shadow-sm">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+        </svg>
+        <span class="hidden sm:inline">Print</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+    <div class="xl:col-span-2 space-y-6">
+      <div class="invoice-card bg-white rounded-2xl border border-slate-200/60 shadow-soft overflow-hidden">
+        <div class="p-5 sm:p-6 lg:p-8">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+            <div>
+              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 sm:mb-4">Billed To</h4>
+              <p class="font-bold text-slate-900 text-base sm:text-lg">{{ invoice.client_name }}</p>
+              <p class="text-sm text-slate-500 mt-1">{{ invoice.client_email }}</p>
+              {% if invoice.client_phone %}
+              <p class="text-sm text-slate-500">{{ invoice.client_phone }}</p>
+              {% endif %}
+              {% if invoice.client_address %}
+              <p class="text-sm text-slate-500 mt-2 whitespace-pre-line">{{ invoice.client_address }}</p>
+              {% endif %}
+            </div>
+            <div class="sm:text-right">
+              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 sm:mb-4">Invoice Details</h4>
+              <div class="space-y-1.5">
+                <p class="text-sm text-slate-500">
+                  Issued: <span class="text-slate-900 font-medium">{{ invoice.invoice_date|date:"M d, Y" }}</span>
+                </p>
+                <p class="text-sm text-slate-500">
+                  Due: <span class="text-slate-900 font-medium">{{ invoice.due_date|date:"M d, Y" }}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-8 sm:mt-10 -mx-5 sm:-mx-6 lg:-mx-8 px-5 sm:px-6 lg:px-8 py-4 bg-slate-50/50 border-y border-slate-100">
+            <div class="overflow-x-auto -mx-5 sm:-mx-6 lg:-mx-8">
+              <table class="responsive-table w-full min-w-full">
+                <thead class="hidden sm:table-header-group">
+                  <tr class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <th class="text-left pb-3 px-5 sm:px-6 lg:px-8">Description</th>
+                    <th class="text-center pb-3 px-2">Qty</th>
+                    <th class="text-right pb-3 px-2">Price</th>
+                    <th class="text-right pb-3 px-5 sm:px-6 lg:px-8">Total</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 sm:divide-slate-50">
+                  {% for item in invoice.line_items.all %}
+                  <tr class="line-item-row">
+                    <td class="py-3 sm:py-4 px-5 sm:px-6 lg:px-8 text-sm font-medium text-slate-900" data-label="Description">
+                      {{ item.description }}
+                    </td>
+                    <td class="py-3 sm:py-4 px-2 text-sm text-slate-500 text-center" data-label="Quantity">
+                      {{ item.quantity }}
+                    </td>
+                    <td class="py-3 sm:py-4 px-2 text-sm text-slate-500 text-right" data-label="Price">
+                      {{ invoice.currency }} {{ item.unit_price|floatformat:2 }}
+                    </td>
+                    <td class="py-3 sm:py-4 px-5 sm:px-6 lg:px-8 text-sm font-bold text-slate-900 text-right" data-label="Total">
+                      {{ invoice.currency }} {{ item.total|floatformat:2 }}
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="4" class="py-8 text-center text-slate-400">No line items</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {% if invoice.notes %}
+          <div class="mt-6 sm:mt-8">
+            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Notes</h4>
+            <p class="text-sm text-slate-600 whitespace-pre-line">{{ invoice.notes }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6">
+      <div class="amount-card bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl p-5 sm:p-6 text-white shadow-xl shadow-primary-600/20">
+        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider opacity-80">Amount Due</h3>
+        <div class="mt-2 sm:mt-3">
+          <span class="text-2xl sm:text-3xl lg:text-4xl font-extrabold">{{ invoice.currency }} {{ invoice.total|floatformat:2 }}</span>
+        </div>
+        <div class="mt-5 sm:mt-6 pt-5 sm:pt-6 border-t border-white/20 space-y-3">
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">Subtotal</span>
+            <span class="font-semibold">{{ invoice.currency }} {{ invoice.subtotal|floatformat:2 }}</span>
+          </div>
+          {% if invoice.discount and invoice.discount > 0 %}
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">Discount ({{ invoice.discount }}%)</span>
+            <span class="font-semibold">-{{ invoice.currency }} {{ invoice.discount_amount|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">Tax ({{ invoice.tax_rate }}%)</span>
+            <span class="font-semibold">+{{ invoice.currency }} {{ invoice.tax_amount|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+
+      {% if invoice.status != 'paid' %}
+      <div class="bg-white rounded-2xl border border-slate-200/60 shadow-soft p-5 sm:p-6 no-print">
+        <h3 class="font-bold text-slate-900 mb-4">Quick Actions</h3>
+        <div class="space-y-3">
+          <a href="{% url 'invoices:public_invoice' invoice.invoice_id %}" target="_blank" class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-primary-200 hover:bg-primary-50/50 transition-all group">
+            <div class="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center group-hover:bg-primary-200 transition-colors">
+              <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold text-slate-900 text-sm">Payment Link</p>
+              <p class="text-xs text-slate-500 truncate">Share with client</p>
+            </div>
+          </a>
+          
+          <button onclick="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host }}{% url 'invoices:public_invoice' invoice.invoice_id %}'); showToast('Link copied!', 'success');" class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-emerald-200 hover:bg-emerald-50/50 transition-all group w-full text-left">
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+              <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div>
+              <p class="font-semibold text-slate-900 text-sm">Copy Link</p>
+              <p class="text-xs text-slate-500">Copy to clipboard</p>
+            </div>
+          </button>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="bg-slate-50 rounded-2xl p-5 sm:p-6 no-print">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center">
+            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </div>
+          <h3 class="font-bold text-slate-700">Invoice Info</h3>
+        </div>
+        <dl class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <dt class="text-slate-500">Created</dt>
+            <dd class="font-medium text-slate-700">{{ invoice.created_at|date:"M d, Y" }}</dd>
+          </div>
+          <div class="flex justify-between">
+            <dt class="text-slate-500">Last Updated</dt>
+            <dd class="font-medium text-slate-700">{{ invoice.updated_at|date:"M d, Y" }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {% if invoice.status != 'paid' %}
+      <div class="bg-white rounded-2xl border border-slate-200/60 shadow-soft p-5 sm:p-6 no-print">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+              <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-slate-900">Reminders</h3>
+          </div>
+          <form method="post" action="{% url 'invoices:toggle_invoice_reminders' invoice.invoice_id %}">
+            {% csrf_token %}
+            <button type="submit" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 {% if invoice.automated_reminders_enabled %}bg-primary-600{% else %}bg-slate-200{% endif %}" role="switch" aria-checked="{{ invoice.automated_reminders_enabled|yesno:'true,false' }}" aria-label="Toggle automated reminders">
+              <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform {% if invoice.automated_reminders_enabled %}translate-x-6{% else %}translate-x-1{% endif %}"></span>
+            </button>
+          </form>
+        </div>
+
+        <p class="text-sm text-slate-500 mb-4">
+          {% if invoice.automated_reminders_enabled %}
+          Automated reminders are <span class="text-emerald-600 font-medium">enabled</span> for this invoice.
+          {% else %}
+          Automated reminders are <span class="text-slate-600 font-medium">disabled</span> for this invoice.
+          {% endif %}
+        </p>
+
+        {% if scheduled_reminders %}
+        <div class="mb-4">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Scheduled Reminders</h4>
+          <ul class="space-y-2">
+            {% for reminder in scheduled_reminders %}
+            <li class="flex items-center justify-between text-sm p-2 rounded-lg bg-slate-50">
+              <span class="text-slate-700">{{ reminder.scheduled_for|date:"M d, Y H:i" }}</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                {% if reminder.status == 'pending' %}bg-amber-100 text-amber-700
+                {% elif reminder.status == 'sent' %}bg-emerald-100 text-emerald-700
+                {% elif reminder.status == 'failed' %}bg-red-100 text-red-700
+                {% else %}bg-slate-100 text-slate-700{% endif %}">
+                {{ reminder.get_status_display }}
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'invoices:send_manual_reminder' invoice.invoice_id %}">
+          {% csrf_token %}
+          <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50 text-amber-700 text-sm font-semibold border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Send Reminder Now
+          </button>
+        </form>
+
+        {% if not reminder_rules %}
+        <p class="text-xs text-slate-400 mt-3 text-center">
+          <a href="{% url 'invoices:reminder_dashboard' %}" class="text-primary-600 hover:underline">Configure reminder rules</a> in settings.
+        </p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="no-print pt-4 border-t border-slate-100">
+    <a href="{% url 'invoices:invoices_list' %}" class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 font-medium transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      Back to Invoices
+    </a>
+  </div>
+</div>
+{% endblock %}

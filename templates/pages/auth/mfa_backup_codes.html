@@ -1,0 +1,77 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Backup Codes - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-8 animate-fade-in">
+    <div class="text-center">
+        <div class="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-emerald-600">
+            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+            </svg>
+        </div>
+        <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Security Setup Complete!</h1>
+        <p class="mt-2 text-slate-500 dark:text-slate-400">Two-Factor Authentication is now active on your account.</p>
+    </div>
+
+    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-3xl p-8 relative overflow-hidden">
+        <div class="absolute top-0 right-0 p-4 opacity-10">
+            <svg class="w-24 h-24 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div class="relative z-10 flex gap-4">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800 flex items-center justify-center flex-shrink-0 text-amber-600 dark:text-amber-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+                <h4 class="font-bold text-amber-900 dark:text-amber-200">Important: Save these codes now</h4>
+                <p class="text-sm text-amber-800 dark:text-amber-300/80 leading-relaxed mt-1">These recovery codes are the only way to access your account if you lose your phone. They will not be shown again.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            {% for code in recovery_codes %}
+            <div class="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl text-center font-mono text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-800 group hover:border-indigo-500 transition-colors">
+                {{ code }}
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button onclick="copyRecoveryCodes()" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors group">
+                <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                Copy Codes
+            </button>
+            <button onclick="downloadRecoveryCodes()" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors group">
+                <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download .txt
+            </button>
+        </div>
+    </div>
+
+    <div class="text-center pt-4">
+        <a href="{% url 'invoices:security_settings' %}" class="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-12 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]">
+            I've Saved My Codes - Continue
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </a>
+    </div>
+</div>
+
+<script>
+    const codes = [{% for code in recovery_codes %}'{{ code }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+    function copyRecoveryCodes() {
+        navigator.clipboard.writeText(codes.join('\n'));
+        alert('Recovery codes copied to clipboard!');
+    }
+    function downloadRecoveryCodes() {
+        const content = 'InvoiceFlow Recovery Codes\nGenerated on: ' + new Date().toLocaleString() + '\n\n' + codes.join('\n') + '\n\nIMPORTANT: Store these codes in a secure location. They are required if you lose access to your authenticator app.';
+        const blob = new Blob([content], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'invoiceflow-recovery-codes.txt';
+        a.click();
+    }
+</script>
+{% endblock %}

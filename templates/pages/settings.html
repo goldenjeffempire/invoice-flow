@@ -1,0 +1,346 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Settings | InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto" x-data="{ activeTab: 'profile' }">
+    <div class="mb-8">
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h1>
+        <p class="text-slate-500 dark:text-slate-400 mt-1">Manage your personal profile, business details, branding, and notification preferences.</p>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-8">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 flex-shrink-0">
+            <nav class="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+                <button @click="activeTab = 'profile'" 
+                    :class="activeTab === 'profile' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'"
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    Profile
+                </button>
+                <button @click="activeTab = 'business'" 
+                    :class="activeTab === 'business' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'"
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    Business
+                </button>
+                <button @click="activeTab = 'branding'" 
+                    :class="activeTab === 'branding' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'"
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
+                    </svg>
+                    Branding
+                </button>
+                <button @click="activeTab = 'notifications'" 
+                    :class="activeTab === 'notifications' ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm border-slate-200 dark:border-slate-700' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 border-transparent'"
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    Notifications
+                </button>
+                <a href="{% url 'invoices:workspace_settings' %}" 
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    Workspace
+                </a>
+                <a href="{% url 'invoices:security_settings' %}" 
+                    class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl border border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all whitespace-nowrap flex-1 md:flex-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    Security
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Form Area -->
+        <div class="flex-1">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <!-- Profile Tab -->
+                <div x-show="activeTab === 'profile'" class="p-6 sm:p-8 space-y-8" x-cloak>
+                    <div class="flex items-center gap-6">
+                        <div class="relative group">
+                            <div class="w-24 h-24 rounded-2xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400 text-3xl font-bold border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden">
+                                {% if user.profile.company_logo %}
+                                    <img src="{{ user.profile.company_logo.url }}" class="w-full h-full object-cover">
+                                {% else %}
+                                    {{ user.username|first|upper }}
+                                {% endif %}
+                            </div>
+                            <button class="absolute -bottom-2 -right-2 p-2 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-primary-600 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Profile Photo</h3>
+                            <p class="text-sm text-slate-500">Update your avatar and personal details.</p>
+                        </div>
+                    </div>
+
+                    <form action="{% url 'invoices:settings_profile_update' %}" method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {% csrf_token %}
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Full Name</label>
+                            <input type="text" name="full_name" value="{{ user.get_full_name }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Email Address</label>
+                            <input type="email" value="{{ user.email }}" disabled class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-500 cursor-not-allowed">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Timezone</label>
+                            <select name="timezone" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                                <option value="Africa/Lagos" {% if user.profile.timezone == 'Africa/Lagos' %}selected{% endif %}>Africa/Lagos (GMT+1)</option>
+                                <option value="UTC" {% if user.profile.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                                <option value="America/New_York" {% if user.profile.timezone == 'America/New_York' %}selected{% endif %}>New York (EST)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Language</label>
+                            <select name="locale" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                                <option value="en-NG" {% if user.profile.locale == 'en-NG' %}selected{% endif %}>English (Nigeria)</option>
+                                <option value="en-US" {% if user.profile.locale == 'en-US' %}selected{% endif %}>English (US)</option>
+                                <option value="en-GB" {% if user.profile.locale == 'en-GB' %}selected{% endif %}>English (UK)</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2 pt-4 flex justify-end">
+                            <button type="submit" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/20">Save Changes</button>
+                        </div>
+                    </form>
+
+                    <div class="pt-8 border-t border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-slate-900 dark:text-white">Account Security</h4>
+                                <p class="text-sm text-slate-500">Manage your password and two-factor authentication.</p>
+                            </div>
+                            <a href="{% url 'invoices:security' %}" class="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Manage Security</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Tab -->
+                <div x-show="activeTab === 'business'" class="p-6 sm:p-8 space-y-8" x-cloak>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Business Information</h3>
+                        <p class="text-sm text-slate-500">These details will appear on your invoices and estimates.</p>
+                    </div>
+
+                    <form action="{% url 'invoices:onboarding_business' %}" method="POST" class="space-y-6">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Company Name</label>
+                                <input type="text" name="company_name" value="{{ user.profile.company_name }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Business Email</label>
+                                <input type="email" name="business_email" value="{{ user.profile.business_email }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Business Phone</label>
+                                <input type="text" name="business_phone" value="{{ user.profile.business_phone }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Business Type</label>
+                                <select name="business_type" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">
+                                    {% for code, label in user.profile.BUSINESS_TYPE_CHOICES %}
+                                        <option value="{{ code }}" {% if user.profile.business_type == code %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Address</label>
+                            <textarea name="business_address" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all">{{ user.profile.business_address }}</textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/20">Update Business Info</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Branding Tab -->
+                <div x-show="activeTab === 'branding'" class="p-6 sm:p-8 space-y-8" x-cloak>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Branding & Style</h3>
+                        <p class="text-sm text-slate-500">Customize the appearance of your invoices.</p>
+                    </div>
+
+                    <form action="{% url 'invoices:onboarding_branding' %}" method="POST" class="space-y-8">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="space-y-3">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Primary Color</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="color" name="primary_color" value="{{ user.profile.primary_color }}" class="w-12 h-12 rounded-lg cursor-pointer border-none bg-transparent">
+                                    <input type="text" value="{{ user.profile.primary_color }}" class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase" readonly>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Secondary Color</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="color" name="secondary_color" value="{{ user.profile.secondary_color }}" class="w-12 h-12 rounded-lg cursor-pointer border-none bg-transparent">
+                                    <input type="text" value="{{ user.profile.secondary_color }}" class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase" readonly>
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Accent Color</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="color" name="accent_color" value="{{ user.profile.accent_color }}" class="w-12 h-12 rounded-lg cursor-pointer border-none bg-transparent">
+                                    <input type="text" value="{{ user.profile.accent_color }}" class="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 uppercase" readonly>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Invoice Style</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                {% for style, label in user.profile.INVOICE_STYLE_CHOICES %}
+                                <label class="relative cursor-pointer group">
+                                    <input type="radio" name="invoice_style" value="{{ style }}" class="peer sr-only" {% if user.profile.invoice_style == style %}checked{% endif %}>
+                                    <div class="p-4 rounded-xl border-2 border-slate-100 dark:border-slate-800 peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10 transition-all text-center">
+                                        <div class="w-full aspect-[3/4] bg-white dark:bg-slate-800 rounded shadow-sm mb-3 border border-slate-100 dark:border-slate-700 overflow-hidden flex items-center justify-center p-2">
+                                            <!-- Simple Preview Mock -->
+                                            <div class="w-full space-y-1">
+                                                <div class="h-1 bg-slate-200 dark:bg-slate-700 rounded-full w-2/3"></div>
+                                                <div class="h-1 bg-slate-100 dark:bg-slate-700 rounded-full w-full"></div>
+                                                <div class="h-4 bg-primary-100 dark:bg-primary-900/30 rounded mt-2"></div>
+                                                <div class="grid grid-cols-3 gap-1 mt-2">
+                                                    <div class="h-1 bg-slate-100 dark:bg-slate-700 rounded-full"></div>
+                                                    <div class="h-1 bg-slate-100 dark:bg-slate-700 rounded-full"></div>
+                                                    <div class="h-1 bg-slate-100 dark:bg-slate-700 rounded-full"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ label }}</span>
+                                    </div>
+                                    <div class="absolute top-2 right-2 hidden peer-checked:block">
+                                        <div class="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center text-white">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                        </div>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/20">Apply Branding</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Notifications Tab -->
+                <div x-show="activeTab === 'notifications'" class="p-6 sm:p-8 space-y-8" x-cloak>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Email Notifications</h3>
+                        <p class="text-sm text-slate-500">Choose which activities you'd like to be notified about via email.</p>
+                    </div>
+
+                    <form action="{% url 'invoices:settings_notifications_update' %}" method="POST" class="space-y-4">
+                        {% csrf_token %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-900 dark:text-white">Invoice Paid</p>
+                                        <p class="text-xs text-slate-500">When a client pays an invoice</p>
+                                    </div>
+                                </div>
+                                <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none bg-slate-200 dark:bg-slate-700 has-[:checked]:bg-primary-600">
+                                    <input type="checkbox" name="notify_payment_received" value="on" class="sr-only peer" {% if user.profile.notify_payment_received %}checked{% endif %}>
+                                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0 peer-checked:translate-x-5"></span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-900 dark:text-white">Invoice Viewed</p>
+                                        <p class="text-xs text-slate-500">When a client opens an invoice</p>
+                                    </div>
+                                </div>
+                                <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none bg-slate-200 dark:bg-slate-700 has-[:checked]:bg-primary-600">
+                                    <input type="checkbox" name="notify_invoice_viewed" value="on" class="sr-only peer" {% if user.profile.notify_invoice_viewed %}checked{% endif %}>
+                                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0 peer-checked:translate-x-5"></span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-2 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-900 dark:text-white">Overdue Reminders</p>
+                                        <p class="text-xs text-slate-500">Alerts for overdue invoices</p>
+                                    </div>
+                                </div>
+                                <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none bg-slate-200 dark:bg-slate-700 has-[:checked]:bg-primary-600">
+                                    <input type="checkbox" name="notify_invoice_overdue" value="on" class="sr-only peer" {% if user.profile.notify_invoice_overdue %}checked{% endif %}>
+                                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0 peer-checked:translate-x-5"></span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-900 dark:text-white">Weekly Summary</p>
+                                        <p class="text-xs text-slate-500">Weekly financial performance overview</p>
+                                    </div>
+                                </div>
+                                <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none bg-slate-200 dark:bg-slate-700 has-[:checked]:bg-primary-600">
+                                    <input type="checkbox" name="notify_weekly_summary" value="on" class="sr-only peer" {% if user.profile.notify_weekly_summary %}checked{% endif %}>
+                                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0 peer-checked:translate-x-5"></span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group">
+                                <div class="flex items-center gap-4">
+                                    <div class="p-2 rounded-lg bg-slate-50 dark:bg-slate-900/30 text-slate-600 dark:text-slate-400">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-900 dark:text-white">Security Alerts</p>
+                                        <p class="text-xs text-slate-500">Critical account security notifications</p>
+                                    </div>
+                                </div>
+                                <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none bg-slate-200 dark:bg-slate-700 has-[:checked]:bg-primary-600">
+                                    <input type="checkbox" name="notify_security_alerts" value="on" class="sr-only peer" {% if user.profile.notify_security_alerts %}checked{% endif %}>
+                                    <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0 peer-checked:translate-x-5"></span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="flex justify-end pt-4">
+                            <button type="submit" class="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-primary-500/20">Save Notification Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

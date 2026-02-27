@@ -1,0 +1,963 @@
+{% extends "base/layout.html" %}
+{% load static %}
+
+{% block title %}Create Account — InvoiceFlow{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="reg-scene" x-data="signupPage()" x-init="init()">
+
+    <!-- Background mesh -->
+    <div class="reg-bg">
+        <div class="reg-mesh"></div>
+        <div class="reg-blob reg-blob-a"></div>
+        <div class="reg-blob reg-blob-b"></div>
+        <div class="reg-blob reg-blob-c"></div>
+        <div class="reg-lines">
+            {% for i in "123456789" %}
+            <div class="reg-line"></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Top strip -->
+    <header class="reg-header">
+        <a href="{% url 'invoices:home' %}" class="reg-logo">
+            <div class="reg-logo-mark">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+            </div>
+            <span>InvoiceFlow</span>
+        </a>
+        <div class="reg-header-right flex items-center gap-4">
+            <button @click="document.documentElement.classList.toggle('dark')" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors" title="Toggle dark mode">
+                <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9h-1m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14.482 12A2.482 2.482 0 1112 9.518 2.482 2.482 0 0114.482 12z"></path></svg>
+            </button>
+            <span class="reg-header-text">Already have an account?</span>
+            <a href="{% url 'invoices:login' %}" class="reg-header-btn">Sign in</a>
+        </div>
+    </header>
+
+    <!-- Page body -->
+    <main class="reg-body">
+
+        <!-- Left panel — benefits -->
+        <aside class="reg-panel">
+            <div class="reg-panel-inner">
+                <h2 class="reg-panel-title">
+                    Everything you need to<br>
+                    <span class="reg-panel-accent">run your business</span>
+                </h2>
+                <p class="reg-panel-sub">Join thousands of freelancers and businesses who invoice smarter, get paid faster, and grow confidently.</p>
+
+                <ul class="reg-features">
+                    <li class="reg-feature">
+                        <div class="reg-feature-icon reg-feature-icon--purple">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        </div>
+                        <div>
+                            <strong>Professional Invoices</strong>
+                            <p>Create beautiful, branded invoices in seconds with our smart templates.</p>
+                        </div>
+                    </li>
+                    <li class="reg-feature">
+                        <div class="reg-feature-icon reg-feature-icon--blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        </div>
+                        <div>
+                            <strong>Accept Payments Online</strong>
+                            <p>Get paid instantly with Paystack, bank transfer, or card payments.</p>
+                        </div>
+                    </li>
+                    <li class="reg-feature">
+                        <div class="reg-feature-icon reg-feature-icon--teal">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                        </div>
+                        <div>
+                            <strong>Smart Analytics</strong>
+                            <p>Track revenue, expenses, and cash flow with real-time dashboards.</p>
+                        </div>
+                    </li>
+                    <li class="reg-feature">
+                        <div class="reg-feature-icon reg-feature-icon--green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        </div>
+                        <div>
+                            <strong>Automated Reminders</strong>
+                            <p>Never chase payments again — automatic follow-ups for overdue invoices.</p>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="reg-social-proof">
+                    <div class="reg-avatars">
+                        <div class="reg-avatar" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">A</div>
+                        <div class="reg-avatar" style="background: linear-gradient(135deg, #0ea5e9, #06b6d4);">M</div>
+                        <div class="reg-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">S</div>
+                        <div class="reg-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">J</div>
+                    </div>
+                    <div>
+                        <div class="reg-stars">★★★★★</div>
+                        <p class="reg-social-text">Loved by <strong>12,000+</strong> businesses worldwide</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right panel — form -->
+        <section class="reg-form-wrap">
+            <div class="reg-form-card" :class="{ 'reg-form-card--shake': shaking }">
+
+                <!-- Step progress -->
+                <div class="reg-steps">
+                    <div class="reg-step" :class="step >= 1 ? 'reg-step--done' : ''">
+                        <div class="reg-step-dot">
+                            <svg x-show="step > 1" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span x-show="step <= 1">1</span>
+                        </div>
+                        <span>Account</span>
+                    </div>
+                    <div class="reg-step-line" :class="step >= 2 ? 'reg-step-line--done' : ''"></div>
+                    <div class="reg-step" :class="step >= 2 ? 'reg-step--done' : (step === 2 ? 'reg-step--active' : '')">
+                        <div class="reg-step-dot">
+                            <svg x-show="step > 2" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span x-show="step <= 2">2</span>
+                        </div>
+                        <span>Security</span>
+                    </div>
+                    <div class="reg-step-line" :class="step >= 3 ? 'reg-step-line--done' : ''"></div>
+                    <div class="reg-step" :class="step >= 3 ? 'reg-step--active' : ''">
+                        <div class="reg-step-dot"><span>3</span></div>
+                        <span>Done</span>
+                    </div>
+                </div>
+
+                <!-- Heading changes per step -->
+                <div class="reg-form-head">
+                    <h1 x-show="step === 1" x-transition class="reg-form-title">Create your account</h1>
+                    <h1 x-show="step === 2" x-cloak x-transition class="reg-form-title">Secure your account</h1>
+                    <h1 x-show="step === 3" x-cloak x-transition class="reg-form-title">Almost there!</h1>
+                    <p class="reg-form-sub">
+                        <span x-show="step === 1">Start your free InvoiceFlow account. No card needed.</span>
+                        <span x-show="step === 2" x-cloak>Set a strong password to protect your data.</span>
+                        <span x-show="step === 3" x-cloak>Review your details and complete sign-up.</span>
+                    </p>
+                </div>
+
+                <!-- Messages from Django -->
+                {% if messages %}
+                <div class="reg-alerts">
+                    {% for message in messages %}
+                    <div class="reg-alert {% if message.tags == 'error' %}reg-alert--error{% else %}reg-alert--info{% endif %}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                            {% if message.tags == 'error' %}<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>{% else %}<circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>{% endif %}
+                        </svg>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- The actual form (all fields, steps control visibility) -->
+                <form method="post" novalidate @submit.prevent="handleSubmit($el)" class="reg-form" id="signup-form">
+                    {% csrf_token %}
+
+                    <!-- ── STEP 1: Account info ─────────────── -->
+                    <div x-show="step === 1" x-transition class="reg-fields">
+
+                        <!-- Username -->
+                        <div class="reg-field" :class="{ 'reg-field--error': fieldErrors.username, 'reg-field--ok': fieldOk.username }">
+                            <label class="reg-label" for="id_username">
+                                Username
+                                <span class="reg-label-req">*</span>
+                            </label>
+                            <div class="reg-input-wrap">
+                                <svg class="reg-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <input type="text" name="username" id="id_username"
+                                       value="{{ form.username.value|default:'' }}"
+                                       class="reg-input" placeholder="e.g. janedoe" required autofocus
+                                       autocomplete="username"
+                                       x-model="fields.username"
+                                       @input="clearError('username')"
+                                       @blur="validateUsername()">
+                                <div class="reg-input-status">
+                                    <svg x-show="fieldOk.username" x-cloak viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg x-show="fieldErrors.username" x-cloak viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                </div>
+                            </div>
+                            {% if form.username.errors %}<p class="reg-error">{{ form.username.errors.0 }}</p>{% endif %}
+                            <p class="reg-error" x-show="fieldErrors.username" x-text="fieldErrors.username" x-cloak></p>
+                            <p class="reg-hint">3–30 characters, letters, numbers, underscores only</p>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="reg-field" :class="{ 'reg-field--error': fieldErrors.email, 'reg-field--ok': fieldOk.email }">
+                            <label class="reg-label" for="id_email">Work Email <span class="reg-label-req">*</span></label>
+                            <div class="reg-input-wrap">
+                                <svg class="reg-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                                <input type="email" name="email" id="id_email"
+                                       value="{{ form.email.value|default:'' }}"
+                                       class="reg-input" placeholder="you@company.com" required
+                                       autocomplete="email"
+                                       x-model="fields.email"
+                                       @input="clearError('email')"
+                                       @blur="validateEmail()">
+                                <div class="reg-input-status">
+                                    <svg x-show="fieldOk.email" x-cloak viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg x-show="fieldErrors.email" x-cloak viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                </div>
+                            </div>
+                            {% if form.email.errors %}<p class="reg-error">{{ form.email.errors.0 }}</p>{% endif %}
+                            <p class="reg-error" x-show="fieldErrors.email" x-text="fieldErrors.email" x-cloak></p>
+                        </div>
+
+                        <button type="button" class="reg-next-btn" @click="goToStep2()">
+                            Continue
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+
+                    <!-- ── STEP 2: Password ─────────────────── -->
+                    <div x-show="step === 2" x-cloak x-transition class="reg-fields">
+
+                        <!-- Password -->
+                        <div class="reg-field" :class="{ 'reg-field--error': fieldErrors.password }">
+                            <label class="reg-label" for="id_password">Password <span class="reg-label-req">*</span></label>
+                            <div class="reg-input-wrap">
+                                <svg class="reg-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                <input :type="showPwd ? 'text' : 'password'"
+                                       name="password" id="id_password"
+                                       class="reg-input reg-input--pr" placeholder="Create a strong password" required
+                                       autocomplete="new-password"
+                                       x-model="fields.password"
+                                       @input="checkStrength(); clearError('password')">
+                                <button type="button" class="reg-eye-btn" @click="showPwd = !showPwd" tabindex="-1">
+                                    <svg x-show="!showPwd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <svg x-show="showPwd" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}<p class="reg-error">{{ form.password.errors.0 }}</p>{% endif %}
+                            <p class="reg-error" x-show="fieldErrors.password" x-text="fieldErrors.password" x-cloak></p>
+
+                            <!-- Strength meter -->
+                            <div class="reg-strength" x-show="fields.password.length > 0" x-transition>
+                                <div class="reg-strength-bar">
+                                    <div class="reg-strength-bar-inner" :style="'width:' + (strength.score * 20) + '%'" :class="strength.cls"></div>
+                                </div>
+                                <div class="reg-strength-meta">
+                                    <span class="reg-strength-label" :class="strength.textCls" x-text="strength.label"></span>
+                                    <span class="reg-strength-tip" x-text="strength.tip"></span>
+                                </div>
+                            </div>
+
+                            <!-- Requirements checklist -->
+                            <ul class="reg-reqs" x-show="fields.password.length > 0" x-transition>
+                                <li :class="reqs.length ? 'reg-req--ok' : 'reg-req--pending'">
+                                    <svg viewBox="0 0 24 24" fill="none" :stroke="reqs.length ? '#10b981' : '#475569'" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                                    At least 12 characters
+                                </li>
+                                <li :class="reqs.upper ? 'reg-req--ok' : 'reg-req--pending'">
+                                    <svg viewBox="0 0 24 24" fill="none" :stroke="reqs.upper ? '#10b981' : '#475569'" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                                    One uppercase letter
+                                </li>
+                                <li :class="reqs.number ? 'reg-req--ok' : 'reg-req--pending'">
+                                    <svg viewBox="0 0 24 24" fill="none" :stroke="reqs.number ? '#10b981' : '#475569'" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                                    One number
+                                </li>
+                                <li :class="reqs.special ? 'reg-req--ok' : 'reg-req--pending'">
+                                    <svg viewBox="0 0 24 24" fill="none" :stroke="reqs.special ? '#10b981' : '#475569'" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+                                    One special character
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div class="reg-field" :class="{ 'reg-field--error': fieldErrors.confirm_password, 'reg-field--ok': fieldOk.confirm_password }">
+                            <label class="reg-label" for="id_confirm_password">Confirm Password <span class="reg-label-req">*</span></label>
+                            <div class="reg-input-wrap">
+                                <svg class="reg-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                <input type="password" name="confirm_password" id="id_confirm_password"
+                                       class="reg-input" placeholder="Repeat your password" required
+                                       autocomplete="new-password"
+                                       x-model="fields.confirm_password"
+                                       @input="validateConfirm(); clearError('confirm_password')">
+                                <div class="reg-input-status">
+                                    <svg x-show="fieldOk.confirm_password" x-cloak viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg x-show="fieldErrors.confirm_password" x-cloak viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                </div>
+                            </div>
+                            {% if form.confirm_password.errors %}<p class="reg-error">{{ form.confirm_password.errors.0 }}</p>{% endif %}
+                            <p class="reg-error" x-show="fieldErrors.confirm_password" x-text="fieldErrors.confirm_password" x-cloak></p>
+                        </div>
+
+                        <!-- Terms -->
+                        <label class="reg-terms">
+                            <input type="checkbox" name="agree_terms" x-model="fields.agreeTerms" class="reg-chk">
+                            <span class="reg-chk-box">
+                                <svg viewBox="0 0 12 12" fill="none" width="12" height="12"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                            </span>
+                            <span>I agree to the <a href="{% url 'invoices:terms' %}" class="reg-terms-link" target="_blank">Terms of Service</a> and <a href="{% url 'invoices:privacy' %}" class="reg-terms-link" target="_blank">Privacy Policy</a></span>
+                        </label>
+                        <p class="reg-error" x-show="fieldErrors.agreeTerms" x-text="fieldErrors.agreeTerms" x-cloak></p>
+
+                        <div class="reg-btn-row">
+                            <button type="button" class="reg-back-btn" @click="step = 1">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                                Back
+                            </button>
+                            <button type="submit" class="reg-submit-btn" :disabled="submitting">
+                                <span x-show="!submitting" class="reg-btn-inner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" width="18" height="18"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                    Create Account
+                                </span>
+                                <span x-show="submitting" x-cloak class="reg-btn-inner">
+                                    <svg class="reg-spinner" viewBox="0 0 24 24" fill="none" width="18" height="18">
+                                        <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="3"/>
+                                        <path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                                    </svg>
+                                    Creating your account…
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <p class="reg-signin-prompt">Already have an account? <a href="{% url 'invoices:login' %}">Sign in</a></p>
+            </div>
+        </section>
+    </main>
+</div>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Scene ─────────────────────────────────────────── */
+.reg-scene {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+    position: relative;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    color: #0f172a;
+}
+
+/* ── Background ────────────────────────────────────── */
+.reg-bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+
+.reg-mesh {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 80% 50% at 10% 20%, rgba(99,102,241,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 60%);
+}
+
+.reg-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.5;
+}
+.reg-blob-a { width: 600px; height: 300px; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); top: -80px; left: -100px; transform: rotate(-20deg); }
+.reg-blob-b { width: 400px; height: 400px; background: linear-gradient(135deg, #ede9fe, #ddd6fe); bottom: -120px; right: -80px; border-radius: 60% 40% 70% 30% / 50% 60% 40% 60%; }
+.reg-blob-c { width: 200px; height: 200px; background: linear-gradient(135deg, #bae6fd, #7dd3fc); top: 40%; left: 40%; opacity: 0.3; }
+
+.reg-lines { position: absolute; inset: 0; display: flex; gap: 0; }
+.reg-line { flex: 1; border-right: 1px solid rgba(99,102,241,0.04); }
+
+/* ── Header ────────────────────────────────────────── */
+.reg-header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid rgba(99,102,241,0.08);
+    background: rgba(248,250,252,0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.reg-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #0f172a;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+.reg-logo-mark {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 12px rgba(99,102,241,0.35);
+}
+
+.reg-header-right { display: flex; align-items: center; gap: 14px; }
+.reg-header-text { font-size: 14px; color: #64748b; }
+.reg-header-btn {
+    padding: 8px 20px;
+    border: 1.5px solid #6366f1;
+    border-radius: 10px;
+    color: #6366f1;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.reg-header-btn:hover { background: #6366f1; color: white; }
+
+/* ── Body ──────────────────────────────────────────── */
+.reg-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    z-index: 10;
+    min-height: 0;
+}
+
+/* ── Left panel ────────────────────────────────────── */
+.reg-panel {
+    display: flex;
+    align-items: center;
+    padding: 48px 60px;
+    border-right: 1px solid rgba(99,102,241,0.08);
+}
+.reg-panel-inner { max-width: 420px; }
+
+.reg-panel-title {
+    font-size: 38px;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    color: #0f172a;
+    margin-bottom: 16px;
+}
+.reg-panel-accent { 
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.reg-panel-sub {
+    font-size: 15px;
+    color: #64748b;
+    line-height: 1.7;
+    margin-bottom: 36px;
+}
+
+.reg-features { list-style: none; display: flex; flex-direction: column; gap: 20px; margin-bottom: 40px; }
+
+.reg-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+.reg-feature-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.reg-feature-icon--purple { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #7c3aed; }
+.reg-feature-icon--blue   { background: linear-gradient(135deg, #e0f2fe, #bae6fd); color: #0284c7; }
+.reg-feature-icon--teal   { background: linear-gradient(135deg, #ccfbf1, #99f6e4); color: #0d9488; }
+.reg-feature-icon--green  { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #16a34a; }
+
+.reg-feature > div { flex: 1; }
+.reg-feature strong { font-size: 14px; font-weight: 700; color: #0f172a; display: block; margin-bottom: 3px; }
+.reg-feature p { font-size: 13px; color: #64748b; line-height: 1.5; }
+
+.reg-social-proof {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+.reg-avatars { display: flex; }
+.reg-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800; color: white;
+    border: 2.5px solid white;
+    margin-left: -8px;
+}
+.reg-avatars > .reg-avatar:first-child { margin-left: 0; }
+.reg-stars { color: #f59e0b; font-size: 13px; letter-spacing: 1px; margin-bottom: 2px; }
+.reg-social-text { font-size: 12px; color: #64748b; }
+.reg-social-text strong { color: #0f172a; }
+
+/* ── Right: form section ───────────────────────────── */
+.reg-form-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 48px;
+}
+
+.reg-form-card {
+    width: 100%;
+    max-width: 440px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 36px 32px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+    animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+}
+.reg-form-card--shake { animation: cardShake 0.4s ease-in-out; }
+@keyframes cardShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-7px); }
+    40% { transform: translateX(7px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+/* ── Steps ─────────────────────────────────────────── */
+.reg-steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 28px;
+}
+.reg-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+.reg-step-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: 2px solid #e2e8f0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800;
+    color: #94a3b8;
+    transition: all 0.3s;
+}
+.reg-step span { font-size: 11px; color: #94a3b8; font-weight: 600; }
+.reg-step--done .reg-step-dot { background: #6366f1; border-color: #6366f1; color: white; }
+.reg-step--done span  { color: #6366f1; }
+.reg-step--active .reg-step-dot { background: white; border-color: #6366f1; color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+.reg-step--active span { color: #6366f1; font-weight: 700; }
+
+.reg-step-line {
+    flex: 1;
+    height: 2px;
+    background: #e2e8f0;
+    margin: 0 8px;
+    margin-bottom: 20px;
+    border-radius: 2px;
+    transition: background 0.3s;
+}
+.reg-step-line--done { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+
+/* ── Form head ─────────────────────────────────────── */
+.reg-form-head { margin-bottom: 24px; }
+.reg-form-title { font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 6px; }
+.reg-form-sub { font-size: 14px; color: #64748b; }
+
+/* ── Alerts ────────────────────────────────────────── */
+.reg-alerts { margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
+.reg-alert {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px; font-weight: 500;
+    animation: alertIn 0.25s ease;
+}
+@keyframes alertIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform: none; } }
+.reg-alert--error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+.reg-alert--info  { background: #eef2ff; border: 1px solid #c7d2fe; color: #4338ca; }
+
+/* ── Form ──────────────────────────────────────────── */
+.reg-form { display: flex; flex-direction: column; }
+.reg-fields { display: flex; flex-direction: column; gap: 18px; }
+
+/* ── Field ─────────────────────────────────────────── */
+.reg-field { display: flex; flex-direction: column; gap: 5px; }
+
+.reg-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+.reg-label-req { color: #ef4444; font-size: 15px; line-height: 1; }
+
+.reg-input-wrap { position: relative; display: flex; align-items: center; }
+
+.reg-input-icon {
+    position: absolute;
+    left: 13px;
+    color: #9ca3af;
+    pointer-events: none;
+    transition: color 0.2s;
+}
+.reg-field--error .reg-input-icon { color: #f87171; }
+.reg-field--ok .reg-input-icon { color: #10b981; }
+
+.reg-input {
+    width: 100%;
+    padding: 12px 13px 12px 42px;
+    background: #f9fafb;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.2s;
+}
+.reg-input::placeholder { color: #9ca3af; }
+.reg-input:focus {
+    border-color: #6366f1;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+.reg-field--error .reg-input {
+    border-color: #f87171;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.08);
+}
+.reg-field--ok .reg-input { border-color: #10b981; }
+.reg-input--pr { padding-right: 44px; }
+
+.reg-input-status {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+}
+.reg-eye-btn {
+    position: absolute;
+    right: 12px;
+    background: none; border: none; cursor: pointer;
+    color: #9ca3af; padding: 4px;
+    display: flex; align-items: center;
+    transition: color 0.2s;
+}
+.reg-eye-btn:hover { color: #6b7280; }
+
+.reg-error {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ef4444;
+    animation: alertIn 0.2s ease;
+}
+.reg-hint { font-size: 11px; color: #9ca3af; }
+
+/* ── Password strength ─────────────────────────────── */
+.reg-strength { margin-top: 6px; }
+.reg-strength-bar {
+    height: 4px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.reg-strength-bar-inner {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease, background 0.3s;
+}
+.s-weak    { background: #ef4444; }
+.s-fair    { background: #f97316; }
+.s-good    { background: #eab308; }
+.s-strong  { background: #22c55e; }
+.s-great   { background: linear-gradient(90deg, #10b981, #059669); }
+
+.reg-strength-meta { display: flex; justify-content: space-between; align-items: center; }
+.reg-strength-label { font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+.t-weak   { color: #ef4444; }
+.t-fair   { color: #f97316; }
+.t-good   { color: #eab308; }
+.t-strong { color: #22c55e; }
+.t-great  { color: #10b981; }
+.reg-strength-tip { font-size: 11px; color: #9ca3af; }
+
+/* ── Requirements ──────────────────────────────────── */
+.reg-reqs {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    margin-top: 8px;
+}
+.reg-reqs li {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #9ca3af;
+    transition: color 0.2s;
+}
+.reg-req--ok { color: #10b981 !important; }
+.reg-req--pending { color: #9ca3af !important; }
+
+/* ── Terms ─────────────────────────────────────────── */
+.reg-terms {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+}
+.reg-chk { display: none; }
+.reg-chk-box {
+    width: 18px; height: 18px;
+    border-radius: 5px;
+    border: 1.5px solid #d1d5db;
+    background: #f9fafb;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all 0.2s;
+}
+.reg-chk:checked + .reg-chk-box { background: #6366f1; border-color: #6366f1; }
+.reg-chk-box svg { display: none; }
+.reg-chk:checked + .reg-chk-box svg { display: block; }
+.reg-terms-link { color: #6366f1; text-decoration: none; font-weight: 600; }
+.reg-terms-link:hover { text-decoration: underline; }
+
+/* ── Buttons ───────────────────────────────────────── */
+.reg-next-btn {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+    transition: all 0.2s;
+    margin-top: 4px;
+}
+.reg-next-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(99,102,241,0.45); }
+
+.reg-btn-row { display: flex; gap: 10px; margin-top: 4px; }
+
+.reg-back-btn {
+    padding: 13px 18px;
+    background: #f8fafc;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+.reg-back-btn:hover { background: #f1f5f9; color: #374151; }
+
+.reg-submit-btn {
+    flex: 1;
+    padding: 13px;
+    background: linear-gradient(135deg, #6366f1, #7c3aed);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+.reg-submit-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(99,102,241,0.45); }
+.reg-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.reg-btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+.reg-spinner { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Sign-in prompt ────────────────────────────────── */
+.reg-signin-prompt {
+    text-align: center;
+    font-size: 13px;
+    color: #94a3b8;
+    margin-top: 20px;
+}
+.reg-signin-prompt a { color: #6366f1; text-decoration: none; font-weight: 700; }
+.reg-signin-prompt a:hover { text-decoration: underline; }
+
+/* ── Responsive ────────────────────────────────────── */
+@media (max-width: 900px) {
+    .reg-body { grid-template-columns: 1fr; }
+    .reg-panel { display: none; }
+    .reg-form-wrap { padding: 24px 20px; }
+}
+@media (max-width: 480px) {
+    .reg-header { padding: 14px 20px; }
+    .reg-header-text { display: none; }
+    .reg-form-card { padding: 24px 18px; }
+    .reg-reqs { grid-template-columns: 1fr; }
+}
+</style>
+
+<script>
+function signupPage() {
+    return {
+        step: 1,
+        submitting: false,
+        shaking: false,
+        showPwd: false,
+        fields: {
+            username: '{{ form.username.value|default:"" }}',
+            email: '{{ form.email.value|default:"" }}',
+            password: '',
+            confirm_password: '',
+            agreeTerms: false
+        },
+        fieldErrors: {},
+        fieldOk: {},
+        strength: { score: 0, label: '', tip: '', cls: 's-weak', textCls: 't-weak' },
+        reqs: { length: false, upper: false, number: false, special: false },
+
+        init() {
+            // If there are Django server-side errors, go back to step 1
+            {% if form.errors %}
+            this.step = 1;
+            {% endif %}
+        },
+
+        clearError(field) {
+            delete this.fieldErrors[field];
+            delete this.fieldOk[field];
+        },
+
+        validateUsername() {
+            const v = this.fields.username.trim();
+            if (!v) { this.fieldErrors.username = 'Username is required.'; return false; }
+            if (v.length < 3) { this.fieldErrors.username = 'Must be at least 3 characters.'; return false; }
+            if (!/^[a-zA-Z0-9_]+$/.test(v)) { this.fieldErrors.username = 'Letters, numbers, underscores only.'; return false; }
+            this.fieldOk.username = true;
+            return true;
+        },
+
+        validateEmail() {
+            const v = this.fields.email.trim();
+            if (!v) { this.fieldErrors.email = 'Email is required.'; return false; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { this.fieldErrors.email = 'Enter a valid email address.'; return false; }
+            this.fieldOk.email = true;
+            return true;
+        },
+
+        checkStrength() {
+            const p = this.fields.password;
+            this.reqs.length  = p.length >= 12;
+            this.reqs.upper   = /[A-Z]/.test(p);
+            this.reqs.number  = /[0-9]/.test(p);
+            this.reqs.special = /[^A-Za-z0-9]/.test(p);
+
+            let s = 0;
+            if (p.length >= 8)  s++;
+            if (p.length >= 12) s++;
+            if (this.reqs.upper)   s++;
+            if (this.reqs.number)  s++;
+            if (this.reqs.special) s++;
+            s = Math.min(s, 5);
+
+            const map = [
+                { label: 'Weak',      cls: 's-weak',   textCls: 't-weak',   tip: 'Add length & variety' },
+                { label: 'Weak',      cls: 's-weak',   textCls: 't-weak',   tip: 'Add uppercase & numbers' },
+                { label: 'Fair',      cls: 's-fair',   textCls: 't-fair',   tip: 'Add a special character' },
+                { label: 'Good',      cls: 's-good',   textCls: 't-good',   tip: 'Almost there!' },
+                { label: 'Strong',    cls: 's-strong', textCls: 't-strong', tip: 'Looking good!' },
+                { label: 'Excellent', cls: 's-great',  textCls: 't-great',  tip: 'Excellent password!' }
+            ];
+            this.strength = { score: s, ...map[s] };
+        },
+
+        validateConfirm() {
+            if (this.fields.confirm_password && this.fields.password !== this.fields.confirm_password) {
+                this.fieldErrors.confirm_password = 'Passwords do not match.';
+                delete this.fieldOk.confirm_password;
+            } else if (this.fields.confirm_password) {
+                this.fieldOk.confirm_password = true;
+                delete this.fieldErrors.confirm_password;
+            }
+        },
+
+        goToStep2() {
+            const u = this.validateUsername();
+            const e = this.validateEmail();
+            if (!u || !e) {
+                this.shaking = true;
+                setTimeout(() => this.shaking = false, 500);
+                return;
+            }
+            this.step = 2;
+        },
+
+        handleSubmit(form) {
+            let valid = true;
+
+            if (!this.fields.password) {
+                this.fieldErrors.password = 'Password is required.';
+                valid = false;
+            } else if (this.fields.password.length < 8) {
+                this.fieldErrors.password = 'Password must be at least 8 characters.';
+                valid = false;
+            }
+
+            if (this.fields.password !== this.fields.confirm_password) {
+                this.fieldErrors.confirm_password = 'Passwords do not match.';
+                valid = false;
+            }
+
+            if (!this.fields.agreeTerms) {
+                this.fieldErrors.agreeTerms = 'You must accept the terms to continue.';
+                valid = false;
+            }
+
+            if (!valid) {
+                this.shaking = true;
+                setTimeout(() => this.shaking = false, 500);
+                return;
+            }
+
+            this.submitting = true;
+            form.submit();
+        }
+    };
+}
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-2xl mx-auto p-6">
+    <div class="mb-8 flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">Record Offline Payment</h1>
+        <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">&larr; Back to Invoice</a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="p-6 bg-indigo-600 text-white">
+            <h3 class="text-lg font-semibold mb-1">Invoice #{{ invoice.invoice_number }}</h3>
+            <p class="text-indigo-100 text-sm">Customer: {{ invoice.client.name }}</p>
+            <div class="mt-4 flex items-end justify-between">
+                <div>
+                    <p class="text-xs text-indigo-200 uppercase font-bold tracking-wider">Remaining Balance</p>
+                    <p class="text-3xl font-bold">{{ invoice.currency }} {{ invoice.amount_due|floatformat:2 }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs text-indigo-200 uppercase font-bold tracking-wider">Due Date</p>
+                    <p class="font-medium">{{ invoice.due_date|date:"M d, Y" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" class="p-8 space-y-6">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Amount Paid ({{ invoice.currency }})</label>
+                    <div class="relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">{{ invoice.currency_symbol|default:"$" }}</span>
+                        </div>
+                        <input type="number" step="0.01" name="amount" value="{{ invoice.amount_due }}" max="{{ invoice.amount_due }}" 
+                            class="block w-full pl-10 pr-4 py-3 border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg font-bold" required>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Optional Tip</label>
+                    <div class="relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">{{ invoice.currency_symbol|default:"$" }}</span>
+                        </div>
+                        <input type="number" step="0.01" name="tip_amount" value="0.00" 
+                            class="block w-full pl-10 pr-4 py-3 border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-lg" required>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Payment Method</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <label class="relative flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-gray-50 transition peer-checked:border-indigo-600 peer-checked:bg-indigo-50">
+                            <input type="radio" name="method" value="bank_transfer" class="sr-only peer" checked>
+                            <svg class="h-6 w-6 text-gray-600 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                            <span class="text-xs font-bold uppercase">Transfer</span>
+                        </label>
+                        <label class="relative flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="method" value="cash" class="sr-only">
+                            <svg class="h-6 w-6 text-gray-600 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            <span class="text-xs font-bold uppercase">Cash</span>
+                        </label>
+                        <label class="relative flex flex-col items-center justify-center p-4 border rounded-xl cursor-pointer hover:bg-gray-50 transition">
+                            <input type="radio" name="method" value="other" class="sr-only">
+                            <svg class="h-6 w-6 text-gray-600 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                            <span class="text-xs font-bold uppercase">Other</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-gray-700 mb-2">Internal Note</label>
+                    <textarea name="notes" rows="3" class="block w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm" placeholder="e.g. Paid via mobile bank app, transfer ID #12345..."></textarea>
+                </div>
+            </div>
+
+            <div class="pt-6 border-t flex items-center justify-between">
+                <div class="text-xs text-gray-500 max-w-xs">
+                    Recording this payment will automatically update the invoice status and notify the customer if enabled.
+                </div>
+                <button type="submit" class="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 font-bold shadow-md transition-all active:scale-95">
+                    Confirm & Record Payment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

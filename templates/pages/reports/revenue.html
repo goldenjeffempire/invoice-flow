@@ -1,0 +1,243 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Revenue Report - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'invoices:reports_home' %}" class="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Revenue Report</h1>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ date_range.label }} ({{ date_range.start_date|date:"M d, Y" }} - {{ date_range.end_date|date:"M d, Y" }})</p>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0 flex items-center gap-3">
+            <form method="get" class="flex items-center gap-2">
+                <select name="preset" onchange="this.form.submit()" class="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-2">
+                    {% for preset in presets %}
+                    <option value="{{ preset.value }}" {% if preset.value == current_preset %}selected{% endif %}>{{ preset.label }}</option>
+                    {% endfor %}
+                </select>
+                <select name="group_by" onchange="this.form.submit()" class="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-2">
+                    <option value="day" {% if group_by == "day" %}selected{% endif %}>Daily</option>
+                    <option value="week" {% if group_by == "week" %}selected{% endif %}>Weekly</option>
+                    <option value="month" {% if group_by == "month" %}selected{% endif %}>Monthly</option>
+                </select>
+            </form>
+            <a href="{% url 'invoices:export_report_csv' report_type='revenue' %}?preset={{ current_preset }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Export CSV
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Invoiced</p>
+            <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">₦{{ summary.total_invoiced|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-2 text-xs text-slate-500">{{ summary.invoice_count|default:"0" }} invoices total</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Collected</p>
+            <p class="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">₦{{ summary.total_collected|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-2 text-xs text-slate-500">{{ summary.payment_count|default:"0" }} payments received</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Collection Rate</p>
+            <div class="mt-2 flex items-end gap-2">
+                <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ summary.collection_rate|default:"0" }}%</p>
+                <div class="mb-1 h-2 w-24 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500" style="width: {{ summary.collection_rate|default:0 }}%"></div>
+                </div>
+            </div>
+            <p class="mt-2 text-xs text-slate-500">Of total invoiced amount</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Average Invoice</p>
+            <p class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">₦{{ summary.avg_invoice|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-2 text-xs text-slate-500">Value per invoice</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Subtotal</p>
+            <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">₦{{ summary.subtotal|default:"0"|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Tax</p>
+            <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">₦{{ summary.tax_total|default:"0"|floatformat:2|intcomma }}</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Discount</p>
+            <p class="mt-2 text-xl font-bold text-slate-900 dark:text-white">₦{{ summary.discount_total|default:"0"|floatformat:2|intcomma }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Revenue by Status</h2>
+            {% if status_breakdown %}
+            <div class="space-y-3">
+                {% for item in status_breakdown %}
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium text-slate-900 dark:text-white capitalize">{{ item.status }}</span>
+                        <span class="text-xs text-slate-500">({{ item.count }})</span>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-900 dark:text-white">₦{{ item.total|floatformat:2|intcomma }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400">No data available</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Top Clients by Revenue</h2>
+            {% if by_client %}
+            <div class="space-y-3">
+                {% for client in by_client %}
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-medium text-slate-900 dark:text-white">{{ client.client__name }}</span>
+                        <span class="text-xs text-slate-500">({{ client.count }} invoices)</span>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-900 dark:text-white">₦{{ client.total|floatformat:2|intcomma }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400">No data available</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 mb-8">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Revenue Trend</h2>
+        {% if revenue_trend %}
+        <div class="h-80">
+            <canvas id="revenueChart"></canvas>
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-400 text-center py-8">No revenue data for the selected period</p>
+        {% endif %}
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('revenueChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [{% for row in revenue_trend %}'{{ row.label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                        datasets: [
+                            {
+                                label: 'Invoiced',
+                                data: [{% for row in revenue_trend %}{{ row.invoiced|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                                borderColor: '#6366f1',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Collected',
+                                data: [{% for row in revenue_trend %}{{ row.collected|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b' }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+                                ticks: { color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: document.documentElement.classList.contains('dark') ? '#94a3b8' : '#64748b' }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Invoice Details</h2>
+        </div>
+        {% if invoices %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead class="bg-slate-50 dark:bg-slate-800/50">
+                    <tr>
+                        <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Invoice #</th>
+                        <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Client</th>
+                        <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Date</th>
+                        <th class="text-left py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Status</th>
+                        <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Total</th>
+                        <th class="text-right py-3 px-6 text-xs font-semibold text-slate-500 uppercase">Paid</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for inv in invoices %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="py-3 px-6">
+                            <a href="{% url 'invoices:invoice_detail' inv.id %}" class="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline">{{ inv.invoice_number }}</a>
+                        </td>
+                        <td class="py-3 px-6 text-sm text-slate-900 dark:text-white">{{ inv.client.name }}</td>
+                        <td class="py-3 px-6 text-sm text-slate-500">{{ inv.issue_date|date:"M d, Y" }}</td>
+                        <td class="py-3 px-6">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full 
+                                {% if inv.status == 'paid' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+                                {% elif inv.status == 'overdue' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                                {% elif inv.status == 'sent' or inv.status == 'viewed' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                                {% else %}bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400{% endif %}">
+                                {{ inv.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-6 text-sm text-right text-slate-900 dark:text-white">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2|intcomma }}</td>
+                        <td class="py-3 px-6 text-sm text-right text-emerald-600 dark:text-emerald-400">{{ inv.currency_symbol }}{{ inv.amount_paid|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">No invoices found for the selected period</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

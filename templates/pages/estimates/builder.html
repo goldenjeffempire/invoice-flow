@@ -1,0 +1,322 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+{% block title %}{% if estimate %}Edit{% else %}Create{% endif %} Estimate - InvoiceFlow{% endblock %}
+{% block content %}
+<div class="py-8" x-data="estimateBuilder()" x-init="init()" @submit.prevent="submitForm">
+    <!-- Header Section -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'invoices:estimate_list' %}" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl transition-all shadow-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </a>
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+                    {% if estimate %}Edit Estimate <span class="text-indigo-600 dark:text-indigo-400">#{{ estimate.estimate_number }}</span>{% else %}Create New Estimate{% endif %}
+                </h1>
+                <p class="text-slate-500 dark:text-slate-400 mt-1">Design and send professional estimates to your clients</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button type="button" @click="submitForm('save')" class="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm">
+                Save as Draft
+            </button>
+            <button type="button" @click="submitForm('save_and_send')" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-500/25">
+                Save & Send
+            </button>
+        </div>
+    </div>
+
+    <form method="POST" id="estimate-form" class="grid lg:grid-cols-12 gap-8">
+        {% csrf_token %}
+        <input type="hidden" name="items" :value="JSON.stringify(items)">
+        <input type="hidden" name="action" x-model="formAction">
+
+        <!-- Form Side -->
+        <div class="lg:col-span-7 space-y-6">
+            <!-- Client & Details Card -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">General Information</h2>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Client</label>
+                            <div class="flex gap-2">
+                                <div class="relative flex-1">
+                                    <select name="client_id" required x-model="clientId" @change="updatePreview()" class="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm appearance-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all dark:text-white">
+                                        <option value="">Choose a client...</option>
+                                        {% for client in clients %}
+                                        <option value="{{ client.id }}" data-email="{{ client.email }}" data-name="{{ client.name }}">{{ client.name }} ({{ client.email }})</option>
+                                        {% endfor %}
+                                    </select>
+                                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                                <a href="{% url 'invoices:client_create' %}" class="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all shadow-sm" title="Add Client">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                </a>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Issue Date</label>
+                            <input type="date" name="issue_date" x-model="issueDate" @input="updatePreview()" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Expiry Date</label>
+                            <input type="date" name="expiry_date" x-model="expiryDate" @input="updatePreview()" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Currency</label>
+                            <div class="relative">
+                                <select name="currency" x-model="currency" @change="updatePreview()" class="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm appearance-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all dark:text-white">
+                                    <option value="NGN">₦ - Nigerian Naira</option>
+                                    <option value="USD">$ - US Dollar</option>
+                                    <option value="EUR">€ - Euro</option>
+                                    <option value="GBP">£ - British Pound</option>
+                                </select>
+                                <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Estimate #</label>
+                            <input type="text" name="estimate_number" x-model="estimateNumber" class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all dark:text-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line Items Card -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+                <div class="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-slate-900 dark:text-white">Line Items</h2>
+                    <button type="button" @click="addItem()" class="inline-flex items-center px-3 py-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-all">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Add Item
+                    </button>
+                </div>
+                <div class="p-0 overflow-x-auto">
+                    <table class="w-full text-left min-w-[600px]">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/50 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+                                <th class="px-6 py-4">Description</th>
+                                <th class="px-4 py-4 w-24 text-center">Qty</th>
+                                <th class="px-4 py-4 w-32 text-center">Unit Price</th>
+                                <th class="px-4 py-4 w-24 text-center">Tax %</th>
+                                <th class="px-6 py-4 w-32 text-right">Amount</th>
+                                <th class="px-6 py-4 w-12"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+                            <template x-for="(item, index) in items" :key="index">
+                                <tr class="group hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-all">
+                                    <td class="px-6 py-4">
+                                        <input type="text" x-model="item.description" placeholder="Service description..." @input="updatePreview()" class="w-full bg-transparent border-none p-0 text-sm font-medium focus:ring-0 dark:text-white">
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <input type="number" x-model="item.quantity" min="0.01" step="0.01" @input="calculateTotals()" class="w-full bg-slate-100 dark:bg-slate-900 border-none rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 dark:text-white">
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <input type="number" x-model="item.unit_price" min="0" step="0.01" @input="calculateTotals()" class="w-full bg-slate-100 dark:bg-slate-900 border-none rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 dark:text-white">
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <input type="number" x-model="item.tax_rate" min="0" max="100" step="0.01" @input="calculateTotals()" class="w-full bg-slate-100 dark:bg-slate-900 border-none rounded-lg px-2 py-1.5 text-sm text-center focus:ring-2 focus:ring-indigo-500/20 dark:text-white">
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <span class="text-sm font-bold text-slate-900 dark:text-white" x-text="formatCurrency(calculateItemTotal(item))"></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <button type="button" @click="removeItem(index)" class="p-1.5 text-slate-300 hover:text-rose-500 transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-6 bg-slate-50/50 dark:bg-slate-900/20 border-t border-slate-100 dark:border-slate-700">
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="flex-1 space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes to Client</label>
+                                <textarea name="client_notes" x-model="memo" @input="updatePreview()" rows="2" class="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all dark:text-white" placeholder="Quote details..."></textarea>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-64 space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500 dark:text-slate-400">Subtotal</span>
+                                <span class="font-bold text-slate-900 dark:text-white" x-text="formatCurrency(subtotal)">0.00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500 dark:text-slate-400">Total Tax</span>
+                                <span class="font-bold text-slate-900 dark:text-white" x-text="formatCurrency(taxTotal)">0.00</span>
+                            </div>
+                            <div class="pt-3 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                                <span class="text-base font-bold text-slate-900 dark:text-white">Estimate Total</span>
+                                <span class="text-2xl font-black text-indigo-600 dark:text-indigo-400" x-text="formatCurrency(total)">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Side -->
+        <div class="lg:col-span-5 relative">
+            <div class="sticky top-24">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Live Preview</h2>
+                </div>
+                
+                <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden min-h-[600px] transform scale-[0.98] origin-top">
+                    <div class="p-8">
+                        <div class="flex justify-between items-start mb-12">
+                            <div>
+                                <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-black mb-4">IF</div>
+                                <h3 class="text-xl font-bold dark:text-white">Estimate</h3>
+                                <p class="text-sm font-bold text-indigo-600" x-text="'#' + (estimateNumber || 'Draft')"></p>
+                            </div>
+                            <div class="text-right">
+                                <h1 class="text-3xl font-black text-slate-900 dark:text-white mb-2 uppercase">QUOTE</h1>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-12 mb-12">
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">To</p>
+                                <p class="font-bold dark:text-white" x-text="clientName || 'Client Name'"></p>
+                                <p class="text-xs text-slate-500" x-text="clientEmail || 'client@example.com'"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Date & Expiry</p>
+                                <p class="text-xs dark:text-slate-300 mb-1"><span class="font-semibold">Issued:</span> <span x-text="issueDate || '---'"></span></p>
+                                <p class="text-xs dark:text-slate-300"><span class="font-semibold">Expires:</span> <span x-text="expiryDate || '---'"></span></p>
+                            </div>
+                        </div>
+
+                        <div class="mb-12">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="border-b-2 border-slate-900 dark:border-slate-100">
+                                        <th class="py-2 font-bold dark:text-white">Item</th>
+                                        <th class="py-2 text-center font-bold dark:text-white">Qty</th>
+                                        <th class="py-2 text-right font-bold dark:text-white">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                    <template x-for="item in items">
+                                        <tr>
+                                            <td class="py-3">
+                                                <p class="font-bold dark:text-white" x-text="item.description || 'Service name'"></p>
+                                            </td>
+                                            <td class="py-3 text-center dark:text-slate-300" x-text="item.quantity"></td>
+                                            <td class="py-3 text-right font-bold dark:text-white" x-text="formatCurrency(calculateItemTotal(item))"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="flex justify-end mb-12">
+                            <div class="w-48 space-y-2">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-500">Subtotal</span>
+                                    <span class="font-bold dark:text-white" x-text="formatCurrency(subtotal)"></span>
+                                </div>
+                                <div class="flex justify-between text-lg pt-2 border-t border-slate-900 dark:border-slate-100">
+                                    <span class="font-black dark:text-white">Total</span>
+                                    <span class="font-black text-indigo-600 dark:text-indigo-400" x-text="formatCurrency(total)"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-8 border-t border-slate-100 dark:border-slate-800">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Client Notes</p>
+                            <p class="text-xs text-slate-500 leading-relaxed" x-text="memo || 'No notes provided.'"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+function estimateBuilder() {
+    return {
+        items: [{ description: '', quantity: 1, unit_price: 0, tax_rate: 0 }],
+        clientId: '{{ estimate.client_id|default:"" }}',
+        clientName: '',
+        clientEmail: '',
+        issueDate: '{% if estimate %}{{ estimate.issue_date|date:"Y-m-d" }}{% else %}{% now "Y-m-d" %}{% endif %}',
+        expiryDate: '{% if estimate %}{{ estimate.expiry_date|date:"Y-m-d" }}{% endif %}',
+        currency: '{{ estimate.currency|default:"NGN" }}',
+        estimateNumber: '{{ estimate.estimate_number|default:"" }}',
+        memo: `{{ estimate.client_notes|default:""|escapejs }}`,
+        subtotal: 0,
+        taxTotal: 0,
+        total: 0,
+        formAction: 'save',
+
+        init() {
+            {% if estimate %}
+            this.items = [
+                {% for item in estimate.items.all %}
+                { 
+                    description: '{{ item.description|escapejs }}', 
+                    quantity: {{ item.quantity }}, 
+                    unit_price: {{ item.unit_price }}, 
+                    tax_rate: {{ item.tax_rate }}
+                },
+                {% endfor %}
+            ];
+            {% endif %}
+            this.calculateTotals();
+            this.updatePreview();
+        },
+
+        addItem() {
+            this.items.push({ description: '', quantity: 1, unit_price: 0, tax_rate: 0 });
+            this.calculateTotals();
+        },
+
+        removeItem(index) {
+            this.items.splice(index, 1);
+            if (this.items.length === 0) this.addItem();
+            this.calculateTotals();
+        },
+
+        calculateItemTotal(item) {
+            return (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+        },
+
+        calculateTotals() {
+            this.subtotal = this.items.reduce((acc, item) => acc + this.calculateItemTotal(item), 0);
+            this.taxTotal = this.items.reduce((acc, item) => acc + (this.calculateItemTotal(item) * (parseFloat(item.tax_rate) || 0) / 100), 0);
+            this.total = this.subtotal + this.taxTotal;
+        },
+
+        updatePreview() {
+            const select = document.querySelector('select[name="client_id"]');
+            if (select && select.selectedOptions.length) {
+                const opt = select.selectedOptions[0];
+                this.clientName = opt.getAttribute('data-name');
+                this.clientEmail = opt.getAttribute('data-email');
+            }
+        },
+
+        formatCurrency(amount) {
+            const symbols = { 'NGN': '₦', 'USD': '$', 'EUR': '€', 'GBP': '£' };
+            return (symbols[this.currency] || this.currency) + ' ' + amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+
+        submitForm(action) {
+            this.formAction = action;
+            this.$nextTick(() => {
+                document.getElementById('estimate-form').submit();
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

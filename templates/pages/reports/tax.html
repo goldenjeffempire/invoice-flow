@@ -1,0 +1,203 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Tax Summary - InvoiceFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'invoices:reports_home' %}" class="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Tax Summary</h1>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ date_range.label }}</p>
+            </div>
+        </div>
+        <div class="mt-4 md:mt-0 flex items-center gap-3">
+            <form method="get" class="flex items-center gap-2">
+                <select name="preset" onchange="this.form.submit()" class="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm px-3 py-2">
+                    {% for preset in presets %}
+                    <option value="{{ preset.value }}" {% if preset.value == current_preset %}selected{% endif %}>{{ preset.label }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{% url 'invoices:export_report_csv' report_type='tax' %}?preset={{ current_preset }}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Export CSV
+            </a>
+        </div>
+    </div>
+
+    {% if error %}
+    <div class="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <p class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl text-emerald-600 dark:text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"/></svg>
+                </div>
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Tax Collected</p>
+            </div>
+            <p class="mt-4 text-2xl font-bold text-emerald-600 dark:text-emerald-400">₦{{ tax_collected.total_tax|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-1 text-xs text-slate-500">From {{ tax_collected.invoice_count|default:"0" }} paid invoices</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-rose-50 dark:bg-rose-900/30 rounded-xl text-rose-600 dark:text-rose-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"/></svg>
+                </div>
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Tax Paid</p>
+            </div>
+            <p class="mt-4 text-2xl font-bold text-rose-600 dark:text-rose-400">₦{{ tax_paid.total_tax|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-1 text-xs text-slate-500">From {{ tax_paid.expense_count|default:"0" }} expenses</p>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="p-2 {% if net_tax_liability >= 0 %}bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400{% else %}bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400{% endif %} rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                </div>
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Net Liability</p>
+            </div>
+            <p class="mt-4 text-2xl font-bold {% if net_tax_liability >= 0 %}text-amber-600 dark:text-amber-400{% else %}text-blue-600 dark:text-blue-400{% endif %}">₦{{ net_tax_liability|default:"0"|floatformat:2|intcomma }}</p>
+            <p class="mt-1 text-xs text-slate-500">{% if net_tax_liability >= 0 %}Tax owed to authority{% else %}Tax credit available{% endif %}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Tax Trend</h2>
+            {% if monthly_data %}
+            <div class="h-64">
+                <canvas id="taxTrendChart"></canvas>
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400 text-center py-8">No data available</p>
+            {% endif %}
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const ctx = document.getElementById('taxTrendChart');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: [{% for row in monthly_data %}'{{ row.period_label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                            datasets: [
+                                {
+                                    label: 'Tax Collected',
+                                    data: [{% for row in monthly_data %}{{ row.tax_collected|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                                    borderColor: '#10b981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Tax Paid',
+                                    data: [{% for row in monthly_data %}{{ row.tax_paid|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                                    borderColor: '#ef4444',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'top' }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            });
+        </script>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Tax by Rate</h2>
+            {% if by_rate %}
+            <div class="space-y-3">
+                {% for item in by_rate %}
+                <div class="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                    <div>
+                        <p class="text-sm font-medium text-slate-900 dark:text-white">{{ item.tax_rate }}% Rate</p>
+                        <p class="text-xs text-slate-500">{{ item.item_count }} line items</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm font-semibold text-slate-900 dark:text-white">₦{{ item.total_tax|floatformat:2|intcomma }}</p>
+                        <p class="text-xs text-slate-500">on ₦{{ item.taxable_amount|floatformat:0|intcomma }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-slate-400 text-center py-8">No tax data available</p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Tax Summary</h2>
+            <div class="space-y-4">
+                <div class="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600 dark:text-slate-400">Total Revenue (excl. tax)</span>
+                        <span class="font-semibold text-slate-900 dark:text-white">₦{{ tax_collected.subtotal|default:"0"|floatformat:2|intcomma }}</span>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="text-sm text-slate-600 dark:text-slate-400">Total Invoice Amount</span>
+                        <span class="font-semibold text-slate-900 dark:text-white">₦{{ tax_collected.total_invoiced|default:"0"|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+                <div class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-slate-600 dark:text-slate-400">Total Expense Amount</span>
+                        <span class="font-semibold text-slate-900 dark:text-white">₦{{ tax_paid.total_expenses|default:"0"|floatformat:2|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4">Monthly Tax Summary</h2>
+        {% if monthly_data %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b border-slate-200 dark:border-slate-700">
+                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Period</th>
+                        <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Tax Collected</th>
+                        <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Tax Paid</th>
+                        <th class="text-right py-3 px-4 text-xs font-semibold text-slate-500 uppercase">Net Tax</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in monthly_data %}
+                    <tr class="border-b border-slate-100 dark:border-slate-800">
+                        <td class="py-3 px-4 text-sm font-medium text-slate-900 dark:text-white">{{ row.period_label }}</td>
+                        <td class="py-3 px-4 text-sm text-right text-emerald-600 dark:text-emerald-400">₦{{ row.tax_collected|floatformat:2|intcomma }}</td>
+                        <td class="py-3 px-4 text-sm text-right text-red-600 dark:text-red-400">₦{{ row.tax_paid|floatformat:2|intcomma }}</td>
+                        <td class="py-3 px-4 text-sm text-right font-semibold {% if row.net_tax >= 0 %}text-amber-600 dark:text-amber-400{% else %}text-blue-600 dark:text-blue-400{% endif %}">₦{{ row.net_tax|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-400 text-center py-8">No monthly data available</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

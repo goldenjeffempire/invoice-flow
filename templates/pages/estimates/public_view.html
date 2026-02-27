@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estimate {{ estimate.estimate_number }} - InvoiceFlow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-full">
+    <div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <!-- Brand Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black">IF</div>
+                <span class="text-xl font-bold text-slate-900 dark:text-white">InvoiceFlow</span>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="window.print()" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm">
+                    Download PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            {% if estimate.status == 'approved' %}
+            <div class="bg-emerald-600 px-6 py-3 text-center">
+                <p class="text-white text-sm font-bold flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    This estimate has been accepted.
+                </p>
+            </div>
+            {% endif %}
+
+            <div class="p-8 sm:p-12">
+                <div class="flex justify-between items-start mb-16">
+                    <div>
+                        <h1 class="text-4xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tighter">Quote</h1>
+                        <p class="text-lg font-bold text-indigo-600">#{{ estimate.estimate_number }}</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="space-y-1">
+                            <p class="text-sm font-bold text-slate-900 dark:text-white">{{ estimate.workspace.company_name|default:estimate.workspace.name }}</p>
+                            <p class="text-xs text-slate-500">{{ estimate.workspace.business_email }}</p>
+                            <p class="text-xs text-slate-500 whitespace-pre-line">{{ estimate.workspace.business_address }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-12 mb-16">
+                    <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Prepared For</p>
+                        <p class="text-lg font-bold text-slate-900 dark:text-white">{{ estimate.client.name }}</p>
+                        <p class="text-sm text-slate-500">{{ estimate.client.email }}</p>
+                        <p class="text-sm text-slate-500 mt-2 whitespace-pre-line">{{ estimate.client.billing_address }}</p>
+                    </div>
+                    <div class="text-right flex flex-col justify-end">
+                        <div class="space-y-2">
+                            <p class="text-sm dark:text-slate-300"><span class="text-slate-400 mr-2">Issue Date:</span> {{ estimate.issue_date|date:"F d, Y" }}</p>
+                            <p class="text-sm dark:text-slate-300"><span class="text-slate-400 mr-2">Valid Until:</span> {{ estimate.expiry_date|date:"F d, Y" }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="mb-16">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b-2 border-slate-900 dark:border-slate-100">
+                                <th class="py-4 font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs">Description</th>
+                                <th class="py-4 text-center font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs w-24">Qty</th>
+                                <th class="py-4 text-right font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs w-32">Price</th>
+                                <th class="py-4 text-right font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs w-32">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            {% for item in estimate.items.all %}
+                            <tr>
+                                <td class="py-6">
+                                    <p class="font-bold text-slate-900 dark:text-white">{{ item.description }}</p>
+                                </td>
+                                <td class="py-6 text-center text-slate-600 dark:text-slate-400">{{ item.quantity|floatformat:2 }}</td>
+                                <td class="py-6 text-right text-slate-600 dark:text-slate-400">{{ estimate.currency }} {{ item.unit_price|floatformat:2 }}</td>
+                                <td class="py-6 text-right font-bold text-slate-900 dark:text-white">{{ estimate.currency }} {{ item.subtotal|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Totals -->
+                <div class="flex justify-end mb-16">
+                    <div class="w-72 space-y-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-500">Subtotal</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ estimate.currency }} {{ estimate.subtotal|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-500">Tax</span>
+                            <span class="font-bold text-slate-900 dark:text-white">{{ estimate.currency }} {{ estimate.tax_total|floatformat:2 }}</span>
+                        </div>
+                        <div class="flex justify-between text-2xl pt-6 border-t-4 border-slate-900 dark:border-slate-100">
+                            <span class="font-black text-slate-900 dark:text-white uppercase tracking-tighter">Total</span>
+                            <span class="font-black text-indigo-600 dark:text-indigo-400">{{ estimate.currency }} {{ estimate.total_amount|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {% if estimate.client_notes %}
+                <div class="pt-12 border-t border-slate-100 dark:border-slate-800">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Terms & Notes</p>
+                    <p class="text-sm text-slate-500 leading-relaxed whitespace-pre-line">{{ estimate.client_notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Client Response Footer -->
+            {% if estimate.status == 'sent' or estimate.status == 'viewed' %}
+            <div class="bg-slate-50 dark:bg-slate-900/50 p-8 sm:p-12 border-t border-slate-100 dark:border-slate-800">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Ready to proceed?</h3>
+                        <p class="text-sm text-slate-500">Accept this estimate to start the work.</p>
+                    </div>
+                    <div class="flex gap-4 w-full sm:w-auto">
+                        <button class="flex-1 sm:flex-none px-8 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-emerald-500/25">
+                            Accept Estimate
+                        </button>
+                        <button class="flex-1 sm:flex-none px-8 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                            Decline
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <p class="mt-8 text-center text-xs text-slate-400">
+            Powered by <span class="font-bold">InvoiceFlow</span> — Professional Invoicing & Estimates
+        </p>
+    </div>
+</body>
+</html>

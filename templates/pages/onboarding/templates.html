@@ -1,0 +1,75 @@
+{% extends "base/layout.html" %}
+{% block title %}Invoice Templates - InvoiceFlow Setup{% endblock %}
+{% block content %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 transition-colors duration-200">
+    <div class="max-w-3xl mx-auto">
+        {% include "pages/onboarding/_progress.html" %}
+        <div class="bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl p-8 border border-slate-100 dark:border-slate-800 mt-8 animate-fade-in-up" x-data="{ prefix: '{{ profile.invoice_prefix|default:'INV' }}', startNumber: '{{ profile.invoice_start_number|default:'1' }}' }">
+            <div class="mb-10 flex items-center gap-6">
+                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-indigo-500/30 transform rotate-6">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Invoice Numbering</h1>
+                    <p class="text-slate-600 dark:text-slate-400 text-lg">Set up how your invoices will be sequenced</p>
+                </div>
+            </div>
+
+            <form method="post" class="space-y-8">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-[0.2em]">Invoice Prefix</label>
+                        <input type="text" name="invoice_prefix" x-model="prefix" maxlength="10" class="w-full px-4 py-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all dark:text-white placeholder-slate-400" placeholder="e.g., INV">
+                        <p class="text-[10px] text-slate-500 mt-3 uppercase tracking-widest font-bold">Recommended: INV, BILL, ORD</p>
+                    </div>
+                    <div class="group">
+                        <label class="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-[0.2em]">Starting Number</label>
+                        <input type="number" name="invoice_start_number" x-model="startNumber" min="1" class="w-full px-4 py-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all dark:text-white placeholder-slate-400" placeholder="1">
+                    </div>
+                </div>
+
+                <div class="p-8 bg-slate-50 dark:bg-slate-800/30 rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-700 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <svg class="w-24 h-24 text-indigo-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7a1 1 0 011.414-1.414L10 14.586l6.293-6.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    </div>
+                    
+                    <div class="flex items-center gap-6 relative z-10">
+                        <div class="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-lg border border-slate-100 dark:border-slate-800">
+                            <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-2">Live Numbering Preview</p>
+                            <span class="text-3xl font-mono font-black text-indigo-600 dark:text-indigo-400 tracking-tight" x-text="prefix + '-' + new Date().getFullYear() + '-' + String(startNumber).padStart(4, '0')"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between gap-4 pt-8 border-t border-slate-100 dark:border-slate-800">
+                    <form action="{% url 'invoices:onboarding_go_back' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-bold transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                            Back
+                        </button>
+                    </form>
+                    <button type="submit" class="px-10 py-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl font-black text-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:ring-4 focus:ring-indigo-500/20 transition-all shadow-xl shadow-indigo-500/25 group flex items-center gap-3">
+                        Continue
+                        <svg class="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes fade-in-up {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up { animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+</style>
+{% endblock %}
