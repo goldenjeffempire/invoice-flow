@@ -1,0 +1,76 @@
+{% load static %}
+<nav class="fixed top-0 z-50 w-full border-b border-slate-100 bg-white/80 backdrop-blur-xl transition-all duration-300">
+  <div class="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
+    <a href="{% url 'invoices:home' %}" class="flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg">
+      <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-200">
+        <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+      </div>
+      <span class="text-2xl font-black tracking-tight text-slate-900">Invoice<span class="text-blue-600">Flow</span></span>
+    </a>
+    
+    <div class="hidden items-center gap-8 lg:flex">
+      <a href="{% url 'invoices:home' %}" class="nav-link text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Home</a>
+      <a href="{% url 'invoices:about' %}" class="nav-link text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">About</a>
+      <a href="{% url 'invoices:features' %}" class="nav-link text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Features</a>
+      <a href="{% url 'invoices:contact' %}" class="nav-link text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Contact</a>
+      <div class="h-6 w-px bg-slate-200"></div>
+      {% if user.is_authenticated %}
+        <a href="{% url 'invoices:dashboard' %}" class="cta-button rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">Go to Dashboard</a>
+      {% else %}
+        <a href="{% url 'invoices:login' %}" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition-colors">Sign In</a>
+        <a href="{% url 'invoices:signup' %}" class="cta-button rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">Get Started</a>
+      {% endif %}
+    </div>
+    
+    <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu">
+      <svg class="h-6 w-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+  </div>
+</nav>
+
+<div id="mobile-menu-backdrop" class="mobile-menu-backdrop lg:hidden"></div>
+<div id="mobile-menu" class="mobile-menu lg:hidden" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+  <div class="flex items-center justify-between p-6 border-b border-slate-100">
+    <span class="text-xl font-black text-slate-900">Menu</span>
+    <button id="mobile-menu-close" class="p-2 rounded-lg hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500" aria-label="Close menu">
+      <svg class="h-6 w-6 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+  </div>
+  <nav class="p-6 space-y-4">
+    <a href="{% url 'invoices:home' %}" class="block py-3 text-lg font-semibold text-slate-700 hover:text-blue-600 transition-colors">Home</a>
+    <a href="{% url 'invoices:about' %}" class="block py-3 text-lg font-semibold text-slate-700 hover:text-blue-600 transition-colors">About</a>
+    <a href="{% url 'invoices:features' %}" class="block py-3 text-lg font-semibold text-slate-700 hover:text-blue-600 transition-colors">Features</a>
+    <a href="{% url 'invoices:contact' %}" class="block py-3 text-lg font-semibold text-slate-700 hover:text-blue-600 transition-colors">Contact</a>
+    <div class="pt-4 border-t border-slate-100 space-y-4">
+      <a href="{% url 'invoices:login' %}" class="block py-3 text-lg font-semibold text-slate-700 hover:text-blue-600 transition-colors">Sign In</a>
+      <a href="{% url 'invoices:signup' %}" class="block w-full text-center rounded-xl bg-blue-600 px-6 py-4 text-lg font-bold text-white shadow-lg hover:bg-blue-700 transition-all">Get Started</a>
+    </div>
+  </nav>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const mobileMenuClose = document.getElementById('mobile-menu-close');
+  const mobileMenu = document.getElementById('mobile-menu');
+  const mobileMenuBackdrop = document.getElementById('mobile-menu-backdrop');
+  
+  function openMobileMenu() {
+    mobileMenu.classList.add('open');
+    mobileMenuBackdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    mobileMenuBtn.setAttribute('aria-expanded', 'true');
+  }
+  
+  function closeMobileMenu() {
+    mobileMenu.classList.remove('open');
+    mobileMenuBackdrop.classList.remove('open');
+    document.body.style.overflow = '';
+    mobileMenuBtn.setAttribute('aria-expanded', 'false');
+  }
+  
+  if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', openMobileMenu);
+  if (mobileMenuClose) mobileMenuClose.addEventListener('click', closeMobileMenu);
+  if (mobileMenuBackdrop) mobileMenuBackdrop.addEventListener('click', closeMobileMenu);
+});
+</script>
