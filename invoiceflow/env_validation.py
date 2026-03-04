@@ -17,7 +17,7 @@ def validate_env():
     Runs once per process; subsequent calls are idempotent.
     """
     is_production = os.getenv("PRODUCTION", "false").lower() == "true"
-    
+
     # Check SECRET_KEY exists regardless of environment
     secret_key = os.getenv("SECRET_KEY")
     if not secret_key:
@@ -38,12 +38,12 @@ def validate_env():
             error_msg = "CRITICAL: SECRET_KEY must be a long, secure string in production"
             logger.critical(error_msg)
             raise ImproperlyConfigured(error_msg)
-            
+
         # Enforce secure ENCRYPTION_SALT
         encryption_salt = os.getenv("ENCRYPTION_SALT", "")
         if encryption_salt in ["dev-salt", ""] or len(encryption_salt) < 32:
             error_msg = "CRITICAL: ENCRYPTION_SALT must be a long, secure string in production"
             logger.critical(error_msg)
             raise ImproperlyConfigured(error_msg)
-    
+
     logger.info("Environment validation passed successfully")

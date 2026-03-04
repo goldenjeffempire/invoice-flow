@@ -93,7 +93,7 @@ class SendGridEmailService:
             parsed = urlparse(url)
             if parsed.scheme not in ('http', 'https'):
                 return None
-            
+
             import requests
             response = requests.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
@@ -220,7 +220,7 @@ class SendGridEmailService:
     def send_invoice_email(self, invoice, recipient_email=None, template_id=None, subject_override=None, body_override=None):
         """Generic method to send invoice email with possible overrides."""
         recipient_email = recipient_email or invoice.client_email
-        
+
         if subject_override and body_override:
             # Send simple HTML email with custom content
             return self._send_html_email(
@@ -229,7 +229,7 @@ class SendGridEmailService:
                 plain_text=body_override,
                 html_content="<div style='font-family: sans-serif;'>" + body_override.replace('\n', '<br>') + "</div>"
             )
-        
+
         # Fallback to standard reminder template
         return self.send_payment_reminder(invoice, recipient_email, template_id)
 
@@ -520,10 +520,10 @@ The InvoiceFlow Team"""
 
             if self.client is None:
                 return {"status": "error", "message": "SendGrid client not initialized"}
-            
+
             # Send with timeout and credit handling
             response = self.client.send(message)
-            
+
             # Handle credit exceeded or other non-2xx but non-exception cases if any
             if 400 <= response.status_code < 600:
                 logger.error(f"SendGrid returned error status: {response.status_code}")
@@ -539,13 +539,13 @@ The InvoiceFlow Team"""
         except Exception as e:
             error_detail = self._parse_sendgrid_error(e)
             status_code = getattr(e, "status_code", None)
-            
+
             # Specifically log credit exceeded (403 or similar)
             if status_code == 403:
                 logger.error(f"❌ SendGrid Credit Exceeded or Forbidden: {error_detail}")
             else:
                 logger.error(f"❌ SendGrid API Error: {error_detail}")
-                
+
             return {"status": "error", "message": error_detail, "code": status_code}
 
     def _send_simple_email(self, from_email, from_name, to_email, subject, data, reply_to_email=None):
@@ -740,7 +740,7 @@ The InvoiceFlow Team"""
             message.from_email = From(self.from_email, self.platform_from_name)
             message.to = To(to_email)
             message.subject = subject
-            
+
             content_list = []
             if text_content:
                 content_list.append(Content("text/plain", text_content))

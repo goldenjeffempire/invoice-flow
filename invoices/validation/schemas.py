@@ -35,21 +35,21 @@ class FieldConstraints:
 
 class BaseSchema:
     FIELDS: Dict[str, FieldConstraints] = {}
-    
+
     @classmethod
     def validate(cls, data: Dict[str, Any]) -> Tuple[bool, List[FieldError]]:
         errors = []
-        
+
         for field_name, constraints in cls.FIELDS.items():
             value = data.get(field_name)
             field_errors = cls._validate_field(field_name, value, constraints)
             errors.extend(field_errors)
-        
+
         business_errors = cls.validate_business_rules(data)
         errors.extend(business_errors)
-        
+
         return len(errors) == 0, errors
-    
+
     @classmethod
     def _validate_field(
         cls,
@@ -58,7 +58,7 @@ class BaseSchema:
         constraints: FieldConstraints,
     ) -> List[FieldError]:
         errors = []
-        
+
         if constraints.required and (value is None or value == ""):
             errors.append(FieldError(
                 field=field_name,
@@ -66,10 +66,10 @@ class BaseSchema:
                 message=f"{cls._humanize(field_name)} is required.",
             ))
             return errors
-        
+
         if value is None or value == "":
             return errors
-        
+
         if isinstance(value, str):
             if constraints.min_length and len(value) < constraints.min_length:
                 errors.append(FieldError(
@@ -77,32 +77,32 @@ class BaseSchema:
                     code=ErrorCode.FIELD_TOO_SHORT.value,
                     message=f"{cls._humanize(field_name)} must be at least {constraints.min_length} characters.",
                 ))
-            
+
             if constraints.max_length and len(value) > constraints.max_length:
                 errors.append(FieldError(
                     field=field_name,
                     code=ErrorCode.FIELD_TOO_LONG.value,
                     message=f"{cls._humanize(field_name)} must be at most {constraints.max_length} characters.",
                 ))
-            
+
             if constraints.pattern and not re.match(constraints.pattern, value):
                 errors.append(FieldError(
                     field=field_name,
                     code=ErrorCode.FIELD_INVALID_FORMAT.value,
                     message=constraints.pattern_message or f"{cls._humanize(field_name)} format is invalid.",
                 ))
-        
+
         if constraints.min_value is not None or constraints.max_value is not None:
             try:
                 decimal_value = Decimal(str(value))
-                
+
                 if constraints.min_value is not None and decimal_value < constraints.min_value:
                     errors.append(FieldError(
                         field=field_name,
                         code=ErrorCode.FIELD_OUT_OF_RANGE.value,
                         message=f"{cls._humanize(field_name)} must be at least {constraints.min_value}.",
                     ))
-                
+
                 if constraints.max_value is not None and decimal_value > constraints.max_value:
                     errors.append(FieldError(
                         field=field_name,
@@ -115,24 +115,24 @@ class BaseSchema:
                     code=ErrorCode.FIELD_INVALID.value,
                     message=f"{cls._humanize(field_name)} must be a valid number.",
                 ))
-        
+
         if constraints.choices and value not in constraints.choices:
             errors.append(FieldError(
                 field=field_name,
                 code=ErrorCode.FIELD_INVALID.value,
                 message=f"{cls._humanize(field_name)} must be one of: {', '.join(constraints.choices)}.",
             ))
-        
+
         return errors
-    
+
     @classmethod
     def validate_business_rules(cls, data: Dict[str, Any]) -> List[FieldError]:
         return []
-    
+
     @staticmethod
     def _humanize(field_name: str) -> str:
         return field_name.replace("_", " ").title()
-    
+
     @classmethod
     def raise_if_invalid(cls, data: Dict[str, Any]) -> None:
         is_valid, errors = cls.validate(data)
@@ -192,7 +192,7 @@ class ClientSchema(BaseSchema):
 class InvoiceSchema(BaseSchema):
     CURRENCY_CHOICES = ["USD", "EUR", "GBP", "NGN", "CAD", "AUD", "INR", "JPY", "ZAR", "KES", "GHS"]
     STATUS_CHOICES = ["unpaid", "paid", "overdue"]
-    
+
     FIELDS = {
         "business_name": FieldConstraints(
             required=True,
@@ -242,14 +242,14 @@ class InvoiceSchema(BaseSchema):
             max_length=2000,
         ),
     }
-    
+
     @classmethod
     def validate_business_rules(cls, data: Dict[str, Any]) -> List[FieldError]:
         errors = []
-        
+
         invoice_date = data.get("invoice_date")
         due_date = data.get("due_date")
-        
+
         if invoice_date and due_date:
             if isinstance(invoice_date, str):
                 try:
@@ -261,7 +261,7 @@ class InvoiceSchema(BaseSchema):
                     due_date = date.fromisoformat(due_date)
                 except ValueError:
                     pass
-            
+
             if isinstance(invoice_date, date) and isinstance(due_date, date):
                 if due_date < invoice_date:
                     errors.append(FieldError(
@@ -269,14 +269,14 @@ class InvoiceSchema(BaseSchema):
                         code=ErrorCode.BUSINESS_RULE_VIOLATION.value,
                         message="Due date must be on or after the invoice date.",
                     ))
-        
+
         if invoice_date:
             if isinstance(invoice_date, str):
                 try:
                     invoice_date = date.fromisoformat(invoice_date)
                 except ValueError:
                     pass
-            
+
             if isinstance(invoice_date, date):
                 max_future = date.today() + timedelta(days=365)
                 if invoice_date > max_future:
@@ -285,7 +285,7 @@ class InvoiceSchema(BaseSchema):
                         code=ErrorCode.BUSINESS_RULE_VIOLATION.value,
                         message="Invoice date cannot be more than 1 year in the future.",
                     ))
-        
+
         line_items = data.get("line_items", [])
         if not line_items:
             errors.append(FieldError(
@@ -299,14 +299,14 @@ class InvoiceSchema(BaseSchema):
                 for error in item_errors:
                     error.field = f"line_items.{i}.{error.field}"
                 errors.extend(item_errors)
-        
+
         return errors
 
 
 class PaymentSchema(BaseSchema):
     PAYMENT_METHOD_CHOICES = ["card", "bank_transfer", "mobile_money", "ussd"]
     STATUS_CHOICES = ["pending", "success", "failed", "refunded"]
-    
+
     FIELDS = {
         "amount": FieldConstraints(
             required=True,
@@ -325,11 +325,11 @@ class PaymentSchema(BaseSchema):
             choices=["card", "bank_transfer", "mobile_money", "ussd"],
         ),
     }
-    
+
     @classmethod
     def validate_business_rules(cls, data: Dict[str, Any]) -> List[FieldError]:
         errors = []
-        
+
         invoice_id = data.get("invoice_id")
         if not invoice_id:
             errors.append(FieldError(
@@ -337,13 +337,13 @@ class PaymentSchema(BaseSchema):
                 code=ErrorCode.FIELD_REQUIRED.value,
                 message="Invoice ID is required for payment.",
             ))
-        
+
         return errors
 
 
 class RecurringSchema(BaseSchema):
     FREQUENCY_CHOICES = ["weekly", "biweekly", "monthly", "quarterly", "yearly"]
-    
+
     FIELDS = {
         "frequency": FieldConstraints(
             required=True,
@@ -360,14 +360,14 @@ class RecurringSchema(BaseSchema):
             max_value=Decimal("90"),
         ),
     }
-    
+
     @classmethod
     def validate_business_rules(cls, data: Dict[str, Any]) -> List[FieldError]:
         errors = []
-        
+
         start_date = data.get("start_date")
         end_date = data.get("end_date")
-        
+
         if start_date and end_date:
             if isinstance(start_date, str):
                 try:
@@ -379,7 +379,7 @@ class RecurringSchema(BaseSchema):
                     end_date = date.fromisoformat(end_date)
                 except ValueError:
                     pass
-            
+
             if isinstance(start_date, date) and isinstance(end_date, date):
                 if end_date < start_date:
                     errors.append(FieldError(
@@ -387,7 +387,7 @@ class RecurringSchema(BaseSchema):
                         code=ErrorCode.BUSINESS_RULE_VIOLATION.value,
                         message="End date must be on or after the start date.",
                     ))
-        
+
         return errors
 
 

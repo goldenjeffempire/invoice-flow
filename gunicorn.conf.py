@@ -20,7 +20,6 @@ Features:
 
 import multiprocessing
 import os
-import sys
 import logging
 import ssl
 
@@ -75,7 +74,7 @@ def calculate_workers():
     Conservative scaling prevents OOM and ensures stability.
     """
     cpu_count = multiprocessing.cpu_count()
-    
+
     if IS_RENDER:
         # Render is resource-constrained
         if cpu_count <= 1:

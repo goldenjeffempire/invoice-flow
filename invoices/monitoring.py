@@ -5,7 +5,7 @@ import time
 from functools import wraps
 from typing import Callable, Any
 from django.core.cache import cache
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 logger = logging.getLogger("invoiceflow.monitoring")
@@ -13,7 +13,7 @@ logger = logging.getLogger("invoiceflow.monitoring")
 
 class PerformanceMonitor:
     """Monitor and log performance metrics."""
-    
+
     @staticmethod
     def track_operation(operation_name: str):
         """Decorator to track operation performance."""
@@ -36,13 +36,13 @@ class PerformanceMonitor:
 
 class RateLimitMonitor:
     """Monitor and manage rate limiting."""
-    
+
     @staticmethod
     def get_user_requests(user_id: int, window_seconds: int = 60) -> int:
         """Get request count for user in time window."""
         cache_key = f"rate_limit:{user_id}:{int(time.time() // window_seconds)}"
         return cache.get(cache_key, 0)
-    
+
     @staticmethod
     def increment_user_requests(user_id: int, window_seconds: int = 60) -> int:
         """Increment request count for user."""
@@ -50,7 +50,7 @@ class RateLimitMonitor:
         count = cache.get(cache_key, 0) + 1
         cache.set(cache_key, count, window_seconds)
         return count
-    
+
     @staticmethod
     def is_rate_limited(user_id: int, limit: int = 100, window_seconds: int = 60) -> bool:
         """Check if user is rate limited."""
@@ -60,7 +60,7 @@ class RateLimitMonitor:
 
 class HealthChecker:
     """System health checks."""
-    
+
     @staticmethod
     def check_database() -> dict:
         """Check database connectivity."""
@@ -71,7 +71,7 @@ class HealthChecker:
             return {"status": "healthy", "service": "database"}
         except Exception as e:
             return {"status": "unhealthy", "service": "database", "error": str(e)}
-    
+
     @staticmethod
     def check_cache() -> dict:
         """Check cache connectivity."""
@@ -84,7 +84,7 @@ class HealthChecker:
                 return {"status": "unhealthy", "service": "cache", "error": "Cache read/write failed"}
         except Exception as e:
             return {"status": "unhealthy", "service": "cache", "error": str(e)}
-    
+
     @staticmethod
     def get_full_health() -> dict:
         """Get full system health status."""
@@ -100,7 +100,7 @@ class HealthChecker:
 
 class MetricsCollector:
     """Collect and store metrics."""
-    
+
     @staticmethod
     def record_invoice_metric(metric_type: str, user_id: int, value: Any) -> None:
         """Record invoice-related metric."""
@@ -108,7 +108,7 @@ class MetricsCollector:
         metrics = cache.get(cache_key, {})
         metrics[datetime.utcnow().isoformat()] = value
         cache.set(cache_key, metrics, 86400 * 30)  # 30 days
-    
+
     @staticmethod
     def get_daily_active_users() -> int:
         """Get count of daily active users."""
@@ -118,15 +118,15 @@ class MetricsCollector:
         return Invoice.objects.filter(
             created_at__date=today
         ).values("user").distinct().count()
-    
+
     @staticmethod
     def get_payment_metrics(user_id: int) -> dict:
         """Get payment metrics for user."""
         from invoices.models import Payment
-        from django.db.models import Sum, Count, Avg
-        
+        from django.db.models import Sum, Avg
+
         payments = Payment.objects.filter(invoice__user_id=user_id)
-        
+
         return {
             "total_received": payments.aggregate(Sum("amount"))["amount__sum"] or 0,
             "payment_count": payments.count(),

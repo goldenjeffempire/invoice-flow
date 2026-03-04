@@ -11,10 +11,10 @@ from django.contrib.auth.models import User
 
 class StructuredLogger:
     """Structured JSON logging for enterprise compliance and monitoring."""
-    
+
     def __init__(self, name: str):
         self.logger = logging.getLogger(name)
-    
+
     def _build_log(self, level: str, message: str, **context: Any) -> Dict:
         """Build structured log entry."""
         return {
@@ -25,17 +25,17 @@ class StructuredLogger:
             "environment": "production" if settings.DEBUG is False else "development",
             **context
         }
-    
+
     def info(self, message: str, **context: Any) -> None:
         """Log info with context."""
         log_entry = self._build_log("INFO", message, **context)
         self.logger.info(json.dumps(log_entry))
-    
+
     def warning(self, message: str, **context: Any) -> None:
         """Log warning with context."""
         log_entry = self._build_log("WARNING", message, **context)
         self.logger.warning(json.dumps(log_entry))
-    
+
     def error(self, message: str, exception: Optional[Exception] = None, **context: Any) -> None:
         """Log error with exception details."""
         log_entry = self._build_log("ERROR", message, **context)
@@ -45,7 +45,7 @@ class StructuredLogger:
                 "message": str(exception),
             }
         self.logger.error(json.dumps(log_entry))
-    
+
     def audit(self, action: str, user: Optional[User] = None, resource: Optional[str] = None, **details: Any) -> None:
         """Log audit trail for compliance."""
         log_entry = self._build_log("AUDIT", action,
@@ -59,7 +59,7 @@ class StructuredLogger:
 
 class AuditLog:
     """Audit logging decorator for tracking sensitive operations."""
-    
+
     @staticmethod
     def track(action: str, resource_type: str = "resource"):
         """Decorator to track operations for audit trail."""
@@ -67,13 +67,13 @@ class AuditLog:
             @wraps(func)
             def wrapper(*args: Any, **kwargs: Any) -> Any:
                 logger = StructuredLogger("audit")
-                
+
                 # Extract user from request if available
                 user = None
                 request = next((arg for arg in args if hasattr(arg, 'user')), None)
                 if request and hasattr(request, 'user'):
                     user = request.user if request.user.is_authenticated else None
-                
+
                 try:
                     result = func(*args, **kwargs)
                     logger.audit(

@@ -1,12 +1,6 @@
-import atexit
-import os
-import threading
-import time
 import logging
-import fcntl
 
 from django.apps import AppConfig
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 

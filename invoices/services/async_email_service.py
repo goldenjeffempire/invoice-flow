@@ -17,10 +17,10 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
-    from invoices.models import Invoice, Payment
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -53,10 +53,10 @@ class AsyncEmailService:
     - Automatic retry with exponential backoff
     - Complete isolation from request flow
     """
-    
+
     _instance = None
     _lock = threading.Lock()
-    
+
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
@@ -64,24 +64,24 @@ class AsyncEmailService:
                     cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
-            
+
         self._email_queue: queue.Queue[EmailTask] = queue.Queue(maxsize=1000)
         self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="email_worker")
         self._shutdown = False
         self._worker_started = False
         self._initialized = True
-        
+
         self._start_worker()
-    
+
     def _start_worker(self):
         """Start background worker thread for processing emails."""
         if self._worker_started:
             return
-            
+
         def worker():
             while not self._shutdown:
                 try:
@@ -93,12 +93,12 @@ class AsyncEmailService:
                     continue
                 except Exception as e:
                     logger.error(f"Email worker error: {e}")
-        
+
         worker_thread = threading.Thread(target=worker, daemon=True, name="email_queue_worker")
         worker_thread.start()
         self._worker_started = True
         logger.info("Async email worker started")
-    
+
     def _process_task(self, task: EmailTask):
         """Process a single email task with retry logic."""
         try:
@@ -115,13 +115,13 @@ class AsyncEmailService:
                 logger.debug(f"Email sent successfully: {task.email_type.value} to {task.recipient}")
         except Exception as e:
             logger.error(f"Email task processing failed: {e}")
-    
+
     def _send_email(self, task: EmailTask) -> bool:
         """Actually send the email using SendGrid service."""
         try:
             from invoices.sendgrid_service import SendGridEmailService
             service = SendGridEmailService()
-            
+
             if task.email_type == EmailType.VERIFICATION:
                 result = service.send_verification_email(
                     user=task.data.get("user"),
@@ -152,15 +152,15 @@ class AsyncEmailService:
             else:
                 logger.warning(f"Unknown email type: {task.email_type}")
                 return False
-            
+
             if isinstance(result, dict):
                 return result.get("status") == "sent"
             return bool(result)
-            
+
         except Exception as e:
             logger.error(f"SendGrid send failed: {e}")
             return False
-    
+
     def queue_email(self, task: EmailTask) -> bool:
         """
         Queue an email for async sending. Returns immediately.
@@ -172,7 +172,7 @@ class AsyncEmailService:
         except queue.Full:
             logger.warning("Email queue full, dropping email")
             return False
-    
+
     def send_verification_email_async(self, user, token: str) -> bool:
         """Queue verification email - returns immediately."""
         task = EmailTask(
@@ -181,7 +181,7 @@ class AsyncEmailService:
             data={"user": user, "token": token}
         )
         return self.queue_email(task)
-    
+
     def send_password_reset_async(self, user, token: str) -> bool:
         """Queue password reset email - returns immediately."""
         task = EmailTask(
@@ -190,7 +190,7 @@ class AsyncEmailService:
             data={"user": user, "token": token}
         )
         return self.queue_email(task)
-    
+
     def send_welcome_async(self, user) -> bool:
         """Queue welcome email - returns immediately."""
         task = EmailTask(
@@ -199,7 +199,7 @@ class AsyncEmailService:
             data={"user": user}
         )
         return self.queue_email(task)
-    
+
     def send_invoice_ready_async(self, invoice, recipient: str) -> bool:
         """Queue invoice ready email - returns immediately."""
         task = EmailTask(
@@ -208,7 +208,7 @@ class AsyncEmailService:
             data={"invoice": invoice}
         )
         return self.queue_email(task)
-    
+
     def send_invoice_paid_async(self, invoice, recipient: str) -> bool:
         """Queue invoice paid email - returns immediately."""
         task = EmailTask(
@@ -217,7 +217,7 @@ class AsyncEmailService:
             data={"invoice": invoice}
         )
         return self.queue_email(task)
-    
+
     def send_reminder_async(self, invoice, recipient: str) -> bool:
         """Queue payment reminder email - returns immediately."""
         task = EmailTask(

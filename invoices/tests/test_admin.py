@@ -6,7 +6,7 @@ Tests user management, payment monitoring, invoice tracking, and contact handlin
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
-from invoices.models import Invoice, Payment, ContactSubmission, UserProfile
+from invoices.models import Invoice, Payment, ContactSubmission
 from decimal import Decimal
 
 
@@ -118,7 +118,7 @@ class AdminDashboardTestCase(TestCase):
             client_address='123 Main St',
             status='unpaid'
         )
-        
+
         self.client.login(username='admin', password='testpass123')
         response = self.client.get(reverse('admin_dashboard'))
         self.assertEqual(response.status_code, 200)
@@ -204,7 +204,7 @@ class AdminPaymentMonitoringTestCase(TestCase):
             status='success',
             customer_email='client@example.com'
         )
-        
+
         self.client.login(username='admin', password='testpass123')
         response = self.client.get(reverse('admin_payments'))
         self.assertEqual(response.status_code, 200)
@@ -239,7 +239,7 @@ class AdminContactManagementTestCase(TestCase):
             message='Test message',
             status='new'
         )
-        
+
         self.client.login(username='admin', password='testpass123')
         response = self.client.get(reverse('admin_contacts'))
         self.assertEqual(response.status_code, 200)
@@ -254,13 +254,13 @@ class AdminContactManagementTestCase(TestCase):
             message='Test message',
             status='new'
         )
-        
+
         self.client.login(username='admin', password='testpass123')
         response = self.client.post(
             reverse('update_contact_status', args=[submission.id]),
             {'status': 'resolved'}
         )
-        
+
         submission.refresh_from_db()
         self.assertEqual(submission.status, 'resolved')
 

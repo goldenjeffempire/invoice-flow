@@ -14,7 +14,7 @@ def start_keep_alive():
 
     if not render_external_url:
         return
-    
+
     # Validate URL scheme
     try:
         parsed = urlparse(render_external_url)

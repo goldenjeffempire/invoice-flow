@@ -4,7 +4,7 @@ from decimal import Decimal
 import factory
 from django.contrib.auth import get_user_model
 
-from invoices.models import Invoice, InvoiceTemplate, LineItem, UserProfile
+from invoices.models import Invoice, LineItem, UserProfile
 
 User = get_user_model()
 
@@ -16,7 +16,7 @@ class UserFactory(factory.django.DjangoModelFactory):
     username = factory.Sequence(lambda n: f"user{n}")
     email = factory.LazyAttribute(lambda obj: f"{obj.username}@example.com")
     password = factory.PostGenerationMethodCall("set_password", "password123")
-    
+
     @factory.post_generation
     def profile(obj, create, extracted, **kwargs):
         if create:
@@ -51,21 +51,3 @@ class LineItemFactory(factory.django.DjangoModelFactory):
     description = factory.Faker("sentence")
     quantity = Decimal("1.00")
     unit_price = Decimal("100.00")
-
-
-class InvoiceTemplateFactory(factory.django.DjangoModelFactory):
-    class Meta:
-        model = InvoiceTemplate
-
-    user = factory.SubFactory(UserFactory)
-    name = factory.Sequence(lambda n: f"Template {n}")
-    description = factory.Faker("paragraph")
-    business_name = factory.Faker("company")
-    business_email = factory.Faker("email")
-    business_phone = factory.Faker("phone_number")
-    business_address = factory.Faker("address")
-    currency = "USD"
-    tax_rate = Decimal("10.00")
-    bank_name = factory.Faker("company")
-    account_name = factory.Faker("name")
-    is_default = False

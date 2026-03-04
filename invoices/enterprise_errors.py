@@ -7,16 +7,16 @@ from rest_framework.response import Response
 
 class EnterpriseError(Exception):
     """Base enterprise error with rich context."""
-    
+
     http_status = status.HTTP_400_BAD_REQUEST
     error_code = "UNKNOWN_ERROR"
     message = "An error occurred"
-    
+
     def __init__(self, message: Optional[str] = None, **context: Any):
         self.message = message or self.message
         self.context = context
         super().__init__(self.message)
-    
+
     def to_response(self) -> Dict[str, Any]:
         """Convert error to API response."""
         return {
@@ -79,13 +79,13 @@ class ServiceUnavailableError(EnterpriseError):
 
 class ErrorHandler:
     """Centralized error handling and recovery."""
-    
+
     @staticmethod
     def handle_error(error: Exception) -> Response:
         """Convert any error to API response."""
         if isinstance(error, EnterpriseError):
             return Response(error.to_response(), status=error.http_status)
-        
+
         # Generic error
         return Response({
             "status": "error",
@@ -93,7 +93,7 @@ class ErrorHandler:
             "error_code": "INTERNAL_ERROR",
             "message": "An unexpected error occurred",
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
     @staticmethod
     def validate_required_fields(data: Dict[str, Any], required: list) -> None:
         """Validate that required fields are present."""

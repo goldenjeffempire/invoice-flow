@@ -3,13 +3,11 @@ Production-Grade Onboarding Service
 Stepper-based onboarding with smart defaults, progress tracking, and workspace setup.
 """
 import logging
-from typing import Dict, Any, Tuple, Optional, List
+from typing import Dict, Any, Tuple, Optional
 from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
-from django.core.validators import validate_email
-from django.core.exceptions import ValidationError
-from ..models import UserProfile, Workspace, WorkspaceMember
+from ..models import UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +153,7 @@ class OnboardingService:
         try:
             profile = UserProfile.objects.get(user=user)
             current_step = profile.onboarding_step
-            
+
             steps_with_status = []
             for step in ONBOARDING_STEPS:
                 step_copy = step.copy()
@@ -166,9 +164,9 @@ class OnboardingService:
                 else:
                     step_copy["status"] = "pending"
                 steps_with_status.append(step_copy)
-            
+
             progress_percentage = ((current_step - 1) / len(ONBOARDING_STEPS)) * 100
-            
+
             return {
                 "current_step": current_step,
                 "total_steps": len(ONBOARDING_STEPS),
@@ -202,7 +200,7 @@ class OnboardingService:
             step_number = 1
         if step_number > len(ONBOARDING_STEPS):
             return "invoices:onboarding_complete"
-        
+
         step = ONBOARDING_STEPS[step_number - 1]
         return f"invoices:onboarding_{step['slug']}"
 
@@ -211,13 +209,13 @@ class OnboardingService:
     def save_welcome_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             profile, _ = UserProfile.objects.get_or_create(user=user)
-            
+
             region = data.get("region", "ng")
             business_type = data.get("business_type", "freelancer")
-            
+
             region_defaults = REGION_DEFAULTS.get(region, REGION_DEFAULTS["ng"])
             business_defaults = BUSINESS_TYPE_TEMPLATES.get(business_type, BUSINESS_TYPE_TEMPLATES["freelancer"])
-            
+
             profile.region = region
             profile.business_type = business_type
             profile.default_currency = region_defaults["currency"]
@@ -228,22 +226,22 @@ class OnboardingService:
             profile.invoice_style = business_defaults["invoice_style"]
             profile.primary_color = business_defaults["suggested_colors"]["primary"]
             profile.accent_color = business_defaults["suggested_colors"]["accent"]
-            
+
             if region_defaults["vat_rate"] > 0:
                 profile.vat_registered = True
                 profile.vat_rate = region_defaults["vat_rate"]
-            
+
             onboarding_data = profile.onboarding_data or {}
             onboarding_data["welcome"] = data
             profile.onboarding_data = onboarding_data
-            
+
             if profile.onboarding_step == 1:
                 profile.onboarding_step = 2
-            
+
             profile.save()
-            
+
             return True, "Welcome step completed!"
-            
+
         except Exception as e:
             logger.error(f"Welcome step error: {e}")
             return False, "Failed to save. Please try again."
@@ -253,11 +251,11 @@ class OnboardingService:
     def save_business_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             company_name = data.get("company_name", "").strip()
             if not company_name:
                 return False, "Company name is required."
-            
+
             profile.company_name = company_name
             profile.business_email = data.get("business_email", user.email).strip()
             profile.business_phone = data.get("business_phone", "").strip()
@@ -267,23 +265,23 @@ class OnboardingService:
             profile.business_country = data.get("business_country", "").strip()
             profile.business_postal_code = data.get("business_postal_code", "").strip()
             profile.business_website = data.get("business_website", "").strip()
-            
+
             if profile.current_workspace:
                 workspace = profile.current_workspace
                 workspace.name = company_name
                 workspace.save(update_fields=["name"])
-            
+
             onboarding_data = profile.onboarding_data or {}
             onboarding_data["business"] = data
             profile.onboarding_data = onboarding_data
-            
+
             if profile.onboarding_step == 2:
                 profile.onboarding_step = 3
-            
+
             profile.save()
-            
+
             return True, "Business profile saved!"
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found."
         except Exception as e:
@@ -295,7 +293,7 @@ class OnboardingService:
     def save_branding_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             if data.get("primary_color"):
                 profile.primary_color = data["primary_color"]
             if data.get("secondary_color"):
@@ -304,18 +302,18 @@ class OnboardingService:
                 profile.accent_color = data["accent_color"]
             if data.get("invoice_style"):
                 profile.invoice_style = data["invoice_style"]
-            
+
             onboarding_data = profile.onboarding_data or {}
             onboarding_data["branding"] = data
             profile.onboarding_data = onboarding_data
-            
+
             if profile.onboarding_step == 3:
                 profile.onboarding_step = 4
-            
+
             profile.save()
-            
+
             return True, "Branding saved!"
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found."
         except Exception as e:
@@ -327,36 +325,36 @@ class OnboardingService:
     def save_tax_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             profile.tax_id_number = data.get("tax_id_number", "").strip()
             profile.tax_id_type = data.get("tax_id_type", "").strip()
             profile.vat_registered = data.get("vat_registered", False)
-            
+
             if profile.vat_registered:
                 profile.vat_number = data.get("vat_number", "").strip()
                 try:
                     profile.vat_rate = Decimal(str(data.get("vat_rate", "0")))
                 except:
                     profile.vat_rate = Decimal("0")
-            
+
             profile.wht_applicable = data.get("wht_applicable", False)
             if profile.wht_applicable:
                 try:
                     profile.wht_rate = Decimal(str(data.get("wht_rate", "0")))
                 except:
                     profile.wht_rate = Decimal("0")
-            
+
             onboarding_data = profile.onboarding_data or {}
             onboarding_data["tax"] = data
             profile.onboarding_data = onboarding_data
-            
+
             if profile.onboarding_step == 4:
                 profile.onboarding_step = 5
-            
+
             profile.save()
-            
+
             return True, "Tax settings saved!"
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found."
         except Exception as e:
@@ -368,7 +366,7 @@ class OnboardingService:
     def save_payments_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             profile.bank_name = data.get("bank_name", "").strip()
             profile.bank_account_name = data.get("bank_account_name", "").strip()
             profile.bank_account_number = data.get("bank_account_number", "").strip()
@@ -378,18 +376,18 @@ class OnboardingService:
             profile.accept_bank_transfers = data.get("accept_bank_transfers", True)
             profile.accept_mobile_money = data.get("accept_mobile_money", False)
             profile.payment_instructions = data.get("payment_instructions", "").strip()
-            
+
             onboarding_data = profile.onboarding_data or {}
             onboarding_data["payments"] = data
             profile.onboarding_data = onboarding_data
-            
+
             if profile.onboarding_step == 5:
                 profile.onboarding_step = 6
-            
+
             profile.save()
-            
+
             return True, "Payment settings saved!"
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found."
         except Exception as e:
@@ -401,18 +399,18 @@ class OnboardingService:
     def save_import_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             onboarding_data = profile.onboarding_data or {}
             onboarding_data["import"] = data
             profile.onboarding_data = onboarding_data
-            
+
             if profile.onboarding_step == 6:
                 profile.onboarding_step = 7
-            
+
             profile.save()
-            
+
             return True, "Import step completed!"
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found."
         except Exception as e:
@@ -424,7 +422,7 @@ class OnboardingService:
     def save_templates_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             if data.get("invoice_prefix"):
                 profile.invoice_prefix = data["invoice_prefix"]
             if data.get("invoice_start_number"):
@@ -434,18 +432,18 @@ class OnboardingService:
                     pass
             if data.get("invoice_numbering_format"):
                 profile.invoice_numbering_format = data["invoice_numbering_format"]
-            
+
             onboarding_data = profile.onboarding_data or {}
             onboarding_data["templates"] = data
             profile.onboarding_data = onboarding_data
-            
+
             if profile.onboarding_step == 7:
                 profile.onboarding_step = 8
-            
+
             profile.save()
-            
+
             return True, "Template settings saved!"
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found."
         except Exception as e:
@@ -457,18 +455,18 @@ class OnboardingService:
     def save_team_step(cls, user, data: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             onboarding_data = profile.onboarding_data or {}
             onboarding_data["team"] = data
             profile.onboarding_data = onboarding_data
-            
+
             if profile.onboarding_step == 8:
                 profile.onboarding_step = 9
-            
+
             profile.save()
-            
+
             return True, "Team step completed!"
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found."
         except Exception as e:
@@ -480,13 +478,13 @@ class OnboardingService:
     def complete_onboarding(cls, user) -> Tuple[bool, str]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             profile.onboarding_completed = True
             profile.onboarding_completed_at = timezone.now()
             profile.save(update_fields=["onboarding_completed", "onboarding_completed_at"])
-            
+
             return True, "Onboarding completed! Welcome to InvoiceFlow."
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found."
         except Exception as e:
@@ -497,7 +495,7 @@ class OnboardingService:
     def skip_step(cls, user) -> Tuple[bool, str, int]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             current_step = profile.onboarding_step
             if current_step < len(ONBOARDING_STEPS):
                 profile.onboarding_step = current_step + 1
@@ -505,7 +503,7 @@ class OnboardingService:
                 return True, "Step skipped.", profile.onboarding_step
             else:
                 return True, "Onboarding complete.", current_step
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found.", 1
         except Exception as e:
@@ -516,7 +514,7 @@ class OnboardingService:
     def go_back(cls, user) -> Tuple[bool, str, int]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             current_step = profile.onboarding_step
             if current_step > 1:
                 profile.onboarding_step = current_step - 1
@@ -524,7 +522,7 @@ class OnboardingService:
                 return True, "Going back.", profile.onboarding_step
             else:
                 return True, "Already at first step.", current_step
-            
+
         except UserProfile.DoesNotExist:
             return False, "Profile not found.", 1
         except Exception as e:
@@ -535,10 +533,10 @@ class OnboardingService:
     def get_smart_defaults(cls, user) -> Dict[str, Any]:
         try:
             profile = UserProfile.objects.get(user=user)
-            
+
             region_defaults = REGION_DEFAULTS.get(profile.region, {})
             business_defaults = BUSINESS_TYPE_TEMPLATES.get(profile.business_type, {})
-            
+
             return {
                 "region": region_defaults,
                 "business": business_defaults,

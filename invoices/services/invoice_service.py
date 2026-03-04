@@ -1,16 +1,16 @@
 import secrets
 import logging
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 from datetime import date, timedelta
 
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
-from ..models import Invoice, LineItem, InvoiceActivity, InvoiceAttachment, InvoicePayment, Client, Payment
+from ..models import Invoice, LineItem, InvoiceActivity, InvoicePayment, Client
 
 logger = logging.getLogger(__name__)
 
@@ -410,7 +410,6 @@ class InvoiceService:
 
         reference = reference or f"PAY-{secrets.token_hex(8).upper()}"
 
-        from ..models import InvoicePayment
         payment = InvoicePayment.objects.create(
             invoice=invoice,
             recorded_by=user,

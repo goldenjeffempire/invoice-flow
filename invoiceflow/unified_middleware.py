@@ -57,7 +57,7 @@ class UnifiedMiddleware:
                 "img-src 'self' data: https:; "
                 "connect-src 'self' https:;"
             )
-        
+
         # Prevent 304 fallback
         if response.status_code == 304:
             response.status_code = 200

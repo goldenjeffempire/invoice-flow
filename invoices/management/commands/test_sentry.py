@@ -37,10 +37,10 @@ class Command(BaseCommand):
 
         try:
             import sentry_sdk
-            
+
             self.stdout.write(self.style.SUCCESS("\nSentry SDK is installed and DSN is configured!"))
             self.stdout.write(f"Environment: {'production' if is_production else 'development'}")
-            
+
             if options["trigger_error"]:
                 self.stdout.write("\nSending test event to Sentry...")
                 event_id = sentry_sdk.capture_message("Test message from InvoiceFlow management command")

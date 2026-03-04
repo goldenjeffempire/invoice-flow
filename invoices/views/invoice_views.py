@@ -6,14 +6,14 @@ from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponse, Http404
-from django.views.decorators.http import require_http_methods, require_POST, require_GET
+from django.views.decorators.http import require_http_methods, require_POST
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.utils import timezone
 from django.contrib import messages
 from django.urls import reverse
 
-from ..models import Invoice, LineItem, InvoiceActivity, InvoiceAttachment, InvoicePayment, Client
+from ..models import Invoice, InvoiceActivity, InvoicePayment, Client
 from ..services.invoice_service import InvoiceService, InvoiceValidationError, InvoiceStateError
 from ..services.pdf_service import PDFService
 
@@ -348,12 +348,12 @@ def invoice_send(request, invoice_id):
         from ..services.email_service import EmailService
         try:
             EmailService.send_invoice(invoice, email)
-            
+
             InvoiceService.log_activity(
                 invoice, request.user, InvoiceActivity.ActionType.SENT,
                 f"Invoice sent to {email}"
             )
-            
+
             messages.success(request, f"Invoice sent to {email}")
         except Exception as e:
             logger.exception(f"Error sending email: {e}")
@@ -492,12 +492,11 @@ def public_invoice_view(request, token):
 def public_initiate_payment(request, token):
     invoice = get_object_or_404(Invoice, public_token=token)
     email = request.POST.get('email', invoice.client.email)
-    
+
     # In a real app, you would integrate with Paystack/Stripe here
     # For now, we'll simulate initiating a payment and redirecting to a success page
     # or to the Paystack checkout if keys are configured.
-    
-    from ..services.payment_service import PaymentService
+
     try:
         # Mocking payment initiation for now as we don't have real keys
         # In production, PaymentService would return a redirect URL
@@ -582,16 +581,16 @@ def api_client_create(request):
         data = json.loads(request.body)
         name = data.get('name')
         email = data.get('email')
-        
+
         if not name or not email:
             return JsonResponse({'success': False, 'error': 'Name and email are required.'}, status=400)
-            
+
         client = Client.objects.create(
             workspace=workspace,
             name=name,
             email=email
         )
-        
+
         return JsonResponse({
             'success': True,
             'client': {

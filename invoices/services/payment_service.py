@@ -1,12 +1,11 @@
 import hashlib
 import hmac
-import json
 import logging
 from decimal import Decimal
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from ..models import Payment, Transaction, Invoice, PaymentAuditLog, Dispute, Payout
+from ..models import Payment, Transaction, Invoice, PaymentAuditLog
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +25,14 @@ class PaymentService:
     def handle_paystack_webhook(payload_dict):
         event = payload_dict.get('event')
         data = payload_dict.get('data')
-        
+
         if event == 'charge.success':
             PaymentService._process_successful_charge(data)
         elif event == 'transfer.success':
             PaymentService._process_successful_transfer(data)
         elif event == 'transfer.failed':
             PaymentService._process_failed_transfer(data)
-            
+
     @staticmethod
     def _process_successful_charge(data):
         from ..models import Payment, Transaction, Invoice
@@ -41,7 +40,7 @@ class PaymentService:
         amount = Decimal(str(data.get('amount'))) / 100
         metadata = data.get('metadata', {})
         invoice_id = metadata.get('invoice_id')
-        
+
         invoice = Invoice.objects.filter(id=invoice_id).first()
         if not invoice:
             logger.error(f"Invoice {invoice_id} not found for payment {reference}")
@@ -59,7 +58,7 @@ class PaymentService:
                 'completed_at': timezone.now()
             }
         )
-        
+
         if created:
             invoice.amount_paid += amount
             invoice.amount_due = max(0, invoice.total_amount - invoice.amount_paid)
@@ -69,7 +68,7 @@ class PaymentService:
             else:
                 invoice.status = Invoice.Status.PART_PAID
             invoice.save()
-            
+
             Transaction.objects.create(
                 workspace=invoice.workspace,
                 payment=payment,
@@ -84,7 +83,7 @@ class PaymentService:
     def record_offline_payment(invoice, amount, method, user, notes="", tip_amount=Decimal('0.00'), ip_address=None):
         amount = Decimal(str(amount))
         tip_amount = Decimal(str(tip_amount))
-        
+
         payment = Payment.objects.create(
             workspace=invoice.workspace,
             invoice=invoice,
@@ -96,7 +95,7 @@ class PaymentService:
             notes=notes,
             completed_at=timezone.now()
         )
-        
+
         invoice.amount_paid += amount
         invoice.amount_due = max(0, invoice.total_amount - invoice.amount_paid)
         if invoice.amount_due <= 0:
@@ -105,7 +104,7 @@ class PaymentService:
         else:
             invoice.status = Invoice.Status.PART_PAID
         invoice.save()
-        
+
         Transaction.objects.create(
             workspace=invoice.workspace,
             payment=payment,
@@ -114,7 +113,7 @@ class PaymentService:
             currency=invoice.currency,
             description=f"Offline payment ({method}) for Invoice {invoice.invoice_number}"
         )
-        
+
         PaymentAuditLog.objects.create(
             payment=payment,
             user=user,

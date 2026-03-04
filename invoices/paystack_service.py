@@ -13,7 +13,7 @@ from typing import Any, Optional
 import requests
 from django.utils import timezone
 
-from .models import IdempotencyKey, Invoice, Payment, PaymentReconciliation, ProcessedWebhook
+from .models import IdempotencyKey, Payment, PaymentReconciliation, ProcessedWebhook
 
 
 PAYSTACK_BASE_URL = "https://api.paystack.co"

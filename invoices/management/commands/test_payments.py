@@ -7,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from invoices.models import Payment, PaymentPayout, PaymentRecipient, PaymentSettings, UserProfile
-from invoices.paystack_service import PaystackService, get_paystack_service, get_transfer_service
+from invoices.paystack_service import get_paystack_service, get_transfer_service
 
 
 class Command(BaseCommand):
@@ -95,7 +95,7 @@ class Command(BaseCommand):
             if banks_result.get("status") == "success":
                 banks = banks_result.get("banks", [])
                 self.stdout.write(f"  Available banks: {len(banks)}")
-                
+
                 if (verbose or list_banks) and banks:
                     self.stdout.write("\n  Sample Banks:")
                     for bank in banks[:10]:

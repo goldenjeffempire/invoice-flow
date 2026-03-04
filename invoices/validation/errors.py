@@ -39,30 +39,30 @@ class ErrorCode(str, Enum):
     FIELD_TOO_LONG = "FIELD_TOO_LONG"
     FIELD_OUT_OF_RANGE = "FIELD_OUT_OF_RANGE"
     FIELD_INVALID_FORMAT = "FIELD_INVALID_FORMAT"
-    
+
     AUTHENTICATION_REQUIRED = "AUTHENTICATION_REQUIRED"
     AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED"
     PERMISSION_DENIED = "PERMISSION_DENIED"
-    
+
     RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND"
     RESOURCE_ALREADY_EXISTS = "RESOURCE_ALREADY_EXISTS"
     RESOURCE_CONFLICT = "RESOURCE_CONFLICT"
-    
+
     BUSINESS_RULE_VIOLATION = "BUSINESS_RULE_VIOLATION"
     INVALID_STATE_TRANSITION = "INVALID_STATE_TRANSITION"
-    
+
     PAYMENT_FAILED = "PAYMENT_FAILED"
     PAYMENT_DECLINED = "PAYMENT_DECLINED"
     PAYMENT_EXPIRED = "PAYMENT_EXPIRED"
-    
+
     RATE_LIMITED = "RATE_LIMITED"
     SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
-    
+
     INVOICE_INVALID = "INVOICE_INVALID"
     INVOICE_ALREADY_PAID = "INVOICE_ALREADY_PAID"
     INVOICE_EXPIRED = "INVOICE_EXPIRED"
-    
+
     CLIENT_INVALID = "CLIENT_INVALID"
     RECURRING_INVALID = "RECURRING_INVALID"
 
@@ -72,7 +72,7 @@ class FieldError:
     field: str
     code: str
     message: str
-    
+
     def to_dict(self) -> Dict[str, str]:
         return {
             "field": self.field,
@@ -86,7 +86,7 @@ class ErrorDetail:
     code: str
     message: str
     fields: Optional[List[FieldError]] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "code": self.code,
@@ -102,14 +102,14 @@ class ErrorResponse:
     success: bool = False
     error: Optional[ErrorDetail] = None
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "success": self.success,
             "error": self.error.to_dict() if self.error else None,
             "request_id": self.request_id,
         }
-    
+
     def to_json_response(self, status: int = 400) -> JsonResponse:
         return JsonResponse(self.to_dict(), status=status)
 
@@ -129,7 +129,7 @@ class APIError(Exception):
         self.fields = fields
         self.request_id = request_id or str(uuid.uuid4())
         super().__init__(message)
-    
+
     def to_response(self) -> ErrorResponse:
         return ErrorResponse(
             success=False,
@@ -140,7 +140,7 @@ class APIError(Exception):
             ),
             request_id=self.request_id,
         )
-    
+
     def to_json_response(self) -> JsonResponse:
         return self.to_response().to_json_response(self.status)
 
@@ -251,10 +251,10 @@ def format_validation_errors(
     prefix: str = "",
 ) -> List[FieldError]:
     field_errors = []
-    
+
     for field_name, error_list in errors.items():
         full_field = f"{prefix}{field_name}" if prefix else field_name
-        
+
         if isinstance(error_list, dict):
             field_errors.extend(format_validation_errors(error_list, f"{full_field}."))
         elif isinstance(error_list, list):
@@ -275,13 +275,13 @@ def format_validation_errors(
                 code=ErrorCode.FIELD_INVALID.value,
                 message=str(error_list),
             ))
-    
+
     return field_errors
 
 
 def _infer_error_code(message: str) -> str:
     message_lower = message.lower()
-    
+
     if "required" in message_lower or "blank" in message_lower or "null" in message_lower:
         return ErrorCode.FIELD_REQUIRED.value
     elif "too short" in message_lower or "at least" in message_lower:

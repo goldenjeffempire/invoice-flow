@@ -187,7 +187,7 @@ class ValidationService:
                 qty = Decimal(str(item.get('quantity', 0)))
                 if qty <= 0:
                     return False, f"Item {idx}: Quantity must be greater than zero"
-            except:
+            except (ValueError, TypeError, Decimal.InvalidOperation):
                 return False, f"Item {idx}: Invalid quantity"
 
             # Validate unit price
@@ -195,7 +195,7 @@ class ValidationService:
                 price = Decimal(str(item.get('unit_price', 0)))
                 if price < 0:
                     return False, f"Item {idx}: Unit price cannot be negative"
-            except:
+            except (ValueError, TypeError, Decimal.InvalidOperation):
                 return False, f"Item {idx}: Invalid unit price"
 
         return True, None

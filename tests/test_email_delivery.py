@@ -20,7 +20,7 @@ class TestEmailDeliveryLog:
         )
         assert email.to_email == "client@example.com"
         assert email.status == EmailDeliveryLog.Status.QUEUED
-    
+
     def test_email_sent_status(self, user):
         """Test marking email as sent."""
         email = EmailDeliveryLog.objects.create(
@@ -34,7 +34,7 @@ class TestEmailDeliveryLog:
         )
         assert email.status == EmailDeliveryLog.Status.SENT
         assert email.message_id == "sg-msg-123"
-    
+
     def test_email_bounce_tracking(self, user):
         """Test tracking bounced emails."""
         email = EmailDeliveryLog.objects.create(
@@ -70,7 +70,7 @@ class TestEmailRetryQueue:
         )
         assert retry.retry_count == 0
         assert retry.is_active is True
-    
+
     def test_retry_count_increment(self, user):
         """Test incrementing retry count."""
         email = EmailDeliveryLog.objects.create(
@@ -93,7 +93,7 @@ class TestEmailRetryQueue:
 @pytest.mark.django_db
 class TestAPIResponse:
     """Test standardized API response format."""
-    
+
     def test_success_response_format(self):
         """Test success response format."""
         from invoices.api.response import APIResponse
@@ -101,7 +101,7 @@ class TestAPIResponse:
         assert response.data["success"] is True
         assert response.data["message"] == "Success"
         assert response.data["data"]["test"] == "data"
-    
+
     def test_error_response_format(self):
         """Test error response format."""
         from invoices.api.response import APIResponse
@@ -113,7 +113,7 @@ class TestAPIResponse:
         assert response.data["success"] is False
         assert response.data["error"]["code"] == "TEST_ERROR"
         assert response.data["error"]["details"]["field"] == "error"
-    
+
     def test_paginated_response_format(self):
         """Test paginated response format."""
         from invoices.api.response import APIResponse
@@ -130,12 +130,12 @@ class TestAPIResponse:
 @pytest.mark.django_db
 class TestPermissions:
     """Test API permission classes."""
-    
+
     def test_is_owner_permission(self, user):
         """Test invoice owner permission."""
         from invoices.api.permissions import IsOwnerOrAdmin
         assert IsOwnerOrAdmin().has_object_permission(None, None, user) is False
-    
+
     def test_rate_limiting(self):
         """Test rate limiting configuration."""
         from invoices.api.rate_limiting import UserBurstThrottle
@@ -146,7 +146,7 @@ class TestPermissions:
 @pytest.mark.django_db
 class TestPaymentWebhook:
     """Test payment webhook handling and idempotency."""
-    
+
     def test_webhook_duplicate_prevention(self):
         """Test webhook replay attack prevention."""
         pass  # FUTURE: Implement payment webhook tests with ProcessedWebhook model
@@ -155,7 +155,7 @@ class TestPaymentWebhook:
 @pytest.mark.django_db
 class TestMFAFlow:
     """Test MFA enforcement and verification."""
-    
+
     def test_mfa_required_for_payments(self, user):
         """Test that MFA is required for payment operations."""
         pass  # FUTURE: Implement MFA flow tests with session verification

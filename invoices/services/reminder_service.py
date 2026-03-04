@@ -17,7 +17,7 @@ from django.utils import timezone
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
-    from invoices.models import ReminderRule, ReminderLog
+    from invoices.models import ReminderRule
 
 logger = logging.getLogger(__name__)
 

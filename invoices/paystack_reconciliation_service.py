@@ -5,7 +5,6 @@ Detects lost/interrupted payments and triggers automatic recovery.
 """
 
 from decimal import Decimal
-from typing import Any, Optional
 from django.utils import timezone
 from django.db import transaction
 import logging

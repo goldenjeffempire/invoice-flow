@@ -1,4 +1,4 @@
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.db.models import Sum
 import json
 import logging
-from ..models import Payment, Transaction, Workspace, Payout, Dispute, Invoice
+from ..models import Payment, Transaction, Payout, Dispute, Invoice
 from ..services.payment_service import PaymentService
 
 logger = logging.getLogger(__name__)
@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 def paystack_webhook(request):
     signature = request.META.get('HTTP_X_PAYSTACK_SIGNATURE')
     payload = request.body
-    
+
     if not PaymentService.verify_paystack_signature(payload, signature):
         return HttpResponse(status=401)
-        
+
     try:
         data = json.loads(payload)
         PaymentService.handle_paystack_webhook(data)
@@ -36,7 +36,7 @@ def payment_overview(request):
     total_collected = payments.filter(status=Payment.Status.COMPLETED).aggregate(Sum('amount'))['amount__sum'] or 0
     payouts = Payout.objects.filter(workspace=workspace).order_by('-created_at')[:5]
     disputes = Dispute.objects.filter(workspace=workspace).order_by('-created_at')[:5]
-    
+
     return render(request, 'pages/payments/overview.html', {
         'payments': payments[:10],
         'total_collected': total_collected,
@@ -83,5 +83,5 @@ def record_offline_payment(request, invoice_id):
             return redirect('invoices:invoice_detail', invoice_id=invoice.id)
         except Exception as e:
             messages.error(request, f"Error: {str(e)}")
-            
+
     return render(request, 'pages/payments/record_offline.html', {'invoice': invoice})

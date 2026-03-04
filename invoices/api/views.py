@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from invoices.models import Invoice, InvoiceActivity
+from invoices.models import Invoice
 from invoices.services import ReportsService, PDFService
 
 from .response import APIResponse
@@ -20,7 +20,6 @@ from .serializers import (
     InvoiceHistorySerializer,
     InvoiceListSerializer,
     InvoiceStatusSerializer,
-    InvoiceTemplateSerializer,
 )
 
 # Define common path parameters
@@ -126,7 +125,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         serializer = InvoiceStatusSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = cast(Dict[str, Any], serializer.validated_data)
-        
+
         from invoices.services import InvoiceService
         success, error_message = InvoiceService.transition_status(
             invoice,

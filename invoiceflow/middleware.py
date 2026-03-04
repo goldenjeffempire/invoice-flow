@@ -19,7 +19,7 @@ class RequestIDMiddleware:
         request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
         request.request_id = request_id
         _thread_locals.request_id = request_id
-        
+
         response = self.get_response(request)
         response['X-Request-ID'] = request_id
         return response

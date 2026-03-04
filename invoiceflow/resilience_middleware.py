@@ -5,8 +5,7 @@ import logging
 import time
 from django.db import connection, OperationalError, InterfaceError
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
-from django.shortcuts import render
-from django.urls import reverse, NoReverseMatch
+from django.urls import NoReverseMatch
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ class DatabaseResilienceMiddleware:
                     time.sleep(delay)
                     try:
                         connection.close()
-                    except:
+                    except Exception:
                         pass
                 else:
                     logger.error(f"DB failed: {e}")
@@ -68,7 +67,9 @@ class SessionResilienceMiddleware:
             if 'session' in str(e).lower():
                 logger.warning(f"Session recovery: {e}")
                 if hasattr(request, 'session'):
-                    try: request.session.flush()
-                    except: pass
+                    try:
+                        request.session.flush()
+                    except Exception:
+                        pass
                 return self.get_response(request)
             raise

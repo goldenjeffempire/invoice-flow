@@ -42,7 +42,7 @@ def initialize_payment(request):
     Requires: verified email + completed MFA + identity verification.
     """
     user = request.user
-    
+
     # ENFORCE: Email verification
     try:
         require_verified_email(user)
@@ -51,7 +51,7 @@ def initialize_payment(request):
             "error": str(e),
             "code": "EMAIL_NOT_VERIFIED"
         }, status=403)
-    
+
     # MFA completion is optional for public payments but recommended for logged in users
     # Check if MFA is enabled for this user
     from .models import MFAProfile
@@ -61,7 +61,7 @@ def initialize_payment(request):
             "error": "MFA verification required",
             "code": "MFA_NOT_VERIFIED"
         }, status=403)
-    
+
     invoice_id = request.POST.get("invoice_id")
     idempotency_key = request.POST.get("idempotency_key")
 
@@ -195,7 +195,7 @@ def paystack_webhook(request):
     if not event_id:
         # Some Paystack events use a different structure or top-level ID
         event_id = str(event.get("id", ""))
-        
+
     if not event_id:
         logger.warning("Missing event ID in Paystack webhook")
         return HttpResponse("Missing event ID", status=400)
@@ -338,16 +338,16 @@ def paystack_webhook(request):
 def initiate_invoice_payment(request, invoice_id):
     """Initiate payment for an invoice (logged-in user)."""
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
-    
+
     if invoice.status == "paid":
         return JsonResponse({"error": "Invoice already paid"}, status=400)
 
     service = get_paystack_service()
     if not service.is_configured:
         return JsonResponse({"error": "Payment gateway not configured"}, status=503)
-    
+
     reference = f"inv_{invoice.invoice_id}_{request.user.id}_{uuid.uuid4().hex[:8]}"
-    
+
     payment, created = Payment.objects.get_or_create(
         invoice=invoice,
         user=request.user,
@@ -358,16 +358,16 @@ def initiate_invoice_payment(request, invoice_id):
             "currency": invoice.currency,
         },
     )
-    
+
     if not created and payment.status == Payment.Status.PENDING:
         reference = payment.reference
     elif not created:
         return JsonResponse({"error": "Payment already processed"}, status=400)
-    
+
     callback_url = request.build_absolute_uri(
         f"/payments/callback/{invoice.invoice_id}/"
     )
-    
+
     result = service.initialize_payment(
         email=request.user.email,
         amount=invoice.total,
@@ -379,13 +379,13 @@ def initiate_invoice_payment(request, invoice_id):
             "user_id": request.user.id,
         },
     )
-    
+
     if result.get("status") == "success":
         return JsonResponse({
             "authorization_url": result["authorization_url"],
             "reference": result["reference"],
         })
-    
+
     return JsonResponse({"error": result.get("message", "Payment initialization failed")}, status=400)
 
 
@@ -398,10 +398,10 @@ def initiate_invoice_payment(request, invoice_id):
 def payment_callback(request, invoice_id):
     """Handle Paystack callback after payment (logged-in user)."""
     reference = request.GET.get("reference")
-    
+
     if not reference:
         return redirect("invoices:dashboard")
-    
+
     try:
         payment = Payment.objects.get(reference=reference, user=request.user)
     except Payment.DoesNotExist:
@@ -409,13 +409,13 @@ def payment_callback(request, invoice_id):
 
     if not payment.invoice or payment.invoice.invoice_id != invoice_id:
         return redirect("invoices:dashboard")
-    
+
     if payment.status == Payment.Status.SUCCESS:
         return redirect("invoices:invoice_detail", invoice_id=invoice_id)
-    
+
     service = get_paystack_service()
     verification = service.verify_transaction(reference)
-    
+
     if verification.get("verified"):
         finalize_payment_from_verification(payment=payment, verification=verification)
     else:
@@ -428,7 +428,7 @@ def payment_callback(request, invoice_id):
             status_match=False,
             error=verification.get("message", "Verification failed"),
         )
-    
+
     return redirect("invoices:invoice_detail", invoice_id=invoice_id)
 
 
@@ -441,7 +441,7 @@ def payment_callback(request, invoice_id):
 def payment_status(request, invoice_id):
     """Get payment status for an invoice."""
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id, user=request.user)
-    
+
     try:
         payment = Payment.objects.filter(invoice=invoice).latest("created_at")
         return JsonResponse({
@@ -462,25 +462,25 @@ def payment_status(request, invoice_id):
 def public_invoice_view(request, invoice_id):
     """View invoice for public payment (no login required)."""
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id)
-    
+
     if invoice.status == "paid":
         return render(request, "payments/invoice_paid.html", {"invoice": invoice})
-    
+
     # If platform integrated, we use the master public key
     paystack_public_key = getattr(settings, "PAYSTACK_PUBLIC_KEY", "")
     paystack_configured = bool(paystack_public_key)
-    
+
     # Check for payment preferences
     from .models import PaymentSettings
     payment_settings, _ = PaymentSettings.objects.get_or_create(user=invoice.user)
-    
+
     context = {
         "invoice": invoice,
         "paystack_configured": paystack_configured,
         "paystack_public_key": paystack_public_key,
         "payment_settings": payment_settings,
     }
-    
+
     return render(request, "payments/public_invoice.html", context)
 
 
@@ -493,20 +493,20 @@ def public_invoice_view(request, invoice_id):
 def public_initiate_payment(request, invoice_id):
     """Initiate payment for a public invoice (no login required)."""
     invoice = get_object_or_404(Invoice, invoice_id=invoice_id)
-    
+
     if invoice.status == "paid":
         return JsonResponse({"error": "Invoice already paid"}, status=400)
 
     service = get_paystack_service()
     if not service.is_configured:
         return JsonResponse({"error": "Payment gateway not configured"}, status=503)
-    
+
     email = request.POST.get("email") or invoice.client_email
     if not email:
         return JsonResponse({"error": "Email address required"}, status=400)
-    
+
     reference = f"pub_{invoice.invoice_id}_{uuid.uuid4().hex[:8]}"
-    
+
     payment = Payment.objects.create(
         invoice=invoice,
         user=invoice.user,
@@ -515,11 +515,11 @@ def public_initiate_payment(request, invoice_id):
         currency=invoice.currency,
         status=Payment.Status.PENDING,
     )
-    
+
     callback_url = request.build_absolute_uri(
         f"/pay/{invoice.invoice_id}/callback/"
     )
-    
+
     result = service.initialize_payment(
         email=email,
         amount=invoice.total,
@@ -531,16 +531,16 @@ def public_initiate_payment(request, invoice_id):
             "public_payment": True,
         },
     )
-    
+
     if result.get("status") == "success":
         return JsonResponse({
             "authorization_url": result["authorization_url"],
             "reference": result["reference"],
         })
-    
+
     payment.status = Payment.Status.FAILED
     payment.save(update_fields=["status"])
-    
+
     return JsonResponse({"error": result.get("message", "Payment initialization failed")}, status=400)
 
 
@@ -552,10 +552,10 @@ def public_initiate_payment(request, invoice_id):
 def public_payment_callback(request, invoice_id):
     """Handle Paystack callback after public payment."""
     reference = request.GET.get("reference")
-    
+
     if not reference:
         return redirect("public_invoice", invoice_id=invoice_id)
-    
+
     try:
         payment = Payment.objects.get(reference=reference)
     except Payment.DoesNotExist:
@@ -563,17 +563,17 @@ def public_payment_callback(request, invoice_id):
 
     if not payment.invoice or payment.invoice.invoice_id != invoice_id:
         return redirect("public_invoice", invoice_id=invoice_id)
-    
+
     if payment.status == Payment.Status.SUCCESS:
         return render(request, "payments/payment_success.html", {"invoice": payment.invoice})
-    
+
     service = get_paystack_service()
     verification = service.verify_transaction(reference)
-    
+
     if verification.get("verified"):
         finalize_payment_from_verification(payment=payment, verification=verification)
         return render(request, "payments/payment_success.html", {"invoice": payment.invoice})
-    
+
     record_reconciliation(
         payment=payment,
         status=PaymentReconciliation.ReconciliationStatus.FAILED,
@@ -583,5 +583,5 @@ def public_payment_callback(request, invoice_id):
         status_match=False,
         error=verification.get("message", "Verification failed"),
     )
-    
+
     return render(request, "payments/payment_failed.html", {"invoice": payment.invoice})

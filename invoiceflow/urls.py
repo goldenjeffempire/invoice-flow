@@ -1,15 +1,14 @@
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import path, include, re_path
+from django.views.decorators.cache import cache_page
+from django.views.generic import TemplateView
+
 from invoices import admin_views, health, views
 from invoices.sitemap import sitemaps
 
 handler404 = "invoices.views.custom_404_view"
 handler500 = "invoices.views.custom_500_view"
-
-from django.views.decorators.cache import cache_page
-
-from django.views.generic import TemplateView
 
 urlpatterns = [
     path("sw.js", TemplateView.as_view(template_name="sw.js", content_type="application/javascript"), name="service_worker"),

@@ -11,7 +11,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.NOTICE("InvoiceFlow System Health Check"))
         self.stdout.write("=" * 60)
-        
+
         checks_passed = 0
         checks_failed = 0
 
@@ -23,7 +23,7 @@ class Command(BaseCommand):
 
         self.stdout.write("\n" + "=" * 60)
         self.stdout.write(f"Results: {self.style.SUCCESS(f'{checks_passed} passed')}, {self.style.ERROR(f'{checks_failed} failed') if checks_failed else f'{checks_failed} failed'}")
-        
+
         if checks_failed == 0:
             self.stdout.write(self.style.SUCCESS("\nAll systems are operational!"))
         else:
@@ -90,6 +90,7 @@ class Command(BaseCommand):
             if not settings.DEBUG:
                 try:
                     import sentry_sdk
+                    # Use sentry_sdk to verify it's working
                     self.stdout.write(f"  SDK Active: {self.style.SUCCESS('Yes (DSN configured)')}")
                     passed += 1
                 except ImportError:
@@ -104,7 +105,7 @@ class Command(BaseCommand):
 
     def _check_security(self, passed, failed):
         self.stdout.write("\n[Security]")
-        
+
         secret_key = os.environ.get("SECRET_KEY", "")
         if secret_key and not secret_key.startswith("django-insecure-"):
             self.stdout.write(f"  SECRET_KEY: {self.style.SUCCESS('Secure')}")

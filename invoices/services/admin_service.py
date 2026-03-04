@@ -12,13 +12,13 @@ from __future__ import annotations
 
 import logging
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from django.contrib.auth.models import User
-from django.db.models import Count, Q, Sum
+from django.db.models import Q
 
 if TYPE_CHECKING:
-    from invoices.models import Invoice, Payment, UserProfile, ContactSubmission
+    pass
 
 logger = logging.getLogger(__name__)
 

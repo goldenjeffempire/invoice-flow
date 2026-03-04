@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Q
@@ -13,7 +13,7 @@ def global_search(request):
         invoices = Invoice.objects.filter(
             Q(invoice_number__icontains=query) | Q(client__name__icontains=query)
         ).filter(workspace=request.workspace).select_related('client')[:5]
-        
+
         for inv in invoices:
             results.append({
                 'type': 'Invoice',
@@ -21,13 +21,13 @@ def global_search(request):
                 'url': inv.get_absolute_url() if hasattr(inv, 'get_absolute_url') else f"/invoices/{inv.id}/",
                 'meta': f"{inv.currency} {inv.total_amount}"
             })
-            
+
         # Search Clients
         from ..models import Client
         clients = Client.objects.filter(
             Q(name__icontains=query) | Q(email__icontains=query)
         ).filter(workspace=request.workspace)[:5]
-        
+
         for client in clients:
             results.append({
                 'type': 'Client',
@@ -41,7 +41,7 @@ def global_search(request):
         expenses = Expense.objects.filter(
             Q(description__icontains=query) | Q(vendor__name__icontains=query)
         ).filter(workspace=request.workspace).select_related('vendor')[:5]
-        
+
         for exp in expenses:
             results.append({
                 'type': 'Expense',
@@ -49,7 +49,7 @@ def global_search(request):
                 'url': f"/expenses/{exp.id}/",
                 'meta': f"{exp.currency} {exp.amount}"
             })
-        
+
     return JsonResponse({'results': results})
 
 @login_required

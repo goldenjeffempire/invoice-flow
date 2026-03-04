@@ -1,6 +1,5 @@
 """Management command to test email sending functionality."""
-import json
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from invoices.sendgrid_service import SendGridEmailService
 
 
@@ -33,7 +32,7 @@ class Command(BaseCommand):
         for name, template_id in service.TEMPLATE_IDS.items():
             status = self.style.SUCCESS("Set") if template_id else self.style.WARNING("Not Set")
             template_status.append(f"  - {name}: {status}")
-        
+
         self.stdout.write("\nTemplate IDs:")
         for status in template_status:
             self.stdout.write(status)
@@ -67,7 +66,7 @@ class Command(BaseCommand):
         )
 
         if result.get("status") == "sent":
-            self.stdout.write(self.style.SUCCESS(f"\nTest email sent successfully!"))
+            self.stdout.write(self.style.SUCCESS("\nTest email sent successfully!"))
             self.stdout.write(f"Message ID: {result.get('message_id', 'N/A')}")
         else:
             self.stdout.write(self.style.ERROR(f"\nFailed to send test email: {result.get('message', 'Unknown error')}"))

@@ -27,7 +27,6 @@ from .errors import (
     ErrorDetail,
     ErrorResponse,
     FieldError,
-    format_validation_errors,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,13 +37,13 @@ def custom_exception_handler(exc: Exception, context: Dict[str, Any]) -> Optiona
     request_id = getattr(request, "request_id", None) if request else None
     if not request_id:
         request_id = str(uuid.uuid4())
-    
+
     response = exception_handler(exc, context)
-    
+
     if response is not None:
         error_response = _convert_to_standard_format(exc, response, request_id)
         return Response(error_response.to_dict(), status=response.status_code)
-    
+
     return response
 
 
@@ -54,7 +53,7 @@ def _convert_to_standard_format(
     request_id: str,
 ) -> ErrorResponse:
     status = response.status_code
-    
+
     if isinstance(exc, NotAuthenticated):
         return ErrorResponse(
             error=ErrorDetail(
@@ -63,7 +62,7 @@ def _convert_to_standard_format(
             ),
             request_id=request_id,
         )
-    
+
     if isinstance(exc, AuthenticationFailed):
         return ErrorResponse(
             error=ErrorDetail(
@@ -72,7 +71,7 @@ def _convert_to_standard_format(
             ),
             request_id=request_id,
         )
-    
+
     if isinstance(exc, PermissionDenied):
         return ErrorResponse(
             error=ErrorDetail(
@@ -81,7 +80,7 @@ def _convert_to_standard_format(
             ),
             request_id=request_id,
         )
-    
+
     if isinstance(exc, NotFound):
         return ErrorResponse(
             error=ErrorDetail(
@@ -90,7 +89,7 @@ def _convert_to_standard_format(
             ),
             request_id=request_id,
         )
-    
+
     if isinstance(exc, Throttled):
         wait = exc.wait
         message = f"Too many requests. Please try again in {int(wait)} seconds." if wait else "Too many requests. Please try again later."
@@ -101,7 +100,7 @@ def _convert_to_standard_format(
             ),
             request_id=request_id,
         )
-    
+
     if isinstance(exc, DRFValidationError):
         field_errors = _extract_field_errors(exc.detail)
         return ErrorResponse(
@@ -112,7 +111,7 @@ def _convert_to_standard_format(
             ),
             request_id=request_id,
         )
-    
+
     if isinstance(exc, APIException):
         return ErrorResponse(
             error=ErrorDetail(
@@ -121,7 +120,7 @@ def _convert_to_standard_format(
             ),
             request_id=request_id,
         )
-    
+
     return ErrorResponse(
         error=ErrorDetail(
             code=ErrorCode.INTERNAL_ERROR.value,
@@ -133,11 +132,11 @@ def _convert_to_standard_format(
 
 def _extract_field_errors(detail: Any, prefix: str = "") -> list[FieldError]:
     errors = []
-    
+
     if isinstance(detail, dict):
         for field_name, field_errors in detail.items():
             full_field = f"{prefix}{field_name}" if prefix else field_name
-            
+
             if isinstance(field_errors, list):
                 for error in field_errors:
                     if hasattr(error, "code"):
@@ -146,7 +145,7 @@ def _extract_field_errors(detail: Any, prefix: str = "") -> list[FieldError]:
                     else:
                         code = ErrorCode.FIELD_INVALID.value
                         message = str(error)
-                    
+
                     errors.append(FieldError(
                         field=full_field,
                         code=code,
@@ -160,7 +159,7 @@ def _extract_field_errors(detail: Any, prefix: str = "") -> list[FieldError]:
                     code=ErrorCode.FIELD_INVALID.value,
                     message=str(field_errors),
                 ))
-    
+
     elif isinstance(detail, list):
         for error in detail:
             if hasattr(error, "code"):
@@ -169,20 +168,20 @@ def _extract_field_errors(detail: Any, prefix: str = "") -> list[FieldError]:
             else:
                 code = ErrorCode.FIELD_INVALID.value
                 message = str(error)
-            
+
             errors.append(FieldError(
                 field="__all__",
                 code=code,
                 message=message,
             ))
-    
+
     else:
         errors.append(FieldError(
             field="__all__",
             code=ErrorCode.FIELD_INVALID.value,
             message=str(detail),
         ))
-    
+
     return errors
 
 
@@ -200,5 +199,5 @@ def _map_drf_code(code: str) -> str:
         "does_not_exist": ErrorCode.RESOURCE_NOT_FOUND.value,
         "unique": ErrorCode.RESOURCE_ALREADY_EXISTS.value,
     }
-    
+
     return code_mapping.get(code, ErrorCode.FIELD_INVALID.value)

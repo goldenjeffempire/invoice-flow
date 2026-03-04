@@ -8,11 +8,11 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from invoices.models import (
     UserProfile, MFAProfile, EmailToken, SecurityEvent,
-    UserSession, LoginAttempt, KnownDevice, WorkspaceInvitation
+    UserSession, LoginAttempt, WorkspaceInvitation
 )
 from invoices.auth_services import (
     AuthService, MFAService, SessionService, InvitationService,

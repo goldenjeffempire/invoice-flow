@@ -598,6 +598,6 @@ class PaymentRetryService:
 
             return True
 
-        except Exception as e:
+        except Exception:
             logger.exception(f"Error sending failure notification for schedule {schedule.id}")
             return False

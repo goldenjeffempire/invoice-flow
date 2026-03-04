@@ -5,9 +5,9 @@ from decimal import Decimal
 from datetime import date
 from typing import Optional, List, Dict, Any, Tuple
 from django.db import transaction
-from django.db.models import Sum, Count, Q, F
+from django.db.models import Sum, Count, Q
 from django.utils import timezone
-from django.core.exceptions import ValidationError, PermissionDenied
+from django.core.exceptions import ValidationError
 from django.conf import settings
 
 from invoices.models import (
@@ -28,7 +28,7 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
 class ExpenseService:
-    
+
     @staticmethod
     def get_expense_for_user(expense_id: int, user, workspace: Workspace) -> Optional[Expense]:
         try:
@@ -46,10 +46,10 @@ class ExpenseService:
         queryset = Expense.objects.filter(workspace=workspace).select_related(
             'category', 'vendor', 'client', 'created_by'
         ).prefetch_related('attachments')
-        
+
         if not filters:
             return queryset
-        
+
         if filters.get('status'):
             queryset = queryset.filter(status=filters['status'])
         if filters.get('category_id'):
@@ -81,7 +81,7 @@ class ExpenseService:
         if filters.get('tags'):
             for tag in filters['tags']:
                 queryset = queryset.filter(tags__contains=[tag])
-        
+
         return queryset
 
     @staticmethod
@@ -99,7 +99,7 @@ class ExpenseService:
                 workspace=workspace,
                 is_active=True
             ).first()
-        
+
         vendor = None
         if data.get('vendor_id'):
             vendor = Vendor.objects.filter(
@@ -107,14 +107,14 @@ class ExpenseService:
                 workspace=workspace,
                 is_active=True
             ).first()
-        
+
         client = None
         if data.get('client_id'):
             client = Client.objects.filter(
                 id=data['client_id'],
                 workspace=workspace
             ).first()
-        
+
         expense = Expense(
             workspace=workspace,
             description=data['description'],
@@ -138,7 +138,7 @@ class ExpenseService:
             metadata=data.get('metadata', {}),
         )
         expense.save()
-        
+
         ExpenseService._create_audit_log(
             expense=expense,
             user=user,
@@ -147,7 +147,7 @@ class ExpenseService:
             new_values=ExpenseService._expense_to_dict(expense),
             request=request
         )
-        
+
         logger.info(f"Created expense {expense.expense_number} for workspace {workspace.id}")
         return expense
 
@@ -161,9 +161,9 @@ class ExpenseService:
     ) -> Expense:
         if expense.status in [Expense.Status.BILLED, Expense.Status.REIMBURSED]:
             raise ValidationError("Cannot edit expenses that are billed or reimbursed")
-        
+
         old_values = ExpenseService._expense_to_dict(expense)
-        
+
         if 'description' in data:
             expense.description = data['description']
         if 'notes' in data:
@@ -192,7 +192,7 @@ class ExpenseService:
             expense.tags = data['tags']
         if 'is_recurring' in data:
             expense.is_recurring = data['is_recurring']
-        
+
         if 'category_id' in data:
             if data['category_id']:
                 expense.category = ExpenseCategory.objects.filter(
@@ -202,7 +202,7 @@ class ExpenseService:
                 ).first()
             else:
                 expense.category = None
-        
+
         if 'vendor_id' in data:
             if data['vendor_id']:
                 expense.vendor = Vendor.objects.filter(
@@ -212,7 +212,7 @@ class ExpenseService:
                 ).first()
             else:
                 expense.vendor = None
-        
+
         if 'client_id' in data:
             if data['client_id']:
                 expense.client = Client.objects.filter(
@@ -221,9 +221,9 @@ class ExpenseService:
                 ).first()
             else:
                 expense.client = None
-        
+
         expense.save()
-        
+
         new_values = ExpenseService._expense_to_dict(expense)
         ExpenseService._create_audit_log(
             expense=expense,
@@ -234,7 +234,7 @@ class ExpenseService:
             new_values=new_values,
             request=request
         )
-        
+
         return expense
 
     @staticmethod
@@ -242,12 +242,12 @@ class ExpenseService:
     def submit_expense(expense: Expense, user, request=None) -> Expense:
         if expense.status != Expense.Status.DRAFT:
             raise ValidationError("Only draft expenses can be submitted")
-        
+
         expense.status = Expense.Status.PENDING
         expense.submitted_by = user
         expense.submitted_at = timezone.now()
         expense.save()
-        
+
         ExpenseService._create_audit_log(
             expense=expense,
             user=user,
@@ -256,7 +256,7 @@ class ExpenseService:
             new_values={'status': expense.status},
             request=request
         )
-        
+
         return expense
 
     @staticmethod
@@ -264,15 +264,15 @@ class ExpenseService:
     def approve_expense(expense: Expense, user, request=None) -> Expense:
         if expense.status != Expense.Status.PENDING:
             raise ValidationError("Only pending expenses can be approved")
-        
+
         expense.status = Expense.Status.APPROVED
         expense.approved_by = user
         expense.approved_at = timezone.now()
         expense.save()
-        
+
         if expense.vendor:
             expense.vendor.update_totals()
-        
+
         ExpenseService._create_audit_log(
             expense=expense,
             user=user,
@@ -281,7 +281,7 @@ class ExpenseService:
             new_values={'status': expense.status, 'approved_by': user.id},
             request=request
         )
-        
+
         return expense
 
     @staticmethod
@@ -289,11 +289,11 @@ class ExpenseService:
     def reject_expense(expense: Expense, user, reason: str, request=None) -> Expense:
         if expense.status != Expense.Status.PENDING:
             raise ValidationError("Only pending expenses can be rejected")
-        
+
         expense.status = Expense.Status.REJECTED
         expense.rejected_reason = reason
         expense.save()
-        
+
         ExpenseService._create_audit_log(
             expense=expense,
             user=user,
@@ -302,7 +302,7 @@ class ExpenseService:
             new_values={'status': expense.status, 'rejected_reason': reason},
             request=request
         )
-        
+
         return expense
 
     @staticmethod
@@ -310,12 +310,12 @@ class ExpenseService:
     def mark_reimbursed(expense: Expense, user, reference: str = '', request=None) -> Expense:
         if expense.status != Expense.Status.APPROVED:
             raise ValidationError("Only approved expenses can be marked as reimbursed")
-        
+
         expense.status = Expense.Status.REIMBURSED
         expense.reimbursed_at = timezone.now()
         expense.reimbursement_reference = reference
         expense.save()
-        
+
         ExpenseService._create_audit_log(
             expense=expense,
             user=user,
@@ -324,7 +324,7 @@ class ExpenseService:
             new_values={'status': expense.status, 'reimbursement_reference': reference},
             request=request
         )
-        
+
         return expense
 
     @staticmethod
@@ -344,14 +344,14 @@ class ExpenseService:
                 raise ValidationError(f"Expense {expense.expense_number} must be approved or pending to be billed")
             if expense.workspace_id != invoice.workspace_id:
                 raise ValidationError("Expenses must belong to the same workspace as the invoice")
-        
+
         for expense in expenses:
             description = f"Expense: {expense.description}"
             if expense.vendor:
                 description += f" (Vendor: {expense.vendor.name})"
             if expense.expense_date:
                 description += f" - {expense.expense_date.strftime('%Y-%m-%d')}"
-            
+
             LineItem.objects.create(
                 invoice=invoice,
                 description=description,
@@ -360,13 +360,13 @@ class ExpenseService:
                 tax_rate=Decimal('0.00'),
                 sort_order=invoice.line_items.count() + 1
             )
-            
+
             expense.is_billed = True
             expense.invoice = invoice
             expense.billed_at = timezone.now()
             expense.status = Expense.Status.BILLED
             expense.save()
-            
+
             ExpenseService._create_audit_log(
                 expense=expense,
                 user=user,
@@ -376,10 +376,10 @@ class ExpenseService:
                 related_invoice=invoice,
                 request=request
             )
-        
+
         invoice.calculate_totals()
         invoice.save()
-        
+
         logger.info(f"Added {len(expenses)} expenses to invoice {invoice.invoice_number}")
         return invoice
 
@@ -391,20 +391,20 @@ class ExpenseService:
             is_billed=False,
             status__in=[Expense.Status.APPROVED, Expense.Status.PENDING]
         ).select_related('category', 'vendor', 'client')
-        
+
         if client_id:
             queryset = queryset.filter(client_id=client_id)
-        
+
         return queryset
 
     @staticmethod
     def validate_file_upload(file) -> Tuple[bool, str]:
         if file.size > MAX_FILE_SIZE:
             return False, f"File size exceeds maximum allowed ({MAX_FILE_SIZE // 1024 // 1024}MB)"
-        
+
         if file.content_type not in ALLOWED_FILE_TYPES:
             return False, f"File type not allowed. Allowed types: {', '.join(ALLOWED_FILE_TYPES.keys())}"
-        
+
         return True, ""
 
     @staticmethod
@@ -420,22 +420,22 @@ class ExpenseService:
         is_valid, error_msg = ExpenseService.validate_file_upload(file)
         if not is_valid:
             raise ValidationError(error_msg)
-        
+
         upload_dir = os.path.join(settings.MEDIA_ROOT, 'expenses', str(expense.workspace_id))
         os.makedirs(upload_dir, exist_ok=True)
-        
+
         ext = ALLOWED_FILE_TYPES.get(file.content_type, '.bin')
         safe_filename = f"{uuid.uuid4().hex}{ext}"
         file_path = os.path.join(upload_dir, safe_filename)
-        
+
         with open(file_path, 'wb+') as destination:
             for chunk in file.chunks():
                 destination.write(chunk)
-        
+
         relative_path = os.path.join('expenses', str(expense.workspace_id), safe_filename)
-        
+
         is_first = not expense.attachments.exists()
-        
+
         attachment = ExpenseAttachment.objects.create(
             expense=expense,
             file_name=safe_filename,
@@ -448,7 +448,7 @@ class ExpenseService:
             description=description,
             is_primary=is_first
         )
-        
+
         ExpenseService._create_audit_log(
             expense=expense,
             user=user,
@@ -457,7 +457,7 @@ class ExpenseService:
             new_values={'attachment_id': attachment.id, 'file_name': file.name},
             request=request
         )
-        
+
         return attachment
 
     @staticmethod
@@ -465,14 +465,14 @@ class ExpenseService:
     def remove_attachment(attachment: ExpenseAttachment, user, request=None) -> bool:
         expense = attachment.expense
         file_path = os.path.join(settings.MEDIA_ROOT, attachment.file_path)
-        
+
         if os.path.exists(file_path):
             os.remove(file_path)
-        
+
         file_name = attachment.original_file_name
         attachment_id = attachment.id
         attachment.delete()
-        
+
         ExpenseService._create_audit_log(
             expense=expense,
             user=user,
@@ -481,18 +481,18 @@ class ExpenseService:
             old_values={'attachment_id': attachment_id, 'file_name': file_name},
             request=request
         )
-        
+
         return True
 
     @staticmethod
     def get_expense_summary(workspace: Workspace, date_from: date = None, date_to: date = None) -> Dict[str, Any]:
         queryset = Expense.objects.filter(workspace=workspace)
-        
+
         if date_from:
             queryset = queryset.filter(expense_date__gte=date_from)
         if date_to:
             queryset = queryset.filter(expense_date__lte=date_to)
-        
+
         summary = queryset.aggregate(
             total_expenses=Sum('total_amount'),
             total_tax=Sum('tax_amount'),
@@ -502,24 +502,24 @@ class ExpenseService:
             billable_total=Sum('billable_amount', filter=Q(is_billable=True, is_billed=False)),
             billed_total=Sum('billable_amount', filter=Q(is_billed=True)),
         )
-        
+
         for key in summary:
             if summary[key] is None:
                 summary[key] = Decimal('0.00') if 'total' in key else 0
-        
+
         by_category = queryset.values('category__name', 'category__color').annotate(
             total=Sum('total_amount'),
             count=Count('id')
         ).order_by('-total')[:10]
-        
+
         by_vendor = queryset.values('vendor__name').annotate(
             total=Sum('total_amount'),
             count=Count('id')
         ).order_by('-total')[:10]
-        
+
         summary['by_category'] = list(by_category)
         summary['by_vendor'] = list(by_vendor)
-        
+
         return summary
 
     @staticmethod
@@ -530,34 +530,34 @@ class ExpenseService:
             expense_date__lte=date_to,
             status__in=[Expense.Status.APPROVED, Expense.Status.REIMBURSED, Expense.Status.BILLED]
         )
-        
+
         invoices = Invoice.objects.filter(
             workspace=workspace,
             issue_date__gte=date_from,
             issue_date__lte=date_to,
             status__in=['sent', 'viewed', 'part_paid', 'paid']
         )
-        
+
         total_revenue = invoices.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
         total_expenses = expenses.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
         gross_profit = total_revenue - total_expenses
-        
+
         expense_by_category = expenses.values('category__name').annotate(
             total=Sum('total_amount')
         ).order_by('-total')
-        
+
         revenue_by_month = invoices.extra(
             select={'month': "TO_CHAR(issue_date, 'YYYY-MM')"}
         ).values('month').annotate(
             total=Sum('total')
         ).order_by('month')
-        
+
         expense_by_month = expenses.extra(
             select={'month': "TO_CHAR(expense_date, 'YYYY-MM')"}
         ).values('month').annotate(
             total=Sum('total_amount')
         ).order_by('month')
-        
+
         return {
             'period': {'from': date_from, 'to': date_to},
             'total_revenue': total_revenue,
@@ -620,7 +620,7 @@ class ExpenseService:
 
 
 class ExpenseCategoryService:
-    
+
     @staticmethod
     def get_categories(workspace: Workspace, include_inactive: bool = False):
         queryset = ExpenseCategory.objects.filter(workspace=workspace)
@@ -637,7 +637,7 @@ class ExpenseCategoryService:
                 id=data['parent_id'],
                 workspace=workspace
             ).first()
-        
+
         category = ExpenseCategory.objects.create(
             workspace=workspace,
             name=data['name'],
@@ -671,7 +671,7 @@ class ExpenseCategoryService:
             category.gl_account_code = data['gl_account_code']
         if 'sort_order' in data:
             category.sort_order = data['sort_order']
-        
+
         if 'parent_id' in data:
             if data['parent_id']:
                 category.parent = ExpenseCategory.objects.filter(
@@ -680,7 +680,7 @@ class ExpenseCategoryService:
                 ).first()
             else:
                 category.parent = None
-        
+
         category.save()
         return category
 
@@ -698,7 +698,7 @@ class ExpenseCategoryService:
             {'name': 'Insurance', 'color': '#64748b', 'icon': 'shield', 'is_tax_deductible': True},
             {'name': 'Other', 'color': '#9ca3af', 'icon': 'ellipsis', 'is_tax_deductible': False},
         ]
-        
+
         for i, cat_data in enumerate(defaults):
             ExpenseCategory.objects.get_or_create(
                 workspace=workspace,
@@ -713,7 +713,7 @@ class ExpenseCategoryService:
 
 
 class VendorService:
-    
+
     @staticmethod
     def get_vendors(workspace: Workspace, include_inactive: bool = False):
         queryset = Vendor.objects.filter(workspace=workspace)
@@ -740,7 +740,7 @@ class VendorService:
                 id=data['default_category_id'],
                 workspace=workspace
             ).first()
-        
+
         vendor = Vendor.objects.create(
             workspace=workspace,
             name=data['name'],
@@ -771,7 +771,7 @@ class VendorService:
                       'notes', 'is_active']:
             if field in data:
                 setattr(vendor, field, data[field])
-        
+
         if 'default_category_id' in data:
             if data['default_category_id']:
                 vendor.default_category = ExpenseCategory.objects.filter(
@@ -780,6 +780,6 @@ class VendorService:
                 ).first()
             else:
                 vendor.default_category = None
-        
+
         vendor.save()
         return vendor

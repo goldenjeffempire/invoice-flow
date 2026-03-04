@@ -23,13 +23,11 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from django.conf import settings
 from django.core.cache import caches
-from django.db import models
 from django.db.models import (
-    Avg, Case, Count, DecimalField, F, Max, Min, Q, Sum, Value, When
+    Avg, Count, DecimalField, Max, Min, Q, Sum, Value
 )
-from django.db.models.functions import Coalesce, ExtractMonth, ExtractYear, TruncDate, TruncMonth, TruncWeek
+from django.db.models.functions import Coalesce, TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
 
 if TYPE_CHECKING:
@@ -44,11 +42,11 @@ class DateRange:
     start_date: date
     end_date: date
     label: str = ""
-    
+
     @classmethod
     def from_preset(cls, preset: str) -> "DateRange":
         today = timezone.now().date()
-        
+
         presets = {
             "today": (today, today, "Today"),
             "yesterday": (today - timedelta(days=1), today - timedelta(days=1), "Yesterday"),
@@ -65,13 +63,13 @@ class DateRange:
             "last_365_days": (today - timedelta(days=365), today, "Last 365 Days"),
             "all_time": (today - timedelta(days=3650), today, "All Time"),
         }
-        
+
         if preset in presets:
             start, end, label = presets[preset]
             return cls(start_date=start, end_date=end, label=label)
-        
+
         return cls(start_date=today - timedelta(days=30), end_date=today, label="Last 30 Days")
-    
+
     @staticmethod
     def _quarter_start(d: date) -> date:
         quarter = (d.month - 1) // 3
@@ -90,67 +88,67 @@ class ReportsService:
     - Caching for performance
     - Forecasting
     """
-    
+
     CACHE_PREFIX = "reports"
     CACHE_TIMEOUT = 300
-    
+
     @classmethod
     def _get_cache(cls):
         try:
             return caches["analytics"]
         except Exception:
             return caches["default"]
-    
+
     @classmethod
     def _cache_key(cls, workspace_id: int, report_type: str, params: Dict) -> str:
         param_str = ":".join(f"{k}={v}" for k, v in sorted(params.items()))
         hash_val = hashlib.md5(param_str.encode()).hexdigest()[:8]
         return f"{cls.CACHE_PREFIX}:{workspace_id}:{report_type}:{hash_val}"
-    
+
     @classmethod
     def invalidate_workspace_cache(cls, workspace_id: int) -> None:
         pass
-    
+
     @classmethod
     def get_reports_home_data(cls, workspace: "Workspace", date_range: DateRange) -> Dict[str, Any]:
         from invoices.models import Invoice, Payment, Expense
-        
+
         invoices = Invoice.objects.filter(
             workspace=workspace,
             issue_date__gte=date_range.start_date,
             issue_date__lte=date_range.end_date
         ).exclude(status=Invoice.Status.VOID)
-        
+
         payments = Payment.objects.filter(
             workspace=workspace,
             payment_date__date__gte=date_range.start_date,
             payment_date__date__lte=date_range.end_date,
             status=Payment.Status.COMPLETED
         )
-        
+
         expenses = Expense.objects.filter(
             workspace=workspace,
             expense_date__gte=date_range.start_date,
             expense_date__lte=date_range.end_date,
             status__in=['approved', 'reimbursed', 'billed']
         )
-        
+
         invoice_stats = invoices.aggregate(
             total_invoiced=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             invoice_count=Count('id'),
             avg_invoice=Coalesce(Avg('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         )
-        
+
         payment_stats = payments.aggregate(
             total_collected=Coalesce(Sum('amount'), Value(Decimal('0')), output_field=DecimalField()),
             payment_count=Count('id'),
         )
-        
+
         expense_stats = expenses.aggregate(
             total_expenses=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             expense_count=Count('id'),
         )
-        
+
         outstanding = Invoice.objects.filter(
             workspace=workspace,
             status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID, Invoice.Status.OVERDUE]
@@ -158,7 +156,7 @@ class ReportsService:
             total_outstanding=Coalesce(Sum('amount_due'), Value(Decimal('0')), output_field=DecimalField()),
             outstanding_count=Count('id'),
         )
-        
+
         overdue = Invoice.objects.filter(
             workspace=workspace,
             due_date__lt=timezone.now().date(),
@@ -167,11 +165,11 @@ class ReportsService:
             total_overdue=Coalesce(Sum('amount_due'), Value(Decimal('0')), output_field=DecimalField()),
             overdue_count=Count('id'),
         )
-        
+
         net_income = payment_stats['total_collected'] - expense_stats['total_expenses']
-        
+
         revenue_trend = cls._get_revenue_trend(workspace, date_range, 'month')
-        
+
         return {
             "date_range": date_range,
             "kpis": {
@@ -198,24 +196,24 @@ class ReportsService:
                 {"name": "Expense Report", "url": "reports:expense", "icon": "receipt-refund", "color": "orange"},
             ],
         }
-    
+
     @classmethod
     def get_revenue_report(cls, workspace: "Workspace", date_range: DateRange, group_by: str = "month") -> Dict[str, Any]:
         from invoices.models import Invoice, Payment
-        
+
         invoices = Invoice.objects.filter(
             workspace=workspace,
             issue_date__gte=date_range.start_date,
             issue_date__lte=date_range.end_date
         ).exclude(status=Invoice.Status.VOID)
-        
+
         payments = Payment.objects.filter(
             workspace=workspace,
             payment_date__date__gte=date_range.start_date,
             payment_date__date__lte=date_range.end_date,
             status=Payment.Status.COMPLETED
         )
-        
+
         invoice_summary = invoices.aggregate(
             total_invoiced=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             subtotal=Coalesce(Sum('subtotal'), Value(Decimal('0')), output_field=DecimalField()),
@@ -226,37 +224,37 @@ class ReportsService:
             max_invoice=Coalesce(Max('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             min_invoice=Coalesce(Min('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         )
-        
+
         payment_summary = payments.aggregate(
             total_collected=Coalesce(Sum('amount'), Value(Decimal('0')), output_field=DecimalField()),
             payment_count=Count('id'),
             avg_payment=Coalesce(Avg('amount'), Value(Decimal('0')), output_field=DecimalField()),
         )
-        
+
         status_breakdown = invoices.values('status').annotate(
             count=Count('id'),
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         ).order_by('-total')
-        
+
         revenue_trend = cls._get_revenue_trend(workspace, date_range, group_by)
-        
+
         by_client = invoices.values('client__name').annotate(
             count=Count('id'),
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             collected=Coalesce(Sum('amount_paid'), Value(Decimal('0')), output_field=DecimalField()),
         ).order_by('-total')[:10]
-        
+
         by_currency = invoices.values('currency').annotate(
             count=Count('id'),
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         ).order_by('-total')
-        
+
         collection_rate = Decimal('0')
         if invoice_summary['total_invoiced'] > 0:
             collection_rate = (payment_summary['total_collected'] / invoice_summary['total_invoiced'] * 100).quantize(Decimal('0.1'))
-        
+
         invoices_list = invoices.select_related('client').order_by('-issue_date')[:100]
-        
+
         return {
             "date_range": date_range,
             "summary": {
@@ -271,19 +269,19 @@ class ReportsService:
             "invoices": invoices_list,
             "group_by": group_by,
         }
-    
+
     @classmethod
     def get_aging_report(cls, workspace: "Workspace") -> Dict[str, Any]:
         from invoices.models import Invoice
-        
+
         today = timezone.now().date()
-        
+
         outstanding_invoices = Invoice.objects.filter(
             workspace=workspace,
             status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID, Invoice.Status.OVERDUE],
             amount_due__gt=0
         ).select_related('client').order_by('due_date')
-        
+
         buckets = {
             "current": {"label": "Current (Not Yet Due)", "days": "0", "invoices": [], "total": Decimal('0'), "count": 0},
             "1_30": {"label": "1-30 Days", "days": "1-30", "invoices": [], "total": Decimal('0'), "count": 0},
@@ -291,12 +289,12 @@ class ReportsService:
             "61_90": {"label": "61-90 Days", "days": "61-90", "invoices": [], "total": Decimal('0'), "count": 0},
             "over_90": {"label": "Over 90 Days", "days": "90+", "invoices": [], "total": Decimal('0'), "count": 0},
         }
-        
+
         total_outstanding = Decimal('0')
-        
+
         for invoice in outstanding_invoices:
             days_overdue = (today - invoice.due_date).days
-            
+
             if days_overdue <= 0:
                 bucket_key = "current"
             elif days_overdue <= 30:
@@ -307,7 +305,7 @@ class ReportsService:
                 bucket_key = "61_90"
             else:
                 bucket_key = "over_90"
-            
+
             buckets[bucket_key]["invoices"].append({
                 "id": invoice.id,
                 "invoice_number": invoice.invoice_number,
@@ -325,7 +323,7 @@ class ReportsService:
             buckets[bucket_key]["total"] += invoice.amount_due
             buckets[bucket_key]["count"] += 1
             total_outstanding += invoice.amount_due
-        
+
         by_client = {}
         for invoice in outstanding_invoices:
             client_name = invoice.client.name
@@ -343,16 +341,16 @@ class ReportsService:
             if by_client[client_name]["oldest_invoice_date"] is None or invoice.issue_date < by_client[client_name]["oldest_invoice_date"]:
                 by_client[client_name]["oldest_invoice_date"] = invoice.issue_date
                 by_client[client_name]["oldest_due_date"] = invoice.due_date
-        
+
         client_aging = sorted(by_client.values(), key=lambda x: x['total_due'], reverse=True)
-        
+
         avg_days = Decimal('0')
         if outstanding_invoices.exists():
             total_days = sum((today - inv.due_date).days for inv in outstanding_invoices if inv.due_date < today)
             overdue_count = sum(1 for inv in outstanding_invoices if inv.due_date < today)
             if overdue_count > 0:
                 avg_days = Decimal(total_days) / Decimal(overdue_count)
-        
+
         return {
             "buckets": buckets,
             "total_outstanding": total_outstanding,
@@ -361,11 +359,11 @@ class ReportsService:
             "avg_days_overdue": avg_days.quantize(Decimal('0.1')),
             "as_of_date": today,
         }
-    
+
     @classmethod
     def get_cashflow_report(cls, workspace: "Workspace", date_range: DateRange) -> Dict[str, Any]:
-        from invoices.models import Invoice, Payment, Expense
-        
+        from invoices.models import Payment, Expense
+
         payments = Payment.objects.filter(
             workspace=workspace,
             payment_date__date__gte=date_range.start_date,
@@ -377,7 +375,7 @@ class ReportsService:
             total=Coalesce(Sum('amount'), Value(Decimal('0')), output_field=DecimalField()),
             count=Count('id'),
         ).order_by('period')
-        
+
         expenses = Expense.objects.filter(
             workspace=workspace,
             expense_date__gte=date_range.start_date,
@@ -389,17 +387,17 @@ class ReportsService:
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             count=Count('id'),
         ).order_by('period')
-        
+
         payment_dict = {p['period'].strftime('%Y-%m'): p for p in payments}
         expense_dict = {e['period'].strftime('%Y-%m'): e for e in expenses}
-        
+
         all_periods = set(payment_dict.keys()) | set(expense_dict.keys())
-        
+
         cashflow_data = []
         running_balance = Decimal('0')
         total_inflows = Decimal('0')
         total_outflows = Decimal('0')
-        
+
         for period in sorted(all_periods):
             inflow = payment_dict.get(period, {}).get('total', Decimal('0'))
             outflow = expense_dict.get(period, {}).get('total', Decimal('0'))
@@ -407,7 +405,7 @@ class ReportsService:
             running_balance += net
             total_inflows += inflow
             total_outflows += outflow
-            
+
             cashflow_data.append({
                 "period": period,
                 "period_label": datetime.strptime(period, '%Y-%m').strftime('%b %Y'),
@@ -416,7 +414,7 @@ class ReportsService:
                 "net": net,
                 "running_balance": running_balance,
             })
-        
+
         payment_summary = Payment.objects.filter(
             workspace=workspace,
             payment_date__date__gte=date_range.start_date,
@@ -426,7 +424,7 @@ class ReportsService:
             total=Coalesce(Sum('amount'), Value(Decimal('0')), output_field=DecimalField()),
             count=Count('id'),
         ).order_by('-total')
-        
+
         expense_by_category = Expense.objects.filter(
             workspace=workspace,
             expense_date__gte=date_range.start_date,
@@ -436,7 +434,7 @@ class ReportsService:
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             count=Count('id'),
         ).order_by('-total')
-        
+
         return {
             "date_range": date_range,
             "cashflow_data": cashflow_data,
@@ -449,45 +447,45 @@ class ReportsService:
             "by_payment_method": list(payment_summary),
             "expenses_by_category": list(expense_by_category),
         }
-    
+
     @classmethod
     def get_profitability_report(cls, workspace: "Workspace", date_range: DateRange) -> Dict[str, Any]:
-        from invoices.models import Invoice, Payment, Expense, Client
-        
+        from invoices.models import Invoice, Client
+
         clients = Client.objects.filter(workspace=workspace).prefetch_related('invoices', 'expenses')
-        
+
         client_data = []
-        
+
         for client in clients:
             invoices = client.invoices.filter(
                 issue_date__gte=date_range.start_date,
                 issue_date__lte=date_range.end_date
             ).exclude(status=Invoice.Status.VOID)
-            
+
             invoice_agg = invoices.aggregate(
                 total_invoiced=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
                 total_collected=Coalesce(Sum('amount_paid'), Value(Decimal('0')), output_field=DecimalField()),
                 invoice_count=Count('id'),
             )
-            
+
             expenses = client.expenses.filter(
                 expense_date__gte=date_range.start_date,
                 expense_date__lte=date_range.end_date,
                 status__in=['approved', 'reimbursed', 'billed']
             )
-            
+
             expense_agg = expenses.aggregate(
                 total_expenses=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
                 expense_count=Count('id'),
             )
-            
+
             revenue = invoice_agg['total_collected']
             costs = expense_agg['total_expenses']
             profit = revenue - costs
             margin = Decimal('0')
             if revenue > 0:
                 margin = (profit / revenue * 100).quantize(Decimal('0.1'))
-            
+
             if invoice_agg['invoice_count'] > 0 or expense_agg['expense_count'] > 0:
                 client_data.append({
                     "client_id": client.id,
@@ -500,20 +498,20 @@ class ReportsService:
                     "invoice_count": invoice_agg['invoice_count'],
                     "expense_count": expense_agg['expense_count'],
                 })
-        
+
         client_data.sort(key=lambda x: x['profit'], reverse=True)
-        
+
         totals = {
             "total_revenue": sum(c['total_collected'] for c in client_data),
             "total_expenses": sum(c['total_expenses'] for c in client_data),
             "total_profit": sum(c['profit'] for c in client_data),
             "client_count": len([c for c in client_data if c['invoice_count'] > 0]),
         }
-        
+
         totals['overall_margin'] = Decimal('0')
         if totals['total_revenue'] > 0:
             totals['overall_margin'] = (totals['total_profit'] / totals['total_revenue'] * 100).quantize(Decimal('0.1'))
-        
+
         return {
             "date_range": date_range,
             "clients": client_data,
@@ -521,25 +519,25 @@ class ReportsService:
             "top_profitable": client_data[:10],
             "least_profitable": list(reversed(client_data[-10:])) if len(client_data) >= 10 else list(reversed(client_data)),
         }
-    
+
     @classmethod
     def get_tax_report(cls, workspace: "Workspace", date_range: DateRange) -> Dict[str, Any]:
         from invoices.models import Invoice, LineItem, Expense
-        
+
         invoices = Invoice.objects.filter(
             workspace=workspace,
             issue_date__gte=date_range.start_date,
             issue_date__lte=date_range.end_date,
             status=Invoice.Status.PAID
         )
-        
+
         tax_collected = invoices.aggregate(
             total_tax=Coalesce(Sum('tax_total'), Value(Decimal('0')), output_field=DecimalField()),
             invoice_count=Count('id'),
             total_invoiced=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             subtotal=Coalesce(Sum('subtotal'), Value(Decimal('0')), output_field=DecimalField()),
         )
-        
+
         tax_by_rate = LineItem.objects.filter(
             invoice__workspace=workspace,
             invoice__issue_date__gte=date_range.start_date,
@@ -550,35 +548,35 @@ class ReportsService:
             taxable_amount=Coalesce(Sum('subtotal'), Value(Decimal('0')), output_field=DecimalField()),
             item_count=Count('id'),
         ).order_by('-tax_rate')
-        
+
         expenses = Expense.objects.filter(
             workspace=workspace,
             expense_date__gte=date_range.start_date,
             expense_date__lte=date_range.end_date,
             status__in=['approved', 'reimbursed', 'billed']
         )
-        
+
         tax_paid = expenses.aggregate(
             total_tax=Coalesce(Sum('tax_amount'), Value(Decimal('0')), output_field=DecimalField()),
             expense_count=Count('id'),
             total_expenses=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         )
-        
+
         tax_by_month = invoices.annotate(
             period=TruncMonth('issue_date')
         ).values('period').annotate(
             tax_collected=Coalesce(Sum('tax_total'), Value(Decimal('0')), output_field=DecimalField()),
             invoice_count=Count('id'),
         ).order_by('period')
-        
+
         expense_tax_by_month = expenses.annotate(
             period=TruncMonth('expense_date')
         ).values('period').annotate(
             tax_paid=Coalesce(Sum('tax_amount'), Value(Decimal('0')), output_field=DecimalField()),
         ).order_by('period')
-        
+
         expense_tax_dict = {e['period'].strftime('%Y-%m'): e['tax_paid'] for e in expense_tax_by_month}
-        
+
         monthly_data = []
         for row in tax_by_month:
             period_key = row['period'].strftime('%Y-%m')
@@ -589,9 +587,9 @@ class ReportsService:
                 "tax_paid": expense_tax_dict.get(period_key, Decimal('0')),
                 "net_tax": row['tax_collected'] - expense_tax_dict.get(period_key, Decimal('0')),
             })
-        
+
         net_tax_liability = tax_collected['total_tax'] - tax_paid['total_tax']
-        
+
         return {
             "date_range": date_range,
             "tax_collected": tax_collected,
@@ -600,17 +598,17 @@ class ReportsService:
             "by_rate": list(tax_by_rate),
             "monthly_data": monthly_data,
         }
-    
+
     @classmethod
     def get_expense_report(cls, workspace: "Workspace", date_range: DateRange) -> Dict[str, Any]:
-        from invoices.models import Expense, ExpenseCategory, Vendor
-        
+        from invoices.models import Expense
+
         expenses = Expense.objects.filter(
             workspace=workspace,
             expense_date__gte=date_range.start_date,
             expense_date__lte=date_range.end_date,
         ).select_related('category', 'vendor', 'client')
-        
+
         summary = expenses.filter(status__in=['approved', 'reimbursed', 'billed']).aggregate(
             total_amount=Coalesce(Sum('amount'), Value(Decimal('0')), output_field=DecimalField()),
             total_tax=Coalesce(Sum('tax_amount'), Value(Decimal('0')), output_field=DecimalField()),
@@ -618,19 +616,19 @@ class ReportsService:
             expense_count=Count('id'),
             avg_expense=Coalesce(Avg('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         )
-        
+
         by_status = expenses.values('status').annotate(
             count=Count('id'),
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         ).order_by('status')
-        
+
         by_category = expenses.filter(
             status__in=['approved', 'reimbursed', 'billed']
         ).values('category__name', 'category__color').annotate(
             count=Count('id'),
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         ).order_by('-total')
-        
+
         by_vendor = expenses.filter(
             status__in=['approved', 'reimbursed', 'billed'],
             vendor__isnull=False
@@ -638,14 +636,14 @@ class ReportsService:
             count=Count('id'),
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         ).order_by('-total')[:10]
-        
+
         by_payment_method = expenses.filter(
             status__in=['approved', 'reimbursed', 'billed']
         ).values('payment_method').annotate(
             count=Count('id'),
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
         ).order_by('-total')
-        
+
         monthly_trend = expenses.filter(
             status__in=['approved', 'reimbursed', 'billed']
         ).annotate(
@@ -654,14 +652,14 @@ class ReportsService:
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             count=Count('id'),
         ).order_by('period')
-        
+
         billable = expenses.filter(is_billable=True).aggregate(
             total_billable=Coalesce(Sum('billable_amount'), Value(Decimal('0')), output_field=DecimalField()),
             billed=Coalesce(Sum('billable_amount', filter=Q(is_billed=True)), Value(Decimal('0')), output_field=DecimalField()),
             unbilled=Coalesce(Sum('billable_amount', filter=Q(is_billed=False)), Value(Decimal('0')), output_field=DecimalField()),
             billable_count=Count('id'),
         )
-        
+
         tax_deductible = expenses.filter(
             status__in=['approved', 'reimbursed', 'billed'],
             category__is_tax_deductible=True
@@ -669,9 +667,9 @@ class ReportsService:
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             count=Count('id'),
         )
-        
+
         expense_list = expenses.order_by('-expense_date')[:100]
-        
+
         return {
             "date_range": date_range,
             "summary": summary,
@@ -687,14 +685,14 @@ class ReportsService:
             "tax_deductible": tax_deductible,
             "expenses": expense_list,
         }
-    
+
     @classmethod
     def get_forecast(cls, workspace: "Workspace", days_ahead: int = 90) -> Dict[str, Any]:
         from invoices.models import Invoice
-        
+
         today = timezone.now().date()
         forecast_end = today + timedelta(days=days_ahead)
-        
+
         upcoming_invoices = Invoice.objects.filter(
             workspace=workspace,
             due_date__gte=today,
@@ -702,7 +700,7 @@ class ReportsService:
             status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID],
             amount_due__gt=0
         ).select_related('client').order_by('due_date')
-        
+
         weekly_forecast = []
         current_date = today
         while current_date <= forecast_end:
@@ -716,11 +714,11 @@ class ReportsService:
                 "invoice_count": len(week_invoices),
             })
             current_date = week_end + timedelta(days=1)
-        
+
         total_expected = upcoming_invoices.aggregate(
             total=Coalesce(Sum('amount_due'), Value(Decimal('0')), output_field=DecimalField()),
         )['total']
-        
+
         return {
             "today": today,
             "forecast_end": forecast_end,
@@ -730,24 +728,24 @@ class ReportsService:
             "weekly_forecast": weekly_forecast,
             "upcoming_invoices": list(upcoming_invoices[:50]),
         }
-    
+
     @classmethod
     def _get_revenue_trend(cls, workspace: "Workspace", date_range: DateRange, group_by: str) -> List[Dict]:
         from invoices.models import Invoice
-        
+
         invoices = Invoice.objects.filter(
             workspace=workspace,
             issue_date__gte=date_range.start_date,
             issue_date__lte=date_range.end_date
         ).exclude(status=Invoice.Status.VOID)
-        
+
         if group_by == "day":
             trunc_fn = TruncDate
         elif group_by == "week":
             trunc_fn = TruncWeek
         else:
             trunc_fn = TruncMonth
-        
+
         trend_data = invoices.annotate(
             period=trunc_fn('issue_date')
         ).values('period').annotate(
@@ -755,7 +753,7 @@ class ReportsService:
             collected=Coalesce(Sum('amount_paid'), Value(Decimal('0')), output_field=DecimalField()),
             count=Count('id'),
         ).order_by('period')
-        
+
         result = []
         for row in trend_data:
             period = row['period']
@@ -765,7 +763,7 @@ class ReportsService:
                 label = f"Week of {period.strftime('%b %d')}"
             else:
                 label = period.strftime('%b %Y')
-            
+
             result.append({
                 "period": period.isoformat() if hasattr(period, 'isoformat') else str(period),
                 "label": label,
@@ -773,21 +771,21 @@ class ReportsService:
                 "collected": row['collected'],
                 "count": row['count'],
             })
-        
+
         return result
-    
+
     @classmethod
     def export_to_csv(cls, data: List[Dict], columns: List[Tuple[str, str]]) -> str:
         output = io.StringIO()
         writer = csv.writer(output)
-        
+
         writer.writerow([col[1] for col in columns])
-        
+
         for row in data:
             writer.writerow([row.get(col[0], '') for col in columns])
-        
+
         return output.getvalue()
-    
+
     @classmethod
     def create_shared_link(
         cls,
@@ -799,14 +797,14 @@ class ReportsService:
         password: Optional[str] = None
     ) -> Dict[str, Any]:
         from invoices.models import SharedReportLink
-        
+
         token = secrets.token_urlsafe(32)
         expires_at = timezone.now() + timedelta(days=expires_in_days)
-        
+
         password_hash = None
         if password:
             password_hash = hashlib.sha256(password.encode()).hexdigest()
-        
+
         shared_link = SharedReportLink.objects.create(
             workspace=workspace,
             created_by=user,
@@ -816,14 +814,14 @@ class ReportsService:
             expires_at=expires_at,
             password_hash=password_hash,
         )
-        
+
         return {
             "token": token,
             "url": f"/reports/shared/{token}/",
             "expires_at": expires_at,
             "has_password": bool(password),
         }
-    
+
     @classmethod
     def log_report_access(
         cls,
@@ -833,7 +831,7 @@ class ReportsService:
         user_id: Optional[int] = None
     ) -> None:
         from invoices.models import ReportAccessLog
-        
+
         ReportAccessLog.objects.create(
             shared_link_id=shared_link_id,
             ip_address=ip_address,

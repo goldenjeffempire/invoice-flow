@@ -43,7 +43,7 @@ class EmailService:
         try:
             recipient = payment.invoice.client_email
             return _get_async_service().send_invoice_paid_async(payment.invoice, recipient)
-        except Exception as e:
+        except Exception:
             logger.error("Failed to queue receipt email")
             return False
 

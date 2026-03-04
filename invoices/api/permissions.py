@@ -3,12 +3,11 @@ Permission classes and decorators for API access control.
 Implements role-based and object-level permissions.
 """
 from rest_framework import permissions
-from rest_framework.decorators import permission_classes
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     """Permission: User can only access their own invoices."""
-    
+
     def has_object_permission(self, request, view, obj):
         if not request or not hasattr(request, 'user'):
             return False
@@ -26,7 +25,7 @@ class IsAuthenticated(permissions.IsAuthenticated):
 
 class IsInvoiceOwnerOrAdmin(permissions.BasePermission):
     """Permission: Only invoice owner or admin can access."""
-    
+
     def has_object_permission(self, request, view, obj):
         if request.user.is_staff or request.user.is_superuser:
             return True
@@ -35,11 +34,11 @@ class IsInvoiceOwnerOrAdmin(permissions.BasePermission):
 
 class CanViewPublicInvoice(permissions.BasePermission):
     """Permission: Public invoice access with valid token."""
-    
+
     def has_object_permission(self, request, view, obj):
         if request.user and request.user.is_authenticated:
             return obj.user == request.user
-        
+
         token = request.query_params.get('token')
         if token and hasattr(obj, 'public_token'):
             return obj.public_token.is_valid()
@@ -48,7 +47,7 @@ class CanViewPublicInvoice(permissions.BasePermission):
 
 class CanInitializePayment(permissions.BasePermission):
     """Permission: Only invoice owner can initialize payment."""
-    
+
     def has_object_permission(self, request, view, obj):
         if request.user.is_staff:
             return True
@@ -57,7 +56,7 @@ class CanInitializePayment(permissions.BasePermission):
 
 class HasEmailVerification(permissions.BasePermission):
     """Permission: User must have verified email for sensitive operations."""
-    
+
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
@@ -67,14 +66,14 @@ class HasEmailVerification(permissions.BasePermission):
 
 class HasMFAVerification(permissions.BasePermission):
     """Permission: User must have completed MFA verification."""
-    
+
     def has_permission(self, request, view):
         return request.session.get('mfa_verified', False)
 
 
 class RateLimitByUser(permissions.BasePermission):
     """Permission: Apply rate limiting based on user."""
-    
+
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return True

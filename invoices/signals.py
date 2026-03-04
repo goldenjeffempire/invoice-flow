@@ -6,13 +6,11 @@ Signal handlers for InvoiceFlow:
 """
 
 import logging
-from typing import Any, Type
 
 from django.contrib.auth import user_logged_in
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.apps import apps
-import logging
 
 logger = logging.getLogger(__name__)
 

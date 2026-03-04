@@ -11,11 +11,11 @@ class WorkspaceMiddleware(MiddlewareMixin):
 
         # Try to get workspace from session
         workspace_id = request.session.get('current_workspace_id')
-        
+
         if workspace_id:
             try:
                 member = WorkspaceMember.objects.select_related('workspace').get(
-                    user=request.user, 
+                    user=request.user,
                     workspace_id=workspace_id
                 )
                 request.workspace = member.workspace

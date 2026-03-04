@@ -180,7 +180,7 @@ def detailed_health(request):
 
     from invoiceflow.env_validation import get_env_status
     from invoices.async_tasks import AsyncTaskService
-    
+
     try:
         from invoices.services import CacheWarmingService
     except ImportError:

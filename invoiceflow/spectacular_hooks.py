@@ -12,21 +12,21 @@ def postprocess_schema_enums(result, generator, request, public):
 
     schemas = result["components"]["schemas"]
     enum_mapping = {}
-    
+
     # Map auto-generated enum names to descriptive ones
     # These correspond to the Status fields from different models
     enum_renames = {
         "Status1a6Enum": "ContactSubmissionStatus",  # ContactSubmission.Status
-        "InvoiceStatusStatusEnum": "InvoicePaymentStatus",  # Invoice.Status  
+        "InvoiceStatusStatusEnum": "InvoicePaymentStatus",  # Invoice.Status
         "StatusEnum": "PaymentProcessingStatus",  # Payment.Status
     }
-    
+
     # Find and rename enums
     for old_name, new_name in enum_renames.items():
         if old_name in schemas:
             schemas[new_name] = schemas.pop(old_name)
             enum_mapping[old_name] = new_name
-    
+
     # Update all references to renamed enums
     def update_refs(obj):
         if isinstance(obj, dict):
@@ -40,6 +40,6 @@ def postprocess_schema_enums(result, generator, request, public):
         elif isinstance(obj, list):
             for item in obj:
                 update_refs(item)
-    
+
     update_refs(result)
     return result

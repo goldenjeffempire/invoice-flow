@@ -5,12 +5,9 @@ Domain: https://invoiceflow.com.ng
 
 from pathlib import Path
 import os
-import sys
 import re
-from typing import Any, cast, Dict
 import environ
 import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
 
 # =============================================================================
 # BASE SETUP
@@ -74,14 +71,14 @@ if IS_PRODUCTION:
     SECURE_BROWSER_XSS_FILTER = True
     X_FRAME_OPTIONS = "DENY"
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-    
+
     # Hardened CSP
     CSP_DEFAULT_SRC = ("'self'",)
     CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net")
     CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net")
     CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
     CSP_IMG_SRC = ("'self'", "data:", "https:")
-    
+
     SILENCED_SYSTEM_CHECKS = ["security.W001", "security.W004", "security.W008", "security.W012", "security.W018", "security.W009"]
 else:
     DEBUG = True

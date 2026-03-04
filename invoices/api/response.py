@@ -1,9 +1,9 @@
-from typing import Any, Optional, Dict
+from typing import Any, Optional
 from rest_framework.response import Response
 
 class APIResponse:
     """Standardized API response format."""
-    
+
     @staticmethod
     def success(
         data: Any = None,
@@ -22,7 +22,7 @@ class APIResponse:
         if meta:
             response_data["meta"] = meta
         return Response(response_data, status=status_code)
-    
+
     @staticmethod
     def error(
         code: str,
@@ -41,7 +41,7 @@ class APIResponse:
         if details:
             response_data["error"]["details"] = details
         return Response(response_data, status=status_code)
-    
+
     @staticmethod
     def paginated(
         data: Any,

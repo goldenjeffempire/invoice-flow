@@ -1,9 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Sum, Q, Count
-from django.utils import timezone
-from ..models import Estimate, Workspace, Client
+from django.db.models import Sum, Q
+from ..models import Estimate, Client
 
 from ..services.estimate_service import EstimateService
 
@@ -13,21 +12,21 @@ def estimate_list(request):
     query = request.GET.get('q', '')
     status_filter = request.GET.get('status', 'all')
     ordering = request.GET.get('ordering', '-created_at')
-    
+
     estimates = Estimate.objects.filter(workspace=workspace)
-    
+
     if query:
         estimates = estimates.filter(
             Q(estimate_number__icontains=query) |
             Q(client__name__icontains=query) |
             Q(client__email__icontains=query)
         )
-        
+
     if status_filter != 'all':
         estimates = estimates.filter(status=status_filter)
-        
+
     estimates = estimates.order_by(ordering)
-    
+
     # Stats
     all_estimates = Estimate.objects.filter(workspace=workspace)
     stats = {
@@ -35,12 +34,12 @@ def estimate_list(request):
         'accepted_value': all_estimates.filter(status=Estimate.Status.APPROVED).aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
         'pending_value': all_estimates.filter(status__in=[Estimate.Status.SENT, Estimate.Status.VIEWED, Estimate.Status.DRAFT]).aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
     }
-    
+
     # Conversion Rate
     total_non_draft = all_estimates.exclude(status=Estimate.Status.DRAFT).count()
     accepted_count = all_estimates.filter(status=Estimate.Status.APPROVED).count()
     stats['conversion_rate'] = (accepted_count / total_non_draft * 100) if total_non_draft > 0 else 0
-    
+
     # Status Tabs
     status_tabs = [
         {'key': 'all', 'label': 'All', 'count': all_estimates.count()},
@@ -66,9 +65,9 @@ def estimate_builder(request, estimate_id=None):
     estimate = None
     if estimate_id:
         estimate = get_object_or_404(Estimate, id=estimate_id, workspace=workspace)
-    
+
     clients = Client.objects.filter(workspace=workspace).order_by('name')
-        
+
     return render(request, 'pages/estimates/builder.html', {
         'estimate': estimate,
         'clients': clients,
@@ -79,7 +78,7 @@ def estimate_detail(request, estimate_id):
     workspace = request.user.profile.current_workspace
     estimate = get_object_or_404(Estimate, id=estimate_id, workspace=workspace)
     activities = estimate.activities.all().order_by('-created_at')
-    
+
     return render(request, 'pages/estimates/detail.html', {
         'estimate': estimate,
         'activities': activities,

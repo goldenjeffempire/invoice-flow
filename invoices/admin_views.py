@@ -12,8 +12,8 @@ Views layer responsibilities:
 import logging
 from functools import wraps
 from django.contrib import messages
-from django.shortcuts import redirect, render, get_object_or_404
-from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_GET, require_http_methods
 
 from .services import AdminService
 

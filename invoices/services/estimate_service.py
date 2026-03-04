@@ -16,7 +16,7 @@ class EstimateService:
             client_notes=data.get('client_notes', ''),
             terms_conditions=data.get('terms_conditions', '')
         )
-        
+
         for item_data in data.get('items', []):
             EstimateItem.objects.create(
                 estimate=estimate,
@@ -25,7 +25,7 @@ class EstimateService:
                 unit_price=item_data['unit_price'],
                 tax_rate=item_data.get('tax_rate', 0)
             )
-            
+
         EstimateActivity.objects.create(
             estimate=estimate,
             user=created_by,
@@ -38,7 +38,7 @@ class EstimateService:
     def convert_to_invoice(estimate, created_by):
         if estimate.status == Estimate.Status.INVOICED:
             raise ValueError("Estimate already converted to invoice")
-            
+
         invoice = Invoice.objects.create(
             workspace=estimate.workspace,
             client=estimate.client,
@@ -49,7 +49,7 @@ class EstimateService:
             total_amount=estimate.total_amount,
             amount_due=estimate.total_amount
         )
-        
+
         for item in estimate.items.all():
             LineItem.objects.create(
                 invoice=invoice,
@@ -58,11 +58,11 @@ class EstimateService:
                 unit_price=item.unit_price,
                 tax_rate=item.tax_rate
             )
-            
+
         estimate.status = Estimate.Status.INVOICED
         estimate.converted_invoice = invoice
         estimate.save()
-        
+
         EstimateActivity.objects.create(
             estimate=estimate,
             user=created_by,

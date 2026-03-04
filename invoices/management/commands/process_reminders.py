@@ -43,7 +43,7 @@ class Command(BaseCommand):
         limit = options['limit']
 
         now = timezone.now()
-        
+
         pending = ScheduledReminder.objects.filter(
             status=ScheduledReminder.Status.PENDING,
             scheduled_for__lte=now
@@ -72,16 +72,16 @@ class Command(BaseCommand):
 
         try:
             processed_count = ReminderSchedulingService.process_pending_reminders()
-            
+
             self.stdout.write(
                 self.style.SUCCESS(f'Successfully processed {processed_count} reminder(s)')
             )
-            
+
             failed = ScheduledReminder.objects.filter(
                 status=ScheduledReminder.Status.FAILED,
                 updated_at__gte=now
             ).count()
-            
+
             if failed > 0:
                 self.stdout.write(
                     self.style.WARNING(f'{failed} reminder(s) failed after all retries')

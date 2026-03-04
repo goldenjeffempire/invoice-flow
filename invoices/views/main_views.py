@@ -2,8 +2,7 @@
 Production-Grade Authentication Views
 Handles all authentication flows with proper security, validation, and UX.
 """
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_POST, require_GET
@@ -12,15 +11,13 @@ from django.http import HttpResponse, JsonResponse
 from django_ratelimit.decorators import ratelimit
 
 from ..auth_services import (
-    AuthService, MFAService, SessionService, InvitationService,
-    SecurityService
+    AuthService, MFAService, SessionService, InvitationService
 )
 from ..forms import (
     SignUpForm, LoginForm, MFAVerifyForm, MFASetupVerifyForm, MFADisableForm,
-    PasswordResetRequestForm, PasswordResetConfirmForm, ChangePasswordForm,
-    ResendVerificationForm
+    PasswordResetRequestForm, PasswordResetConfirmForm, ResendVerificationForm
 )
-from ..models import UserSession, WorkspaceInvitation, MFAProfile
+from ..models import MFAProfile
 
 
 from django.views.decorators.cache import cache_page
@@ -169,7 +166,6 @@ def verification_sent(request):
 def verify_email(request, token):
     success, message = AuthService.verify_email(token, request)
     if success:
-        from django.contrib.auth import get_user_model
         from ..models import EmailToken
         try:
             email_token = EmailToken.objects.get(token=token)
@@ -447,27 +443,27 @@ def change_password(request):
     current_password = request.POST.get('current_password')
     new_password = request.POST.get('new_password')
     confirm_password = request.POST.get('confirm_password')
-    
+
     if new_password != confirm_password:
         messages.error(request, "New passwords don't match.")
         return redirect('invoices:settings')
-    
+
     if not request.user.check_password(current_password):
         messages.error(request, "Current password is incorrect.")
         return redirect('invoices:settings')
-    
+
     success, message = AuthService.change_password(
         user=request.user,
         current_password=current_password,
         new_password=new_password,
         request=request
     )
-    
+
     if success:
         messages.success(request, message)
     else:
         messages.error(request, message)
-    
+
     return redirect('invoices:settings')
 
 
@@ -560,11 +556,11 @@ def profile_update_ajax(request):
         profile.user.first_name = request.POST.get('full_name', '').split(' ')[0]
         profile.user.last_name = ' '.join(request.POST.get('full_name', '').split(' ')[1:])
         profile.user.save()
-        
+
         profile.timezone = request.POST.get('timezone')
         profile.locale = request.POST.get('locale')
         profile.save()
-        
+
         messages.success(request, "Profile updated successfully.")
         return redirect('invoices:settings')
     return JsonResponse({"success": True})
@@ -583,7 +579,7 @@ def notifications_update_ajax(request):
         profile.notify_weekly_summary = request.POST.get('notify_weekly_summary') == 'on'
         profile.notify_security_alerts = request.POST.get('notify_security_alerts') == 'on'
         profile.save()
-        
+
         messages.success(request, "Notification preferences updated.")
         return redirect('invoices:settings')
     return JsonResponse({"success": True})

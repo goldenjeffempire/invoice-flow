@@ -6,7 +6,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from ..models import Client, ClientPortalToken, ClientPortalSession
+from ..models import ClientPortalToken, ClientPortalSession
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class ClientPortalService:
             subject = f"Secure access to your client portal - {context['business_name']}"
             html_message = render_to_string('invoices/emails/portal_magic_link.html', context)
             plain_message = render_to_string('invoices/emails/portal_magic_link.txt', context)
-            
+
             send_mail(
                 subject=subject,
                 message=plain_message,

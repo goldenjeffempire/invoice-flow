@@ -5,8 +5,6 @@ Strong validation, accessibility, and security best practices.
 import re
 from django import forms
 from django.contrib.auth.models import User
-from django.core.validators import EmailValidator
-from .models import UserProfile
 
 
 class BaseFormMixin:

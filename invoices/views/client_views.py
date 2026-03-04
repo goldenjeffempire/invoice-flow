@@ -1,32 +1,31 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Sum, Q, Count
-from django.utils import timezone
-from ..models import Client, ClientNote, CommunicationLog, ActivityLog, Invoice
+from django.db.models import Sum, Q
+from ..models import Client, ClientNote, ActivityLog
 
 @login_required
 def client_list(request):
     workspace = request.user.profile.current_workspace
     query = request.GET.get('q', '')
     status_filter = request.GET.get('status', 'active')
-    
+
     clients = Client.objects.filter(workspace=workspace)
-    
+
     if query:
         clients = clients.filter(
-            Q(name__icontains=query) | 
-            Q(email__icontains=query) | 
+            Q(name__icontains=query) |
+            Q(email__icontains=query) |
             Q(phone__icontains=query)
         )
-    
-    # We don't have a formal "is_active" field yet in the model based on initial read, 
-    # but the task mentions a status badge. Let's assume they are all active for now 
-    # or check if we should add a field. 
+
+    # We don't have a formal "is_active" field yet in the model based on initial read,
+    # but the task mentions a status badge. Let's assume they are all active for now
+    # or check if we should add a field.
     # Looking at the existing template, it just hardcodes "Active".
-    
+
     clients = clients.order_by('name')
-    
+
     for client in clients:
         invoices = client.invoices.all()
         client.total_invoiced = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
@@ -47,7 +46,7 @@ def client_list(request):
 def client_detail(request, client_id):
     workspace = request.user.profile.current_workspace
     client = get_object_or_404(Client, id=client_id, workspace=workspace)
-    
+
     if request.method == 'POST' and request.POST.get('action') == 'add_note':
         content = request.POST.get('content')
         if content:
@@ -64,10 +63,10 @@ def client_detail(request, client_id):
     # Assuming payments are linked to invoices
     from ..models import Payment
     payments = Payment.objects.filter(invoice__client=client).order_by('-payment_date')
-    
+
     notes = client.client_notes.all().order_by('-created_at')
     comms = client.comms_logs.all().order_by('-sent_at')
-    
+
     # Stats
     stats = {
         'total_invoiced': invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
@@ -75,10 +74,10 @@ def client_detail(request, client_id):
         'outstanding': invoices.aggregate(Sum('amount_due'))['amount_due__sum'] or 0,
         'invoice_count': invoices.count(),
     }
-    
+
     activities = ActivityLog.objects.filter(
-        workspace=workspace, 
-        resource_type='client', 
+        workspace=workspace,
+        resource_type='client',
         resource_id=str(client.id)
     ).order_by('-created_at')[:20]
 

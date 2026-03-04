@@ -538,8 +538,8 @@ class AsyncTaskService:
             invoice = Invoice.objects.get(id=invoice_id)  # type: ignore[union-attr]
             service = SendGridEmailService()
             result = service.send_invoice_email(
-                invoice=invoice, 
-                subject_override=subject, 
+                invoice=invoice,
+                subject_override=subject,
                 body_override=body,
                 attach_pdf=attach_pdf,
                 reply_to=reply_to,
@@ -622,7 +622,7 @@ class AsyncTaskService:
                 workspace = user.profile.current_workspace if hasattr(user, 'profile') else None
                 if not workspace:
                     return {"user_id": user_id, "error": "No workspace found"}
-                
+
                 date_range = DateRange.from_preset('this_month')
                 dashboard_stats = ReportsService.get_reports_home_data(workspace, date_range)
 

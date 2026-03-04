@@ -13,11 +13,11 @@ class PerformanceMonitoringMiddleware(MiddlewareMixin):
             duration = time.time() - request._start_time
             path = request.path
             status = response.status_code
-            
+
             # Log slow requests (> 10s) or errors - increased threshold for cold starts
             if duration > 10.0 or status >= 400:
                 logger.warning(f"SLOW_REQ: {request.method} {path} - {status} - {duration:.2f}s")
             else:
                 logger.info(f"REQ: {request.method} {path} - {status} - {duration:.2f}s")
-        
+
         return response

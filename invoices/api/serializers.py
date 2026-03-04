@@ -2,7 +2,6 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from invoices.models import Invoice, LineItem, InvoiceActivity
-from invoices.validators import InvoiceBusinessRules
 
 
 class LineItemSerializer(serializers.ModelSerializer):

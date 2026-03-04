@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import secrets
-import hashlib
-from datetime import datetime, timedelta
+from datetime import timedelta
 from decimal import Decimal
-from typing import Any, List, Optional
 
 from django.conf import settings
-from django.db import models, transaction
+from django.db import models
 from django.utils import timezone
 
 
@@ -23,7 +21,7 @@ class UserProfile(models.Model):
         ("healthcare", "Healthcare / Medical"),
         ("other", "Other"),
     ]
-    
+
     REGION_CHOICES = [
         ("ng", "Nigeria"),
         ("us", "United States"),
@@ -34,7 +32,7 @@ class UserProfile(models.Model):
         ("ke", "Kenya"),
         ("other", "Other"),
     ]
-    
+
     INVOICE_STYLE_CHOICES = [
         ("modern", "Modern"),
         ("classic", "Classic"),
@@ -42,7 +40,7 @@ class UserProfile(models.Model):
         ("professional", "Professional"),
         ("bold", "Bold"),
     ]
-    
+
     CURRENCY_CHOICES = [
         ("NGN", "₦ - Nigerian Naira"),
         ("USD", "$ - US Dollar"),
@@ -52,11 +50,11 @@ class UserProfile(models.Model):
         ("GHS", "₵ - Ghanaian Cedi"),
         ("KES", "KSh - Kenyan Shilling"),
     ]
-    
+
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     email_verified = models.BooleanField(default=False)
     two_factor_enabled = models.BooleanField(default=False)
-    
+
     # Onboarding State (8 steps: Welcome, Business, Branding, Tax, Payments, Import, Templates, Team)
     onboarding_completed = models.BooleanField(default=False)
     onboarding_step = models.IntegerField(default=1)
@@ -64,7 +62,7 @@ class UserProfile(models.Model):
     onboarding_completed_at = models.DateTimeField(null=True, blank=True)
     first_invoice_created_at = models.DateTimeField(null=True, blank=True)
     onboarding_data = models.JSONField(default=dict, blank=True)
-    
+
     # Business Details
     company_name = models.CharField(max_length=255, blank=True)
     company_logo = models.FileField(upload_to="company_logos/", null=True, blank=True)
@@ -78,13 +76,13 @@ class UserProfile(models.Model):
     business_postal_code = models.CharField(max_length=20, blank=True)
     business_website = models.URLField(blank=True)
     region = models.CharField(max_length=10, blank=True, choices=REGION_CHOICES)
-    
+
     # Branding
     primary_color = models.CharField(max_length=7, default="#6366f1")
     secondary_color = models.CharField(max_length=7, default="#8b5cf6")
     accent_color = models.CharField(max_length=7, default="#10b981")
     invoice_style = models.CharField(max_length=50, default="modern", choices=INVOICE_STYLE_CHOICES)
-    
+
     # Tax & Compliance
     tax_id_number = models.CharField(max_length=50, blank=True)
     tax_id_type = models.CharField(max_length=20, blank=True)
@@ -94,7 +92,7 @@ class UserProfile(models.Model):
     wht_applicable = models.BooleanField(default=False)
     wht_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     default_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
-    
+
     # Payment Settings
     bank_name = models.CharField(max_length=100, blank=True)
     bank_account_name = models.CharField(max_length=255, blank=True)
@@ -105,7 +103,7 @@ class UserProfile(models.Model):
     accept_bank_transfers = models.BooleanField(default=True)
     accept_mobile_money = models.BooleanField(default=False)
     payment_instructions = models.TextField(blank=True)
-    
+
     # Data Import Status
     customers_imported = models.BooleanField(default=False)
     customers_import_count = models.IntegerField(default=0)
@@ -113,7 +111,7 @@ class UserProfile(models.Model):
     products_import_count = models.IntegerField(default=0)
     invoices_imported = models.BooleanField(default=False)
     invoices_import_count = models.IntegerField(default=0)
-    
+
     # Preferences
     default_currency = models.CharField(max_length=3, default="NGN", choices=CURRENCY_CHOICES)
     invoice_prefix = models.CharField(max_length=10, default="INV")
@@ -122,10 +120,10 @@ class UserProfile(models.Model):
     date_format = models.CharField(max_length=20, default="DD/MM/YYYY")
     timezone = models.CharField(max_length=63, default="Africa/Lagos")
     locale = models.CharField(max_length=10, default="en-NG")
-    
+
     # Team Settings
     team_invites_sent = models.IntegerField(default=0)
-    
+
     # Workspace Context
     current_workspace = models.ForeignKey('Workspace', on_delete=models.SET_NULL, null=True, blank=True)
 
@@ -147,7 +145,7 @@ class UserProfile(models.Model):
     notify_weekly_summary = models.BooleanField(default=True)
     notify_security_alerts = models.BooleanField(default=True)
     notify_password_changes = models.BooleanField(default=True)
-    
+
     # Security/System
     failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
@@ -547,30 +545,30 @@ class Estimate(models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_estimates")
     estimate_number = models.CharField(max_length=50, db_index=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT, db_index=True)
-    
+
     issue_date = models.DateField(default=timezone.now)
     expiry_date = models.DateField()
     sent_at = models.DateTimeField(null=True, blank=True)
     viewed_at = models.DateTimeField(null=True, blank=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     declined_at = models.DateTimeField(null=True, blank=True)
-    
+
     currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="NGN")
     subtotal = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     tax_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     discount_total = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     total_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    
+
     client_notes = models.TextField(blank=True)
     internal_notes = models.TextField(blank=True)
     terms_conditions = models.TextField(blank=True)
-    
+
     public_token = models.CharField(max_length=64, unique=True, default=secrets.token_urlsafe, db_index=True)
     version = models.IntegerField(default=1)
     parent_estimate = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='revisions')
-    
+
     converted_invoice = models.OneToOneField(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='source_estimate')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -629,19 +627,19 @@ class Payment(models.Model):
     currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="USD")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
     payment_method = models.CharField(max_length=20, choices=Method.choices, default="other")
-    
+
     transaction_id = models.CharField(max_length=255, blank=True, db_index=True)
     provider_reference = models.CharField(max_length=255, blank=True)
-    
+
     fee_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     net_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    
+
     payment_date = models.DateTimeField(default=timezone.now)
     completed_at = models.DateTimeField(null=True, blank=True)
-    
+
     metadata = models.JSONField(default=dict, blank=True)
     notes = models.TextField(blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -664,10 +662,10 @@ class Transaction(models.Model):
     transaction_type = models.CharField(max_length=20, choices=Type.choices, default="payment")
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="USD")
-    
+
     status = models.CharField(max_length=20, default="succeeded")
     external_id = models.CharField(max_length=255, blank=True, db_index=True)
-    
+
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -830,7 +828,7 @@ class Notification(models.Model):
         INVOICE = "invoice", "Invoice Activity"
         PAYMENT = "payment", "Payment Received"
         TEAM = "team", "Team Invitation"
-    
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, null=True, blank=True)
     notification_type = models.CharField(max_length=20, choices=Type.choices, default=Type.INFO)
@@ -839,7 +837,7 @@ class Notification(models.Model):
     link = models.CharField(max_length=255, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ["-created_at"]
 
@@ -858,27 +856,27 @@ class Client(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=50, blank=True)
     tax_id = models.CharField(max_length=50, blank=True)
-    
+
     # Billing Address
     billing_address = models.TextField(blank=True)
     billing_city = models.CharField(max_length=100, blank=True)
     billing_state = models.CharField(max_length=100, blank=True)
     billing_country = models.CharField(max_length=100, blank=True)
     billing_zip = models.CharField(max_length=20, blank=True)
-    
+
     # Shipping Address
     shipping_address = models.TextField(blank=True)
     shipping_city = models.CharField(max_length=100, blank=True)
     shipping_state = models.CharField(max_length=100, blank=True)
     shipping_country = models.CharField(max_length=100, blank=True)
     shipping_zip = models.CharField(max_length=20, blank=True)
-    
+
     # Settings
     currency = models.CharField(max_length=3, default="USD")
     discount_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     notes = models.TextField(blank=True)
     tags = models.CharField(max_length=255, blank=True) # comma separated
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -915,7 +913,7 @@ class SocialAccount(models.Model):
 class Workspace(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
-    
+
     # Business Details
     company_name = models.CharField(max_length=255, blank=True)
     company_logo = models.FileField(upload_to="company_logos/", null=True, blank=True)
@@ -927,18 +925,18 @@ class Workspace(models.Model):
     business_state = models.CharField(max_length=100, blank=True)
     business_country = models.CharField(max_length=100, blank=True, choices=UserProfile.REGION_CHOICES)
     business_postal_code = models.CharField(max_length=20, blank=True)
-    
+
     # Branding
     primary_color = models.CharField(max_length=7, default="#6366f1")
     secondary_color = models.CharField(max_length=7, default="#8b5cf6")
     accent_color = models.CharField(max_length=7, default="#10b981")
     invoice_style = models.CharField(max_length=50, default="modern", choices=UserProfile.INVOICE_STYLE_CHOICES)
-    
+
     # Compliance
     tax_id_number = models.CharField(max_length=50, blank=True)
     vat_number = models.CharField(max_length=50, blank=True)
     vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -950,18 +948,18 @@ class WorkspaceMember(models.Model):
         OWNER = "owner", "Owner"
         ADMIN = "admin", "Admin"
         MEMBER = "member", "Member"
-    
+
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="members")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="workspace_memberships")
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.MEMBER)
-    
+
     # Onboarding Persistence
     onboarding_step = models.IntegerField(default=1)
     onboarding_completed = models.BooleanField(default=False)
     onboarding_data = models.JSONField(default=dict, blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         unique_together = ("workspace", "user")
 
@@ -1039,46 +1037,46 @@ class RecurringSchedule(models.Model):
     description = models.CharField(max_length=255, help_text="Brief description of recurring charge")
     interval_type = models.CharField(max_length=20, choices=IntervalType.choices, default=IntervalType.MONTHLY)
     custom_interval_days = models.PositiveIntegerField(null=True, blank=True, help_text="Days between invoices for custom interval")
-    
+
     start_date = models.DateField(help_text="When to start generating invoices")
     end_date = models.DateField(null=True, blank=True, help_text="Optional end date for the schedule")
     next_run_date = models.DateField(db_index=True, help_text="Next scheduled invoice generation date")
     last_run_date = models.DateField(null=True, blank=True)
-    
+
     timezone = models.CharField(max_length=50, default="UTC", help_text="Timezone for schedule execution")
-    
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, db_index=True)
     paused_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancellation_reason = models.TextField(blank=True)
-    
+
     proration_enabled = models.BooleanField(default=False, help_text="Prorate partial periods")
     anchor_day = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Day of month to anchor billing (1-31)")
 
     currency = models.CharField(max_length=3, default="USD")
     base_amount = models.DecimalField(max_digits=15, decimal_places=2, help_text="Base invoice amount before tax")
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
-    
+
     line_items_template = models.JSONField(default=list, blank=True, help_text="Template line items for generated invoices")
     invoice_terms = models.TextField(blank=True, help_text="Terms to include on generated invoices")
     invoice_notes = models.TextField(blank=True, help_text="Notes to include on generated invoices")
     payment_terms_days = models.PositiveIntegerField(default=30, help_text="Days until due date from issue")
-    
+
     auto_send = models.BooleanField(default=True, help_text="Automatically send invoice to client")
-    
+
     retry_enabled = models.BooleanField(default=True)
     max_retry_attempts = models.PositiveSmallIntegerField(default=3, help_text="Max payment retry attempts")
     retry_interval_hours = models.PositiveIntegerField(default=24, help_text="Hours between retry attempts")
     retry_backoff_multiplier = models.DecimalField(max_digits=3, decimal_places=1, default=Decimal('2.0'), help_text="Backoff multiplier for retries")
     current_retry_count = models.PositiveSmallIntegerField(default=0)
     next_retry_at = models.DateTimeField(null=True, blank=True)
-    
+
     failure_notification_sent = models.BooleanField(default=False)
-    
+
     idempotency_key = models.CharField(max_length=64, unique=True, db_index=True)
     total_invoices_generated = models.PositiveIntegerField(default=0)
     total_amount_billed = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
-    
+
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1150,21 +1148,21 @@ class ScheduleExecution(models.Model):
 
     schedule = models.ForeignKey(RecurringSchedule, on_delete=models.CASCADE, related_name="executions")
     invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name="schedule_executions")
-    
+
     period_start = models.DateField(help_text="Start of billing period")
     period_end = models.DateField(help_text="End of billing period")
-    
+
     scheduled_date = models.DateField(help_text="When this execution was scheduled to run")
     executed_at = models.DateTimeField(auto_now_add=True)
-    
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    
+
     amount_generated = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     prorated_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True, help_text="Prorated amount if applicable")
-    
+
     error_message = models.TextField(blank=True)
     retry_count = models.PositiveSmallIntegerField(default=0)
-    
+
     idempotency_key = models.CharField(max_length=64, unique=True, db_index=True)
     metadata = models.JSONField(default=dict, blank=True)
 
@@ -1193,24 +1191,24 @@ class PaymentAttempt(models.Model):
 
     execution = models.ForeignKey(ScheduleExecution, on_delete=models.CASCADE, related_name="payment_attempts")
     invoice = models.ForeignKey('Invoice', on_delete=models.CASCADE, related_name="recurring_payment_attempts")
-    
+
     attempt_number = models.PositiveSmallIntegerField(default=1)
     attempted_at = models.DateTimeField(auto_now_add=True)
-    
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    
+
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     currency = models.CharField(max_length=3)
-    
+
     payment_method = models.CharField(max_length=50, blank=True)
     provider = models.CharField(max_length=50, blank=True)
     provider_transaction_id = models.CharField(max_length=255, blank=True)
-    
+
     error_code = models.CharField(max_length=50, blank=True)
     error_message = models.TextField(blank=True)
-    
+
     next_retry_at = models.DateTimeField(null=True, blank=True)
-    
+
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
@@ -1240,20 +1238,20 @@ class RecurringScheduleAuditLog(models.Model):
 
     schedule = models.ForeignKey(RecurringSchedule, on_delete=models.CASCADE, related_name="audit_logs")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     action = models.CharField(max_length=50, choices=Action.choices)
     description = models.TextField(blank=True)
-    
+
     related_invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True)
     related_execution = models.ForeignKey(ScheduleExecution, on_delete=models.SET_NULL, null=True, blank=True)
     related_attempt = models.ForeignKey(PaymentAttempt, on_delete=models.SET_NULL, null=True, blank=True)
-    
+
     old_values = models.JSONField(default=dict, blank=True)
     new_values = models.JSONField(default=dict, blank=True)
-    
+
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=500, blank=True)
-    
+
     timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
@@ -1490,7 +1488,7 @@ class ExpenseAuditLog(models.Model):
 
 class SharedReportLink(models.Model):
     """Shareable report links with permissions and audit logging."""
-    
+
     class ReportType(models.TextChoices):
         REVENUE = "revenue", "Revenue Report"
         AGING = "aging", "A/R Aging Report"
@@ -1499,42 +1497,42 @@ class SharedReportLink(models.Model):
         TAX = "tax", "Tax Summary"
         EXPENSE = "expense", "Expense Report"
         CUSTOM = "custom", "Custom Report"
-    
+
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='shared_reports')
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_shared_reports')
     token = models.CharField(max_length=64, unique=True, db_index=True)
     report_type = models.CharField(max_length=50, choices=ReportType.choices)
     report_params = models.JSONField(default=dict, blank=True, help_text="Report parameters like date range, filters")
     name = models.CharField(max_length=255, blank=True, help_text="Optional name for the shared report")
-    
+
     is_active = models.BooleanField(default=True)
     expires_at = models.DateTimeField()
     password_hash = models.CharField(max_length=64, blank=True, null=True, help_text="SHA256 hash of password if protected")
-    
+
     view_count = models.PositiveIntegerField(default=0)
     last_viewed_at = models.DateTimeField(null=True, blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['token']),
             models.Index(fields=['workspace', 'is_active']),
         ]
-    
+
     def __str__(self):
         return f"Shared {self.report_type} report - {self.token[:8]}..."
-    
+
     @property
     def is_expired(self):
         return timezone.now() > self.expires_at
-    
+
     @property
     def is_accessible(self):
         return self.is_active and not self.is_expired
-    
+
     def increment_view_count(self):
         self.view_count += 1
         self.last_viewed_at = timezone.now()
@@ -1543,31 +1541,31 @@ class SharedReportLink(models.Model):
 
 class ReportAccessLog(models.Model):
     """Audit log for shared report accesses."""
-    
+
     shared_link = models.ForeignKey(SharedReportLink, on_delete=models.CASCADE, related_name='access_logs')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=500, blank=True)
     accessed_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['-accessed_at']
         indexes = [
             models.Index(fields=['shared_link', '-accessed_at']),
         ]
-    
+
     def __str__(self):
         return f"Access to {self.shared_link.token[:8]} at {self.accessed_at}"
 
 
 class ReportExport(models.Model):
     """Track report exports for audit purposes."""
-    
+
     class ExportFormat(models.TextChoices):
         CSV = "csv", "CSV"
         PDF = "pdf", "PDF"
         EXCEL = "excel", "Excel"
-    
+
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name='report_exports')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     report_type = models.CharField(max_length=50)
@@ -1576,11 +1574,11 @@ class ReportExport(models.Model):
     file_name = models.CharField(max_length=255)
     file_size = models.PositiveIntegerField(default=0, help_text="File size in bytes")
     row_count = models.PositiveIntegerField(default=0)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['-created_at']
-    
+
     def __str__(self):
         return f"{self.report_type} export by {self.user} at {self.created_at}"

@@ -17,7 +17,7 @@ from django.db import transaction
 
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
-    from invoices.models import Invoice, EngagementMetric, UserFeedback
+    from invoices.models import Invoice
 
 logger = logging.getLogger(__name__)
 

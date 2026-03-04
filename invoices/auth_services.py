@@ -10,7 +10,6 @@ import urllib.request
 import urllib.error
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import timedelta
-from decimal import Decimal
 from typing import Optional, Tuple, List, Dict, Any
 
 import pyotp
@@ -19,8 +18,7 @@ from io import BytesIO
 from base64 import b64encode
 
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout, get_user_model
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth import login, logout, get_user_model
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.db import transaction
@@ -105,7 +103,7 @@ class PasswordValidator:
     def check_breach(cls, password: str) -> Tuple[bool, int]:
         if not password:
             return False, 0
-            
+
         def _fetch_hibp(prefix: str) -> str:
             req = urllib.request.Request(
                 f"{cls.HIBP_API_URL}{prefix}",
@@ -113,7 +111,7 @@ class PasswordValidator:
             )
             with urllib.request.urlopen(req, timeout=1.0) as response:
                 return response.read().decode('utf-8')
-        
+
         try:
             sha1_hash = hashlib.sha1(password.encode('utf-8')).hexdigest().upper()
             prefix = sha1_hash[:5]
@@ -282,18 +280,17 @@ class AuthService:
     @classmethod
     def _send_verification_email(cls, user, token: str, request=None):
         try:
-            from django.urls import reverse
             domain = getattr(settings, 'SITE_DOMAIN', 'localhost:5000')
             protocol = 'https' if not settings.DEBUG else 'http'
             verify_url = f"{protocol}://{domain}/verify-email/{token}/"
-            
+
             subject = "Verify your InvoiceFlow account"
             html_message = render_to_string('emails/verify_email.html', {
                 'user': user,
                 'verify_url': verify_url,
             })
             plain_message = strip_tags(html_message)
-            
+
             send_mail(
                 subject,
                 plain_message,
@@ -302,7 +299,7 @@ class AuthService:
                 html_message=html_message,
                 fail_silently=True
             )
-            
+
             SecurityService.log_event(user, SecurityEventType.EMAIL_VERIFICATION_SENT, request)
         except Exception as e:
             logger.error(f"Failed to send verification email: {e}")
@@ -311,26 +308,26 @@ class AuthService:
     def authenticate_user(cls, request, username_or_email: str, password: str) -> Tuple[Optional[Any], str, bool]:
         try:
             username_or_email = username_or_email.strip()
-            
+
             user = None
             if '@' in username_or_email:
                 try:
                     user = User.objects.get(email__iexact=username_or_email)
                 except User.DoesNotExist:
                     pass
-            
+
             if not user:
                 try:
                     user = User.objects.get(username__iexact=username_or_email)
                 except User.DoesNotExist:
                     pass
-            
+
             if not user:
                 cls._log_failed_attempt(username_or_email, request, "user_not_found")
                 return None, "Invalid credentials. Please check your username/email and password.", False
 
             profile, _ = UserProfile.objects.get_or_create(user=user)
-            
+
             if profile.is_locked():
                 return None, "Account is temporarily locked. Please try again later.", False
 
@@ -371,7 +368,7 @@ class AuthService:
     @classmethod
     def complete_login(cls, request, user):
         login(request, user)
-        
+
         session_key = request.session.session_key
         if not session_key:
             request.session.create()
@@ -444,7 +441,7 @@ class AuthService:
         try:
             user = User.objects.get(email__iexact=email.strip())
             profile = getattr(user, 'profile', None)
-            
+
             if profile and profile.email_verified:
                 return False, "This email is already verified."
 
@@ -463,10 +460,10 @@ class AuthService:
     def request_password_reset(cls, email: str, request=None) -> Tuple[bool, str]:
         try:
             user = User.objects.get(email__iexact=email.strip())
-            
+
             token = EmailToken.create_token(user, EmailToken.TokenType.RESET, hours=1)
             cls._send_password_reset_email(user, token.token, request)
-            
+
             SecurityService.log_event(user, SecurityEventType.PASSWORD_RESET_REQUESTED, request)
 
             return True, "If an account exists with this email, you will receive a password reset link."
@@ -483,14 +480,14 @@ class AuthService:
             domain = getattr(settings, 'SITE_DOMAIN', 'localhost:5000')
             protocol = 'https' if not settings.DEBUG else 'http'
             reset_url = f"{protocol}://{domain}/password-reset/confirm/{token}/"
-            
+
             subject = "Reset your InvoiceFlow password"
             html_message = render_to_string('emails/password_reset.html', {
                 'user': user,
                 'reset_url': reset_url,
             })
             plain_message = strip_tags(html_message)
-            
+
             send_mail(
                 subject,
                 plain_message,
@@ -569,26 +566,26 @@ class MFAService:
     @classmethod
     def generate_setup(cls, user) -> Dict[str, str]:
         secret = pyotp.random_base32()
-        
+
         mfa_profile, _ = MFAProfile.objects.get_or_create(user=user)
         mfa_profile.secret = secret
         mfa_profile.save(update_fields=['secret'])
-        
+
         totp = pyotp.TOTP(secret)
         provisioning_uri = totp.provisioning_uri(
             name=user.email,
             issuer_name="InvoiceFlow"
         )
-        
+
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
         qr.add_data(provisioning_uri)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
-        
+
         buffer = BytesIO()
         img.save(buffer, format='PNG')
         qr_base64 = b64encode(buffer.getvalue()).decode()
-        
+
         return {
             'secret': secret,
             'qr_code': f"data:image/png;base64,{qr_base64}",
@@ -599,7 +596,7 @@ class MFAService:
     def verify_and_enable(cls, user, code: str, request=None) -> Tuple[bool, str, List[str]]:
         try:
             mfa_profile = MFAProfile.objects.get(user=user)
-            
+
             if not mfa_profile.secret:
                 return False, "Please generate a new setup code first.", []
 
@@ -608,7 +605,7 @@ class MFAService:
                 return False, "Invalid verification code. Please try again.", []
 
             recovery_codes = [secrets.token_hex(4).upper() for _ in range(8)]
-            
+
             mfa_profile.is_enabled = True
             mfa_profile.recovery_codes = recovery_codes
             mfa_profile.save()
@@ -631,7 +628,7 @@ class MFAService:
     def verify_code(cls, user, code: str, request=None) -> Tuple[bool, str]:
         try:
             mfa_profile = MFAProfile.objects.get(user=user)
-            
+
             if not mfa_profile.is_enabled or not mfa_profile.secret:
                 return False, "2FA is not enabled for this account."
 
@@ -648,7 +645,7 @@ class MFAService:
                     if recovery_code.replace('-', '') == code_upper:
                         mfa_profile.recovery_codes.pop(i)
                         mfa_profile.save(update_fields=['recovery_codes'])
-                        SecurityService.log_event(user, SecurityEventType.MFA_VERIFIED, request, 
+                        SecurityService.log_event(user, SecurityEventType.MFA_VERIFIED, request,
                                                   details={'method': 'recovery_code'})
                         return True, "Recovery code accepted."
 
@@ -694,7 +691,7 @@ class MFAService:
                 return False, "Incorrect password.", []
 
             mfa_profile = MFAProfile.objects.get(user=user)
-            
+
             if not mfa_profile.is_enabled:
                 return False, "2FA is not enabled.", []
 
@@ -735,7 +732,7 @@ class SessionService:
     def revoke_session(cls, user, session_id: int, request=None) -> Tuple[bool, str]:
         try:
             session = UserSession.objects.get(id=session_id, user=user)
-            
+
             if session.is_current:
                 return False, "Cannot revoke current session."
 
@@ -763,11 +760,11 @@ class SessionService:
     def revoke_all_other_sessions(cls, user, request=None) -> Tuple[bool, str]:
         try:
             current_session_key = request.session.session_key if request else None
-            
+
             other_sessions = UserSession.objects.filter(user=user, is_active=True)
             if current_session_key:
                 other_sessions = other_sessions.exclude(session_key=current_session_key)
-            
+
             session_keys = list(other_sessions.values_list('session_key', flat=True))
             other_sessions.update(is_active=False)
 
@@ -899,14 +896,14 @@ class InvitationService:
             domain = getattr(settings, 'SITE_DOMAIN', 'localhost:5000')
             protocol = 'https' if not settings.DEBUG else 'http'
             invite_url = f"{protocol}://{domain}/invite/{invitation.token}/"
-            
+
             subject = f"You're invited to join {invitation.workspace.name} on InvoiceFlow"
             html_message = render_to_string('emails/workspace_invitation.html', {
                 'invitation': invitation,
                 'invite_url': invite_url,
             })
             plain_message = strip_tags(html_message)
-            
+
             send_mail(
                 subject,
                 plain_message,
@@ -959,13 +956,13 @@ class InvitationService:
     def revoke_invitation(cls, invitation_id: int, user) -> Tuple[bool, str]:
         try:
             invitation = WorkspaceInvitation.objects.get(id=invitation_id)
-            
+
             member = WorkspaceMember.objects.filter(
                 workspace=invitation.workspace,
                 user=user,
                 role__in=['owner', 'admin']
             ).first()
-            
+
             if not member:
                 return False, "You don't have permission to revoke this invitation."
 
