@@ -328,6 +328,18 @@ class Migration(migrations.Migration):
             model_name='invoicepayment',
             name='updated_at',
         ),
+        migrations.CreateModel(
+            name='Payment',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('reference', models.CharField(max_length=255, unique=True)),
+                ('amount', models.DecimalField(decimal_places=2, max_digits=12)),
+                ('status', models.CharField(default='pending', max_length=20)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('invoice', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='invoices.invoice')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+            ],
+        ),
         migrations.RemoveField(
             model_name='payment',
             name='reference',
