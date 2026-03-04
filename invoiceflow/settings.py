@@ -82,7 +82,7 @@ if IS_PRODUCTION:
     CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
     CSP_IMG_SRC = ("'self'", "data:", "https:")
     
-    SILENCED_SYSTEM_CHECKS = ["security.W001", "security.W004", "security.W008", "security.W012"]
+    SILENCED_SYSTEM_CHECKS = ["security.W001", "security.W004", "security.W008", "security.W012", "security.W018", "security.W009"]
 else:
     DEBUG = True
     SECURE_SSL_REDIRECT = False

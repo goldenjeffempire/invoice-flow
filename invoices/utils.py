@@ -101,6 +101,7 @@ class CurrencyHelper:
     @staticmethod
     def validate_amount(amount: Any) -> Optional[Decimal]:
         """Validate and convert to Decimal."""
+        from decimal import InvalidOperation
         try:
             return Decimal(str(amount)).quantize(Decimal("0.01"))
         except (ValueError, TypeError, InvalidOperation) as e:
