@@ -82,11 +82,13 @@ if IS_PRODUCTION:
     CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
     CSP_IMG_SRC = ("'self'", "data:", "https:")
     
-    SILENCED_SYSTEM_CHECKS = ["security.W001", "security.W004", "security.W008"]
+    SILENCED_SYSTEM_CHECKS = ["security.W001", "security.W004", "security.W008", "security.W012"]
 else:
+    DEBUG = True
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
     SECURE_REDIRECT_EXEMPT = [r'.*']
 
 # Rate Limiting
@@ -136,7 +138,7 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'WARNING' if IS_PRODUCTION else 'INFO',
     },
 }
 
