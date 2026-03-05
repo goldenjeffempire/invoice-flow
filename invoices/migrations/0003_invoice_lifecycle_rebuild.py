@@ -15,12 +15,12 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(
             sql='''
-            DROP TABLE IF EXISTS invoices_invoiceactivity CASCADE;
-            DROP TABLE IF EXISTS invoices_invoiceattachment CASCADE;
-            DROP TABLE IF EXISTS invoices_invoicepayment CASCADE;
-            DROP TABLE IF EXISTS invoices_lineitem CASCADE;
-            DROP TABLE IF EXISTS invoices_invoice CASCADE;
-            DROP TABLE IF EXISTS invoices_payment CASCADE;
+            DROP TABLE IF EXISTS invoices_invoiceactivity;
+            DROP TABLE IF EXISTS invoices_invoiceattachment;
+            DROP TABLE IF EXISTS invoices_invoicepayment;
+            DROP TABLE IF EXISTS invoices_lineitem;
+            DROP TABLE IF EXISTS invoices_invoice;
+            DROP TABLE IF EXISTS invoices_payment;
             ''',
             reverse_sql=migrations.RunSQL.noop,
         ),
