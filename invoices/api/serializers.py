@@ -101,6 +101,10 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         invoice = Invoice.objects.create(**validated_data)
         for item_data in items_data:
             LineItem.objects.create(invoice=invoice, **item_data)
+        
+        # Calculate totals using InvoiceService
+        from invoices.services.invoice_service import InvoiceService
+        InvoiceService.calculate_invoice_totals(invoice)
         return invoice
 
     def update(self, instance, validated_data):

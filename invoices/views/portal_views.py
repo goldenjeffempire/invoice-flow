@@ -92,7 +92,7 @@ def portal_invoice_pdf(request, invoice_id):
 
     invoice = get_object_or_404(Invoice, id=invoice_id, client=session.client)
     pdf_service = PDFService()
-    pdf_content = pdf_service.generate_invoice_pdf(invoice)
+    pdf_content = pdf_service.generate_pdf_bytes(invoice)
 
     response = HttpResponse(pdf_content, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="invoice_{invoice.invoice_number}.pdf"'

@@ -471,6 +471,13 @@ class Invoice(models.Model):
     last_reminder_sent_at = models.DateTimeField(null=True, blank=True)
     reminder_count = models.IntegerField(default=0)
 
+    def attachments(self):
+        """
+        Placeholder for attachments relationship. 
+        In a real scenario, this would be a GenericRelation or a ForeignKey from an Attachment model.
+        """
+        return []
+
     delivery_email_sent = models.BooleanField(default=False)
     delivery_email_opened = models.BooleanField(default=False)
     delivery_whatsapp_sent = models.BooleanField(default=False)

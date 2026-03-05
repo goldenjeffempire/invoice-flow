@@ -605,38 +605,6 @@ def track_reminder_open(request, log_id):
     return HttpResponse(status=200)
 
 
-def invoice_create(request):
-    return render(request, "pages/invoice_create.html")
-
-
-def invoice_detail(request, invoice_id):
-    return render(request, "pages/invoice_detail.html")
-
-
-def invoices_list(request):
-    return render(request, "pages/invoices_list.html")
-
-
-def invoice_edit(request, invoice_id):
-    return render(request, "pages/invoice_create.html")
-
-
-def invoice_delete(request, invoice_id):
-    return redirect('invoices:invoices_list')
-
-
-def invoice_pdf(request, invoice_id):
-    return HttpResponse(status=200)
-
-
-def payment_history(request):
-    return render(request, "pages/payment_history.html")
-
-
-def payment_detail(request, payment_id):
-    return render(request, "pages/payment_detail.html")
-
-
 def record_engagement(request):
     return JsonResponse({"success": True})
 

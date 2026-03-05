@@ -81,8 +81,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.none()
     permission_classes = [IsAuthenticated]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["invoice_id", "client_name", "client_email"]
-    ordering_fields = ["created_at", "invoice_date", "due_date", "total", "status"]
+    search_fields = ["invoice_number", "client__name", "client__email"]
+    ordering_fields = ["created_at", "issue_date", "due_date", "total_amount", "status"]
     ordering = ["-created_at"]
     lookup_field = "pk"
     lookup_url_kwarg = "pk"
