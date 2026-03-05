@@ -144,5 +144,8 @@ class InvoiceHistorySerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
-class InvoiceTemplateSerializer(serializers.Serializer):
-    pass
+class InvoiceTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = ["id", "invoice_number", "client", "total_amount", "status", "created_at"]
+        read_only_fields = ["id", "invoice_number", "total_amount", "created_at"]

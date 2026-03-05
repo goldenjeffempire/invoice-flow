@@ -20,6 +20,7 @@ from .serializers import (
     InvoiceHistorySerializer,
     InvoiceListSerializer,
     InvoiceStatusSerializer,
+    InvoiceTemplateSerializer,
 )
 
 # Define common path parameters
@@ -241,6 +242,16 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     ),
 )
 # from .views import InvoiceViewSet, InvoiceTemplateViewSet
-class InvoiceTemplateViewSet(viewsets.ModelViewSet):
-    queryset = Invoice.objects.none() # Placeholder to stop import error
-    serializer_class = InvoiceDetailSerializer # Placeholder
+class InvoiceTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows invoice templates to be viewed.
+    Invoices with 'draft' status are treated as templates.
+    """
+    serializer_class = InvoiceTemplateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            workspace=self.request.user.profile.current_workspace,
+            status='draft'
+        ).order_by("-created_at")

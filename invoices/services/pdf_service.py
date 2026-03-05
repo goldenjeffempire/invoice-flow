@@ -27,7 +27,7 @@ class PDFService:
     def is_available() -> bool:
         """Check if PDF generation is available."""
         try:
-            from weasyprint import HTML
+            import weasyprint
             return True
         except (ImportError, OSError, Exception):
             return False

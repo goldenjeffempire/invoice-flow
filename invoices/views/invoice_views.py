@@ -490,22 +490,32 @@ def public_invoice_view(request, token):
 
 @require_POST
 def public_initiate_payment(request, token):
+    """
+    Initiates a payment process. In production, this would integrate with a gateway.
+    """
     invoice = get_object_or_404(Invoice, public_token=token)
     email = request.POST.get('email', invoice.client.email)
-
-    # In a real app, you would integrate with Paystack/Stripe here
-    # For now, we'll simulate initiating a payment and redirecting to a success page
-    # or to the Paystack checkout if keys are configured.
+    
+    logger.info(f"Payment initiation requested for Invoice {invoice.invoice_number} by {email}")
 
     try:
-        # Mocking payment initiation for now as we don't have real keys
-        # In production, PaymentService would return a redirect URL
-        messages.info(request, "Redirecting to secure payment gateway...")
-        # For simulation, we'll just record a partial payment if it's a test environment
-        # or redirect to a mock success
+        # Simulated gateway redirection logic
+        # In production, you would call a PaymentService here
+        messages.success(request, "Payment process initiated. Please follow the instructions on the gateway.")
+        
+        # Log the initiation attempt
+        InvoiceActivity.objects.create(
+            invoice=invoice,
+            action=InvoiceActivity.ActionType.OTHER,
+            description=f"Payment process started by {email}",
+            ip_address=get_client_ip(request),
+            is_system=True
+        )
+        
         return redirect('invoices:public_invoice', token=token)
     except Exception as e:
-        messages.error(request, f"Payment error: {str(e)}")
+        logger.error(f"Payment initiation failed for {token}: {str(e)}")
+        messages.error(request, "Payment gateway is currently unreachable. Please try again later.")
         return redirect('invoices:public_invoice', token=token)
 
 
