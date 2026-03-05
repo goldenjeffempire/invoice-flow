@@ -19,8 +19,8 @@ class Migration(migrations.Migration):
             DROP TABLE IF EXISTS invoices_invoiceattachment;
             DROP TABLE IF EXISTS invoices_invoicepayment;
             DROP TABLE IF EXISTS invoices_lineitem;
-            DROP TABLE IF EXISTS invoices_invoice;
             DROP TABLE IF EXISTS invoices_payment;
+            DROP TABLE IF EXISTS invoices_invoice;
             ''',
             reverse_sql=migrations.RunSQL.noop,
         ),
