@@ -6,7 +6,54 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
+
+
+
+# =========================================================
+# CORE MIXINS (MERGED)
+# =========================================================
+
+class TimeStampedModel(models.Model):
+    """Abstract base model providing created_at / updated_at timestamps."""
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        abstract = True
+
+
+class WorkspaceScopedModel(models.Model):
+    """Abstract base model for multi-tenant scoping."""
+    workspace = models.ForeignKey("Workspace", on_delete=models.CASCADE)
+
+    class Meta:
+        abstract = True
+
+
+# =========================================================
+# SOFT DELETE + RETENTION (MERGED)
+# =========================================================
+
+class SoftDeleteQuerySet(models.QuerySet):
+    def delete(self):
+        return super().update(is_deleted=True, deleted_at=timezone.now())
+
+    def hard_delete(self):
+        return super().delete()
+
+
+class SoftDeleteModel(TimeStampedModel):
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = SoftDeleteQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+
 
 
 class UserProfile(models.Model):
@@ -914,6 +961,16 @@ class Workspace(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="owned_workspaces",
+        null=True,
+        blank=True,
+    )
+
+    is_active = models.BooleanField(default=True)
+
     # Business Details
     company_name = models.CharField(max_length=255, blank=True)
     company_logo = models.FileField(upload_to="company_logos/", null=True, blank=True)
@@ -948,6 +1005,7 @@ class WorkspaceMember(models.Model):
         OWNER = "owner", "Owner"
         ADMIN = "admin", "Admin"
         MEMBER = "member", "Member"
+        VIEWER = "viewer", "Viewer"
 
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="members")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="workspace_memberships")
@@ -1582,3 +1640,218 @@ class ReportExport(models.Model):
 
     def __str__(self):
         return f"{self.report_type} export by {self.user} at {self.created_at}"
+
+
+# =========================================================
+# MERGED: PRODUCTS + TAX ENGINE
+# =========================================================
+
+class Product(WorkspaceScopedModel, TimeStampedModel):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=10, default="NGN")
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = ("workspace", "name")
+
+    def __str__(self):
+        return self.name
+
+
+class TaxRate(WorkspaceScopedModel, TimeStampedModel):
+    name = models.CharField(max_length=100)
+    rate = models.DecimalField(max_digits=5, decimal_places=2)
+    region = models.CharField(max_length=100, blank=True)
+    is_default = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = ("workspace", "name")
+
+    def __str__(self):
+        return f"{self.name} ({self.rate}%)"
+
+
+# =========================================================
+# MERGED: PAYMENT PROVIDERS + SPLITS
+# =========================================================
+
+class PaymentProvider(WorkspaceScopedModel, TimeStampedModel):
+    """Stores credentials/config for a gateway per workspace."""
+
+    class Provider(models.TextChoices):
+        PAYSTACK = "paystack", "Paystack"
+        STRIPE = "stripe", "Stripe"
+
+    provider = models.CharField(max_length=50, choices=Provider.choices)
+    public_key = models.CharField(max_length=255)
+    secret_key = models.CharField(max_length=255)
+    webhook_secret = models.CharField(max_length=255, blank=True)
+
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ("workspace", "provider")
+
+    def __str__(self):
+        return f"{self.workspace_id}:{self.provider}"
+
+
+class PaystackWebhookEvent(TimeStampedModel):
+    workspace = models.ForeignKey("Workspace", on_delete=models.CASCADE, related_name="paystack_webhook_events")
+    event = models.CharField(max_length=100, db_index=True)
+    reference = models.CharField(max_length=255, db_index=True)
+    payload = models.JSONField()
+    processed = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["workspace", "processed", "-created_at"]),
+            models.Index(fields=["reference"]),
+        ]
+
+    def __str__(self):
+        return f"{self.event} - {self.reference}"
+
+
+class PaymentSplitRecipient(WorkspaceScopedModel, TimeStampedModel):
+    name = models.CharField(max_length=255)
+    paystack_subaccount_code = models.CharField(max_length=255, db_index=True)
+    commission_rate = models.DecimalField(max_digits=5, decimal_places=2)
+
+    class Meta:
+        unique_together = ("workspace", "paystack_subaccount_code")
+
+    def __str__(self):
+        return self.name
+
+
+class PaymentSplitConfiguration(WorkspaceScopedModel, TimeStampedModel):
+    """Optional: links a Payment to split recipients."""
+    payment = models.OneToOneField(
+        "Payment",
+        related_name="split_config",
+        on_delete=models.CASCADE,
+    )
+    platform_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal("2.50"))
+    recipients = models.ManyToManyField(PaymentSplitRecipient, blank=True)
+
+    def __str__(self):
+        return f"SplitConfig for Payment {self.payment_id}"
+
+
+# =========================================================
+# MERGED: PLATFORM COMMISSION
+# =========================================================
+
+class PlatformCommission(TimeStampedModel):
+    payment = models.OneToOneField(
+        "Payment",
+        related_name="platform_commission",
+        on_delete=models.CASCADE,
+    )
+    workspace = models.ForeignKey("Workspace", on_delete=models.CASCADE, related_name="platform_commissions")
+
+    rate = models.DecimalField(max_digits=5, decimal_places=2)
+    commission_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal("0.00"))
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["workspace", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"Commission for Payment {self.payment_id}"
+
+    def calculate(self):
+        self.commission_amount = (self.payment.amount * self.rate) / Decimal("100")
+        return self.commission_amount
+
+
+# =========================================================
+# MERGED: LEDGER ACCOUNTING
+# =========================================================
+
+class LedgerAccount(WorkspaceScopedModel, TimeStampedModel):
+    class AccountType(models.TextChoices):
+        ASSET = "asset", "Asset"
+        LIABILITY = "liability", "Liability"
+        EQUITY = "equity", "Equity"
+        REVENUE = "revenue", "Revenue"
+        EXPENSE = "expense", "Expense"
+
+    name = models.CharField(max_length=255)
+    account_type = models.CharField(max_length=20, choices=AccountType.choices)
+    balance = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal("0.00"))
+
+    class Meta:
+        unique_together = ("workspace", "name")
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.account_type})"
+
+
+class LedgerEntry(TimeStampedModel):
+    workspace = models.ForeignKey("Workspace", on_delete=models.CASCADE, related_name="ledger_entries")
+    account = models.ForeignKey(LedgerAccount, related_name="entries", on_delete=models.CASCADE)
+    debit = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal("0.00"))
+    credit = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal("0.00"))
+    reference = models.CharField(max_length=255)
+    payment = models.ForeignKey("Payment", null=True, blank=True, on_delete=models.SET_NULL, related_name="ledger_entries")
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["workspace", "-created_at"]),
+            models.Index(fields=["reference"]),
+        ]
+
+    def __str__(self):
+        return f"{self.reference}"
+
+
+# =========================================================
+# MERGED: AUDIT LOG (GENERIC)
+# =========================================================
+
+class AuditLog(TimeStampedModel):
+    workspace = models.ForeignKey("Workspace", on_delete=models.CASCADE, related_name="audit_logs")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="audit_logs")
+    action = models.CharField(max_length=255)
+    object_type = models.CharField(max_length=100)
+    object_id = models.CharField(max_length=100)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["workspace", "object_type", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.action} {self.object_type}:{self.object_id}"
+
+
+# =========================================================
+# MERGED: SIGNALS
+# =========================================================
+
+@receiver(post_save, sender=Payment)
+def create_platform_commission(sender, instance, created, **kwargs):
+    """Auto-create platform commission row on Payment creation."""
+    if not created:
+        return
+
+    # Default platform fee rate (override via settings if needed)
+    rate = Decimal(str(getattr(settings, "PLATFORM_COMMISSION_RATE", "2.5")))
+    PlatformCommission.objects.create(
+        payment=instance,
+        workspace=instance.workspace if instance.workspace_id else instance.invoice.workspace,
+        rate=rate,
+        commission_amount=(instance.amount * rate) / Decimal("100"),
+    )
