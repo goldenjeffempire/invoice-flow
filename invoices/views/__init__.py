@@ -11,3 +11,5 @@ from .recurring_views import *
 from .expense_views import *
 from .report_views import *
 from .portal_views import *
+
+from .estimate_views import *

@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.db.models import Sum, Q
 from ..models import Estimate, Client
@@ -95,3 +96,50 @@ def convert_estimate(request, estimate_id):
     except Exception as e:
         messages.error(request, str(e))
         return redirect('invoices:estimate_detail', estimate_id=estimate.id)
+
+
+from django.http import Http404
+from django.utils import timezone
+
+
+def public_estimate_view(request, token):
+    estimate = get_object_or_404(
+        Estimate.objects.select_related('client', 'workspace').prefetch_related('items'),
+        public_token=token,
+    )
+
+    if estimate.status == Estimate.Status.VOID:
+        raise Http404('This estimate is no longer available.')
+
+    updates = []
+    if estimate.status == Estimate.Status.SENT:
+        estimate.status = Estimate.Status.VIEWED
+        updates.append('status')
+    if not estimate.viewed_at:
+        estimate.viewed_at = timezone.now()
+        updates.append('viewed_at')
+    if updates:
+        estimate.save(update_fields=updates)
+
+    return render(request, 'pages/estimates/public_view.html', {'estimate': estimate})
+
+
+@require_POST
+
+def public_estimate_action(request, token, action):
+    estimate = get_object_or_404(Estimate, public_token=token)
+
+    if action == 'accept':
+        estimate.status = Estimate.Status.APPROVED
+        estimate.accepted_at = timezone.now()
+        estimate.save(update_fields=['status', 'accepted_at'])
+        messages.success(request, 'Estimate accepted successfully.')
+    elif action == 'decline':
+        estimate.status = Estimate.Status.DECLINED
+        estimate.declined_at = timezone.now()
+        estimate.save(update_fields=['status', 'declined_at'])
+        messages.info(request, 'Estimate declined.')
+    else:
+        raise Http404('Unsupported estimate action.')
+
+    return redirect('invoices:public_estimate', token=token)

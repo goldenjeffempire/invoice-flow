@@ -652,3 +652,28 @@ def api_clients_search(request):
 
     data = [{'id': c.id, 'name': c.name, 'email': c.email} for c in clients]
     return JsonResponse({'clients': data})
+
+
+
+@login_required
+@require_POST
+def toggle_invoice_reminders(request, invoice_id):
+    workspace = request.user.profile.current_workspace
+    invoice = get_object_or_404(Invoice, id=invoice_id, workspace=workspace)
+    invoice.reminder_enabled = not invoice.reminder_enabled
+    invoice.save(update_fields=['reminder_enabled'])
+    state = 'enabled' if invoice.reminder_enabled else 'disabled'
+    messages.success(request, f'Invoice reminders {state}.')
+    return redirect('invoices:invoice_detail', invoice_id=invoice.id)
+
+
+@login_required
+@require_POST
+def send_manual_reminder(request, invoice_id):
+    workspace = request.user.profile.current_workspace
+    invoice = get_object_or_404(Invoice, id=invoice_id, workspace=workspace)
+    invoice.last_reminder_sent_at = timezone.now()
+    invoice.reminder_count = (invoice.reminder_count or 0) + 1
+    invoice.save(update_fields=['last_reminder_sent_at', 'reminder_count'])
+    messages.success(request, 'Manual reminder recorded. Connect your email provider to send the actual message automatically.')
+    return redirect('invoices:invoice_detail', invoice_id=invoice.id)
