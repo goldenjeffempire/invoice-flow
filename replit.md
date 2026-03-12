@@ -22,7 +22,8 @@ A production-ready Django invoicing application for freelancers and small busine
 - **Database:** PostgreSQL (Replit built-in via `DATABASE_URL`)
 - **Cache:** In-memory (LocMemCache) in dev, Redis in production
 - **Static Files:** WhiteNoise for serving static assets
-- **Templates:** Django templates with Tailwind CSS
+- **Templates:** Django templates with Tailwind CSS (CDN), Alpine.js (CDN), Chart.js (CDN)
+- **UI System:** Collapsible sidebar (desktop), mobile drawer sidebar, ⌘K global search modal, notification slide-over, floating help widget, full dark mode via Alpine.js class strategy
 - **PDF Generation:** WeasyPrint + ReportLab
 - **Email:** SendGrid
 - **Auth:** Enterprise-grade rebuild — AuthService, SessionService, PasswordValidator (HIBP breach check), SecurityService. No email verification required. MFA (TOTP via pyotp) preserved for existing users.

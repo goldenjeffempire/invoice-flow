@@ -1,22 +1,27 @@
 """
-Production-Grade Dashboard Views
-Real-time command center with KPIs, cashflow, invoice aging, quick actions, and smart alerts.
+Dashboard Views — command-centre KPIs, cashflow, aging, and smart alerts.
 """
 import json
 import logging
 from datetime import timedelta
 from decimal import Decimal
-from django.shortcuts import render, redirect
+
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Q
-from django.db.models.functions import TruncMonth, TruncWeek, Coalesce
-from django.utils import timezone
+from django.db.models import Q, Sum
+from django.db.models.functions import Coalesce, TruncMonth, TruncWeek
 from django.http import JsonResponse
+from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from ..models import (
-    Invoice, Client, Payment, Expense, RecurringSchedule,
-    UserProfile, Notification
+    Client,
+    Expense,
+    Invoice,
+    Notification,
+    Payment,
+    RecurringSchedule,
+    UserProfile,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,188 +44,201 @@ def dashboard_overview(request):
 
         today = timezone.now().date()
         start_of_month = today.replace(day=1)
-        start_of_year = today.replace(month=1, day=1)
         last_30_days = today - timedelta(days=30)
         last_90_days = today - timedelta(days=90)
 
         kpis = _calculate_kpis(workspace, today, start_of_month, last_30_days)
         cashflow_raw = _get_cashflow_data(workspace, last_90_days, today)
         aging_raw = _get_aging_data(workspace, today)
-        recent_invoices = _get_recent_invoices(workspace, limit=10)
-        upcoming_payments = _get_upcoming_payments(workspace, today)
+        recent_invoices = _get_recent_invoices(workspace, limit=8)
+        upcoming_due = _get_upcoming_due(workspace, today, limit=6)
         smart_alerts = _generate_smart_alerts(workspace, today, kpis)
         quick_stats = _get_quick_stats(workspace, today, start_of_month)
-
-        invoices = Invoice.objects.filter(workspace=workspace)
-        # Additional data for T001
         revenue_chart_data = json.dumps(_get_revenue_chart_data(workspace))
-        status_chart_data = json.dumps({
-            'paid': invoices.filter(status=Invoice.Status.PAID, created_at__date__gte=start_of_month).count(),
-            'sent': invoices.filter(status=Invoice.Status.SENT, created_at__date__gte=start_of_month).count(),
-            'overdue': invoices.filter(status=Invoice.Status.OVERDUE, created_at__date__gte=start_of_month).count(),
-        })
         activity_feed = _get_activity_feed(workspace)
 
-        top_clients = Client.objects.filter(workspace=workspace).annotate(
-            total_revenue=Sum('invoices__total_amount', filter=Q(invoices__status=Invoice.Status.PAID))
-        ).order_by('-total_revenue')[:5]
+        invoices_qs = Invoice.objects.filter(workspace=workspace)
+        status_chart_data = json.dumps({
+            'paid': invoices_qs.filter(status=Invoice.Status.PAID, created_at__date__gte=start_of_month).count(),
+            'sent': invoices_qs.filter(status=Invoice.Status.SENT, created_at__date__gte=start_of_month).count(),
+            'overdue': invoices_qs.filter(status=Invoice.Status.OVERDUE).count(),
+            'draft': invoices_qs.filter(status=Invoice.Status.DRAFT).count(),
+        })
 
-        upcoming_due = Invoice.objects.filter(
-            workspace=workspace,
-            status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID],
-            due_date__gte=today
-        ).order_by('due_date')[:5]
+        top_clients = Client.objects.filter(workspace=workspace).annotate(
+            total_revenue=Sum(
+                'invoices__total_amount',
+                filter=Q(invoices__status=Invoice.Status.PAID)
+            )
+        ).exclude(total_revenue=None).order_by('-total_revenue')[:5]
 
         total_aging = sum(float(v.get('amount', 0)) for v in aging_raw.values()) if aging_raw else 1
         aging_data = {
             'current': float(aging_raw.get('current', {}).get('amount', 0)),
-            'current_percent': (float(aging_raw.get('current', {}).get('amount', 0)) / total_aging * 100) if total_aging > 0 else 0,
+            'current_percent': _pct(aging_raw.get('current', {}).get('amount', 0), total_aging),
+            'days_1_30': float(aging_raw.get('1_30', {}).get('amount', 0)),
+            'days_1_30_percent': _pct(aging_raw.get('1_30', {}).get('amount', 0), total_aging),
             'days_31_60': float(aging_raw.get('31_60', {}).get('amount', 0)),
-            'days_31_60_percent': (float(aging_raw.get('31_60', {}).get('amount', 0)) / total_aging * 100) if total_aging > 0 else 0,
-            'days_61_90': float(aging_raw.get('61_90', {}).get('amount', 0)),
-            'days_61_90_percent': (float(aging_raw.get('61_90', {}).get('amount', 0)) / total_aging * 100) if total_aging > 0 else 0,
+            'days_31_60_percent': _pct(aging_raw.get('31_60', {}).get('amount', 0), total_aging),
             'days_90_plus': float(aging_raw.get('90_plus', {}).get('amount', 0)),
-            'days_90_plus_percent': (float(aging_raw.get('90_plus', {}).get('amount', 0)) / total_aging * 100) if total_aging > 0 else 0,
+            'days_90_plus_percent': _pct(aging_raw.get('90_plus', {}).get('amount', 0), total_aging),
         }
 
-        cashflow_data = json.dumps(cashflow_raw) if cashflow_raw else '[]'
-
         return render(request, 'pages/dashboard/overview.html', {
-            'profile': profile,
             'workspace': workspace,
+            'profile': profile,
             'kpis': kpis,
-            'cashflow_data': cashflow_data,
+            'cashflow_data': json.dumps(cashflow_raw) if cashflow_raw else '[]',
             'aging_data': aging_data,
             'recent_invoices': recent_invoices,
-            'upcoming_payments': upcoming_payments,
+            'upcoming_due': upcoming_due,
             'smart_alerts': smart_alerts,
             'quick_stats': quick_stats,
             'revenue_chart_data': revenue_chart_data,
             'status_chart_data': status_chart_data,
             'activity_feed': activity_feed,
             'top_clients': top_clients,
-            'upcoming_due': upcoming_due,
+            'today': today,
         })
 
     except Exception as e:
-        logger.error(f"Dashboard error: {e}")
+        logger.error("Dashboard error: %s", e, exc_info=True)
         return render(request, 'pages/dashboard/overview.html', {
-            'error': 'Unable to load dashboard data. Please try again.',
+            'error': 'Unable to load dashboard data. Please refresh.',
             'profile': getattr(request.user, 'profile', None),
         })
 
 
+def _pct(value, total):
+    if not total:
+        return 0
+    return round(float(value or 0) / float(total) * 100, 1)
+
+
 def _calculate_kpis(workspace, today, start_of_month, last_30_days):
     try:
-        invoices = Invoice.objects.filter(workspace=workspace)
+        inv = Invoice.objects.filter(workspace=workspace)
 
-        total_revenue_month = invoices.filter(
+        revenue_month = inv.filter(
             status=Invoice.Status.PAID,
             paid_at__date__gte=start_of_month
-        ).aggregate(total=Coalesce(Sum('total_amount'), Decimal('0')))['total']
+        ).aggregate(t=Coalesce(Sum('total_amount'), Decimal('0')))['t']
 
-        total_outstanding = invoices.filter(
-            status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID, Invoice.Status.OVERDUE]
-        ).aggregate(total=Coalesce(Sum('amount_due'), Decimal('0')))['total']
+        outstanding = inv.filter(
+            status__in=[
+                Invoice.Status.SENT,
+                Invoice.Status.VIEWED,
+                Invoice.Status.PART_PAID,
+                Invoice.Status.OVERDUE,
+            ]
+        ).aggregate(t=Coalesce(Sum('amount_due'), Decimal('0')))['t']
 
-        overdue_amount = invoices.filter(
+        overdue_amount = inv.filter(
             status=Invoice.Status.OVERDUE
-        ).aggregate(total=Coalesce(Sum('amount_due'), Decimal('0')))['total']
+        ).aggregate(t=Coalesce(Sum('amount_due'), Decimal('0')))['t']
 
-        paid_invoices_30d = invoices.filter(
-            paid_at__date__gte=last_30_days,
-            status=Invoice.Status.PAID
-        )
-        avg_payment_days = 0
-        if paid_invoices_30d.exists():
-            total_days = sum([
-                (inv.paid_at.date() - inv.issue_date).days
-                for inv in paid_invoices_30d if inv.paid_at
-            ])
-            avg_payment_days = total_days // paid_invoices_30d.count() if paid_invoices_30d.count() > 0 else 0
+        overdue_count = inv.filter(status=Invoice.Status.OVERDUE).count()
 
-        invoices_this_month = invoices.filter(created_at__date__gte=start_of_month).count()
-        paid_this_month = invoices.filter(paid_at__date__gte=start_of_month).count()
+        invoices_this_month = inv.filter(created_at__date__gte=start_of_month).count()
+        paid_this_month = inv.filter(paid_at__date__gte=start_of_month, status=Invoice.Status.PAID).count()
 
-        prev_month_start = (start_of_month - timedelta(days=1)).replace(day=1)
-        prev_month_revenue = invoices.filter(
+        prev_start = (start_of_month - timedelta(days=1)).replace(day=1)
+        prev_revenue = inv.filter(
             status=Invoice.Status.PAID,
-            paid_at__date__gte=prev_month_start,
-            paid_at__date__lt=start_of_month
-        ).aggregate(total=Coalesce(Sum('total_amount'), Decimal('0')))['total']
+            paid_at__date__gte=prev_start,
+            paid_at__date__lt=start_of_month,
+        ).aggregate(t=Coalesce(Sum('total_amount'), Decimal('0')))['t']
 
-        revenue_change = 0
-        if prev_month_revenue > 0:
-            revenue_change = ((total_revenue_month - prev_month_revenue) / prev_month_revenue) * 100
+        revenue_change = 0.0
+        if prev_revenue > 0:
+            revenue_change = float((revenue_month - prev_revenue) / prev_revenue * 100)
+
+        paid_recent = inv.filter(paid_at__date__gte=last_30_days, status=Invoice.Status.PAID)
+        avg_days = 0
+        if paid_recent.exists():
+            days_list = [
+                (i.paid_at.date() - i.issue_date).days
+                for i in paid_recent if i.paid_at and i.issue_date
+            ]
+            avg_days = int(sum(days_list) / len(days_list)) if days_list else 0
+
+        collection_rate = 0.0
+        if invoices_this_month > 0:
+            collection_rate = round(paid_this_month / invoices_this_month * 100, 1)
 
         return {
-            'total_revenue_month': total_revenue_month,
-            'total_outstanding': total_outstanding,
+            'total_revenue_month': revenue_month,
+            'total_outstanding': outstanding,
             'overdue_amount': overdue_amount,
-            'avg_payment_days': avg_payment_days,
+            'overdue_count': overdue_count,
+            'avg_payment_days': avg_days,
             'invoices_this_month': invoices_this_month,
             'paid_this_month': paid_this_month,
             'revenue_change': round(revenue_change, 1),
-            'collection_rate': round((paid_this_month / invoices_this_month * 100) if invoices_this_month > 0 else 0, 1),
+            'collection_rate': collection_rate,
         }
+
     except Exception as e:
-        logger.error(f"KPI calculation error: {e}")
+        logger.error("KPI error: %s", e)
         return {
             'total_revenue_month': Decimal('0'),
             'total_outstanding': Decimal('0'),
             'overdue_amount': Decimal('0'),
+            'overdue_count': 0,
             'avg_payment_days': 0,
             'invoices_this_month': 0,
             'paid_this_month': 0,
-            'revenue_change': 0,
-            'collection_rate': 0,
+            'revenue_change': 0.0,
+            'collection_rate': 0.0,
         }
 
 
 def _get_cashflow_data(workspace, start_date, end_date):
     try:
-        payments = Payment.objects.filter(
-            invoice__workspace=workspace,
-            payment_date__gte=start_date,
-            payment_date__lte=end_date,
-            status='completed'
-        ).annotate(
-            week=TruncWeek('payment_date')
-        ).values('week').annotate(
-            income=Sum('amount')
-        ).order_by('week')
+        payments = (
+            Payment.objects.filter(
+                invoice__workspace=workspace,
+                payment_date__gte=start_date,
+                payment_date__lte=end_date,
+                status='completed',
+            )
+            .annotate(week=TruncWeek('payment_date'))
+            .values('week')
+            .annotate(income=Sum('amount'))
+            .order_by('week')
+        )
 
-        expenses = Expense.objects.filter(
-            workspace=workspace,
-            expense_date__gte=start_date,
-            expense_date__lte=end_date,
-            status='approved'
-        ).annotate(
-            week=TruncWeek('expense_date')
-        ).values('week').annotate(
-            outflow=Sum('amount')
-        ).order_by('week')
+        expenses = (
+            Expense.objects.filter(
+                workspace=workspace,
+                expense_date__gte=start_date,
+                expense_date__lte=end_date,
+                status='approved',
+            )
+            .annotate(week=TruncWeek('expense_date'))
+            .values('week')
+            .annotate(outflow=Sum('amount'))
+            .order_by('week')
+        )
 
-        payment_dict = {p['week']: float(p['income'] or 0) for p in payments}
-        expense_dict = {e['week']: float(e['outflow'] or 0) for e in expenses}
-
-        all_weeks = sorted(set(payment_dict.keys()) | set(expense_dict.keys()))
+        pay_dict = {p['week']: float(p['income'] or 0) for p in payments}
+        exp_dict = {e['week']: float(e['outflow'] or 0) for e in expenses}
+        all_weeks = sorted(set(pay_dict) | set(exp_dict))
 
         data = []
         for week in all_weeks:
-            income = payment_dict.get(week, 0)
-            outflow = expense_dict.get(week, 0)
+            income = pay_dict.get(week, 0)
+            outflow = exp_dict.get(week, 0)
             data.append({
                 'week': week.strftime('%b %d') if week else '',
                 'income': income,
                 'expenses': outflow,
                 'net': income - outflow,
             })
-
         return data[-12:] if len(data) > 12 else data
 
     except Exception as e:
-        logger.error(f"Cashflow data error: {e}")
+        logger.error("Cashflow error: %s", e)
         return []
 
 
@@ -228,10 +246,15 @@ def _get_aging_data(workspace, today):
     try:
         invoices = Invoice.objects.filter(
             workspace=workspace,
-            status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID, Invoice.Status.OVERDUE]
+            status__in=[
+                Invoice.Status.SENT,
+                Invoice.Status.VIEWED,
+                Invoice.Status.PART_PAID,
+                Invoice.Status.OVERDUE,
+            ],
         )
 
-        aging_buckets = {
+        buckets = {
             'current': {'count': 0, 'amount': Decimal('0'), 'label': 'Current'},
             '1_30': {'count': 0, 'amount': Decimal('0'), 'label': '1-30 days'},
             '31_60': {'count': 0, 'amount': Decimal('0'), 'label': '31-60 days'},
@@ -239,73 +262,72 @@ def _get_aging_data(workspace, today):
             '90_plus': {'count': 0, 'amount': Decimal('0'), 'label': '90+ days'},
         }
 
-        for invoice in invoices:
-            days_overdue = (today - invoice.due_date).days if invoice.due_date < today else 0
-            amount = invoice.amount_due or Decimal('0')
-
-            if days_overdue <= 0:
-                aging_buckets['current']['count'] += 1
-                aging_buckets['current']['amount'] += amount
-            elif days_overdue <= 30:
-                aging_buckets['1_30']['count'] += 1
-                aging_buckets['1_30']['amount'] += amount
-            elif days_overdue <= 60:
-                aging_buckets['31_60']['count'] += 1
-                aging_buckets['31_60']['amount'] += amount
-            elif days_overdue <= 90:
-                aging_buckets['61_90']['count'] += 1
-                aging_buckets['61_90']['amount'] += amount
+        for inv in invoices:
+            days = (today - inv.due_date).days if inv.due_date and inv.due_date < today else 0
+            amt = inv.amount_due or Decimal('0')
+            if days <= 0:
+                buckets['current']['count'] += 1
+                buckets['current']['amount'] += amt
+            elif days <= 30:
+                buckets['1_30']['count'] += 1
+                buckets['1_30']['amount'] += amt
+            elif days <= 60:
+                buckets['31_60']['count'] += 1
+                buckets['31_60']['amount'] += amt
+            elif days <= 90:
+                buckets['61_90']['count'] += 1
+                buckets['61_90']['amount'] += amt
             else:
-                aging_buckets['90_plus']['count'] += 1
-                aging_buckets['90_plus']['amount'] += amount
+                buckets['90_plus']['count'] += 1
+                buckets['90_plus']['amount'] += amt
 
-        return aging_buckets
+        return buckets
 
     except Exception as e:
-        logger.error(f"Aging data error: {e}")
+        logger.error("Aging error: %s", e)
         return {}
 
 
-def _get_recent_invoices(workspace, limit=5):
+def _get_recent_invoices(workspace, limit=8):
     try:
-        return Invoice.objects.filter(
-            workspace=workspace
-        ).select_related('client').order_by('-created_at')[:limit]
+        return (
+            Invoice.objects.filter(workspace=workspace)
+            .select_related('client')
+            .order_by('-created_at')[:limit]
+        )
     except Exception as e:
-        logger.error(f"Recent invoices error: {e}")
+        logger.error("Recent invoices error: %s", e)
         return []
 
 
-def _get_upcoming_payments(workspace, today, limit=5):
+def _get_upcoming_due(workspace, today, limit=6):
     try:
-        next_30_days = today + timedelta(days=30)
-
-        return Invoice.objects.filter(
-            workspace=workspace,
-            status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID],
-            due_date__gte=today,
-            due_date__lte=next_30_days
-        ).select_related('client').order_by('due_date')[:limit]
+        return (
+            Invoice.objects.filter(
+                workspace=workspace,
+                status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID],
+                due_date__gte=today,
+                due_date__lte=today + timedelta(days=30),
+            )
+            .select_related('client')
+            .order_by('due_date')[:limit]
+        )
     except Exception as e:
-        logger.error(f"Upcoming payments error: {e}")
+        logger.error("Upcoming due error: %s", e)
         return []
 
 
 def _generate_smart_alerts(workspace, today, kpis):
     alerts = []
-
     try:
-        overdue_count = Invoice.objects.filter(
-            workspace=workspace,
-            status=Invoice.Status.OVERDUE
-        ).count()
-
-        if overdue_count > 0:
+        overdue_count = kpis.get('overdue_count', 0)
+        if overdue_count:
             alerts.append({
                 'type': 'warning',
                 'icon': 'alert-triangle',
-                'title': f'{overdue_count} Overdue Invoice{"s" if overdue_count > 1 else ""}',
-                'message': f"You have {overdue_count} overdue invoice{'s' if overdue_count > 1 else ''} totaling {kpis.get('overdue_amount', 0):,.2f}",
+                'title': f'{overdue_count} Overdue Invoice{"s" if overdue_count != 1 else ""}',
+                'message': f"{overdue_count} invoice{'s' if overdue_count != 1 else ''} are past due — "
+                           f"send reminders to recover revenue.",
                 'action_url': '/invoices/?status=overdue',
                 'action_label': 'View Overdue',
                 'priority': 1,
@@ -315,31 +337,28 @@ def _generate_smart_alerts(workspace, today, kpis):
             workspace=workspace,
             status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED],
             due_date__gte=today,
-            due_date__lte=today + timedelta(days=3)
+            due_date__lte=today + timedelta(days=3),
         ).count()
-
-        if due_soon > 0:
+        if due_soon:
             alerts.append({
                 'type': 'info',
                 'icon': 'clock',
-                'title': f'{due_soon} Invoice{"s" if due_soon > 1 else ""} Due Soon',
-                'message': f"{due_soon} invoice{'s are' if due_soon > 1 else ' is'} due within the next 3 days",
+                'title': f'{due_soon} Invoice{"s" if due_soon != 1 else ""} Due Within 3 Days',
+                'message': f"{'These invoices are' if due_soon != 1 else 'This invoice is'} due very soon.",
                 'action_url': '/invoices/?due_soon=true',
                 'action_label': 'Send Reminders',
                 'priority': 2,
             })
 
         draft_count = Invoice.objects.filter(
-            workspace=workspace,
-            status=Invoice.Status.DRAFT
+            workspace=workspace, status=Invoice.Status.DRAFT
         ).count()
-
-        if draft_count > 0:
+        if draft_count:
             alerts.append({
                 'type': 'neutral',
                 'icon': 'file-text',
-                'title': f'{draft_count} Draft Invoice{"s" if draft_count > 1 else ""}',
-                'message': f"You have {draft_count} draft invoice{'s' if draft_count > 1 else ''} ready to send",
+                'title': f'{draft_count} Draft Invoice{"s" if draft_count != 1 else ""}',
+                'message': f"{draft_count} invoice{'s are' if draft_count != 1 else ' is'} saved as drafts — ready to send.",
                 'action_url': '/invoices/?status=draft',
                 'action_label': 'Review Drafts',
                 'priority': 3,
@@ -349,8 +368,8 @@ def _generate_smart_alerts(workspace, today, kpis):
             alerts.append({
                 'type': 'success',
                 'icon': 'trending-up',
-                'title': 'Revenue Growing!',
-                'message': f"Your revenue is up {kpis['revenue_change']:.1f}% compared to last month",
+                'title': f"Revenue Up {kpis['revenue_change']:.1f}%!",
+                'message': "Great month — your revenue is growing compared to last month.",
                 'action_url': '/reports/revenue/',
                 'action_label': 'View Report',
                 'priority': 4,
@@ -360,19 +379,18 @@ def _generate_smart_alerts(workspace, today, kpis):
             alerts.append({
                 'type': 'warning',
                 'icon': 'calendar',
-                'title': 'Slow Payments',
-                'message': f"Average payment time is {kpis['avg_payment_days']} days. Consider sending reminders earlier.",
+                'title': f"Avg Payment Time: {kpis['avg_payment_days']} Days",
+                'message': "Clients are taking longer than 30 days to pay. Consider earlier reminders.",
                 'action_url': '/settings/reminders/',
-                'action_label': 'Adjust Settings',
+                'action_label': 'Adjust Reminders',
                 'priority': 2,
             })
 
         alerts.sort(key=lambda x: x['priority'])
-
     except Exception as e:
-        logger.error(f"Smart alerts error: {e}")
+        logger.error("Smart alerts error: %s", e)
 
-    return alerts[:5]
+    return alerts[:4]
 
 
 def _get_quick_stats(workspace, today, start_of_month):
@@ -380,18 +398,15 @@ def _get_quick_stats(workspace, today, start_of_month):
         total_clients = Client.objects.filter(workspace=workspace).count()
         active_clients = Client.objects.filter(
             workspace=workspace,
-            invoices__created_at__date__gte=start_of_month
+            invoices__created_at__date__gte=start_of_month,
         ).distinct().count()
 
         recurring_active = RecurringSchedule.objects.filter(
-            workspace=workspace,
-            status='active'
+            workspace=workspace, status='active'
         ).count()
-
         recurring_value = RecurringSchedule.objects.filter(
-            workspace=workspace,
-            status='active'
-        ).aggregate(total=Coalesce(Sum('amount'), Decimal('0')))['total']
+            workspace=workspace, status='active'
+        ).aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
 
         return {
             'total_clients': total_clients,
@@ -400,7 +415,7 @@ def _get_quick_stats(workspace, today, start_of_month):
             'recurring_value': recurring_value,
         }
     except Exception as e:
-        logger.error(f"Quick stats error: {e}")
+        logger.error("Quick stats error: %s", e)
         return {
             'total_clients': 0,
             'active_clients': 0,
@@ -409,29 +424,58 @@ def _get_quick_stats(workspace, today, start_of_month):
         }
 
 
+def _get_revenue_chart_data(workspace):
+    try:
+        data = (
+            Invoice.objects.filter(
+                workspace=workspace,
+                status=Invoice.Status.PAID,
+                paid_at__isnull=False,
+            )
+            .annotate(month=TruncMonth('paid_at'))
+            .values('month')
+            .annotate(total=Sum('total_amount'))
+            .order_by('month')
+        )
+        labels, values = [], []
+        for entry in data[-6:]:
+            labels.append(entry['month'].strftime('%b %Y'))
+            values.append(float(entry['total']))
+        return {'labels': labels, 'values': values}
+    except Exception as e:
+        logger.error("Revenue chart error: %s", e)
+        return {'labels': [], 'values': []}
+
+
+def _get_activity_feed(workspace, limit=6):
+    try:
+        activities = Notification.objects.filter(
+            user__userprofile__current_workspace=workspace
+        ).order_by('-created_at')[:limit]
+        return [
+            {'title': n.title, 'message': n.message, 'created_at': n.created_at}
+            for n in activities
+        ]
+    except Exception as e:
+        logger.debug("Activity feed error: %s", e)
+        return []
+
+
 @login_required
 @require_GET
 def dashboard_kpis_api(request):
     try:
         profile = UserProfile.objects.get(user=request.user)
         workspace = profile.current_workspace
-
         if not workspace:
             return JsonResponse({'error': 'No workspace'}, status=400)
-
         today = timezone.now().date()
-        start_of_month = today.replace(day=1)
-        last_30_days = today - timedelta(days=30)
-
-        kpis = _calculate_kpis(workspace, today, start_of_month, last_30_days)
-
-        kpis_serializable = {k: float(v) if isinstance(v, Decimal) else v for k, v in kpis.items()}
-
-        return JsonResponse({'kpis': kpis_serializable})
-
+        kpis = _calculate_kpis(workspace, today, today.replace(day=1), today - timedelta(days=30))
+        serializable = {k: float(v) if isinstance(v, Decimal) else v for k, v in kpis.items()}
+        return JsonResponse({'kpis': serializable})
     except Exception as e:
-        logger.error(f"Dashboard KPIs API error: {e}")
-        return JsonResponse({'error': 'Failed to load KPIs'}, status=500)
+        logger.error("KPIs API error: %s", e)
+        return JsonResponse({'error': 'Failed'}, status=500)
 
 
 @login_required
@@ -440,57 +484,12 @@ def dashboard_alerts_api(request):
     try:
         profile = UserProfile.objects.get(user=request.user)
         workspace = profile.current_workspace
-
         if not workspace:
             return JsonResponse({'error': 'No workspace'}, status=400)
-
         today = timezone.now().date()
-        start_of_month = today.replace(day=1)
-        last_30_days = today - timedelta(days=30)
-
-        kpis = _calculate_kpis(workspace, today, start_of_month, last_30_days)
+        kpis = _calculate_kpis(workspace, today, today.replace(day=1), today - timedelta(days=30))
         alerts = _generate_smart_alerts(workspace, today, kpis)
-
         return JsonResponse({'alerts': alerts})
-
     except Exception as e:
-        logger.error(f"Dashboard alerts API error: {e}")
-        return JsonResponse({'error': 'Failed to load alerts'}, status=500)
-
-
-def _get_revenue_chart_data(workspace):
-    try:
-        data = Invoice.objects.filter(
-            workspace=workspace,
-            status=Invoice.Status.PAID,
-            paid_at__isnull=False
-        ).annotate(
-            month=TruncMonth('paid_at')
-        ).values('month').annotate(
-            total=Sum('total_amount')
-        ).order_by('month')
-
-        labels = []
-        values = []
-        for entry in data[-6:]:
-            labels.append(entry['month'].strftime('%b'))
-            values.append(float(entry['total']))
-
-        return {'labels': labels, 'values': values}
-    except Exception as e:
-        logger.error(f"Revenue chart data error: {e}")
-        return {'labels': [], 'values': []}
-
-
-def _get_activity_feed(workspace, limit=5):
-    # This would typically come from a dedicated Activity model
-    # Mocking for now based on Notifications or similar
-    activities = Notification.objects.filter(
-        user__userprofile__current_workspace=workspace
-    ).order_by('-created_at')[:limit]
-
-    return [{
-        'title': n.title,
-        'message': n.message,
-        'created_at': n.created_at
-    } for n in activities]
+        logger.error("Alerts API error: %s", e)
+        return JsonResponse({'error': 'Failed'}, status=500)

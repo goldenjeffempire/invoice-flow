@@ -1,71 +1,130 @@
+import logging
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Q
-from ..models import Invoice, ActivityLog, Notification
+
+from ..models import Invoice, Notification
+
+logger = logging.getLogger(__name__)
+
 
 @login_required
 def global_search(request):
-    query = request.GET.get('q', '')
+    query = request.GET.get('q', '').strip()
     results = []
-    if query:
-        # Search Invoices
+
+    if not query or len(query) < 2:
+        return JsonResponse({'results': []})
+
+    workspace = getattr(request, 'workspace', None)
+    if not workspace:
+        return JsonResponse({'results': []})
+
+    try:
         invoices = Invoice.objects.filter(
+            workspace=workspace
+        ).filter(
             Q(invoice_number__icontains=query) | Q(client__name__icontains=query)
-        ).filter(workspace=request.workspace).select_related('client')[:5]
+        ).select_related('client').order_by('-created_at')[:5]
 
         for inv in invoices:
+            sym = getattr(inv, 'currency_symbol', '₦')
             results.append({
-                'type': 'Invoice',
-                'title': f"#{inv.invoice_number} - {inv.client.name}",
-                'url': inv.get_absolute_url() if hasattr(inv, 'get_absolute_url') else f"/invoices/{inv.id}/",
-                'meta': f"{inv.currency} {inv.total_amount}"
+                'type': 'invoice',
+                'title': f"#{inv.invoice_number} – {inv.client.name if inv.client else 'Unknown'}",
+                'url': f"/invoices/{inv.id}/",
+                'meta': f"{sym}{inv.total_amount:,.2f} · {inv.get_status_display()}",
             })
+    except Exception as e:
+        logger.debug("Search invoices error: %s", e)
 
-        # Search Clients
+    try:
         from ..models import Client
         clients = Client.objects.filter(
+            workspace=workspace
+        ).filter(
             Q(name__icontains=query) | Q(email__icontains=query)
-        ).filter(workspace=request.workspace)[:5]
+        ).order_by('name')[:5]
 
         for client in clients:
             results.append({
-                'type': 'Client',
+                'type': 'client',
                 'title': client.name,
                 'url': f"/clients/{client.id}/",
-                'meta': client.email
+                'meta': client.email or 'No email',
             })
+    except Exception as e:
+        logger.debug("Search clients error: %s", e)
 
-        # Search Expenses
+    try:
         from ..models import Expense
         expenses = Expense.objects.filter(
-            Q(description__icontains=query) | Q(vendor__name__icontains=query)
-        ).filter(workspace=request.workspace).select_related('vendor')[:5]
+            workspace=workspace
+        ).filter(
+            Q(description__icontains=query)
+        ).order_by('-created_at')[:3]
 
         for exp in expenses:
             results.append({
-                'type': 'Expense',
-                'title': exp.description or f"Expense from {exp.vendor.name if exp.vendor else 'Unknown'}",
+                'type': 'expense',
+                'title': exp.description or 'Expense',
                 'url': f"/expenses/{exp.id}/",
-                'meta': f"{exp.currency} {exp.amount}"
+                'meta': f"₦{exp.amount:,.2f}",
             })
+    except Exception as e:
+        logger.debug("Search expenses error: %s", e)
+
+    try:
+        from ..models import Estimate
+        estimates = Estimate.objects.filter(
+            workspace=workspace
+        ).filter(
+            Q(estimate_number__icontains=query) | Q(client__name__icontains=query)
+        ).select_related('client').order_by('-created_at')[:3]
+
+        for est in estimates:
+            sym = getattr(est, 'currency_symbol', '₦')
+            results.append({
+                'type': 'estimate',
+                'title': f"#{est.estimate_number} – {est.client.name if est.client else 'Unknown'}",
+                'url': f"/estimates/{est.id}/",
+                'meta': f"{sym}{est.total_amount:,.2f}",
+            })
+    except Exception as e:
+        logger.debug("Search estimates error: %s", e)
 
     return JsonResponse({'results': results})
 
+
 @login_required
 def activity_timeline(request):
-    activities = ActivityLog.objects.filter(workspace=request.workspace).order_by('-timestamp').select_related('user')[:50]
+    workspace = getattr(request, 'workspace', None)
+    activities = []
+    if workspace:
+        try:
+            from ..models import ActivityLog
+            activities = ActivityLog.objects.filter(
+                workspace=workspace
+            ).order_by('-timestamp').select_related('user')[:50]
+        except Exception as e:
+            logger.debug("Activity timeline error: %s", e)
+
     return render(request, 'pages/activity_timeline.html', {'activities': activities})
+
 
 @login_required
 def mark_notification_read(request, pk):
     notification = get_object_or_404(Notification, pk=pk, user=request.user)
     notification.is_read = True
     notification.save()
-    return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'ok'})
+
 
 @login_required
 def set_appearance_preference(request):
-    mode = request.POST.get('mode', 'light')
-    request.session['dark_mode'] = (mode == 'dark')
-    return JsonResponse({'status': 'success'})
+    if request.method == 'POST':
+        mode = request.POST.get('mode', 'light')
+        request.session['dark_mode'] = (mode == 'dark')
+        return JsonResponse({'status': 'ok', 'mode': mode})
+    return JsonResponse({'status': 'error'}, status=400)
