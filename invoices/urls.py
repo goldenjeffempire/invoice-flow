@@ -16,6 +16,7 @@ from .views import recurring_views
 from .views import report_views
 from .views import ux_views
 from .views import workspace_views
+from .views import newsletter_views
 
 app_name = "invoices"
 
@@ -105,6 +106,16 @@ urlpatterns = [
 
     # ── Newsletter ────────────────────────────────────────────────────────────
     path("newsletter/subscribe/", views.newsletter_subscribe, name="newsletter_subscribe"),
+    path("newsletter/", newsletter_views.newsletter_dashboard, name="newsletter_dashboard"),
+    path("newsletter/export/", newsletter_views.subscriber_export_csv, name="subscriber_export_csv"),
+    path("newsletter/unsubscribe/<uuid:token>/", newsletter_views.newsletter_unsubscribe, name="newsletter_unsubscribe"),
+    path("newsletter/unsubscribe/done/", newsletter_views.newsletter_unsubscribe_done, name="newsletter_unsubscribe_done"),
+    path("newsletter/subscriber/<int:pk>/delete/", newsletter_views.subscriber_delete, name="subscriber_delete"),
+    path("newsletter/campaigns/", newsletter_views.campaign_list, name="campaign_list"),
+    path("newsletter/campaigns/new/", newsletter_views.campaign_create, name="campaign_create"),
+    path("newsletter/campaigns/<int:pk>/", newsletter_views.campaign_detail, name="campaign_detail"),
+    path("newsletter/campaigns/<int:pk>/edit/", newsletter_views.campaign_edit, name="campaign_edit"),
+    path("newsletter/campaigns/<int:pk>/delete/", newsletter_views.campaign_delete, name="campaign_delete"),
 
     # ── API helpers ───────────────────────────────────────────────────────────
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),

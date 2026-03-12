@@ -7,6 +7,7 @@ from __future__ import annotations
 import re
 from django import forms
 from django.contrib.auth.models import User
+from invoices.models import EmailCampaign
 
 
 # ---------------------------------------------------------------------------
@@ -417,3 +418,36 @@ class NewsletterSubscribeForm(forms.Form):
 
     def clean_email(self):
         return self.cleaned_data["email"].lower().strip()
+
+
+class CampaignForm(forms.ModelForm):
+    class Meta:
+        model = EmailCampaign
+        fields = ["title", "subject", "body_html", "body_text", "status", "scheduled_at"]
+        widgets = {
+            "title": forms.TextInput(attrs={
+                "class": "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500",
+                "placeholder": "e.g. April Product Updates",
+            }),
+            "subject": forms.TextInput(attrs={
+                "class": "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500",
+                "placeholder": "Email subject line",
+            }),
+            "body_html": forms.Textarea(attrs={
+                "class": "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono",
+                "rows": 18,
+                "placeholder": "<h1>Hello,</h1>\n<p>Your message here...</p>",
+            }),
+            "body_text": forms.Textarea(attrs={
+                "class": "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono",
+                "rows": 6,
+                "placeholder": "Plain-text version (optional – leave blank to auto-strip HTML tags)",
+            }),
+            "status": forms.Select(attrs={
+                "class": "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500",
+            }),
+            "scheduled_at": forms.DateTimeInput(attrs={
+                "class": "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500",
+                "type": "datetime-local",
+            }),
+        }

@@ -1,0 +1,102 @@
+{% extends "base/layout_app.html" %}
+{% block title %}{{ campaign.title }} | Campaigns | InvoiceFlow{% endblock %}
+{% block content %}
+<div class="max-w-4xl space-y-6">
+
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      <a href="{% url 'invoices:campaign_list' %}"
+         class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-700 transition-all">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      </a>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ campaign.title }}</h1>
+        <p class="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{{ campaign.subject }}</p>
+      </div>
+    </div>
+    {% if campaign.status != "sent" %}
+    <div class="flex items-center gap-2">
+      <a href="{% url 'invoices:campaign_edit' campaign.pk %}"
+         class="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all">
+        Edit
+      </a>
+      <form method="post" action="{% url 'invoices:campaign_delete' campaign.pk %}" onsubmit="return confirm('Delete this campaign?')">
+        {% csrf_token %}
+        <button type="submit"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400 text-sm font-semibold rounded-xl hover:bg-red-100 transition-all">
+          Delete
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="px-4 py-3 rounded-xl text-sm font-medium
+    {% if message.tags == 'success' %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700
+    {% elif message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 text-red-700
+    {% else %}bg-blue-50 dark:bg-blue-900/20 text-blue-700{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <!-- Campaign Meta -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+      <p class="text-xs text-slate-500 uppercase font-bold tracking-widest">Status</p>
+      <span class="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold
+        {% if campaign.status == 'sent' %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400
+        {% elif campaign.status == 'scheduled' %}bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400
+        {% elif campaign.status == 'failed' %}bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400
+        {% else %}bg-slate-100 dark:bg-slate-800 text-slate-600{% endif %}">
+        {{ campaign.get_status_display }}
+      </span>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+      <p class="text-xs text-slate-500 uppercase font-bold tracking-widest">Recipients</p>
+      <p class="text-2xl font-black text-slate-900 dark:text-white mt-1">{{ campaign.recipient_count|default:"—" }}</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+      <p class="text-xs text-slate-500 uppercase font-bold tracking-widest">Created</p>
+      <p class="text-sm font-semibold text-slate-900 dark:text-white mt-1">{{ campaign.created_at|date:"M d, Y" }}</p>
+      <p class="text-xs text-slate-400">{{ campaign.created_at|time:"H:i" }}</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+      <p class="text-xs text-slate-500 uppercase font-bold tracking-widest">Sent</p>
+      <p class="text-sm font-semibold text-slate-900 dark:text-white mt-1">{{ campaign.sent_at|date:"M d, Y"|default:"Not sent yet" }}</p>
+    </div>
+  </div>
+
+  <!-- Email Preview -->
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+      <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Email Preview</span>
+      <span class="text-xs text-slate-400">Subject: {{ campaign.subject }}</span>
+    </div>
+    <!-- Simulated email client -->
+    <div class="p-6 bg-slate-50 dark:bg-slate-950">
+      <div class="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div class="px-6 py-4 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-xs text-slate-500 space-y-1">
+          <p><span class="font-semibold">Subject:</span> {{ campaign.subject }}</p>
+          <p><span class="font-semibold">From:</span> InvoiceFlow Newsletter</p>
+        </div>
+        <div class="p-6 prose dark:prose-invert max-w-none text-sm">
+          {{ campaign.body_html|safe }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if campaign.body_text %}
+  <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+      <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Plain Text Version</span>
+    </div>
+    <pre class="p-6 text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap font-mono bg-slate-50 dark:bg-slate-950">{{ campaign.body_text }}</pre>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

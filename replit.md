@@ -14,6 +14,7 @@ A production-ready Django invoicing application for freelancers and small busine
 - Admin dashboard
 - REST API (DRF)
 - Email notifications (SendGrid)
+- Email marketing plugin (newsletter subscribers + campaign management)
 
 ## Architecture
 

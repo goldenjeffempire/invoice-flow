@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+import uuid
 from datetime import timedelta
 from decimal import Decimal
 
@@ -885,6 +886,7 @@ class NewsletterSubscriber(models.Model):
     unsubscribed_at = models.DateTimeField(null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     source = models.CharField(max_length=50, default="landing_page")
+    unsubscribe_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
     class Meta:
         ordering = ["-subscribed_at"]
@@ -898,6 +900,40 @@ class NewsletterSubscriber(models.Model):
         self.status = self.Status.UNSUBSCRIBED
         self.unsubscribed_at = timezone.now()
         self.save(update_fields=["status", "unsubscribed_at"])
+
+
+class EmailCampaign(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        SCHEDULED = "scheduled", "Scheduled"
+        SENT = "sent", "Sent"
+        FAILED = "failed", "Failed"
+
+    title = models.CharField(max_length=200, help_text="Internal name for the campaign")
+    subject = models.CharField(max_length=200)
+    body_html = models.TextField(help_text="HTML content of the email")
+    body_text = models.TextField(blank=True, help_text="Plain-text fallback (auto-generated if blank)")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="email_campaigns",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    recipient_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Email Campaign"
+        verbose_name_plural = "Email Campaigns"
+
+    def __str__(self):
+        return f"{self.title} ({self.get_status_display()})"
 
 
 class Notification(models.Model):

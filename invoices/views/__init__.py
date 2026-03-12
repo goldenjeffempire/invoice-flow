@@ -13,3 +13,4 @@ from .report_views import *
 from .portal_views import *
 
 from .estimate_views import *
+from .newsletter_views import *

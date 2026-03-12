@@ -1,0 +1,42 @@
+{% extends "base/layout_public.html" %}
+{% block title %}Unsubscribe | InvoiceFlow{% endblock %}
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+  <div class="w-full max-w-md">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl p-8 text-center">
+
+      <div class="w-16 h-16 mx-auto mb-5 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+        <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Unsubscribe from Newsletter</h1>
+
+      {% if subscriber.status == "unsubscribed" %}
+      <p class="mt-3 text-slate-500 dark:text-slate-400 text-sm">
+        <strong>{{ subscriber.email }}</strong> is already unsubscribed from our newsletter.
+      </p>
+      <a href="{% url 'invoices:home' %}" class="mt-6 inline-block text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Back to InvoiceFlow &rarr;</a>
+      {% else %}
+      <p class="mt-3 text-slate-500 dark:text-slate-400 text-sm">
+        Are you sure you want to unsubscribe <strong>{{ subscriber.email }}</strong> from our newsletter?
+        You won't receive any future emails from us.
+      </p>
+
+      <form method="post" class="mt-6 space-y-3">
+        {% csrf_token %}
+        <button type="submit"
+                class="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition-all shadow-sm">
+          Yes, unsubscribe me
+        </button>
+      </form>
+
+      <a href="{% url 'invoices:home' %}" class="mt-3 inline-block text-sm text-slate-400 hover:text-slate-600 hover:underline">
+        No, keep me subscribed
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

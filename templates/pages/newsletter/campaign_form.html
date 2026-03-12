@@ -1,0 +1,89 @@
+{% extends "base/layout_app.html" %}
+{% block title %}{{ action }} Campaign | InvoiceFlow{% endblock %}
+{% block content %}
+<div class="max-w-4xl space-y-6">
+
+  <div class="flex items-center gap-4">
+    <a href="{% if campaign %}{% url 'invoices:campaign_detail' campaign.pk %}{% else %}{% url 'invoices:campaign_list' %}{% endif %}"
+       class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-700 transition-all">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ action }} Campaign</h1>
+      <p class="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Compose your newsletter for subscribers</p>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="px-4 py-3 rounded-xl text-sm font-medium
+    {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 text-red-700{% else %}bg-blue-50 dark:bg-blue-900/20 text-blue-700{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <form method="post" class="space-y-6">
+    {% csrf_token %}
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-5">
+      <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-3">Campaign Details</h2>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Campaign Name <span class="text-red-500">*</span></label>
+          {{ form.title }}
+          {% if form.title.errors %}<p class="mt-1 text-xs text-red-500">{{ form.title.errors.0 }}</p>{% endif %}
+          <p class="mt-1 text-xs text-slate-400">Internal label — not shown to subscribers</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Status</label>
+          {{ form.status }}
+          {% if form.status.errors %}<p class="mt-1 text-xs text-red-500">{{ form.status.errors.0 }}</p>{% endif %}
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email Subject Line <span class="text-red-500">*</span></label>
+        {{ form.subject }}
+        {% if form.subject.errors %}<p class="mt-1 text-xs text-red-500">{{ form.subject.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Scheduled Date <span class="text-slate-400 font-normal">(optional)</span></label>
+        {{ form.scheduled_at }}
+        {% if form.scheduled_at.errors %}<p class="mt-1 text-xs text-red-500">{{ form.scheduled_at.errors.0 }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 space-y-5">
+      <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800 pb-3">Email Content</h2>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">HTML Body <span class="text-red-500">*</span></label>
+        {{ form.body_html }}
+        {% if form.body_html.errors %}<p class="mt-1 text-xs text-red-500">{{ form.body_html.errors.0 }}</p>{% endif %}
+        <p class="mt-1 text-xs text-slate-400">Write full HTML for the email. Most email clients support inline styles.</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Plain Text Body <span class="text-slate-400 font-normal">(optional)</span></label>
+        {{ form.body_text }}
+        {% if form.body_text.errors %}<p class="mt-1 text-xs text-red-500">{{ form.body_text.errors.0 }}</p>{% endif %}
+        <p class="mt-1 text-xs text-slate-400">Fallback for email clients that don't render HTML.</p>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-end gap-3">
+      <a href="{% if campaign %}{% url 'invoices:campaign_detail' campaign.pk %}{% else %}{% url 'invoices:campaign_list' %}{% endif %}"
+         class="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all">
+        Cancel
+      </a>
+      <button type="submit"
+              class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-sm transition-all">
+        {{ action }} Campaign
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

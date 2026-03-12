@@ -1,11 +1,16 @@
+import csv
+
 from django.contrib import admin
+from django.http import HttpResponse
+from django.utils import timezone
+
 from .models import (
     UserProfile, MFAProfile, SecurityEvent, UserSession, EmailToken,
     Invoice, Payment, WorkspaceInvitation,
     Waitlist, SocialAccount, Client, ClientNote, CommunicationLog,
     InvoiceActivity, RecurringSchedule, ScheduleExecution, PaymentAttempt,
     RecurringScheduleAuditLog, Expense, ExpenseCategory, Vendor,
-    ExpenseAttachment, ExpenseAuditLog, NewsletterSubscriber
+    ExpenseAttachment, ExpenseAuditLog, NewsletterSubscriber, EmailCampaign
 )
 
 @admin.register(UserProfile)
@@ -46,13 +51,39 @@ admin.site.register(Waitlist)
 admin.site.register(SocialAccount)
 
 
+def export_subscribers_csv(modeladmin, request, queryset):
+    response = HttpResponse(content_type="text/csv")
+    filename = f"newsletter_subscribers_{timezone.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    writer = csv.writer(response)
+    writer.writerow(["Email", "First Name", "Status", "Source", "Subscribed At", "Unsubscribed At"])
+    for sub in queryset.order_by("email"):
+        writer.writerow([
+            sub.email, sub.first_name, sub.status, sub.source,
+            sub.subscribed_at.strftime("%Y-%m-%d %H:%M:%S") if sub.subscribed_at else "",
+            sub.unsubscribed_at.strftime("%Y-%m-%d %H:%M:%S") if sub.unsubscribed_at else "",
+        ])
+    return response
+export_subscribers_csv.short_description = "Export selected to CSV"
+
+
 @admin.register(NewsletterSubscriber)
 class NewsletterSubscriberAdmin(admin.ModelAdmin):
-    list_display = ("email", "first_name", "status", "source", "subscribed_at")
+    list_display = ("email", "first_name", "status", "source", "subscribed_at", "ip_address")
     list_filter = ("status", "source")
     search_fields = ("email", "first_name")
-    readonly_fields = ("subscribed_at", "unsubscribed_at", "ip_address")
+    readonly_fields = ("subscribed_at", "unsubscribed_at", "ip_address", "unsubscribe_token")
     ordering = ("-subscribed_at",)
+    actions = [export_subscribers_csv]
+
+
+@admin.register(EmailCampaign)
+class EmailCampaignAdmin(admin.ModelAdmin):
+    list_display = ("title", "subject", "status", "recipient_count", "created_by", "created_at", "sent_at")
+    list_filter = ("status",)
+    search_fields = ("title", "subject")
+    readonly_fields = ("created_at", "updated_at", "sent_at", "recipient_count")
+    ordering = ("-created_at",)
 
 
 @admin.register(RecurringSchedule)
