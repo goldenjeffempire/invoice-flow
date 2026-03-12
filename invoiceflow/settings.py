@@ -236,7 +236,81 @@ TEMPLATES = [
     }
 ]
 
-# ... existing code ...
+# =============================================================================
+# WSGI / ASGI
+# =============================================================================
+WSGI_APPLICATION = "invoiceflow.wsgi.application"
+ASGI_APPLICATION = "invoiceflow.asgi.application"
+
+# =============================================================================
+# INTERNATIONALISATION
+# =============================================================================
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
+USE_I18N = True
+USE_L10N = True
+USE_TZ = True
+
+# =============================================================================
+# EMAIL
+# =============================================================================
+if IS_PRODUCTION:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.sendgrid.net")
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "apikey")
+    EMAIL_HOST_PASSWORD = os.getenv("SENDGRID_API_KEY", "")
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() == "true"
+    DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "InvoiceFlow <noreply@invoiceflow.com.ng>")
+    SERVER_EMAIL = os.getenv("SERVER_EMAIL", "errors@invoiceflow.com.ng")
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEFAULT_FROM_EMAIL = "InvoiceFlow Dev <dev@localhost>"
+
+EMAIL_TIMEOUT = 10  # seconds before giving up on SMTP
+
+# =============================================================================
+# MEDIA FILES (user uploads – receipts, logos, etc.)
+# =============================================================================
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# Hard limits for uploads (prevent DoS via oversized files)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024    # 5 MB (in-memory threshold)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB (total POST body)
+FILE_UPLOAD_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
+
+# =============================================================================
+# SENTRY (Error Monitoring)
+# =============================================================================
+SENTRY_DSN = os.getenv("SENTRY_DSN", "")
+if SENTRY_DSN and IS_PRODUCTION:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.logging import LoggingIntegration
+    import logging as _logging
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(transaction_style="url"),
+            LoggingIntegration(
+                level=_logging.WARNING,
+                event_level=_logging.ERROR,
+            ),
+        ],
+        traces_sample_rate=0.1,    # 10 % of transactions for performance monitoring
+        profiles_sample_rate=0.05,  # 5 % profiling
+        send_default_pii=False,
+        environment="production",
+        release=os.getenv("APP_VERSION", "1.0.0"),
+        before_send=lambda event, hint: event,
+    )
+
+# =============================================================================
+# INTERNAL IPS (Django Debug Toolbar etc.)
+# =============================================================================
+INTERNAL_IPS = ["127.0.0.1", "::1"]
 
 # =============================================================================
 # REST FRAMEWORK

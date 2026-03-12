@@ -25,6 +25,7 @@ A production-ready Django invoicing application for freelancers and small busine
 - **PDF Generation:** WeasyPrint + ReportLab
 - **Email:** SendGrid
 - **Auth:** Enterprise-grade rebuild — AuthService, SessionService, PasswordValidator (HIBP breach check), SecurityService. No email verification required. MFA (TOTP via pyotp) preserved for existing users.
+- **Deployment:** Render `standard` plan (Always On, 2 GB RAM, 1 CPU). Gunicorn gthread workers. Zero-downtime deploys via `preDeployCommand` migrations. Replit configured as `vm` (Always On). Sentry optional via `SENTRY_DSN` env var.
 - **Encryption:** cryptography library with ENCRYPTION_SALT env var
 
 ## Project Structure
