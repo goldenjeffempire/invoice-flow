@@ -1,29 +1,61 @@
-{% extends "base.html" %}
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Security Activity — InvoiceFlow{% endblock %}
+
+{% block breadcrumb %}
+<nav class="flex items-center gap-2 text-sm">
+  <a href="{% url 'invoices:security_settings' %}" class="text-slate-400 hover:text-brand-600 dark:text-slate-500 transition-colors">Security</a>
+  <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  <span class="font-semibold text-slate-800 dark:text-slate-200">Activity Log</span>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="px-4 py-6 sm:px-0">
-        <h1 class="text-2xl font-semibold text-slate-900">Security Activity</h1>
-        <div class="mt-6 overflow-hidden bg-white shadow sm:rounded-md">
-            <ul role="list" class="divide-y divide-slate-200">
-                {% for activity in activities %}
-                <li class="px-4 py-4 sm:px-6">
-                    <div class="flex items-center justify-between">
-                        <p class="truncate text-sm font-medium text-indigo-600">{{ activity.action }}</p>
-                        <div class="ml-2 flex flex-shrink-0">
-                            <p class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">{{ activity.timestamp }}</p>
-                        </div>
-                    </div>
-                    <div class="mt-2 sm:flex sm:justify-between">
-                        <div class="sm:flex">
-                            <p class="flex items-center text-sm text-slate-500">{{ activity.ip_address }}</p>
-                        </div>
-                    </div>
-                </li>
-                {% empty %}
-                <li class="px-4 py-4 sm:px-6 text-sm text-slate-500 text-center">No recent security activity.</li>
-                {% endfor %}
-            </ul>
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Security Activity</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Recent login and security events for your account.</p>
+  </div>
+  <a href="{% url 'invoices:security_settings' %}"
+     class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+    ← Back to Security
+  </a>
+</div>
+
+<div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+  {% if activities %}
+  <div class="divide-y divide-slate-100 dark:divide-slate-700">
+    {% for activity in activities %}
+    <div class="flex items-start gap-4 px-5 py-4">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5
+        {% if 'fail' in activity.action|lower or 'error' in activity.action|lower %}bg-rose-100 dark:bg-rose-900/30 text-rose-600
+        {% elif 'login' in activity.action|lower %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600
+        {% else %}bg-slate-100 dark:bg-slate-700 text-slate-500{% endif %}">
+        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-start justify-between gap-3">
+          <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ activity.action|title }}</p>
+          <time class="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap flex-shrink-0">{{ activity.timestamp|date:"M j, Y H:i" }}</time>
         </div>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">IP: {{ activity.ip_address|default:"Unknown" }}</p>
+      </div>
     </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="flex flex-col items-center justify-center py-16">
+    <div class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-4">
+      <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+      </svg>
+    </div>
+    <p class="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">No activity recorded yet</p>
+    <p class="text-sm text-slate-400 dark:text-slate-500">Security events will appear here.</p>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

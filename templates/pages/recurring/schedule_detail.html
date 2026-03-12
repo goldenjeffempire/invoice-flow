@@ -1,0 +1,288 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}{{ schedule.description }} — Recurring — InvoiceFlow{% endblock %}
+
+{% block breadcrumb %}
+<nav class="flex items-center gap-2 text-sm">
+  <a href="{% url 'invoices:schedule_list' %}" class="text-slate-400 hover:text-brand-600 dark:text-slate-500 transition-colors">Recurring</a>
+  <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  <span class="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-xs">{{ schedule.description }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div x-data="{ showCancel: false }">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+    <div>
+      <div class="flex items-center gap-3 mb-1">
+        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">{{ schedule.description }}</h1>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+          {% if schedule.status == 'active' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+          {% elif schedule.status == 'paused' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+          {% elif schedule.status == 'failed' %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400
+          {% elif schedule.status == 'completed' %}bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400
+          {% else %}bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400{% endif %}">
+          <span class="w-1.5 h-1.5 rounded-full
+            {% if schedule.status == 'active' %}bg-emerald-500
+            {% elif schedule.status == 'paused' %}bg-amber-500
+            {% elif schedule.status == 'failed' %}bg-rose-500
+            {% elif schedule.status == 'completed' %}bg-sky-500
+            {% else %}bg-slate-400{% endif %}"></span>
+          {{ schedule.get_status_display }}
+        </span>
+      </div>
+      <p class="text-sm text-slate-500 dark:text-slate-400">{{ schedule.client.name }} &middot; {{ schedule.get_interval_type_display }}</p>
+    </div>
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <a href="{% url 'invoices:schedule_edit' schedule.id %}"
+         class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Edit
+      </a>
+      {% if schedule.status == 'active' %}
+      <form method="post" action="{% url 'invoices:schedule_pause' schedule.id %}" class="inline">
+        {% csrf_token %}
+        <button type="submit"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-amber-200 dark:border-amber-700 text-sm font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Pause
+        </button>
+      </form>
+      {% elif schedule.status == 'paused' %}
+      <form method="post" action="{% url 'invoices:schedule_resume' schedule.id %}" class="inline">
+        {% csrf_token %}
+        <button type="submit"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-emerald-200 dark:border-emerald-700 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Resume
+        </button>
+      </form>
+      {% endif %}
+      {% if schedule.status != 'cancelled' and schedule.status != 'completed' %}
+      <button @click="showCancel=true"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-rose-200 dark:border-rose-800 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        Cancel
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+      <p class="text-xs text-slate-400 dark:text-slate-500 mb-1">Base Amount</p>
+      <p class="text-lg font-bold text-slate-900 dark:text-white">{{ schedule.currency }} {{ schedule.base_amount|floatformat:2 }}</p>
+    </div>
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+      <p class="text-xs text-slate-400 dark:text-slate-500 mb-1">Next Run</p>
+      <p class="text-lg font-bold text-slate-900 dark:text-white">
+        {% if schedule.next_run_date %}{{ schedule.next_run_date|date:"M j" }}{% else %}—{% endif %}
+      </p>
+    </div>
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+      <p class="text-xs text-slate-400 dark:text-slate-500 mb-1">Executions</p>
+      <p class="text-lg font-bold text-slate-900 dark:text-white">{{ executions|length }}</p>
+    </div>
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+      <p class="text-xs text-slate-400 dark:text-slate-500 mb-1">Tax Rate</p>
+      <p class="text-lg font-bold text-slate-900 dark:text-white">{{ schedule.tax_rate }}%</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <!-- Main: Execution History -->
+    <div class="lg:col-span-2 space-y-5">
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Execution History</h2>
+        </div>
+        {% if executions %}
+        <div class="divide-y divide-slate-100 dark:divide-slate-700">
+          {% for ex in executions %}
+          <div class="flex items-center justify-between px-5 py-3.5">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center
+                {% if ex.status == 'success' %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600
+                {% elif ex.status == 'failed' %}bg-rose-100 dark:bg-rose-900/30 text-rose-600
+                {% else %}bg-slate-100 dark:bg-slate-700 text-slate-500{% endif %}">
+                {% if ex.status == 'success' %}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                {% else %}
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                {% endif %}
+              </div>
+              <div>
+                <p class="text-sm font-medium text-slate-800 dark:text-slate-200">
+                  {% if ex.invoice %}Invoice #{{ ex.invoice.invoice_number }}{% else %}Execution{% endif %}
+                </p>
+                <p class="text-xs text-slate-400 dark:text-slate-500">{{ ex.executed_at|date:"M j, Y H:i" }}</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-sm font-semibold text-slate-900 dark:text-white">
+                {% if ex.invoice %}{{ schedule.currency }} {{ ex.invoice.total_amount|floatformat:2 }}{% else %}—{% endif %}
+              </p>
+              <span class="text-xs font-medium
+                {% if ex.status == 'success' %}text-emerald-600{% else %}text-rose-500{% endif %}">
+                {{ ex.status|title }}
+              </span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="flex flex-col items-center justify-center py-12 text-center">
+          <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          <p class="text-sm text-slate-400 dark:text-slate-500">No executions yet. This schedule hasn't run.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Audit Log -->
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Audit Log</h2>
+        </div>
+        {% if audit_logs %}
+        <div class="divide-y divide-slate-100 dark:divide-slate-700">
+          {% for log in audit_logs %}
+          <div class="flex items-start gap-3 px-5 py-3">
+            <div class="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 mt-2 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-slate-700 dark:text-slate-300">{{ log.action }}</p>
+              <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+                {% if log.performed_by %}{{ log.performed_by.get_full_name|default:log.performed_by.username }} &middot; {% endif %}{{ log.timestamp|date:"M j, Y H:i" }}
+              </p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="px-5 py-8 text-center text-sm text-slate-400 dark:text-slate-500">No audit events recorded.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar: Schedule Info -->
+    <div class="space-y-4">
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
+        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Schedule Details</h3>
+        <dl class="space-y-3">
+          <div>
+            <dt class="text-xs text-slate-400 dark:text-slate-500">Client</dt>
+            <dd class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">{{ schedule.client.name }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-slate-400 dark:text-slate-500">Interval</dt>
+            <dd class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">{{ schedule.get_interval_type_display }}</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-slate-400 dark:text-slate-500">Start Date</dt>
+            <dd class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">{{ schedule.start_date|date:"M j, Y" }}</dd>
+          </div>
+          {% if schedule.end_date %}
+          <div>
+            <dt class="text-xs text-slate-400 dark:text-slate-500">End Date</dt>
+            <dd class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">{{ schedule.end_date|date:"M j, Y" }}</dd>
+          </div>
+          {% endif %}
+          <div>
+            <dt class="text-xs text-slate-400 dark:text-slate-500">Payment Terms</dt>
+            <dd class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">{{ schedule.payment_terms_days }} days</dd>
+          </div>
+          <div>
+            <dt class="text-xs text-slate-400 dark:text-slate-500">Auto-send</dt>
+            <dd class="text-sm font-medium mt-0.5 {% if schedule.auto_send %}text-emerald-600{% else %}text-slate-400{% endif %}">
+              {% if schedule.auto_send %}Yes{% else %}No{% endif %}
+            </dd>
+          </div>
+          {% if schedule.anchor_day %}
+          <div>
+            <dt class="text-xs text-slate-400 dark:text-slate-500">Anchor Day</dt>
+            <dd class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">Day {{ schedule.anchor_day }}</dd>
+          </div>
+          {% endif %}
+          <div>
+            <dt class="text-xs text-slate-400 dark:text-slate-500">Created</dt>
+            <dd class="text-sm font-medium text-slate-800 dark:text-slate-200 mt-0.5">{{ schedule.created_at|date:"M j, Y" }}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {% if schedule.invoice_terms or schedule.invoice_notes %}
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
+        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Invoice Content</h3>
+        {% if schedule.invoice_terms %}
+        <div class="mb-3">
+          <p class="text-xs text-slate-400 dark:text-slate-500 mb-1">Terms</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300">{{ schedule.invoice_terms }}</p>
+        </div>
+        {% endif %}
+        {% if schedule.invoice_notes %}
+        <div>
+          <p class="text-xs text-slate-400 dark:text-slate-500 mb-1">Notes</p>
+          <p class="text-sm text-slate-700 dark:text-slate-300">{{ schedule.invoice_notes }}</p>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      {% if schedule.retry_enabled %}
+      <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
+        <h3 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Retry Settings</h3>
+        <dl class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <dt class="text-slate-400 dark:text-slate-500">Max Attempts</dt>
+            <dd class="font-medium text-slate-800 dark:text-slate-200">{{ schedule.max_retry_attempts }}</dd>
+          </div>
+          <div class="flex justify-between text-sm">
+            <dt class="text-slate-400 dark:text-slate-500">Retry Interval</dt>
+            <dd class="font-medium text-slate-800 dark:text-slate-200">{{ schedule.retry_interval_hours }}h</dd>
+          </div>
+          <div class="flex justify-between text-sm">
+            <dt class="text-slate-400 dark:text-slate-500">Current Retries</dt>
+            <dd class="font-medium {% if schedule.current_retry_count > 0 %}text-amber-600{% else %}text-slate-800 dark:text-slate-200{% endif %}">
+              {{ schedule.current_retry_count }}
+            </dd>
+          </div>
+        </dl>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Cancel Modal -->
+  <div x-show="showCancel" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       @keydown.escape.window="showCancel=false">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showCancel=false"></div>
+    <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6" @click.stop>
+      <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Cancel this schedule?</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">This action cannot be undone. No further invoices will be generated.</p>
+      <form method="post" action="{% url 'invoices:schedule_cancel' schedule.id %}">
+        {% csrf_token %}
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Reason (optional)</label>
+        <textarea name="reason" rows="2" placeholder="Why are you cancelling?"
+                  class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-rose-500 mb-4"></textarea>
+        <div class="flex gap-2">
+          <button type="button" @click="showCancel=false"
+                  class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            Keep Schedule
+          </button>
+          <button type="submit"
+                  class="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-colors">
+            Yes, Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -503,6 +503,8 @@ def privacy_view(request):
 
 
 def security_view(request):
+    if request.user.is_authenticated:
+        return redirect("invoices:security_settings")
     return render(request, "pages/security.html")
 
 
