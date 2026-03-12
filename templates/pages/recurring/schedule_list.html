@@ -1,0 +1,213 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Recurring Schedules — InvoiceFlow{% endblock %}
+
+{% block breadcrumb %}
+<nav class="flex items-center gap-2 text-sm">
+  <span class="text-slate-400 dark:text-slate-500">Billing</span>
+  <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+  <span class="font-semibold text-slate-800 dark:text-slate-200">Recurring Schedules</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div x-data="{ showCancel: false, cancelId: null }">
+
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Recurring Schedules</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Automate invoice generation on a repeating schedule.</p>
+    </div>
+    <a href="{% url 'invoices:schedule_create' %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm shadow-brand-500/25 transition-all active:scale-95">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      New Schedule
+    </a>
+  </div>
+
+  <!-- Status Tabs -->
+  <div class="flex items-center gap-1 mb-5 bg-slate-100 dark:bg-slate-800/60 rounded-xl p-1 w-fit">
+    {% with tabs="all active paused cancelled failed" %}
+    {% for tab in tabs.split %}
+    <a href="?status={% if tab == 'all' %}{% else %}{{ tab }}{% endif %}"
+       class="px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all
+              {% if status_filter == tab or status_filter == '' and tab == 'all' %}
+              bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm
+              {% else %}
+              text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300
+              {% endif %}">
+      {{ tab|title }}
+      <span class="ml-1 text-xs
+        {% if tab == 'active' %}text-emerald-600
+        {% elif tab == 'failed' %}text-rose-500
+        {% else %}text-slate-400{% endif %}">
+        {% if tab == 'all' %}{{ status_counts.all }}
+        {% elif tab == 'active' %}{{ status_counts.active }}
+        {% elif tab == 'paused' %}{{ status_counts.paused }}
+        {% elif tab == 'cancelled' %}{{ status_counts.cancelled }}
+        {% elif tab == 'failed' %}{{ status_counts.failed }}
+        {% endif %}
+      </span>
+    </a>
+    {% endfor %}
+    {% endwith %}
+  </div>
+
+  <!-- Schedule Cards -->
+  {% if schedules %}
+  <div class="space-y-3">
+    {% for s in schedules %}
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:shadow-md transition-shadow">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <!-- Left: Info -->
+        <div class="flex items-center gap-4 min-w-0">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0
+            {% if s.status == 'active' %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600
+            {% elif s.status == 'paused' %}bg-amber-100 dark:bg-amber-900/30 text-amber-600
+            {% elif s.status == 'failed' %}bg-rose-100 dark:bg-rose-900/30 text-rose-600
+            {% else %}bg-slate-100 dark:bg-slate-700 text-slate-500{% endif %}">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <a href="{% url 'invoices:schedule_detail' s.id %}" class="text-sm font-semibold text-slate-900 dark:text-white hover:text-brand-600 transition-colors truncate block">
+              {{ s.description }}
+            </a>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+              {{ s.client.name }} &middot; {{ s.get_interval_type_display }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Middle: Amount + Next Run -->
+        <div class="flex items-center gap-6 text-sm">
+          <div>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-0.5">Amount</p>
+            <p class="font-bold text-slate-900 dark:text-white">{{ s.currency }} {{ s.base_amount|floatformat:2 }}</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-0.5">Next Run</p>
+            <p class="font-medium text-slate-700 dark:text-slate-300">
+              {% if s.next_run_date %}{{ s.next_run_date|date:"M j, Y" }}{% else %}—{% endif %}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mb-0.5">Status</p>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
+              {% if s.status == 'active' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+              {% elif s.status == 'paused' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+              {% elif s.status == 'failed' %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400
+              {% elif s.status == 'completed' %}bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400
+              {% else %}bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400{% endif %}">
+              <span class="w-1.5 h-1.5 rounded-full
+                {% if s.status == 'active' %}bg-emerald-500
+                {% elif s.status == 'paused' %}bg-amber-500
+                {% elif s.status == 'failed' %}bg-rose-500
+                {% elif s.status == 'completed' %}bg-sky-500
+                {% else %}bg-slate-400{% endif %}"></span>
+              {{ s.get_status_display }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Right: Actions -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <a href="{% url 'invoices:schedule_detail' s.id %}"
+             class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            View
+          </a>
+          <a href="{% url 'invoices:schedule_edit' s.id %}"
+             class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            Edit
+          </a>
+          {% if s.status == 'active' %}
+          <form method="post" action="{% url 'invoices:schedule_pause' s.id %}" class="inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-700 text-xs font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors">
+              Pause
+            </button>
+          </form>
+          {% elif s.status == 'paused' %}
+          <form method="post" action="{% url 'invoices:schedule_resume' s.id %}" class="inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-700 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors">
+              Resume
+            </button>
+          </form>
+          {% endif %}
+          {% if s.status != 'cancelled' and s.status != 'completed' %}
+          <button @click="cancelId={{ s.id }}; showCancel=true"
+                  class="px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+            Cancel
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <!-- Empty State -->
+  <div class="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl">
+    <div class="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center mb-4">
+      <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+    </div>
+    <h3 class="text-base font-bold text-slate-800 dark:text-white mb-1">No recurring schedules yet</h3>
+    <p class="text-sm text-slate-400 dark:text-slate-500 mb-5 text-center max-w-xs">
+      Set up automated billing to collect recurring payments without manual invoicing.
+    </p>
+    <a href="{% url 'invoices:schedule_create' %}"
+       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all active:scale-95">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      Create First Schedule
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Cancel Confirmation Modal -->
+  <div x-show="showCancel" x-cloak
+       class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       @keydown.escape.window="showCancel=false">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showCancel=false"></div>
+    <div class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm p-6" @click.stop>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+          <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Cancel Schedule</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">This cannot be undone.</p>
+        </div>
+      </div>
+      <template x-for="s in [cancelId]" :key="s">
+        <form method="post" :action="`/recurring/${s}/cancel/`">
+          {% csrf_token %}
+          <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Reason (optional)</label>
+          <textarea name="reason" rows="2" placeholder="Why are you cancelling this schedule?"
+                    class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-rose-500 mb-4"></textarea>
+          <div class="flex gap-2">
+            <button type="button" @click="showCancel=false"
+                    class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+              Keep Schedule
+            </button>
+            <button type="submit"
+                    class="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-colors">
+              Yes, Cancel
+            </button>
+          </div>
+        </form>
+      </template>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
