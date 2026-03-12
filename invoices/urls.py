@@ -26,10 +26,11 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('password-reset/', views.password_reset_request, name='password_reset'),
     path('password-reset/done/', views.password_reset_done, name='password_reset_done'),
-    path('password-reset/confirm/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
+    path('password-reset/confirm/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),
     path('verify-email/<str:token>/', views.verify_email, name='verify_email'),
     path('verification-sent/', views.verification_sent, name='verification_sent'),
     path('resend-verification/', views.resend_verification, name='resend_verification'),
+    path('invite/<str:token>/', views.accept_invitation, name='accept_invitation'),
 
     path('mfa/setup/', views.mfa_setup, name='mfa_setup'),
     path('mfa/verify/', views.mfa_verify, name='mfa_verify'),

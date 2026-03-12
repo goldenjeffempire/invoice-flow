@@ -126,8 +126,10 @@ def login_view(request):
                                 request.session.set_expiry(0)
 
                             messages.success(request, "Welcome back!")
-                            next_url = request.GET.get('next', 'invoices:dashboard')
-                            return redirect(next_url)
+                            next_url = request.GET.get('next', '')
+                            if next_url and next_url.startswith('/') and not next_url.startswith('//'):
+                                return redirect(next_url)
+                            return redirect('invoices:dashboard')
                     else:
                         messages.error(request, message)
                 except Exception as e:
@@ -194,8 +196,11 @@ def resend_verification(request):
                 email=form.cleaned_data['email'],
                 request=request
             )
-            messages.success(request, message)
-            return redirect('invoices:verification_sent')
+            if success:
+                messages.success(request, message)
+                return redirect('invoices:verification_sent')
+            else:
+                messages.error(request, message)
     else:
         form = ResendVerificationForm()
 
@@ -305,9 +310,11 @@ def mfa_setup(request):
         messages.info(request, "Two-factor authentication is already enabled.")
         return redirect('invoices:security_settings')
 
+    secret = request.session.get('mfa_setup_secret')
+    qr_code = request.session.get('mfa_setup_qr_code')
+
     if request.method == 'POST':
         form = MFASetupVerifyForm(request.POST)
-        secret = request.session.get('mfa_setup_secret')
 
         if not secret:
             messages.error(request, "Setup session expired. Please try again.")
@@ -322,7 +329,8 @@ def mfa_setup(request):
             )
 
             if success:
-                del request.session['mfa_setup_secret']
+                request.session.pop('mfa_setup_secret', None)
+                request.session.pop('mfa_setup_qr_code', None)
                 request.session['mfa_backup_codes'] = backup_codes
                 messages.success(request, message)
                 return redirect('invoices:mfa_backup_codes')
@@ -332,11 +340,12 @@ def mfa_setup(request):
         form = MFASetupVerifyForm()
         secret, qr_code, provisioning_uri = MFAService.generate_setup_data(request.user)
         request.session['mfa_setup_secret'] = secret
+        request.session['mfa_setup_qr_code'] = qr_code
 
     return render(request, 'pages/auth/mfa_setup.html', {
         'form': form,
-        'qr_code': qr_code if request.method == 'GET' else request.session.get('mfa_qr_code'),
-        'secret': secret if request.method == 'GET' else request.session.get('mfa_setup_secret'),
+        'qr_code': qr_code,
+        'secret': secret,
     })
 
 

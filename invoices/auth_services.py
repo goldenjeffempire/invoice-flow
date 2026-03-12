@@ -366,7 +366,7 @@ class AuthService:
             logger.error(f"Failed to log attempt: {e}")
 
     @classmethod
-    def complete_login(cls, request, user):
+    def complete_login(cls, request, user, mfa_verified: bool = False):
         login(request, user)
 
         session_key = request.session.session_key
@@ -396,7 +396,32 @@ class AuthService:
             }
         )
 
-        SecurityService.log_event(user, SecurityEventType.LOGIN_SUCCESS, request)
+        event_details = {'mfa_verified': mfa_verified} if mfa_verified else {}
+        SecurityService.log_event(user, SecurityEventType.LOGIN_SUCCESS, request, details=event_details)
+
+    @classmethod
+    def initiate_password_reset(cls, email: str, request=None) -> Tuple[Optional[Any], str]:
+        return cls.request_password_reset(email, request)
+
+    @classmethod
+    def validate_reset_token(cls, token: str) -> Tuple[bool, Optional[Any], str]:
+        try:
+            from .models import EmailToken
+            email_token = EmailToken.objects.get(
+                token=token,
+                token_type=EmailToken.TokenType.RESET
+            )
+            if email_token.is_expired:
+                return False, None, "This reset link has expired. Please request a new one."
+            if email_token.used_at:
+                return False, None, "This reset link has already been used."
+            return True, email_token, ""
+        except Exception:
+            return False, None, "Invalid or expired reset link."
+
+    @classmethod
+    def complete_password_reset(cls, token_str: str, new_password: str, request=None) -> Tuple[bool, str]:
+        return cls.confirm_password_reset(token_str, new_password, request)
 
     @classmethod
     def logout_user(cls, request):
@@ -685,6 +710,42 @@ class MFAService:
             return False, "Failed to disable 2FA. Please try again."
 
     @classmethod
+    def is_mfa_enabled(cls, user) -> bool:
+        try:
+            return user.mfa_profile.is_enabled
+        except Exception:
+            return False
+
+    @classmethod
+    def get_remaining_codes(cls, user) -> int:
+        try:
+            mfa_profile = user.mfa_profile
+            if not mfa_profile.is_enabled:
+                return 0
+            codes = mfa_profile.recovery_codes or []
+            return len(codes)
+        except Exception:
+            return 0
+
+    @classmethod
+    def verify_mfa(cls, user, code: str, request=None) -> Tuple[bool, str]:
+        return cls.verify_code(user, code, request)
+
+    @classmethod
+    def generate_setup_data(cls, user) -> Tuple[str, str, str]:
+        data = cls.generate_setup(user)
+        return data['secret'], data['qr_code'], data['provisioning_uri']
+
+    @classmethod
+    def enable_mfa(cls, user, secret: str, code: str, request=None) -> Tuple[bool, List[str], str]:
+        success, message, recovery_codes = cls.verify_and_enable(user, code, request)
+        return success, recovery_codes, message
+
+    @classmethod
+    def disable_mfa(cls, user, password: str, request=None) -> Tuple[bool, str]:
+        return cls.disable(user, password, request)
+
+    @classmethod
     def regenerate_recovery_codes(cls, user, password: str, request=None) -> Tuple[bool, str, List[str]]:
         try:
             if not user.check_password(password):
@@ -852,6 +913,21 @@ class DeviceService:
 
 
 class InvitationService:
+    @classmethod
+    def validate_invitation(cls, token: str) -> Tuple[bool, Optional[Any], str]:
+        try:
+            invitation = WorkspaceInvitation.objects.get(token=token, status='pending')
+            if invitation.is_expired:
+                invitation.status = 'expired'
+                invitation.save(update_fields=['status'])
+                return False, None, "This invitation has expired."
+            return True, invitation, ""
+        except WorkspaceInvitation.DoesNotExist:
+            return False, None, "Invalid or expired invitation link."
+        except Exception as e:
+            logger.error(f"Validate invitation error: {e}")
+            return False, None, "Could not validate invitation."
+
     @classmethod
     def send_invitation(cls, workspace, email: str, role: str, invited_by, request=None) -> Tuple[bool, str]:
         try:

@@ -54,7 +54,7 @@ class SignUpForm(forms.Form, BaseFormMixin):
             'autocomplete': 'new-password',
         })
     )
-    terms_accepted = forms.BooleanField(
+    agree_terms = forms.BooleanField(
         required=True,
         widget=forms.CheckboxInput(attrs={
             'class': 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded',
