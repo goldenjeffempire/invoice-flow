@@ -1,18 +1,82 @@
-{% extends "base.html" %}
+{% extends "base/layout_app.html" %}
+{% load static %}
+
+{% block title %}Disable Two-Factor Authentication — InvoiceFlow{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="px-4 py-6 sm:px-0">
-        <h1 class="text-2xl font-semibold text-slate-900">Disable Two-Factor Authentication</h1>
-        <p class="mt-1 text-sm text-slate-600">Are you sure you want to disable MFA? This will make your account less secure.</p>
-        <form method="POST" class="mt-6">
-            {% csrf_token %}
-            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                Confirm Disable MFA
-            </button>
-            <a href="{% url 'profile' %}" class="ml-3 inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                Cancel
-            </a>
-        </form>
+<div class="max-w-lg mx-auto py-10 px-4" x-data="{ loading: false }">
+
+  <!-- Header -->
+  <a href="{% url 'invoices:security_settings' %}"
+     style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#64748b;text-decoration:none;margin-bottom:20px;transition:color .2s"
+     onmouseover="this.style.color='#475569'" onmouseout="this.style.color='#64748b'">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    Security Settings
+  </a>
+
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:36px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+
+    <div style="width:60px;height:60px;border-radius:16px;background:#fef2f2;border:1px solid #fecaca;display:flex;align-items:center;justify-content:center;margin-bottom:20px" aria-hidden="true">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     </div>
+
+    <h1 style="font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-.4px;margin:0 0 8px">
+      Disable Two-Factor Authentication
+    </h1>
+    <p style="font-size:14px;color:#64748b;line-height:1.6;margin:0 0 24px">
+      This will remove the additional security layer from your account. You'll only need your password to sign in after this.
+    </p>
+
+    {% if messages %}
+    <div style="margin-bottom:20px;display:flex;flex-direction:column;gap:8px" role="alert">
+      {% for message in messages %}
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:500;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#ef4444">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>{{ message }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Warning list -->
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px 18px;margin-bottom:24px">
+      <p style="font-size:12px;font-weight:700;color:#92400e;letter-spacing:.3px;text-transform:uppercase;margin:0 0 10px">
+        What will change
+      </p>
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:#78350f;line-height:1.7;display:flex;flex-direction:column;gap:2px">
+        <li>Your authenticator app will be unlinked</li>
+        <li>All backup recovery codes will be deleted</li>
+        <li>Your account will be less secure</li>
+      </ul>
+    </div>
+
+    <form method="post"
+          @submit.prevent="loading = true; $el.submit()"
+          style="display:flex;flex-direction:column;gap:10px"
+          aria-label="Disable MFA confirmation">
+      {% csrf_token %}
+
+      <button type="submit"
+              :disabled="loading"
+              style="width:100%;padding:13px 24px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 16px rgba(239,68,68,.3);transition:all .2s"
+              :style="loading ? 'opacity:.6;cursor:not-allowed' : ''">
+        <span x-show="!loading">Confirm — Disable 2FA</span>
+        <span x-show="loading" x-cloak style="display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg style="animation:spin .75s linear infinite" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.25)" stroke-width="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+          Disabling…
+        </span>
+      </button>
+
+      <a href="{% url 'invoices:security_settings' %}"
+         style="display:flex;align-items:center;justify-content:center;padding:12px 24px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px;font-weight:600;color:#334155;text-decoration:none;transition:all .2s"
+         onmouseover="this.style.borderColor='#94a3b8'" onmouseout="this.style.borderColor='#e2e8f0'">
+        Cancel — Keep 2FA Enabled
+      </a>
+    </form>
+  </div>
 </div>
+
+<style>
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
 {% endblock %}

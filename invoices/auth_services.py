@@ -246,7 +246,7 @@ class AuthService:
 
             profile = UserProfile.objects.create(
                 user=user,
-                email_verified=False,
+                email_verified=True,
                 onboarding_step=1,
                 onboarding_started_at=timezone.now()
             )
@@ -336,9 +336,6 @@ class AuthService:
                 cls._log_failed_attempt(username_or_email, request, "invalid_password")
                 SecurityService.log_event(user, SecurityEventType.LOGIN_FAILED, request, 'warning')
                 return None, "Invalid credentials. Please check your username/email and password.", False
-
-            if not profile.email_verified:
-                return None, "Please verify your email before logging in. Check your inbox for the verification link.", False
 
             profile.reset_failed_attempts()
 

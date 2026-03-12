@@ -1,77 +1,112 @@
 {% extends "base/layout_app.html" %}
 {% load static %}
 
-{% block title %}Backup Codes - InvoiceFlow{% endblock %}
+{% block title %}Save Your Backup Codes — InvoiceFlow{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto space-y-8 animate-fade-in">
-    <div class="text-center">
-        <div class="w-20 h-20 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-emerald-600">
-            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-            </svg>
-        </div>
-        <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Security Setup Complete!</h1>
-        <p class="mt-2 text-slate-500 dark:text-slate-400">Two-Factor Authentication is now active on your account.</p>
+<div class="max-w-xl mx-auto py-10 px-4">
+
+  <!-- Success header -->
+  <div style="text-align:center;margin-bottom:32px">
+    <div style="width:76px;height:76px;border-radius:50%;background:rgba(16,185,129,.1);border:2px solid rgba(16,185,129,.25);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;animation:popIn .5s cubic-bezier(.34,1.56,.64,1)">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+    </div>
+    <h1 style="font-size:26px;font-weight:800;color:#0f172a;letter-spacing:-.5px;margin:0 0 8px">
+      2FA Enabled Successfully!
+    </h1>
+    <p style="font-size:14px;color:#64748b;line-height:1.6;margin:0">
+      Your account is now protected with two-factor authentication.
+    </p>
+  </div>
+
+  <!-- Warning -->
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:16px;padding:20px;margin-bottom:24px;display:flex;gap:14px">
+    <div style="width:36px;height:36px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div>
+      <p style="font-size:14px;font-weight:700;color:#92400e;margin:0 0 4px">Save these codes now</p>
+      <p style="font-size:13px;color:#78350f;line-height:1.55;margin:0">
+        These recovery codes are the <strong>only way</strong> to access your account if you lose your phone. They will not be shown again.
+      </p>
+    </div>
+  </div>
+
+  <!-- Codes grid -->
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px" id="codes-grid">
+      {% for code in recovery_codes %}
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:11px 14px;font-family:monospace;font-size:13.5px;font-weight:700;color:#1e293b;text-align:center;letter-spacing:.5px;transition:border-color .2s"
+           onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0'">
+        {{ code }}
+      </div>
+      {% endfor %}
     </div>
 
-    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-3xl p-8 relative overflow-hidden">
-        <div class="absolute top-0 right-0 p-4 opacity-10">
-            <svg class="w-24 h-24 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-        </div>
-        <div class="relative z-10 flex gap-4">
-            <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-800 flex items-center justify-center flex-shrink-0 text-amber-600 dark:text-amber-400">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <div>
-                <h4 class="font-bold text-amber-900 dark:text-amber-200">Important: Save these codes now</h4>
-                <p class="text-sm text-amber-800 dark:text-amber-300/80 leading-relaxed mt-1">These recovery codes are the only way to access your account if you lose your phone. They will not be shown again.</p>
-            </div>
-        </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="copyAll()"
+              id="copy-btn"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;font-size:13px;font-weight:700;color:#334155;cursor:pointer;transition:all .2s"
+              onmouseover="this.style.borderColor='#6366f1';this.style.color='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#334155'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copy All
+      </button>
+      <button onclick="downloadAll()"
+              style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;font-size:13px;font-weight:700;color:#334155;cursor:pointer;transition:all .2s"
+              onmouseover="this.style.borderColor='#6366f1';this.style.color='#6366f1'" onmouseout="this.style.borderColor='#e2e8f0';this.style.color='#334155'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </button>
     </div>
+  </div>
 
-    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {% for code in recovery_codes %}
-            <div class="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl text-center font-mono text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-100 dark:border-slate-800 group hover:border-indigo-500 transition-colors">
-                {{ code }}
-            </div>
-            {% endfor %}
-        </div>
-
-        <div class="flex flex-col sm:flex-row gap-4">
-            <button onclick="copyRecoveryCodes()" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors group">
-                <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
-                Copy Codes
-            </button>
-            <button onclick="downloadRecoveryCodes()" class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors group">
-                <svg class="w-5 h-5 text-slate-400 group-hover:text-indigo-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Download .txt
-            </button>
-        </div>
-    </div>
-
-    <div class="text-center pt-4">
-        <a href="{% url 'invoices:security_settings' %}" class="inline-flex items-center justify-center gap-3 w-full sm:w-auto px-12 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98]">
-            I've Saved My Codes - Continue
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-        </a>
-    </div>
+  <!-- CTA -->
+  <a href="{% url 'invoices:security_settings' %}"
+     style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 24px;background:linear-gradient(135deg,#6366f1,#4f46e5);border-radius:14px;color:#fff;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 20px rgba(99,102,241,.3);transition:all .2s"
+     onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 30px rgba(99,102,241,.45)'"
+     onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(99,102,241,.3)'">
+    I've Saved My Codes — Continue
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+  </a>
 </div>
 
+<style>
+@keyframes popIn { from { transform:scale(.4);opacity:0; } to { transform:scale(1);opacity:1; } }
+</style>
+{% endblock %}
+
+{% block scripts %}
 <script>
-    const codes = [{% for code in recovery_codes %}'{{ code }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
-    function copyRecoveryCodes() {
-        navigator.clipboard.writeText(codes.join('\n'));
-        alert('Recovery codes copied to clipboard!');
-    }
-    function downloadRecoveryCodes() {
-        const content = 'InvoiceFlow Recovery Codes\nGenerated on: ' + new Date().toLocaleString() + '\n\n' + codes.join('\n') + '\n\nIMPORTANT: Store these codes in a secure location. They are required if you lose access to your authenticator app.';
-        const blob = new Blob([content], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'invoiceflow-recovery-codes.txt';
-        a.click();
-    }
+const codes = [{% for code in recovery_codes %}'{{ code }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+
+function copyAll() {
+  navigator.clipboard.writeText(codes.join('\n')).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '✓ Copied!';
+    btn.style.color = '#10b981';
+    btn.style.borderColor = '#10b981';
+    setTimeout(() => {
+      btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy All';
+      btn.style.color = '#334155';
+      btn.style.borderColor = '#e2e8f0';
+    }, 2000);
+  });
+}
+
+function downloadAll() {
+  const content = [
+    'InvoiceFlow — Two-Factor Authentication Recovery Codes',
+    'Generated: ' + new Date().toLocaleString(),
+    '',
+    'IMPORTANT: Store these codes securely. Each code can only be used once.',
+    'Use them if you lose access to your authenticator app.',
+    '',
+    ...codes.map((c, i) => (i + 1) + '. ' + c)
+  ].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/plain' }));
+  a.download = 'invoiceflow-recovery-codes.txt';
+  a.click();
+}
 </script>
 {% endblock %}

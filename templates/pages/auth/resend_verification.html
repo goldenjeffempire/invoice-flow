@@ -1,73 +1,102 @@
-{% extends "base/layout.html" %}
+{% extends "base/auth_layout.html" %}
 {% load static %}
 
-{% block title %}Resend Verification - InvoiceFlow{% endblock %}
+{% block title %}Resend Verification — InvoiceFlow{% endblock %}
 
-{% block content %}
-<div class="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center py-12 px-4 transition-colors duration-300" x-data="{ loading: false }">
-    <div class="max-w-md w-full">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl shadow-indigo-500/10 p-10 border border-slate-100 dark:border-slate-800 animate-fade-in-up">
-            <div class="text-center mb-10">
-                <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                </div>
-                <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Resend Verification</h1>
-                <p class="mt-3 text-slate-500 dark:text-slate-400">Enter your email to receive a new link.</p>
-            </div>
+{% block auth_topbar_right %}
+  <a href="{% url 'invoices:login' %}" class="if-topbar-btn">Sign In</a>
+{% endblock %}
 
-            {% if messages %}
-            <div class="mb-8 space-y-2">
-                {% for message in messages %}
-                <div class="p-4 rounded-2xl {% if message.tags == 'error' %}bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30{% else %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30{% endif %}">
-                    <p class="text-sm font-bold text-center">{{ message }}</p>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
+{% block auth_content %}
+<div class="if-card" x-data="resendPage()">
 
-            <form method="post" class="space-y-6" novalidate @submit="loading = true">
-                {% csrf_token %}
-                
-                <div class="space-y-2">
-                    <label for="id_email" class="block text-sm font-bold text-slate-700 dark:text-slate-300">Email Address</label>
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                        </div>
-                        <input type="email" name="email" id="id_email"
-                               class="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white transition-all"
-                               placeholder="you@company.com" required autofocus>
-                    </div>
-                </div>
+  <div class="if-badge">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    Email Verification
+  </div>
+  <h1 class="if-card-title">Resend verification</h1>
+  <p class="if-card-sub">Enter your email and we'll send you a new verification link.</p>
 
-                <button type="submit" 
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-3"
-                        :disabled="loading">
-                    <span x-show="!loading">Resend Verification</span>
-                    <span x-show="loading" x-cloak class="flex items-center gap-2">
-                        <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        Sending...
-                    </span>
-                </button>
-            </form>
-
-            <div class="mt-10 text-center">
-                <a href="{% url 'invoices:login' %}" class="inline-flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Back to login
-                </a>
-            </div>
-        </div>
+  {% if messages %}
+  <div class="if-alerts" role="alert" aria-live="polite">
+    {% for message in messages %}
+    <div class="if-alert {% if message.tags == 'error' %}if-alert--error{% elif message.tags == 'success' %}if-alert--success{% else %}if-alert--info{% endif %}">
+      {% if message.tags == 'success' %}
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      {% else %}
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      {% endif %}
+      <span>{{ message }}</span>
     </div>
-</div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
-<style>
-    @keyframes fade-in-up {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+  <form class="if-form"
+        method="post"
+        novalidate
+        @submit.prevent="submit"
+        id="resend-form"
+        aria-label="Resend verification email">
+    {% csrf_token %}
+
+    <div class="if-field" :class="{ 'if-field--err': err }">
+      <label class="if-label" for="id_email">Email Address</label>
+      <div class="if-input-wrap">
+        <svg class="if-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <input type="email"
+               name="email"
+               id="id_email"
+               class="if-input"
+               placeholder="you@company.com"
+               autocomplete="email"
+               x-model="email"
+               @blur="validate"
+               :aria-invalid="err ? 'true' : 'false'"
+               required
+               autofocus>
+      </div>
+      <p class="if-field-err" x-show="err" x-text="err" x-cloak role="alert"></p>
+    </div>
+
+    <button type="submit" class="if-btn" :disabled="loading">
+      <template x-if="!loading"><span>Send Verification Email</span></template>
+      <template x-if="loading">
+        <span style="display:flex;align-items:center;gap:8px">
+          <svg class="if-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.25)" stroke-width="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+          Sending…
+        </span>
+      </template>
+    </button>
+    <input type="submit" id="real-submit" style="display:none">
+  </form>
+
+  <a href="{% url 'invoices:login' %}" class="if-back" style="display:flex;justify-content:center;margin-top:20px">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+    Back to Sign In
+  </a>
+</div>
+{% endblock %}
+
+{% block auth_extra_script %}
+<script>
+function resendPage() {
+  return {
+    email: '',
+    err: '',
+    loading: false,
+    validate() {
+      if (!this.email.trim())                              { this.err = 'Please enter your email.'; return; }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email)) { this.err = 'Enter a valid email address.'; return; }
+      this.err = '';
+    },
+    submit() {
+      this.validate();
+      if (this.err) return;
+      this.loading = true;
+      document.getElementById('resend-form').submit();
     }
-    .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
-</style>
+  };
+}
+</script>
 {% endblock %}

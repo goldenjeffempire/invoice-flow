@@ -1,96 +1,200 @@
-{% extends "base/layout.html" %}
+{% extends "base/auth_layout.html" %}
 {% load static %}
 
-{% block title %}Two-Factor Authentication - InvoiceFlow{% endblock %}
+{% block title %}Two-Factor Authentication — InvoiceFlow{% endblock %}
 
-{% block content %}
-<div class="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center py-12 px-4 transition-colors duration-300" x-data="{ loading: false }">
-    <div class="max-w-md w-full">
-        <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl shadow-indigo-500/10 p-10 border border-slate-100 dark:border-slate-800 animate-fade-in-up">
-            <div class="text-center mb-10">
-                <div class="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                    </svg>
-                </div>
-                <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Verify Identity</h1>
-                <p class="mt-3 text-slate-500 dark:text-slate-400">Enter the 6-digit code from your authenticator app.</p>
-            </div>
+{% block auth_topbar_right %}
+  <a href="{% url 'invoices:login' %}" class="if-topbar-btn">Sign In</a>
+{% endblock %}
 
-            {% if messages %}
-            <div class="mb-8 space-y-2">
-                {% for message in messages %}
-                <div class="p-4 rounded-2xl {% if message.tags == 'error' %}bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30{% else %}bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30{% endif %}">
-                    <p class="text-sm font-bold text-center">{{ message }}</p>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
+{% block auth_content %}
+<div class="if-card" x-data="mfaPage()">
 
-            <form method="post" class="space-y-8" novalidate @submit="loading = true">
-                {% csrf_token %}
-                
-                <div class="space-y-4">
-                    <div class="flex justify-center">
-                        <input type="text" name="code" id="id_code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                               class="w-full max-w-[240px] px-4 py-5 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-500 text-center text-4xl tracking-[0.5em] font-black text-slate-900 dark:text-white transition-all"
-                               placeholder="000000" required autofocus autocomplete="one-time-code">
-                    </div>
-                    <p class="text-center text-xs text-slate-500 dark:text-slate-400 font-medium">Auto-submitting once 6 digits are entered.</p>
-                </div>
+  <div class="if-badge">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+    Two-Factor Auth
+  </div>
+  <h1 class="if-card-title">Verify your identity</h1>
+  <p class="if-card-sub" x-show="!useBackup">Enter the 6-digit code from your authenticator app.</p>
+  <p class="if-card-sub" x-show="useBackup" x-cloak>Enter one of your saved backup recovery codes.</p>
 
-                <button type="submit" 
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-3"
-                        :disabled="loading">
-                    <span x-show="!loading">Verify & Sign In</span>
-                    <span x-show="loading" x-cloak class="flex items-center gap-2">
-                        <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                        Verifying...
-                    </span>
-                </button>
-            </form>
-
-            <div class="mt-10 pt-8 border-t border-slate-100 dark:border-slate-800">
-                <p class="text-center text-sm text-slate-600 dark:text-slate-400 font-bold">
-                    Lost access? 
-                    <button type="button" @click="document.getElementById('recovery-form').classList.toggle('hidden')" class="text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 hover:underline ml-1">Use a backup code</button>
-                </p>
-            </div>
-
-            <form method="post" id="recovery-form" class="hidden mt-6 p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4">
-                {% csrf_token %}
-                <div class="space-y-2">
-                    <label for="id_recovery_code" class="block text-xs font-black uppercase tracking-widest text-slate-500">Recovery Code</label>
-                    <input type="text" name="code" id="id_recovery_code"
-                           class="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-center font-mono uppercase tracking-widest text-slate-900 dark:text-white"
-                           placeholder="XXXX-XXXX">
-                </div>
-                <button type="submit" class="w-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 py-3 rounded-xl font-bold transition-all hover:opacity-90">
-                    Verify Backup Code
-                </button>
-            </form>
-
-            <div class="mt-8 text-center">
-                <a href="{% url 'invoices:login' %}" class="text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel and sign in again</a>
-            </div>
-        </div>
+  {% if messages %}
+  <div class="if-alerts" role="alert" aria-live="assertive">
+    {% for message in messages %}
+    <div class="if-alert if-alert--error">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>{{ message }}</span>
     </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- TOTP Code form -->
+  <form class="if-form"
+        method="post"
+        @submit.prevent="submitTotp"
+        id="mfa-form"
+        x-show="!useBackup"
+        aria-label="Authenticator code">
+    {% csrf_token %}
+    <input type="hidden" name="use_backup" value="false">
+
+    <div class="if-field" :class="{ 'if-field--err': err }">
+      <label class="if-label" for="otp-0" style="justify-content:center;margin-bottom:10px">6-Digit Code</label>
+      <div class="if-otp-wrap" role="group" aria-label="One-time password input">
+        <template x-for="(d, i) in digits" :key="i">
+          <input type="text"
+                 :id="'otp-' + i"
+                 class="if-otp"
+                 inputmode="numeric"
+                 maxlength="1"
+                 pattern="[0-9]"
+                 autocomplete="one-time-code"
+                 x-model="digits[i]"
+                 @input="handleInput(i, $event)"
+                 @keydown="handleKey(i, $event)"
+                 @paste.prevent="handlePaste($event)"
+                 :aria-label="'Digit ' + (i + 1)"
+                 required>
+        </template>
+      </div>
+      <input type="hidden" name="code" :value="digits.join('')">
+      <p class="if-field-err" x-show="err" x-text="err" x-cloak role="alert" style="text-align:center"></p>
+    </div>
+
+    <button type="submit" class="if-btn" :disabled="loading || digits.join('').length < 6">
+      <template x-if="!loading"><span>Verify</span></template>
+      <template x-if="loading">
+        <span style="display:flex;align-items:center;gap:8px">
+          <svg class="if-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.25)" stroke-width="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+          Verifying…
+        </span>
+      </template>
+    </button>
+    <input type="submit" id="totp-submit" style="display:none">
+  </form>
+
+  <!-- Backup code form -->
+  <form class="if-form"
+        method="post"
+        @submit.prevent="submitBackup"
+        id="backup-form"
+        x-show="useBackup"
+        x-cloak
+        aria-label="Backup recovery code">
+    {% csrf_token %}
+    <input type="hidden" name="use_backup" value="true">
+
+    <div class="if-field" :class="{ 'if-field--err': err }">
+      <label class="if-label" for="id_backup">Recovery Code</label>
+      <div class="if-input-wrap">
+        <svg class="if-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <input type="text"
+               name="backup_code"
+               id="id_backup"
+               class="if-input"
+               placeholder="xxxxxxxxxx"
+               autocomplete="off"
+               autocapitalize="none"
+               spellcheck="false"
+               x-model="backupCode"
+               :aria-invalid="err ? 'true' : 'false'"
+               required>
+      </div>
+      <p class="if-field-err" x-show="err" x-text="err" x-cloak role="alert"></p>
+    </div>
+
+    <button type="submit" class="if-btn" :disabled="loading">
+      <template x-if="!loading"><span>Verify with Backup Code</span></template>
+      <template x-if="loading">
+        <span style="display:flex;align-items:center;gap:8px">
+          <svg class="if-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.25)" stroke-width="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+          Verifying…
+        </span>
+      </template>
+    </button>
+    <input type="submit" id="backup-submit" style="display:none">
+  </form>
+
+  <!-- Toggle -->
+  <div style="text-align:center;margin-top:20px">
+    <button type="button"
+            class="if-link"
+            style="background:none;border:none;cursor:pointer;font-size:13px"
+            @click="toggleMode"
+            x-text="useBackup ? 'Use authenticator app instead' : 'Use a backup code instead'">
+    </button>
+  </div>
 </div>
+{% endblock %}
 
+{% block auth_extra_script %}
 <script>
-    document.getElementById('id_code').addEventListener('input', function(e) {
-        if (this.value.length === 6) {
-            this.form.submit();
-        }
-    });
-</script>
+function mfaPage() {
+  return {
+    digits: ['','','','','',''],
+    backupCode: '',
+    useBackup: false,
+    err: '',
+    loading: false,
 
-<style>
-    [x-cloak] { display: none !important; }
-    @keyframes fade-in-up {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+    handleInput(i, e) {
+      const val = e.target.value.replace(/[^0-9]/g,'');
+      this.digits[i] = val.slice(-1);
+      if (val && i < 5) {
+        document.getElementById('otp-' + (i+1))?.focus();
+      }
+      if (this.digits.join('').length === 6) this.autoSubmit();
+    },
+
+    handleKey(i, e) {
+      if (e.key === 'Backspace' && !this.digits[i] && i > 0) {
+        document.getElementById('otp-' + (i-1))?.focus();
+      }
+      if (e.key === 'ArrowLeft' && i > 0) {
+        e.preventDefault(); document.getElementById('otp-' + (i-1))?.focus();
+      }
+      if (e.key === 'ArrowRight' && i < 5) {
+        e.preventDefault(); document.getElementById('otp-' + (i+1))?.focus();
+      }
+    },
+
+    handlePaste(e) {
+      const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+      text.split('').forEach((c, i) => { this.digits[i] = c; });
+      if (text.length === 6) this.autoSubmit();
+      else document.getElementById('otp-' + Math.min(text.length, 5))?.focus();
+    },
+
+    autoSubmit() {
+      setTimeout(() => {
+        if (!this.loading) { this.loading = true; document.getElementById('mfa-form').submit(); }
+      }, 120);
+    },
+
+    submitTotp() {
+      if (this.digits.join('').length < 6) { this.err = 'Please enter the full 6-digit code.'; return; }
+      this.err = '';
+      this.loading = true;
+      document.getElementById('mfa-form').submit();
+    },
+
+    submitBackup() {
+      if (!this.backupCode.trim()) { this.err = 'Please enter your backup code.'; return; }
+      this.err = '';
+      this.loading = true;
+      document.getElementById('backup-form').submit();
+    },
+
+    toggleMode() {
+      this.useBackup = !this.useBackup;
+      this.err = '';
+      this.$nextTick(() => {
+        if (this.useBackup) document.getElementById('id_backup')?.focus();
+        else document.getElementById('otp-0')?.focus();
+      });
     }
-    .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
-</style>
+  };
+}
+</script>
 {% endblock %}

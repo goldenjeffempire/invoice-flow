@@ -1,19 +1,91 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full space-y-8">
-        <div>
-            <h2 class="mt-6 text-center text-3xl font-extrabold text-slate-900">Accept Invitation</h2>
-            <p class="mt-2 text-center text-sm text-slate-600">
-                You've been invited to join <strong>{{ workspace_name }}</strong>.
-            </p>
-        </div>
-        <form class="mt-8 space-y-6" method="POST">
-            {% csrf_token %}
-            <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                Join Workspace
-            </button>
-        </form>
+{% extends "base/auth_layout.html" %}
+{% load static %}
+
+{% block title %}Accept Invitation — InvoiceFlow{% endblock %}
+
+{% block auth_topbar_right %}
+  <a href="{% url 'invoices:login' %}" class="if-topbar-btn">Sign In</a>
+{% endblock %}
+
+{% block auth_content %}
+<div class="if-card" x-data="invitePage()">
+
+  <div class="if-badge">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Team Invitation
+  </div>
+  <h1 class="if-card-title">You're invited!</h1>
+
+  {% if invitation %}
+  <p class="if-card-sub">
+    <strong style="color:var(--a-text)">{{ invitation.invited_by.get_full_name|default:invitation.invited_by.username }}</strong>
+    has invited you to join the
+    <strong style="color:var(--a-text)">{{ invitation.workspace.name }}</strong>
+    workspace on InvoiceFlow.
+  </p>
+  {% else %}
+  <p class="if-card-sub">You've been invited to join a workspace on InvoiceFlow.</p>
+  {% endif %}
+
+  {% if messages %}
+  <div class="if-alerts" role="alert" aria-live="polite">
+    {% for message in messages %}
+    <div class="if-alert {% if message.tags == 'error' %}if-alert--error{% else %}if-alert--info{% endif %}">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>{{ message }}</span>
     </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if user.is_authenticated %}
+  <!-- Logged-in: Accept directly -->
+  <form class="if-form"
+        method="post"
+        @submit.prevent="loading = true; $el.submit()"
+        aria-label="Accept workspace invitation">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="accept">
+
+    <div class="if-info-box" style="margin-bottom:4px">
+      Accepting will add you to this workspace as
+      <strong style="color:var(--a-text)">{{ invitation.role|title|default:"Member" }}</strong>.
+      You can leave the workspace at any time from your account settings.
+    </div>
+
+    <button type="submit" class="if-btn" :disabled="loading">
+      <template x-if="!loading"><span>Accept Invitation</span></template>
+      <template x-if="loading">
+        <span style="display:flex;align-items:center;gap:8px">
+          <svg class="if-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.25)" stroke-width="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+          Accepting…
+        </span>
+      </template>
+    </button>
+  </form>
+  {% else %}
+  <!-- Not logged in: must create account or sign in -->
+  <div class="if-info-box" style="margin-bottom:20px">
+    You'll need an InvoiceFlow account to join this workspace.
+  </div>
+
+  <div class="if-form">
+    <a href="{% url 'invoices:signup' %}?next={{ request.path }}" class="if-btn">
+      Create a Free Account &amp; Accept
+    </a>
+    <div class="if-divider">or</div>
+    <a href="{% url 'invoices:login' %}?next={{ request.path }}" class="if-btn-ghost">
+      Sign In to Accept
+    </a>
+  </div>
+  {% endif %}
 </div>
+{% endblock %}
+
+{% block auth_extra_script %}
+<script>
+function invitePage() {
+  return { loading: false };
+}
+</script>
 {% endblock %}

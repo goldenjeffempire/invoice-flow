@@ -1,109 +1,201 @@
 {% extends "base/layout_app.html" %}
 {% load static %}
 
-{% block title %}Set Up Two-Factor Authentication - InvoiceFlow{% endblock %}
+{% block title %}Set Up Two-Factor Authentication — InvoiceFlow{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-8 animate-fade-in">
-    <div>
-        <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Secure Your Account</h1>
-        <p class="text-slate-500 dark:text-slate-400 mt-1">Add an extra layer of protection with Two-Factor Authentication.</p>
-    </div>
+<div class="max-w-xl mx-auto py-10 px-4" x-data="mfaSetup()">
 
-    {% if messages %}
-    <div class="space-y-2">
-        {% for message in messages %}
-        <div class="p-4 rounded-2xl {% if message.tags == 'error' %}bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-900/30{% else %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30{% endif %}">
-            <p class="text-sm font-bold">{{ message }}</p>
-        </div>
-        {% endfor %}
+  <!-- Header -->
+  <div style="margin-bottom:32px">
+    <a href="{% url 'invoices:security_settings' %}"
+       style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#64748b;text-decoration:none;margin-bottom:20px;transition:color .2s"
+       onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      Security Settings
+    </a>
+    <h1 style="font-size:26px;font-weight:800;color:#0f172a;letter-spacing:-.5px;margin:0 0 8px">
+      Set Up Two-Factor Authentication
+    </h1>
+    <p style="font-size:14px;color:#64748b;line-height:1.6;margin:0">
+      Two-factor authentication adds an extra layer of security to your account. Once enabled, you'll need your authenticator app to sign in.
+    </p>
+  </div>
+
+  {% if messages %}
+  <div style="margin-bottom:20px;display:flex;flex-direction:column;gap:8px" role="alert" aria-live="polite">
+    {% for message in messages %}
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:12px;font-size:13px;font-weight:500;
+         {% if message.tags == 'error' %}background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5
+         {% else %}background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7{% endif %}">
+      {% if message.tags == 'error' %}
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" style="flex-shrink:0;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      {% else %}
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" style="flex-shrink:0;margin-top:1px" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      {% endif %}
+      <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Step 1: Install app -->
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:36px;height:36px;border-radius:10px;background:#eef2ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="font-size:14px;font-weight:800;color:#6366f1">1</span>
+      </div>
+      <h3 style="font-size:16px;font-weight:700;color:#0f172a;margin:0">Install an authenticator app</h3>
+    </div>
+    <p style="font-size:13.5px;color:#64748b;line-height:1.65;margin:0 0 14px">
+      Install any TOTP-compatible authenticator app on your phone:
+    </p>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      {% for app in 'Google Authenticator,Authy,1Password,Microsoft Authenticator,Bitwarden'.split(',') %}
+      <span style="padding:5px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:100px;font-size:12px;font-weight:600;color:#334155">{{ app }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Step 2: Scan QR -->
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:36px;height:36px;border-radius:10px;background:#eef2ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="font-size:14px;font-weight:800;color:#6366f1">2</span>
+      </div>
+      <h3 style="font-size:16px;font-weight:700;color:#0f172a;margin:0">Scan the QR code</h3>
+    </div>
+    <p style="font-size:13.5px;color:#64748b;line-height:1.65;margin:0 0 20px">
+      Open your authenticator app and scan this QR code to add your InvoiceFlow account.
+    </p>
+
+    {% if qr_code %}
+    <div style="display:flex;justify-content:center;margin-bottom:20px">
+      <div style="background:#fff;padding:16px;border-radius:16px;border:2px solid #e2e8f0;display:inline-block">
+        <img src="data:image/png;base64,{{ qr_code }}"
+             alt="QR code for two-factor authentication setup"
+             width="180" height="180"
+             style="display:block">
+      </div>
     </div>
     {% endif %}
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div class="space-y-8">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
-                        <span class="text-lg font-black">1</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Scan QR Code</h3>
-                </div>
-                <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-8">
-                    Open your authenticator app (like Google Authenticator, Authy, or Microsoft Authenticator) and scan the code below.
-                </p>
-                {% if qr_code %}
-                <div class="flex justify-center p-6 bg-slate-50 dark:bg-slate-950 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
-                    <img src="{{ qr_code }}" alt="QR Code for 2FA setup" class="w-48 h-48 rounded-lg">
-                </div>
-                {% endif %}
-            </div>
-
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
-                        <span class="text-lg font-black">2</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Manual Entry</h3>
-                </div>
-                <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-4">
-                    If you can't scan the QR code, you can enter this secret key manually into your app:
-                </p>
-                <div class="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between group">
-                    <code class="text-sm font-black text-indigo-600 dark:text-indigo-400 tracking-widest">{{ secret }}</code>
-                    <button type="button" @click="navigator.clipboard.writeText('{{ secret }}'); $dispatch('notify', { message: 'Copied to clipboard' })" class="text-slate-400 hover:text-indigo-600 transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="space-y-8">
-            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-8">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
-                        <span class="text-lg font-black">3</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Verify Setup</h3>
-                </div>
-                <p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-8">
-                    Enter the 6-digit verification code generated by your app to confirm setup.
-                </p>
-                <form method="post" class="space-y-6" x-data="{ loading: false }" @submit="loading = true">
-                    {% csrf_token %}
-                    <div class="space-y-2">
-                        <label for="id_code" class="block text-xs font-black uppercase tracking-widest text-slate-500">Verification Code</label>
-                        <input type="text" name="code" id="id_code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                               class="w-full px-4 py-4 bg-slate-50 dark:bg-slate-950 border-2 border-slate-100 dark:border-slate-800 rounded-2xl focus:ring-0 focus:border-indigo-500 dark:focus:border-indigo-500 text-center text-3xl font-black tracking-[0.3em] text-slate-900 dark:text-white transition-all"
-                               placeholder="000000" required autofocus autocomplete="one-time-code">
-                    </div>
-                    <button type="submit" 
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 dark:shadow-none transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-3"
-                            :disabled="loading">
-                        <span x-show="!loading">Enable 2FA</span>
-                        <span x-show="loading" x-cloak class="flex items-center gap-2">
-                            <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            Verifying...
-                        </span>
-                    </button>
-                </form>
-            </div>
-
-            <div class="bg-indigo-600 rounded-3xl p-8 text-white relative overflow-hidden group">
-                <div class="absolute top-0 right-0 p-4 opacity-20 transform translate-x-4 -translate-y-4 group-hover:translate-x-0 group-hover:translate-y-0 transition-transform duration-500">
-                    <svg class="w-32 h-32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                </div>
-                <h3 class="text-xl font-bold mb-2">Why use 2FA?</h3>
-                <p class="text-indigo-100 text-sm leading-relaxed mb-6">Passwords can be stolen. 2FA adds an extra layer of security that requires both something you know (password) and something you have (your phone).</p>
-                <div class="flex items-center gap-4">
-                    <span class="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest">Recommended</span>
-                </div>
-            </div>
-        </div>
+    {% if secret %}
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px">
+      <p style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.5px;text-transform:uppercase;margin:0 0 8px">
+        Can't scan? Enter this key manually:
+      </p>
+      <div style="display:flex;align-items:center;gap:10px">
+        <code style="font-family:monospace;font-size:14px;font-weight:700;color:#0f172a;letter-spacing:2px;flex:1;word-break:break-all">{{ secret }}</code>
+        <button type="button"
+                onclick="navigator.clipboard.writeText('{{ secret }}').then(() => { this.textContent='Copied!'; setTimeout(() => this.textContent='Copy', 2000); })"
+                style="flex-shrink:0;padding:6px 12px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;font-size:12px;font-weight:700;color:#6366f1;cursor:pointer;transition:all .2s;white-space:nowrap">
+          Copy
+        </button>
+      </div>
     </div>
+    {% endif %}
+  </div>
 
-    <div class="text-center">
-        <a href="{% url 'invoices:security_settings' %}" class="text-sm font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">Cancel and go back</a>
+  <!-- Step 3: Verify -->
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:36px;height:36px;border-radius:10px;background:#eef2ff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span style="font-size:14px;font-weight:800;color:#6366f1">3</span>
+      </div>
+      <h3 style="font-size:16px;font-weight:700;color:#0f172a;margin:0">Verify the code</h3>
     </div>
+    <p style="font-size:13.5px;color:#64748b;line-height:1.65;margin:0 0 20px">
+      Enter the 6-digit code from your authenticator app to confirm setup.
+    </p>
+
+    <form method="post"
+          @submit.prevent="submit"
+          id="mfa-setup-form"
+          aria-label="Verify MFA setup"
+          style="display:flex;flex-direction:column;gap:16px">
+      {% csrf_token %}
+
+      <div>
+        <label for="id_code" style="display:block;font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;letter-spacing:.3px">
+          Verification Code
+        </label>
+        <div style="display:flex;gap:8px;justify-content:center" role="group" aria-label="6-digit code">
+          <template x-for="(d, i) in digits" :key="i">
+            <input type="text"
+                   :id="i === 0 ? 'id_code' : 'otp-' + i"
+                   style="width:52px;height:60px;border-radius:12px;border:1.5px solid #e2e8f0;font-size:24px;font-weight:800;color:#0f172a;text-align:center;outline:none;font-family:monospace;transition:all .2s;background:#f8fafc"
+                   :style="digits[i] ? 'border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.1);background:#fff' : ''"
+                   inputmode="numeric"
+                   maxlength="1"
+                   pattern="[0-9]"
+                   x-model="digits[i]"
+                   @input="onInput(i, $event)"
+                   @keydown="onKey(i, $event)"
+                   @paste.prevent="onPaste($event)"
+                   :aria-label="'Digit ' + (i + 1)"
+                   :autofocus="i === 0">
+          </template>
+        </div>
+        <input type="hidden" name="code" :value="digits.join('')">
+        <p x-show="err" x-text="err" x-cloak role="alert"
+           style="margin-top:8px;font-size:12px;font-weight:600;color:#f87171;text-align:center"></p>
+      </div>
+
+      <button type="submit"
+              :disabled="loading || digits.join('').length < 6"
+              style="width:100%;padding:13px 24px;background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;border-radius:12px;color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(99,102,241,.3)"
+              :style="loading || digits.join('').length < 6 ? 'opacity:.6;cursor:not-allowed' : ''">
+        <span x-show="!loading">Enable Two-Factor Auth</span>
+        <span x-show="loading" x-cloak style="display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg style="animation:spin 0.75s linear infinite" width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.25)" stroke-width="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
+          Verifying…
+        </span>
+      </button>
+    </form>
+  </div>
 </div>
+
+<style>
+@keyframes spin { to { transform:rotate(360deg); } }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function mfaSetup() {
+  return {
+    digits: ['','','','','',''],
+    err: '',
+    loading: false,
+
+    onInput(i, e) {
+      const v = e.target.value.replace(/\D/g,'');
+      this.digits[i] = v.slice(-1);
+      if (v && i < 5) {
+        const next = document.getElementById(i === 0 ? 'otp-1' : 'otp-' + (i+1));
+        if (next) next.focus();
+      }
+    },
+
+    onKey(i, e) {
+      if (e.key === 'Backspace' && !this.digits[i] && i > 0) {
+        document.getElementById(i === 1 ? 'id_code' : 'otp-' + (i-1))?.focus();
+      }
+    },
+
+    onPaste(e) {
+      const t = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+      t.split('').forEach((c, i) => this.digits[i] = c);
+    },
+
+    submit() {
+      if (this.digits.join('').length < 6) { this.err = 'Please enter the full 6-digit code.'; return; }
+      this.err = '';
+      this.loading = true;
+      document.getElementById('mfa-setup-form').submit();
+    }
+  };
+}
+</script>
 {% endblock %}

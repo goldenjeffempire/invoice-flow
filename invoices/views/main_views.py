@@ -74,9 +74,8 @@ def signup_view(request):
                         request=request
                     )
                     if user:
-                        messages.success(request, message)
-                        # Ensure absolute redirect to prevent proxy issues
-                        return redirect('invoices:verification_sent')
+                        AuthService.complete_login(request, user)
+                        return redirect('invoices:onboarding_router')
                     else:
                         messages.error(request, message)
                 except Exception as e:
