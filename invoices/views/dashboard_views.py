@@ -406,7 +406,7 @@ def _get_quick_stats(workspace, today, start_of_month):
         ).count()
         recurring_value = RecurringSchedule.objects.filter(
             workspace=workspace, status='active'
-        ).aggregate(t=Coalesce(Sum('amount'), Decimal('0')))['t']
+        ).aggregate(t=Coalesce(Sum('base_amount'), Decimal('0')))['t']
 
         return {
             'total_clients': total_clients,
@@ -435,10 +435,10 @@ def _get_revenue_chart_data(workspace):
             .annotate(month=TruncMonth('paid_at'))
             .values('month')
             .annotate(total=Sum('total_amount'))
-            .order_by('month')
+            .order_by('-month')[:6]
         )
         labels, values = [], []
-        for entry in data[-6:]:
+        for entry in reversed(list(data)):
             labels.append(entry['month'].strftime('%b %Y'))
             values.append(float(entry['total']))
         return {'labels': labels, 'values': values}
