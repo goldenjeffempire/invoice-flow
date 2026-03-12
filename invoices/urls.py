@@ -73,6 +73,9 @@ urlpatterns = [
 
     # ── Dashboard ─────────────────────────────────────────────────────────────
     path("dashboard/", dashboard_views.dashboard_overview, name="dashboard"),
+    path("api/dashboard/kpis/",    dashboard_views.dashboard_kpis_api,   name="dashboard_kpis_api"),
+    path("api/dashboard/alerts/",  dashboard_views.dashboard_alerts_api, name="dashboard_alerts_api"),
+    path("api/dashboard/charts/",  dashboard_views.dashboard_chart_api,  name="dashboard_chart_api"),
     path("activity/", ux_views.activity_timeline, name="activity_timeline"),
     path("api/search/", ux_views.global_search, name="global_search_api"),
     path("notifications/mark-read/<int:pk>/", ux_views.mark_notification_read, name="mark_notification_read"),
