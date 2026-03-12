@@ -1,483 +1,484 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" class="h-full"
-  x-data="{
-    darkMode: localStorage.getItem('theme') === 'dark',
-    sidebarOpen: false,
-    sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
-    searchOpen: false,
-    notificationsOpen: false,
-    init() {
-      this.$watch('darkMode', v => {
-        localStorage.setItem('theme', v ? 'dark' : 'light');
-        document.documentElement.classList.toggle('dark', v);
-      });
-      this.$watch('sidebarCollapsed', v => localStorage.setItem('sidebarCollapsed', v));
-      document.documentElement.classList.toggle('dark', this.darkMode);
-    }
-  }"
-  :class="darkMode ? 'dark' : ''">
+<html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}InvoiceFlow{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}InvoiceFlow — Professional Invoicing Platform{% endblock %}">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&display=swap" rel="stylesheet">
+  <link rel="icon" href="{% url 'favicon' %}">
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
           colors: {
             brand: {
-              50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe',
-              300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1',
-              600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81',
+              50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',
+              400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',
+              800:'#3730a3',900:'#312e81',950:'#1e1b4b',
             }
-          },
-          transitionProperty: { 'width': 'width' }
+          }
         }
       }
     }
   </script>
   <style>
-    [x-cloak] { display: none !important; }
-    * { box-sizing: border-box; }
+    *,*::before,*::after{box-sizing:border-box}
+    [x-cloak]{display:none!important}
+    html,body{height:100%;margin:0}
+    body{font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 
-    /* Smooth sidebar width transition */
-    .sidebar-transition { transition: width 0.2s ease; }
-    .content-transition { transition: padding-left 0.2s ease; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
-    .dark ::-webkit-scrollbar-thumb { background: #334155; }
-
-    /* Topbar glass effect */
-    .topbar {
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      background: rgba(255,255,255,0.92);
-      border-bottom: 1px solid #e2e8f0;
+    :root{
+      --sb:256px;--sc:64px;--tb:60px;
+      --anim:220ms cubic-bezier(0.4,0,0.2,1);
+      --sb-bg:#ffffff;--sb-bd:#e2e8f0;--sb-tx:#475569;--sb-mu:#94a3b8;
+      --sb-hv:#f8fafc;--sb-ab:#eef2ff;--sb-ac:#4f46e5;
+      --tb-bg:rgba(255,255,255,0.92);--tb-bd:#e2e8f0;
     }
-    .dark .topbar {
-      background: rgba(15,23,42,0.92);
-      border-bottom-color: #1e293b;
+    .dark{
+      --sb-bg:#0f172a;--sb-bd:#1e293b;--sb-tx:#94a3b8;--sb-mu:#475569;
+      --sb-hv:#1e293b;--sb-ab:rgba(99,102,241,0.12);--sb-ac:#818cf8;
+      --tb-bg:rgba(15,23,42,0.92);--tb-bd:#1e293b;
     }
+
+    /* Layout */
+    .l-shell{display:flex;height:100vh;overflow:hidden}
+
+    /* Sidebar */
+    .l-sb{
+      position:fixed;top:0;left:0;bottom:0;z-index:40;
+      width:var(--sb);display:flex;flex-direction:column;
+      background:var(--sb-bg);border-right:1px solid var(--sb-bd);
+      transition:width var(--anim),transform var(--anim);overflow:hidden;
+    }
+    .l-sb.is-col{width:var(--sc)}
+    @media(max-width:1023px){
+      .l-sb{transform:translateX(-100%);width:var(--sb)!important;box-shadow:0 25px 50px rgba(0,0,0,0.25)}
+      .l-sb.is-mob{transform:translateX(0)}
+    }
+
+    /* Sidebar header */
+    .sb-hd{
+      display:flex;align-items:center;gap:10px;
+      padding:0 16px;height:var(--tb);
+      border-bottom:1px solid var(--sb-bd);flex-shrink:0;
+    }
+    .sb-icon{
+      width:32px;height:32px;border-radius:9px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    }
+    .sb-name{
+      font-size:14px;font-weight:800;letter-spacing:-0.4px;
+      color:#0f172a;white-space:nowrap;
+      transition:opacity var(--anim),width var(--anim);
+    }
+    .dark .sb-name{color:#f1f5f9}
+    .l-sb.is-col .sb-name{opacity:0;width:0;overflow:hidden}
+
+    /* Collapse toggle */
+    .sb-tog{
+      margin-left:auto;flex-shrink:0;width:28px;height:28px;
+      border-radius:7px;display:none;align-items:center;justify-content:center;
+      border:1px solid var(--sb-bd);background:transparent;cursor:pointer;
+      color:#64748b;transition:background 0.15s,color 0.15s;
+    }
+    .sb-tog:hover{background:var(--sb-hv);color:#0f172a}
+    .dark .sb-tog:hover{color:#f1f5f9}
+    @media(min-width:1024px){.sb-tog{display:flex}}
+
+    /* Nav */
+    .sb-nav{
+      flex:1;overflow-y:auto;overflow-x:hidden;padding:6px 8px 0;
+      scrollbar-width:thin;scrollbar-color:transparent transparent;
+    }
+    .sb-nav:hover{scrollbar-color:#cbd5e1 transparent}
+    .dark .sb-nav:hover{scrollbar-color:#334155 transparent}
+    .sb-nav::-webkit-scrollbar{width:3px}
+    .sb-nav::-webkit-scrollbar-thumb{background:transparent;border-radius:99px}
+    .sb-nav:hover::-webkit-scrollbar-thumb{background:#cbd5e1}
+    .dark .sb-nav:hover::-webkit-scrollbar-thumb{background:#334155}
+
+    /* Nav group label */
+    .nv-grp{
+      font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+      color:var(--sb-mu);padding:14px 8px 4px;white-space:nowrap;
+      transition:opacity var(--anim);
+    }
+    .l-sb.is-col .nv-grp{opacity:0}
 
     /* Nav item */
-    .nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 10px; border-radius: 8px;
-      font-size: 13.5px; font-weight: 500;
-      color: #64748b;
-      transition: background 0.15s, color 0.15s;
-      white-space: nowrap; overflow: hidden;
-      cursor: pointer; text-decoration: none;
+    .nv-it{
+      display:flex;align-items:center;gap:10px;
+      padding:8px 10px;border-radius:9px;margin-bottom:1px;
+      font-size:13.5px;font-weight:500;color:var(--sb-tx);
+      text-decoration:none;cursor:pointer;white-space:nowrap;overflow:hidden;
+      transition:background 0.15s,color 0.15s;position:relative;
     }
-    .nav-item:hover { background: #f1f5f9; color: #0f172a; }
-    .dark .nav-item { color: #94a3b8; }
-    .dark .nav-item:hover { background: #1e293b; color: #f1f5f9; }
-    .nav-item.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
-    .dark .nav-item.active { background: rgba(99,102,241,0.12); color: #818cf8; }
-    .nav-item svg { flex-shrink: 0; width: 18px; height: 18px; }
+    .nv-it:hover{background:var(--sb-hv);color:#0f172a}
+    .dark .nv-it:hover{color:#f1f5f9}
+    .nv-it.act{background:var(--sb-ab);color:var(--sb-ac);font-weight:600}
+    .nv-ic{width:18px;height:18px;flex-shrink:0}
+    .nv-lb{flex:1;overflow:hidden;text-overflow:ellipsis;transition:opacity var(--anim)}
+    .l-sb.is-col .nv-lb{opacity:0}
 
-    /* Section label */
-    .nav-section {
-      font-size: 10px; font-weight: 700; letter-spacing: .08em;
-      text-transform: uppercase; color: #94a3b8; padding: 12px 10px 4px;
+    /* Tooltip */
+    .l-sb.is-col .nv-it[data-tip]::after{
+      content:attr(data-tip);
+      position:absolute;left:calc(var(--sc) + 8px);top:50%;transform:translateY(-50%);
+      background:#1e293b;color:#f8fafc;font-size:12px;font-weight:500;
+      padding:5px 10px;border-radius:7px;white-space:nowrap;
+      pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:100;
     }
-    .dark .nav-section { color: #475569; }
+    .l-sb.is-col .nv-it[data-tip]:hover::after{opacity:1}
 
     /* Badge */
-    .nav-badge {
-      margin-left: auto; flex-shrink: 0;
-      padding: 1px 7px; border-radius: 99px;
-      font-size: 10px; font-weight: 700;
-      background: #f1f5f9; color: #64748b;
+    .nv-bd{
+      flex-shrink:0;margin-left:auto;padding:1px 6px;border-radius:99px;
+      font-size:10px;font-weight:700;background:#f1f5f9;color:#64748b;
+      transition:opacity var(--anim);
     }
-    .dark .nav-badge { background: #1e293b; color: #94a3b8; }
-    .nav-item.active .nav-badge { background: #c7d2fe; color: #4338ca; }
-    .dark .nav-item.active .nav-badge { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+    .dark .nv-bd{background:#1e293b;color:#94a3b8}
+    .nv-it.act .nv-bd{background:#c7d2fe;color:#4338ca}
+    .dark .nv-it.act .nv-bd{background:rgba(99,102,241,0.2);color:#a5b4fc}
+    .nv-bd.red{background:#fee2e2;color:#dc2626}
+    .dark .nv-bd.red{background:rgba(220,38,38,0.12);color:#f87171}
+    .l-sb.is-col .nv-bd{opacity:0}
 
-    /* Overdue badge */
-    .badge-danger { background: #fee2e2; color: #dc2626; }
-    .dark .badge-danger { background: rgba(220,38,38,0.15); color: #f87171; }
+    /* Sidebar footer */
+    .sb-ft{border-top:1px solid var(--sb-bd);padding:8px;flex-shrink:0}
 
-    /* KPI card pulse ring */
-    @keyframes pulse-ring { 0% { transform: scale(0.9); opacity: 0.6; } 100% { transform: scale(1.4); opacity: 0; } }
-    .pulse-ring::after {
-      content: ''; position: absolute; inset: 0;
-      border-radius: inherit; border: 2px solid currentColor;
-      animation: pulse-ring 2s ease-out infinite;
+    /* Pill button (workspace/user) */
+    .pill{
+      display:flex;align-items:center;gap:8px;padding:8px 10px;
+      border-radius:9px;cursor:pointer;width:100%;border:none;
+      background:transparent;text-align:left;overflow:hidden;
+      transition:background 0.15s;
+    }
+    .pill:hover{background:var(--sb-hv)}
+
+    /* Main column */
+    .l-main{
+      flex:1;min-width:0;display:flex;flex-direction:column;
+      margin-left:var(--sb);transition:margin-left var(--anim);
+    }
+    .l-main.is-col{margin-left:var(--sc)}
+    @media(max-width:1023px){.l-main{margin-left:0!important}}
+
+    /* Topbar */
+    .l-tb{
+      position:sticky;top:0;z-index:30;height:var(--tb);flex-shrink:0;
+      display:flex;align-items:center;gap:10px;padding:0 20px;
+      background:var(--tb-bg);border-bottom:1px solid var(--tb-bd);
+      backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
     }
 
-    /* Search shortcut */
-    kbd {
-      display: inline-flex; align-items: center; justify-content: center;
-      font-family: inherit; font-size: 11px; font-weight: 600;
-      background: #f1f5f9; color: #475569;
-      border: 1px solid #e2e8f0; border-bottom-width: 2px;
-      border-radius: 5px; padding: 1px 6px;
+    /* Topbar button */
+    .tb-btn{
+      display:flex;align-items:center;justify-content:center;
+      width:36px;height:36px;border-radius:9px;border:none;
+      background:transparent;cursor:pointer;position:relative;
+      color:#64748b;transition:background 0.15s,color 0.15s;flex-shrink:0;
     }
-    .dark kbd { background: #1e293b; color: #94a3b8; border-color: #334155; }
+    .tb-btn:hover{background:#f1f5f9;color:#0f172a}
+    .dark .tb-btn{color:#94a3b8}
+    .dark .tb-btn:hover{background:#1e293b;color:#f1f5f9}
+    .n-dot{
+      position:absolute;top:7px;right:7px;
+      width:8px;height:8px;border-radius:50%;
+      background:#ef4444;border:2px solid var(--tb-bg);
+    }
+
+    /* Page content */
+    .l-cnt{flex:1;overflow-y:auto;padding:24px 24px 48px}
+    @media(max-width:639px){.l-cnt{padding:16px 16px 36px}}
+
+    /* Dropdown */
+    .dd{
+      position:absolute;right:0;top:calc(100% + 8px);min-width:220px;
+      background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.14),0 4px 12px rgba(0,0,0,0.06);
+      z-index:60;overflow:hidden;
+    }
+    .dark .dd{background:#1e293b;border-color:#334155;box-shadow:0 20px 60px rgba(0,0,0,0.45)}
+
+    /* Mobile overlay */
+    .mob-ov{position:fixed;inset:0;z-index:39;background:rgba(0,0,0,0.48);backdrop-filter:blur(2px)}
+
+    /* Search palette */
+    .srch-sh{
+      position:fixed;inset:0;z-index:70;
+      display:flex;align-items:flex-start;justify-content:center;
+      padding:80px 16px 0;
+    }
+    .srch-bd{position:absolute;inset:0;background:rgba(15,23,42,0.55);backdrop-filter:blur(4px)}
+    .srch-pn{
+      position:relative;width:100%;max-width:580px;
+      background:#ffffff;border:1px solid #e2e8f0;
+      border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,0.28);overflow:hidden;
+    }
+    .dark .srch-pn{background:#1e293b;border-color:#334155}
+
+    kbd{
+      display:inline-flex;align-items:center;justify-content:center;
+      font-family:inherit;font-size:11px;font-weight:600;
+      background:#f1f5f9;color:#475569;
+      border:1px solid #e2e8f0;border-bottom-width:2px;
+      border-radius:5px;padding:1px 6px;line-height:1.6;
+    }
+    .dark kbd{background:#1e293b;color:#94a3b8;border-color:#334155}
+
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-track{background:transparent}
+    ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
+    .dark ::-webkit-scrollbar-thumb{background:#334155}
   </style>
   {% block head %}{% endblock %}
 </head>
-<body class="h-full bg-slate-50 dark:bg-slate-950 font-sans antialiased text-slate-900 dark:text-slate-100">
 
-<!-- ============================================================
-     GLOBAL SEARCH MODAL  (⌘K)
-============================================================ -->
-<div x-show="searchOpen" x-cloak
-     class="fixed inset-0 z-[200] flex items-start justify-center pt-[12vh] px-4"
-     @keydown.window.escape="searchOpen = false"
-     @keydown.window.k.prevent.meta="searchOpen = true; $nextTick(() => $refs.searchInput?.focus())"
-     @keydown.window.k.prevent.ctrl="searchOpen = true; $nextTick(() => $refs.searchInput?.focus())"
-     x-data="{
-       q: '', results: [], loading: false, idx: -1,
-       grouped() {
-         const g = {};
-         this.results.forEach(r => { if (!g[r.type]) g[r.type] = []; g[r.type].push(r); });
-         return Object.entries(g);
-       },
-       search(v) {
-         if (!v || v.length < 2) { this.results = []; return; }
-         this.loading = true;
-         fetch('/api/search/?q=' + encodeURIComponent(v))
-           .then(r => r.json())
-           .then(d => { this.results = d.results || []; this.loading = false; this.idx = -1; })
-           .catch(() => { this.loading = false; });
-       },
-       nav(e) {
-         const n = this.results.length;
-         if (!n) return;
-         if (e.key === 'ArrowDown') this.idx = (this.idx + 1) % n;
-         else if (e.key === 'ArrowUp') this.idx = (this.idx - 1 + n) % n;
-         else if (e.key === 'Enter' && this.idx >= 0) window.location = this.results[this.idx].url;
-       }
-     }">
-  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="searchOpen = false"></div>
-  <div class="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/5 overflow-hidden"
-       @keydown="nav($event)">
-    <!-- Input -->
-    <div class="flex items-center gap-3 px-4 border-b border-slate-100 dark:border-slate-800">
-      <svg class="w-4.5 h-4.5 text-slate-400 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
-      </svg>
-      <input x-ref="searchInput" x-model="q" type="text"
-             class="h-14 flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
-             placeholder="Search invoices, clients, expenses…"
-             @input.debounce.250ms="search(q)" @keydown.stop>
-      <div x-show="loading" class="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-      <kbd class="hidden sm:flex" @click="searchOpen = false">Esc</kbd>
-    </div>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 antialiased"
+      x-data="appShell()"
+      x-init="boot()"
+      :class="dark?'dark':''">
 
-    <!-- Results -->
-    <div class="max-h-96 overflow-y-auto" x-show="results.length > 0">
-      <template x-for="[type, items] in grouped()" :key="type">
-        <div class="py-1">
-          <p class="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500" x-text="type + 's'"></p>
-          <template x-for="(r, i) in items" :key="r.url">
-            <a :href="r.url"
-               :class="results.indexOf(r) === idx ? 'bg-brand-50 dark:bg-brand-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'"
-               class="flex items-center gap-3 px-4 py-2.5 transition-colors group">
-              <div :class="{
-                'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400': type === 'invoice',
-                'bg-blue-100 dark:bg-blue-900/30 text-blue-600': type === 'client',
-                'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600': type === 'payment',
-                'bg-orange-100 dark:bg-orange-900/30 text-orange-600': type === 'expense',
-                'bg-violet-100 dark:bg-violet-900/30 text-violet-600': type === 'estimate',
-                'bg-slate-100 dark:bg-slate-800 text-slate-500': !['invoice','client','payment','expense','estimate'].includes(type),
-              }" class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
-                <template x-if="type === 'invoice'"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></template>
-                <template x-if="type === 'client'"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg></template>
-                <template x-if="type === 'expense'"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg></template>
-                <template x-if="type === 'estimate'"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></template>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate" x-text="r.title"></p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 truncate" x-text="r.meta"></p>
-              </div>
-              <svg class="w-4 h-4 text-slate-300 group-hover:text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-            </a>
-          </template>
-        </div>
-      </template>
-    </div>
-
-    <!-- Empty / Prompt -->
-    <div x-show="!results.length && !loading" class="px-4 py-8 text-center">
-      <template x-if="q.length >= 2">
-        <div>
-          <svg class="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">No results for "<span x-text="q"></span>"</p>
-          <p class="text-xs text-slate-400 mt-1">Try a different term</p>
-        </div>
-      </template>
-      <template x-if="q.length < 2">
-        <div class="space-y-3">
-          <p class="text-xs text-slate-400 mb-3">Quick access</p>
-          <div class="flex flex-wrap gap-2 justify-center">
-            <a href="{% url 'invoices:invoice_create' %}" @click="searchOpen=false" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-brand-100 hover:text-brand-700 transition-colors"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>New Invoice</a>
-            <a href="{% url 'invoices:client_create' %}" @click="searchOpen=false" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-blue-100 hover:text-blue-700 transition-colors"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>New Client</a>
-            <a href="{% url 'invoices:estimate_create' %}" @click="searchOpen=false" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-violet-100 hover:text-violet-700 transition-colors"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>New Estimate</a>
-          </div>
-        </div>
-      </template>
-    </div>
-
-    <!-- Footer -->
-    <div class="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-      <div class="flex items-center gap-3 text-[11px] text-slate-400 dark:text-slate-500">
-        <span class="flex items-center gap-1"><kbd>↑↓</kbd> navigate</span>
-        <span class="flex items-center gap-1"><kbd>↵</kbd> open</span>
-        <span class="flex items-center gap-1"><kbd>Esc</kbd> close</span>
-      </div>
-      <span x-show="results.length" class="text-[11px] text-slate-400" x-text="results.length + ' results'"></span>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================
-     MOBILE SIDEBAR BACKDROP
-============================================================ -->
-<div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false"
-     class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden"
-     x-transition:enter="transition ease-out duration-200"
+<!-- Mobile overlay -->
+<div x-show="mob" x-cloak class="mob-ov lg:hidden" @click="mob=false"
+     x-transition:enter="transition duration-200"
      x-transition:enter-start="opacity-0"
      x-transition:enter-end="opacity-100"
-     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave="transition duration-150"
      x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0">
-</div>
+     x-transition:leave-end="opacity-0"></div>
 
-<!-- ============================================================
-     SIDEBAR
-============================================================ -->
-<aside
-  :class="[
-    sidebarOpen ? 'translate-x-0' : '-translate-x-full',
-    sidebarCollapsed ? 'lg:w-16' : 'lg:w-64',
-    'lg:translate-x-0'
-  ]"
-  class="sidebar-transition fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="l-sb" :class="{'is-col':col,'is-mob':mob}">
 
-  <!-- Logo -->
-  <div class="h-14 flex items-center px-3 border-b border-slate-100 dark:border-slate-800 flex-shrink-0 gap-3 overflow-hidden">
-    <div class="w-8 h-8 flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-sm">
-      <svg class="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+  <!-- Header -->
+  <div class="sb-hd">
+    <a href="{% url 'invoices:dashboard' %}" class="sb-icon">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+        <path d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 4v4h4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-    </div>
-    <span x-show="!sidebarCollapsed" x-cloak class="text-[15px] font-bold text-slate-900 dark:text-white tracking-tight truncate">InvoiceFlow</span>
-  </div>
-
-  <!-- Workspace Switcher -->
-  {% if workspace %}
-  <div class="px-2 py-2 border-b border-slate-100 dark:border-slate-800 flex-shrink-0" x-data="{ wsOpen: false }">
-    <button @click="if(!sidebarCollapsed) wsOpen = !wsOpen"
-            :title="sidebarCollapsed ? '{{ workspace.name }}' : ''"
-            class="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors overflow-hidden">
-      <div class="w-7 h-7 flex-shrink-0 rounded-md bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white text-xs font-bold">
-        {{ workspace.name|first|upper }}
-      </div>
-      <div x-show="!sidebarCollapsed" x-cloak class="flex-1 min-w-0 text-left">
-        <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">{{ workspace.name }}</p>
-        <p class="text-[10px] text-slate-400 uppercase tracking-wider">Workspace</p>
-      </div>
-      <svg x-show="!sidebarCollapsed" x-cloak :class="wsOpen ? 'rotate-180' : ''" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+    </a>
+    <span class="sb-name">InvoiceFlow</span>
+    <button class="sb-tog" @click="col=!col" :title="col?'Expand':'Collapse'">
+      <svg x-show="!col" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+      </svg>
+      <svg x-show="col" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
       </svg>
     </button>
-    <div x-show="wsOpen && !sidebarCollapsed" x-cloak @click.away="wsOpen = false"
-         x-transition:enter="transition ease-out duration-100"
-         x-transition:enter-start="opacity-0 -translate-y-1"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         class="mt-1 rounded-lg border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden">
-      {% for ws in user_workspaces %}{% if ws.id != workspace.id %}
-      <a href="{% url 'invoices:switch_workspace' ws.id %}"
-         class="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-        <div class="w-6 h-6 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold">{{ ws.name|first|upper }}</div>
-        {{ ws.name }}
-      </a>
-      {% endif %}{% endfor %}
-      <a href="{% url 'invoices:workspace_create' %}"
-         class="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-brand-600 dark:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors border-t border-slate-100 dark:border-slate-800">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-        New Workspace
-      </a>
+  </div>
+
+  <!-- Workspace switcher -->
+  {% if workspace %}
+  <div class="px-2 py-2" style="border-bottom:1px solid var(--sb-bd)">
+    <div x-data="{wso:false}" class="relative">
+      <button @click="wso=!wso" class="pill" data-tip="{{ workspace.name }}">
+        <div class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0"
+             style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+          {{ workspace.name|slice:":1"|upper }}
+        </div>
+        <div class="nv-lb">
+          <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate leading-tight">{{ workspace.name }}</p>
+          <p class="text-[10px] text-slate-400 leading-tight mt-0.5">Workspace</p>
+        </div>
+        <svg x-show="!col" x-cloak class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+        </svg>
+      </button>
+      {% if user_workspaces|length > 1 %}
+      <div x-show="wso" x-cloak @click.outside="wso=false"
+           x-transition:enter="transition ease-out duration-150"
+           x-transition:enter-start="opacity-0 scale-95"
+           x-transition:enter-end="opacity-100 scale-100"
+           x-transition:leave="transition duration-100"
+           x-transition:leave-start="opacity-100 scale-100"
+           x-transition:leave-end="opacity-0 scale-95"
+           class="dd" style="left:0;right:0;top:calc(100% + 4px);min-width:0">
+        <div class="p-1.5">
+          <p class="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Switch workspace</p>
+          {% for ws in user_workspaces %}
+          <a href="{% url 'invoices:switch_workspace' ws.id %}"
+             class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors {% if ws == workspace %}bg-brand-50 dark:bg-brand-900/20{% endif %}">
+            <div class="w-6 h-6 rounded-md text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0"
+                 style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+              {{ ws.name|slice:":1"|upper }}
+            </div>
+            <span class="text-xs font-medium text-slate-700 dark:text-slate-200 truncate flex-1">{{ ws.name }}</span>
+            {% if ws == workspace %}
+            <svg class="w-3 h-3 text-brand-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
   {% endif %}
 
-  <!-- Navigation -->
-  <nav class="flex-1 overflow-y-auto py-2 px-2 space-y-0.5">
+  <!-- Nav -->
+  <nav class="sb-nav">
 
-    <!-- Dashboard -->
-    <a href="{% url 'invoices:dashboard' %}"
-       :title="sidebarCollapsed ? 'Dashboard' : ''"
-       class="nav-item {% if request.path == '/dashboard/' %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 13a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6z"/>
+    <p class="nv-grp">Main</p>
+
+    <a href="{% url 'invoices:dashboard' %}" data-tip="Dashboard"
+       class="nv-it {% if request.resolver_match.url_name == 'dashboard' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Dashboard</span>
+      <span class="nv-lb">Dashboard</span>
     </a>
 
-    <!-- Finance Group -->
-    <div x-show="!sidebarCollapsed" x-cloak class="nav-section">Finance</div>
-    <div x-show="sidebarCollapsed" class="my-2 border-t border-slate-100 dark:border-slate-800"></div>
-
-    <a href="{% url 'invoices:invoice_list' %}"
-       :title="sidebarCollapsed ? 'Invoices' : ''"
-       class="nav-item {% if '/invoices' in request.path and '/add-expenses' not in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    <a href="{% url 'invoices:invoice_list' %}" data-tip="Invoices"
+       class="nv-it {% if 'invoice' in request.resolver_match.url_name|default:'' and 'estimate' not in request.resolver_match.url_name|default:'' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 4v4h4"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Invoices</span>
-      {% if invoices_count and not sidebarCollapsed %}<span x-show="!sidebarCollapsed" x-cloak class="nav-badge">{{ invoices_count }}</span>{% endif %}
+      <span class="nv-lb">Invoices</span>
+      {% if overdue_count %}<span class="nv-bd red">{{ overdue_count }}</span>
+      {% elif invoices_count %}<span class="nv-bd">{{ invoices_count }}</span>{% endif %}
     </a>
 
-    <a href="{% url 'invoices:estimate_list' %}"
-       :title="sidebarCollapsed ? 'Estimates' : ''"
-       class="nav-item {% if '/estimates/' in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+    <a href="{% url 'invoices:estimate_list' %}" data-tip="Estimates"
+       class="nv-it {% if 'estimate' in request.resolver_match.url_name|default:'' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Estimates</span>
+      <span class="nv-lb">Estimates</span>
     </a>
 
-    <a href="{% url 'invoices:payment_overview' %}"
-       :title="sidebarCollapsed ? 'Payments' : ''"
-       class="nav-item {% if '/payments/' in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+    <a href="{% url 'invoices:client_list' %}" data-tip="Clients"
+       class="nv-it {% if 'client' in request.resolver_match.url_name|default:'' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Payments</span>
+      <span class="nv-lb">Clients</span>
+      {% if clients_count %}<span class="nv-bd">{{ clients_count }}</span>{% endif %}
     </a>
 
-    <a href="{% url 'invoices:expense_list' %}"
-       :title="sidebarCollapsed ? 'Expenses' : ''"
-       class="nav-item {% if '/expenses/' in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/>
+    <p class="nv-grp">Finance</p>
+
+    <a href="{% url 'invoices:expense_list' %}" data-tip="Expenses"
+       class="nv-it {% if 'expense' in request.resolver_match.url_name|default:'' or 'vendor' in request.resolver_match.url_name|default:'' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Expenses</span>
+      <span class="nv-lb">Expenses</span>
     </a>
 
-    <!-- Clients & Growth -->
-    <div x-show="!sidebarCollapsed" x-cloak class="nav-section">Clients</div>
-    <div x-show="sidebarCollapsed" class="my-2 border-t border-slate-100 dark:border-slate-800"></div>
-
-    <a href="{% url 'invoices:client_list' %}"
-       :title="sidebarCollapsed ? 'Clients' : ''"
-       class="nav-item {% if '/clients/' in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+    <a href="{% url 'invoices:payment_history' %}" data-tip="Payments"
+       class="nv-it {% if 'payment' in request.resolver_match.url_name|default:'' and 'portal' not in request.resolver_match.url_name|default:'' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Clients</span>
-      {% if clients_count %}<span x-show="!sidebarCollapsed" x-cloak class="nav-badge">{{ clients_count }}</span>{% endif %}
+      <span class="nv-lb">Payments</span>
     </a>
 
-    <a href="{% url 'invoices:schedule_list' %}"
-       :title="sidebarCollapsed ? 'Recurring' : ''"
-       class="nav-item {% if '/recurring/' in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+    <a href="{% url 'invoices:recurring_list' %}" data-tip="Recurring"
+       class="nv-it {% if 'recurring' in request.resolver_match.url_name|default:'' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Recurring</span>
+      <span class="nv-lb">Recurring</span>
     </a>
 
-    <!-- Analytics -->
-    <div x-show="!sidebarCollapsed" x-cloak class="nav-section">Analytics</div>
-    <div x-show="sidebarCollapsed" class="my-2 border-t border-slate-100 dark:border-slate-800"></div>
+    <p class="nv-grp">Analytics</p>
 
-    <a href="{% url 'invoices:reports_home' %}"
-       :title="sidebarCollapsed ? 'Reports' : ''"
-       class="nav-item {% if '/reports/' in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+    <a href="{% url 'invoices:reports_home' %}" data-tip="Reports"
+       class="nv-it {% if 'report' in request.resolver_match.url_name|default:'' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Reports</span>
+      <span class="nv-lb">Reports</span>
     </a>
 
-    <!-- System -->
-    <div x-show="!sidebarCollapsed" x-cloak class="nav-section">System</div>
-    <div x-show="sidebarCollapsed" class="my-2 border-t border-slate-100 dark:border-slate-800"></div>
+    <p class="nv-grp">Account</p>
 
-    <a href="{% url 'invoices:activity_timeline' %}"
-       :title="sidebarCollapsed ? 'Activity Log' : ''"
-       class="nav-item {% if '/activity/' in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    <a href="{% url 'invoices:settings' %}" data-tip="Settings"
+       class="nv-it {% if request.resolver_match.url_name == 'settings' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Activity Log</span>
+      <span class="nv-lb">Settings</span>
     </a>
 
-    <a href="{% url 'invoices:settings' %}"
-       :title="sidebarCollapsed ? 'Settings' : ''"
-       class="nav-item {% if '/settings/' in request.path %}active{% endif %}">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+    <a href="{% url 'invoices:security' %}" data-tip="Security"
+       class="nv-it {% if request.resolver_match.url_name == 'security' %}act{% endif %}">
+      <svg class="nv-ic" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75"
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
       </svg>
-      <span x-show="!sidebarCollapsed" x-cloak>Settings</span>
+      <span class="nv-lb">Security</span>
     </a>
+
+    <div class="pb-3"></div>
   </nav>
 
-  <!-- Sidebar Footer -->
-  <div class="flex-shrink-0 border-t border-slate-100 dark:border-slate-800 p-2 space-y-0.5">
-    <!-- Dark mode toggle -->
-    <button @click="darkMode = !darkMode"
-            :title="sidebarCollapsed ? (darkMode ? 'Light Mode' : 'Dark Mode') : ''"
-            class="nav-item w-full text-left">
-      <svg x-show="!darkMode" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-      </svg>
-      <svg x-show="darkMode" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 5a7 7 0 100 14 7 7 0 000-14z"/>
-      </svg>
-      <span x-show="!sidebarCollapsed" x-cloak x-text="darkMode ? 'Light Mode' : 'Dark Mode'"></span>
-    </button>
-
-    <!-- User profile -->
-    <div class="relative" x-data="{ open: false }">
-      <button @click="open = !open"
-              :title="sidebarCollapsed ? '{{ user.get_full_name|default:user.username }}' : ''"
-              class="nav-item w-full text-left">
-        <div class="w-[18px] h-[18px] rounded-full bg-brand-600 flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0">
-          {{ user.username|first|upper }}
+  <!-- Footer: User -->
+  <div class="sb-ft">
+    <div x-data="{uo:false}" class="relative">
+      <button @click="uo=!uo" class="pill" data-tip="{{ request.user.get_full_name|default:request.user.username }}">
+        <div class="w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0"
+             style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">
+          {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
         </div>
-        <div x-show="!sidebarCollapsed" x-cloak class="flex-1 min-w-0">
-          <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">{{ user.get_full_name|default:user.username }}</p>
-          <p class="text-[10px] text-slate-400 truncate leading-tight">{{ user.email }}</p>
+        <div class="nv-lb">
+          <p class="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate leading-tight">{{ request.user.get_full_name|default:request.user.username }}</p>
+          <p class="text-[10px] text-slate-400 truncate leading-tight mt-0.5">{{ request.user.email }}</p>
         </div>
-        <svg x-show="!sidebarCollapsed" x-cloak class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+        <svg x-show="!col" x-cloak class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+        </svg>
       </button>
-
-      <div x-show="open" @click.away="open = false" x-cloak
+      <div x-show="uo" x-cloak @click.outside="uo=false"
            x-transition:enter="transition ease-out duration-150"
-           x-transition:enter-start="opacity-0 translate-y-1"
-           x-transition:enter-end="opacity-100 translate-y-0"
-           class="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-slate-900 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/5 overflow-hidden">
-        <div class="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
-          <p class="text-xs font-bold text-slate-900 dark:text-white truncate">{{ user.get_full_name|default:user.username }}</p>
-          <p class="text-[10px] text-slate-400 truncate">{{ user.email }}</p>
-        </div>
-        <a href="{% url 'invoices:settings' %}" class="flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-          Profile & Settings
-        </a>
-        <a href="{% url 'invoices:security_settings' %}" class="flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-          Security
-        </a>
-        <div class="border-t border-slate-100 dark:border-slate-800">
-          <a href="{% url 'invoices:logout' %}" class="flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+           x-transition:enter-start="opacity-0 scale-95"
+           x-transition:enter-end="opacity-100 scale-100"
+           x-transition:leave="transition duration-100"
+           x-transition:leave-start="opacity-100 scale-100"
+           x-transition:leave-end="opacity-0 scale-95"
+           class="dd" style="bottom:100%;top:auto;margin-bottom:8px;left:0;right:0;min-width:0">
+        <div class="p-1.5">
+          <div class="px-2.5 py-2 mb-1">
+            <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">{{ request.user.get_full_name|default:request.user.username }}</p>
+            <p class="text-[10px] text-slate-400 truncate">{{ request.user.email }}</p>
+          </div>
+          <hr class="border-slate-100 dark:border-slate-700 mb-1">
+          <a href="{% url 'invoices:settings' %}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 transition-colors">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            Profile & Settings
+          </a>
+          <a href="{% url 'invoices:security' %}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 transition-colors">
+            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            Security & MFA
+          </a>
+          <hr class="border-slate-100 dark:border-slate-700 my-1">
+          <a href="{% url 'invoices:logout' %}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 text-xs text-rose-600 dark:text-rose-400 transition-colors">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
             Sign Out
           </a>
@@ -487,262 +488,326 @@
   </div>
 </aside>
 
-<!-- ============================================================
-     MAIN CONTENT AREA
-============================================================ -->
-<div :class="sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'"
-     class="content-transition flex flex-col min-h-screen">
+<!-- ═══ MAIN ═══ -->
+<div class="l-main" :class="{'is-col':col}">
 
-  <!-- TOP BAR -->
-  <header class="topbar sticky top-0 z-30 h-14 flex items-center gap-3 px-4 sm:px-6">
-    <!-- Mobile hamburger / Desktop sidebar toggle -->
-    <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-    </button>
-    <button @click="sidebarCollapsed = !sidebarCollapsed" class="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
-            :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-      <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path x-show="!sidebarCollapsed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
-        <path x-show="sidebarCollapsed" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
+  <!-- Topbar -->
+  <header class="l-tb">
+
+    <button @click="mob=!mob" class="tb-btn lg:hidden" aria-label="Menu">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
       </svg>
     </button>
 
-    <!-- Search trigger -->
-    <button @click="searchOpen = true"
-            class="flex-1 flex items-center gap-2 px-3 py-2 max-w-sm bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition-colors text-sm">
-      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <span class="flex-1 text-left truncate">Search…</span>
-      <kbd class="hidden sm:flex">⌘K</kbd>
-    </button>
+    <div class="flex-1 min-w-0">
+      {% block breadcrumb %}
+      <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">
+        {% block page_title %}{% endblock %}
+      </h2>
+      {% endblock %}
+    </div>
 
-    <!-- Right controls -->
-    <div class="ml-auto flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-      <!-- New Invoice CTA -->
+    <div class="flex items-center gap-1">
+
+      <!-- Search (sm+) -->
+      <button @click="srch=true" class="tb-btn hidden sm:flex items-center gap-2 px-3 rounded-lg" style="width:auto" aria-label="Search">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <span class="text-xs text-slate-400 hidden md:inline">Search…</span>
+        <kbd class="hidden lg:flex">⌘K</kbd>
+      </button>
+      <!-- Search icon (xs) -->
+      <button @click="srch=true" class="tb-btn sm:hidden" aria-label="Search">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </button>
+
+      <!-- New Invoice -->
       <a href="{% url 'invoices:invoice_create' %}"
-         class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-semibold rounded-lg transition-all shadow-sm shadow-brand-500/20">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+         class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors"
+         title="New Invoice (⌘N)">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+        </svg>
         New Invoice
       </a>
 
-      <!-- Overdue alert pill -->
-      {% if overdue_count %}
-      <a href="/invoices/?status=overdue"
-         class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-semibold hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors">
-        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
-        {{ overdue_count }} Overdue
-      </a>
-      {% endif %}
-
-      <!-- Notifications -->
-      <button @click="notificationsOpen = true"
-              class="relative p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+      <!-- Dark mode -->
+      <button @click="dark=!dark" class="tb-btn" :title="dark?'Light mode':'Dark mode'">
+        <svg x-show="!dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
         </svg>
-        {% if unread_notifications_count %}
-        <span class="absolute top-1 right-1 flex h-2 w-2">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-600"></span>
-        </span>
-        {% endif %}
+        <svg x-show="dark" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
       </button>
 
-      <!-- User avatar -->
-      <div class="relative" x-data="{ open: false }">
-        <button @click="open = !open"
-                class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-brand-400 to-brand-700 flex items-center justify-center text-white text-xs font-bold">
-            {{ user.username|first|upper }}
-          </div>
-          <svg class="w-3.5 h-3.5 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      <!-- Notifications -->
+      <div x-data="{no:false}" class="relative">
+        <button @click="no=!no" class="tb-btn">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+          </svg>
+          {% if unread_notifications_count %}<span class="n-dot"></span>{% endif %}
         </button>
-        <div x-show="open" @click.away="open = false" x-cloak
+        <div x-show="no" x-cloak @click.outside="no=false"
              x-transition:enter="transition ease-out duration-150"
-             x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-1"
              x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-             class="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-slate-900 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/5 py-1 overflow-hidden z-50">
-          <div class="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800">
-            <p class="text-sm font-semibold text-slate-900 dark:text-white truncate">{{ user.get_full_name|default:user.username }}</p>
-            <p class="text-xs text-slate-400 truncate">{{ user.email }}</p>
+             x-transition:leave="transition duration-100"
+             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+             x-transition:leave-end="opacity-0 scale-95 translate-y-1"
+             class="dd" style="min-width:300px">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-700">
+            <span class="text-sm font-semibold text-slate-800 dark:text-slate-200">Notifications</span>
+            {% if unread_notifications_count %}
+            <span class="text-xs bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400 font-semibold px-2 py-0.5 rounded-full">{{ unread_notifications_count }} new</span>
+            {% endif %}
           </div>
-          <a href="{% url 'invoices:settings' %}" class="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            Settings
-          </a>
-          <div class="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1">
-            <a href="{% url 'invoices:logout' %}" class="flex items-center gap-2.5 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          <div class="max-h-80 overflow-y-auto">
+            {% if notifications %}
+              {% for notif in notifications %}
+              <div class="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+                <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">{{ notif.title }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{{ notif.message }}</p>
+                <p class="text-[10px] text-slate-400 mt-1">{{ notif.created_at|timesince }} ago</p>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="flex flex-col items-center justify-center py-8">
+                <div class="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-2">
+                  <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                  </svg>
+                </div>
+                <p class="text-xs font-medium text-slate-500 dark:text-slate-400">All caught up!</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- User (desktop) -->
+      <div x-data="{uto:false}" class="relative hidden lg:block ml-1">
+        <button @click="uto=!uto" class="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+          <div class="w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center"
+               style="background:linear-gradient(135deg,#4f46e5,#7c3aed)">
+            {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
+          </div>
+          <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ request.user.first_name|default:request.user.username }}</span>
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div x-show="uto" x-cloak @click.outside="uto=false"
+             x-transition:enter="transition ease-out duration-150"
+             x-transition:enter-start="opacity-0 scale-95 translate-y-1"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition duration-100"
+             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+             x-transition:leave-end="opacity-0 scale-95 translate-y-1"
+             class="dd">
+          <div class="p-1.5">
+            <div class="px-2.5 py-2 mb-1">
+              <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">{{ request.user.get_full_name|default:request.user.username }}</p>
+              <p class="text-[10px] text-slate-400 truncate">{{ request.user.email }}</p>
+            </div>
+            <hr class="border-slate-100 dark:border-slate-700 mb-1">
+            <a href="{% url 'invoices:settings' %}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 transition-colors">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              Profile & Settings
+            </a>
+            <a href="{% url 'invoices:security' %}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 transition-colors">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              Security & MFA
+            </a>
+            <a href="{% url 'invoices:workspace_settings' %}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-xs text-slate-700 dark:text-slate-300 transition-colors">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+              Workspace
+            </a>
+            <hr class="border-slate-100 dark:border-slate-700 my-1">
+            <a href="{% url 'invoices:logout' %}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-900/20 text-xs text-rose-600 dark:text-rose-400 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
               Sign Out
             </a>
           </div>
         </div>
       </div>
+
     </div>
   </header>
 
-  <!-- Django Messages -->
-  {% if messages %}
-  <div class="px-4 sm:px-6 pt-4 space-y-2" aria-live="polite">
-    {% for message in messages %}
-    <div x-data="{ show: true }" x-show="show"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100 translate-y-0"
-         x-transition:leave-end="opacity-0 -translate-y-2"
-         x-init="setTimeout(() => show = false, 5000)"
-         class="flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium shadow-sm
-           {% if message.tags == 'error' %}bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-400
-           {% elif message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400
-           {% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400
-           {% else %}bg-brand-50 border-brand-200 text-brand-700 dark:bg-brand-900/20 dark:border-brand-800 dark:text-brand-400{% endif %}">
-      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        {% if message.tags == 'error' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        {% elif message.tags == 'success' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-        {% elif message.tags == 'warning' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        {% else %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>{% endif %}
-      </svg>
-      <span class="flex-1">{{ message }}</span>
-      <button @click="show = false" class="text-lg leading-none opacity-40 hover:opacity-80 transition-opacity ml-2">×</button>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <!-- PAGE CONTENT -->
-  <main class="flex-1 p-4 sm:p-6 overflow-x-hidden">
-    <div class="max-w-7xl mx-auto">
-      {% block content %}{% endblock %}
-    </div>
-  </main>
-</div>
-
-<!-- ============================================================
-     NOTIFICATION PANEL (right slide-over)
-============================================================ -->
-<div x-show="notificationsOpen" x-cloak class="fixed inset-0 z-[100] flex">
-  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-       @click="notificationsOpen = false"
-       x-transition:enter="transition ease-out duration-200"
-       x-transition:enter-start="opacity-0"
-       x-transition:enter-end="opacity-100"
-       x-transition:leave="transition ease-in duration-150"
-       x-transition:leave-start="opacity-100"
-       x-transition:leave-end="opacity-0">
-  </div>
-  <div class="relative ml-auto w-full max-w-sm bg-white dark:bg-slate-900 shadow-2xl flex flex-col"
-       x-transition:enter="transition ease-out duration-300"
-       x-transition:enter-start="translate-x-full"
-       x-transition:enter-end="translate-x-0"
-       x-transition:leave="transition ease-in duration-200"
-       x-transition:leave-start="translate-x-0"
-       x-transition:leave-end="translate-x-full">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-      <div>
-        <h2 class="text-base font-bold text-slate-900 dark:text-white">Notifications</h2>
-        {% if unread_notifications_count %}<p class="text-xs text-slate-500 mt-0.5">{{ unread_notifications_count }} unread</p>{% endif %}
-      </div>
-      <button @click="notificationsOpen = false" class="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-      {% for notification in notifications %}
-      <div class="px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer {% if not notification.is_read %}bg-brand-50/40 dark:bg-brand-900/5{% endif %}"
-           @click="fetch('/notifications/mark-read/{{ notification.pk }}/'); $el.classList.remove('bg-brand-50/40', 'dark:bg-brand-900/5')">
-        <div class="flex items-start gap-3">
-          <div class="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 {% if not notification.is_read %}bg-brand-500{% else %}bg-slate-300 dark:bg-slate-600{% endif %}"></div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ notification.title }}</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{{ notification.message }}</p>
-            <p class="text-[10px] text-slate-400 mt-1.5 uppercase font-semibold tracking-wider">{{ notification.created_at|timesince }} ago</p>
-          </div>
-        </div>
-      </div>
-      {% empty %}
-      <div class="flex flex-col items-center justify-center h-48 text-center px-6">
-        <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3">
-          <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-        </div>
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">All caught up!</p>
-        <p class="text-xs text-slate-400 mt-1">No new notifications</p>
+  <!-- Content -->
+  <main class="l-cnt">
+    {% if messages %}
+    <div class="mb-5 space-y-2.5">
+      {% for message in messages %}
+      <div x-data="{show:true}" x-show="show"
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0 -translate-y-1"
+           x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="opacity-100 translate-y-0"
+           x-transition:leave-end="opacity-0 -translate-y-1"
+           class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium border
+             {% if message.tags == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-900/10 dark:border-emerald-800/40 dark:text-emerald-400
+             {% elif message.tags == 'error' %}bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-900/10 dark:border-rose-800/40 dark:text-rose-400
+             {% elif message.tags == 'warning' %}bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/10 dark:border-amber-800/40 dark:text-amber-400
+             {% else %}bg-sky-50 border-sky-200 text-sky-800 dark:bg-sky-900/10 dark:border-sky-800/40 dark:text-sky-400{% endif %}">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {% if message.tags == 'success' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          {% elif message.tags == 'error' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          {% else %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>{% endif %}
+        </svg>
+        <span class="flex-1">{{ message }}</span>
+        <button @click="show=false" class="opacity-50 hover:opacity-100 transition-opacity">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
       {% endfor %}
     </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<!-- ═══ SEARCH PALETTE ═══ -->
+<div x-show="srch" x-cloak class="srch-sh" @keydown.escape.window="srch=false"
+     x-data="{
+       q:'',results:[],loading:false,idx:-1,
+       search(v){
+         if(!v||v.length<2){this.results=[];this.idx=-1;return}
+         this.loading=true;
+         fetch('/api/v1/search/?q='+encodeURIComponent(v))
+           .then(r=>r.json())
+           .then(d=>{this.results=d.results||[];this.loading=false;this.idx=-1})
+           .catch(()=>{this.loading=false});
+       },
+       grouped(){
+         const m={};
+         this.results.forEach(r=>{(m[r.type]=m[r.type]||[]).push(r)});
+         return Object.entries(m);
+       },
+       nav(e){
+         const n=this.results.length;if(!n)return;
+         if(e.key==='ArrowDown'){e.preventDefault();this.idx=(this.idx+1)%n}
+         else if(e.key==='ArrowUp'){e.preventDefault();this.idx=(this.idx-1+n)%n}
+         else if(e.key==='Enter'&&this.idx>=0)window.location=this.results[this.idx].url;
+       }
+     }"
+     x-init="$watch('srch',v=>{if(v){$nextTick(()=>$refs.si?.focus());q='';results=[];idx=-1}})">
+  <div class="srch-bd" @click="srch=false"></div>
+  <div class="srch-pn" @keydown="nav($event)">
+    <div class="flex items-center gap-3 px-4 border-b border-slate-100 dark:border-slate-700">
+      <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input x-ref="si" x-model="q" type="text"
+             class="h-14 flex-1 bg-transparent text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
+             placeholder="Search invoices, clients, expenses…"
+             @input.debounce.200ms="search(q)" @keydown.stop>
+      <div x-show="loading" class="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+      <kbd class="cursor-pointer" @click="srch=false">Esc</kbd>
+    </div>
+    <div class="max-h-96 overflow-y-auto" x-show="results.length>0">
+      <template x-for="[type,items] in grouped()" :key="type">
+        <div class="py-1">
+          <p class="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400" x-text="type+'s'"></p>
+          <template x-for="r in items" :key="r.url">
+            <a :href="r.url"
+               :class="results.indexOf(r)===idx?'bg-brand-50 dark:bg-brand-900/20':'hover:bg-slate-50 dark:hover:bg-slate-800'"
+               class="flex items-center gap-3 px-4 py-2.5 transition-colors">
+              <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                   :class="{
+                     'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400':type==='invoice',
+                     'bg-blue-100 dark:bg-blue-900/30 text-blue-600':type==='client',
+                     'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600':type==='payment',
+                     'bg-orange-100 dark:bg-orange-900/30 text-orange-600':type==='expense',
+                     'bg-violet-100 dark:bg-violet-900/30 text-violet-600':type==='estimate',
+                     'bg-slate-100 dark:bg-slate-800 text-slate-500':!['invoice','client','payment','expense','estimate'].includes(type),
+                   }">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate" x-text="r.title"></p>
+                <p x-show="r.subtitle" class="text-[10px] text-slate-400 truncate" x-text="r.subtitle||''"></p>
+              </div>
+              <span x-show="r.amount" class="text-xs font-semibold text-slate-600 dark:text-slate-400 flex-shrink-0" x-text="r.amount||''"></span>
+            </a>
+          </template>
+        </div>
+      </template>
+    </div>
+    <div x-show="q.length>=2&&!loading&&results.length===0" class="px-4 py-8 text-center">
+      <p class="text-sm text-slate-500">No results for "<span x-text="q" class="font-semibold text-slate-700 dark:text-slate-300"></span>"</p>
+    </div>
+    <div x-show="!q" class="px-4 py-4">
+      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Quick actions</p>
+      <div class="grid grid-cols-2 gap-1.5">
+        <a href="{% url 'invoices:invoice_create' %}" @click="srch=false" class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors">
+          <div class="w-7 h-7 bg-brand-100 dark:bg-brand-900/30 rounded-lg flex items-center justify-center">
+            <svg class="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">New Invoice</span>
+        </a>
+        <a href="{% url 'invoices:client_create' %}" @click="srch=false" class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+          <div class="w-7 h-7 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+            <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">New Client</span>
+        </a>
+        <a href="{% url 'invoices:expense_create' %}" @click="srch=false" class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
+          <div class="w-7 h-7 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+            <svg class="w-3.5 h-3.5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Log Expense</span>
+        </a>
+        <a href="{% url 'invoices:reports_home' %}" @click="srch=false" class="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
+          <div class="w-7 h-7 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center">
+            <svg class="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          </div>
+          <span class="text-xs font-medium text-slate-700 dark:text-slate-300">Reports</span>
+        </a>
+      </div>
+      <div class="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+        <div class="flex items-center gap-1.5 text-[10px] text-slate-400"><kbd>↑↓</kbd><span>navigate</span></div>
+        <div class="flex items-center gap-1.5 text-[10px] text-slate-400"><kbd>↵</kbd><span>open</span></div>
+        <div class="flex items-center gap-1.5 text-[10px] text-slate-400"><kbd>Esc</kbd><span>close</span></div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ============================================================
-     HELP & SHORTCUTS WIDGET
-============================================================ -->
-<div class="fixed bottom-5 right-5 z-40" x-data="{ open: false, tab: 'shortcuts' }">
-  <div x-show="open" @click.away="open = false" x-cloak
-       x-transition:enter="transition ease-out duration-200"
-       x-transition:enter-start="opacity-0 scale-95 translate-y-2"
-       x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-       x-transition:leave="transition ease-in duration-150"
-       x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-       x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-       class="absolute bottom-16 right-0 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl ring-1 ring-black/5 dark:ring-white/5 overflow-hidden mb-2">
-    <div class="bg-gradient-to-r from-brand-600 to-violet-600 px-4 py-3 flex items-center gap-3 text-white">
-      <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-      </div>
-      <div>
-        <p class="text-sm font-bold">Quick Actions</p>
-        <p class="text-[11px] text-white/75">Keyboard shortcuts & help</p>
-      </div>
-    </div>
-    <div class="flex border-b border-slate-100 dark:border-slate-800">
-      <button @click="tab='shortcuts'" :class="tab==='shortcuts'?'border-brand-600 text-brand-600':'border-transparent text-slate-500'" class="flex-1 py-2.5 text-xs font-semibold border-b-2 transition-colors">Shortcuts</button>
-      <button @click="tab='help'" :class="tab==='help'?'border-brand-600 text-brand-600':'border-transparent text-slate-500'" class="flex-1 py-2.5 text-xs font-semibold border-b-2 transition-colors">Help</button>
-    </div>
-    <div class="p-3">
-      <div x-show="tab==='shortcuts'" class="space-y-1">
-        {% for label, shortcut in shortcuts %}{% endfor %}
-        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          <span class="text-xs text-slate-600 dark:text-slate-400">Quick Search</span>
-          <div class="flex gap-1"><kbd>⌘</kbd><kbd>K</kbd></div>
-        </div>
-        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          <span class="text-xs text-slate-600 dark:text-slate-400">New Invoice</span>
-          <div class="flex gap-1"><kbd>⌘</kbd><kbd>N</kbd></div>
-        </div>
-        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          <span class="text-xs text-slate-600 dark:text-slate-400">Dashboard</span>
-          <div class="flex gap-1"><kbd>G</kbd><kbd>D</kbd></div>
-        </div>
-        <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          <span class="text-xs text-slate-600 dark:text-slate-400">Toggle Dark Mode</span>
-          <div class="flex gap-1"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd></div>
-        </div>
-      </div>
-      <div x-show="tab==='help'" x-cloak class="space-y-2">
-        <a href="{% url 'invoices:faq' %}" class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors group">
-          <div class="w-8 h-8 bg-brand-100 dark:bg-brand-900/30 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-          <div><p class="text-xs font-semibold text-slate-800 dark:text-slate-200">FAQ</p><p class="text-[10px] text-slate-400">Common questions</p></div>
-        </a>
-        <a href="{% url 'invoices:contact' %}" class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors">
-          <div class="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center"><svg class="w-4 h-4 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
-          <div><p class="text-xs font-semibold text-slate-800 dark:text-slate-200">Contact Support</p><p class="text-[10px] text-slate-400">We're here to help</p></div>
-        </a>
-      </div>
-    </div>
-  </div>
-  <button @click="open = !open"
-          class="w-12 h-12 bg-gradient-to-br from-brand-500 to-violet-600 text-white rounded-full shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:scale-105 active:scale-95 flex items-center justify-center transition-all duration-200">
-    <svg x-show="!open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-    <svg x-show="open" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-  </button>
-</div>
-
-<!-- Global keyboard shortcut handler -->
 <script>
-  document.addEventListener('keydown', function(e) {
-    // ⌘N / Ctrl+N — New Invoice
-    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
-      e.preventDefault();
-      window.location.href = '{% url "invoices:invoice_create" %}';
-    }
-  });
+  function appShell(){
+    return {
+      dark:false, col:false, mob:false, srch:false,
+      boot(){
+        const s=localStorage.getItem('theme');
+        if(s==='dark') this.dark=true;
+        else if(s==='light') this.dark=false;
+        else this.dark=window.matchMedia('(prefers-color-scheme:dark)').matches;
+        document.documentElement.classList.toggle('dark',this.dark);
+        this.col=localStorage.getItem('sidebarCollapsed')==='true';
+        this.$watch('dark',v=>{
+          localStorage.setItem('theme',v?'dark':'light');
+          document.documentElement.classList.toggle('dark',v);
+        });
+        this.$watch('col',v=>localStorage.setItem('sidebarCollapsed',String(v)));
+        window.addEventListener('resize',()=>{ if(window.innerWidth>=1024) this.mob=false; });
+        document.addEventListener('keydown',e=>{
+          if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();this.srch=true}
+          if((e.metaKey||e.ctrlKey)&&e.key==='n'){e.preventDefault();window.location.href='{% url "invoices:invoice_create" %}'}
+          if(e.key==='Escape'){this.srch=false;this.mob=false}
+        });
+      }
+    };
+  }
 </script>
 
 {% block scripts %}{% endblock %}

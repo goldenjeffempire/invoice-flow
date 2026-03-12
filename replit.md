@@ -23,7 +23,7 @@ A production-ready Django invoicing application for freelancers and small busine
 - **Cache:** In-memory (LocMemCache) in dev, Redis in production
 - **Static Files:** WhiteNoise for serving static assets
 - **Templates:** Django templates with Tailwind CSS (CDN), Alpine.js (CDN), Chart.js (CDN)
-- **UI System:** Collapsible sidebar (desktop), mobile drawer sidebar, ⌘K global search modal, notification slide-over, floating help widget, full dark mode via Alpine.js class strategy
+- **UI System:** Fully rebuilt app shell (layout_app.html, 815 lines). CSS-variable-driven collapsible sidebar (256px ↔ 64px icon-only mode with tooltips), mobile off-canvas drawer with overlay, sticky glassmorphism topbar, workspace switcher dropdown, user profile footer menu, notification dropdown, dark mode toggle (persisted in localStorage, system-preference fallback), ⌘K global search palette with quick actions, keyboard shortcuts (⌘K search, ⌘N new invoice, Esc close). Dashboard rebuilt (overview.html, 686 lines) with KPI cards + trend badges, 6-month revenue bar chart, invoice status donut chart, recent invoices table, due-soon list, A/R aging progress bars, top clients, activity feed, 6 quick-action tiles, and smart alert banners.
 - **PDF Generation:** WeasyPrint + ReportLab
 - **Email:** SendGrid
 - **Auth:** Enterprise-grade rebuild — AuthService, SessionService, PasswordValidator (HIBP breach check), SecurityService. No email verification required. MFA (TOTP via pyotp) preserved for existing users.
