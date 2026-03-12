@@ -32,16 +32,30 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-product
 # Build ALLOWED_HOSTS based on environment
 if IS_PRODUCTION:
     PRODUCTION_DOMAIN = "invoiceflow.com.ng"
-    ALLOWED_HOSTS = [PRODUCTION_DOMAIN, f"www.{PRODUCTION_DOMAIN}"]
+    ALLOWED_HOSTS = [PRODUCTION_DOMAIN, f"www.{PRODUCTION_DOMAIN}", "localhost", "127.0.0.1"]
     render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
     if render_hostname:
         ALLOWED_HOSTS.append(render_hostname)
+    # Allow all Replit preview/deploy domains
+    ALLOWED_HOSTS += [
+        ".replit.dev",
+        ".repl.co",
+        ".replit.app",
+        ".riker.replit.dev",
+    ]
 else:
     ALLOWED_HOSTS = ["*"]
 
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if "*" not in host]
-if not IS_PRODUCTION:
-    CSRF_TRUSTED_ORIGINS.extend(["https://*.replit.dev", "https://*.repl.co", "https://*.replit.app"])
+CSRF_TRUSTED_ORIGINS = [
+    f"https://{host}" for host in ALLOWED_HOSTS
+    if "*" not in host and not host.startswith(".")
+]
+CSRF_TRUSTED_ORIGINS += [
+    "https://*.replit.dev",
+    "https://*.repl.co",
+    "https://*.replit.app",
+    "https://*.riker.replit.dev",
+]
 
 # Handle proxy HTTPS
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -59,9 +73,13 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_SAVE_EVERY_REQUEST = True
 CSRF_USE_SESSIONS = True
 
+# Detect Replit environment (proxy handles HTTPS termination)
+IS_REPLIT = bool(os.getenv("REPLIT_DOMAINS") or os.getenv("REPL_ID") or os.getenv("REPLIT_DEV_DOMAIN"))
+
 # Production Security Headers
 if IS_PRODUCTION:
-    SECURE_SSL_REDIRECT = True
+    # Replit terminates SSL at the proxy — don't redirect internally
+    SECURE_SSL_REDIRECT = not IS_REPLIT
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000 # 1 year
@@ -72,12 +90,16 @@ if IS_PRODUCTION:
     X_FRAME_OPTIONS = "DENY"
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
-    # Hardened CSP
-    CSP_DEFAULT_SRC = ("'self'",)
-    CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net")
-    CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net")
-    CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
-    CSP_IMG_SRC = ("'self'", "data:", "https:")
+    # Hardened CSP (django-csp 4.0+ format)
+    CONTENT_SECURITY_POLICY = {
+        "DIRECTIVES": {
+            "default-src": ("'self'",),
+            "style-src": ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"),
+            "script-src": ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"),
+            "font-src": ("'self'", "https://fonts.gstatic.com"),
+            "img-src": ("'self'", "data:", "https:"),
+        }
+    }
 
     SILENCED_SYSTEM_CHECKS = ["security.W001", "security.W004", "security.W008", "security.W012", "security.W018", "security.W009"]
 else:
