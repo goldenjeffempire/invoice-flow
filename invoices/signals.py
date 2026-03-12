@@ -7,7 +7,6 @@ Signal handlers for InvoiceFlow:
 
 import logging
 
-from django.contrib.auth import user_logged_in
 from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 from django.apps import apps
@@ -29,13 +28,6 @@ def send_welcome_email_on_signup(sender, instance, created: bool, **kwargs):
     except Exception as exc:
         logger.exception("Welcome email signal failed: %s", exc)
 
-@receiver(user_logged_in)
-def warm_cache_on_login(sender, request, user, **kwargs):
-    try:
-        from .services import CacheWarmingService
-        CacheWarmingService.warm_user_cache_async(user)
-    except Exception as exc:
-        logger.warning("Cache warming failed on login: %s", exc)
 
 # =============================================================================
 # INVOICE SIGNALS
