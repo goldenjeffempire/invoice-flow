@@ -5,7 +5,7 @@ from .models import (
     Waitlist, SocialAccount, Client, ClientNote, CommunicationLog,
     InvoiceActivity, RecurringSchedule, ScheduleExecution, PaymentAttempt,
     RecurringScheduleAuditLog, Expense, ExpenseCategory, Vendor,
-    ExpenseAttachment, ExpenseAuditLog
+    ExpenseAttachment, ExpenseAuditLog, NewsletterSubscriber
 )
 
 @admin.register(UserProfile)
@@ -44,6 +44,15 @@ admin.site.register(Payment)
 admin.site.register(WorkspaceInvitation)
 admin.site.register(Waitlist)
 admin.site.register(SocialAccount)
+
+
+@admin.register(NewsletterSubscriber)
+class NewsletterSubscriberAdmin(admin.ModelAdmin):
+    list_display = ("email", "first_name", "status", "source", "subscribed_at")
+    list_filter = ("status", "source")
+    search_fields = ("email", "first_name")
+    readonly_fields = ("subscribed_at", "unsubscribed_at", "ip_address")
+    ordering = ("-subscribed_at",)
 
 
 @admin.register(RecurringSchedule)

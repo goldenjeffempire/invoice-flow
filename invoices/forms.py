@@ -390,3 +390,30 @@ class LineItemForm(forms.Form):
 
 class InvoiceTemplateForm(forms.Form):
     pass
+
+
+class NewsletterSubscribeForm(forms.Form):
+    email = forms.EmailField(
+        label="Email address",
+        max_length=254,
+        widget=forms.EmailInput(attrs={
+            "placeholder": "Enter your email address",
+            "autocomplete": "email",
+            "id": "id_newsletter_email",
+            "aria-label": "Email address",
+        }),
+    )
+    first_name = forms.CharField(
+        label="First name",
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "placeholder": "First name (optional)",
+            "autocomplete": "given-name",
+            "id": "id_newsletter_first_name",
+            "aria-label": "First name",
+        }),
+    )
+
+    def clean_email(self):
+        return self.cleaned_data["email"].lower().strip()

@@ -103,6 +103,9 @@ urlpatterns = [
     path("blog/", TemplateView.as_view(template_name="pages/blog.html"), name="blog"),
     path("careers/", TemplateView.as_view(template_name="pages/careers.html"), name="careers"),
 
+    # ── Newsletter ────────────────────────────────────────────────────────────
+    path("newsletter/subscribe/", views.newsletter_subscribe, name="newsletter_subscribe"),
+
     # ── API helpers ───────────────────────────────────────────────────────────
     path("api/feedback/submit/", views.submit_feedback, name="submit_feedback"),
     path("api/faq/", views.faq_api, name="faq_api"),

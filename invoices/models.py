@@ -873,6 +873,33 @@ class Waitlist(models.Model):
     subscribed_at = models.DateTimeField(auto_now_add=True)
 
 
+class NewsletterSubscriber(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "active", "Active"
+        UNSUBSCRIBED = "unsubscribed", "Unsubscribed"
+
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+    unsubscribed_at = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    source = models.CharField(max_length=50, default="landing_page")
+
+    class Meta:
+        ordering = ["-subscribed_at"]
+        verbose_name = "Newsletter Subscriber"
+        verbose_name_plural = "Newsletter Subscribers"
+
+    def __str__(self):
+        return self.email
+
+    def unsubscribe(self):
+        self.status = self.Status.UNSUBSCRIBED
+        self.unsubscribed_at = timezone.now()
+        self.save(update_fields=["status", "unsubscribed_at"])
+
+
 class Notification(models.Model):
     class Type(models.TextChoices):
         INFO = "info", "Information"

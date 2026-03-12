@@ -27,8 +27,9 @@ from ..forms import (
     MFADisableForm,
     ResendVerificationForm,
     ChangePasswordForm,
+    NewsletterSubscribeForm,
 )
-from ..models import MFAProfile
+from ..models import MFAProfile, NewsletterSubscriber
 
 logger = logging.getLogger(__name__)
 
@@ -636,3 +637,55 @@ def security_activity(request):
     from ..models import SecurityEvent
     events = SecurityEvent.objects.filter(user=request.user).order_by("-created_at")[:50]
     return render(request, "pages/auth/security_activity.html", {"events": events})
+
+
+# ============================================================================
+# Newsletter
+# ============================================================================
+
+@require_POST
+@csrf_protect
+@ratelimit(key="ip", rate="5/h", block=True)
+def newsletter_subscribe(request):
+    form = NewsletterSubscribeForm(request.POST)
+    if not form.is_valid():
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+        messages.error(request, "Please enter a valid email address.")
+        return redirect("invoices:home")
+
+    email = form.cleaned_data["email"]
+    first_name = form.cleaned_data.get("first_name", "")
+    ip = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR", ""))
+    if ip and "," in ip:
+        ip = ip.split(",")[0].strip()
+
+    try:
+        subscriber, created = NewsletterSubscriber.objects.get_or_create(
+            email=email,
+            defaults={
+                "first_name": first_name,
+                "ip_address": ip or None,
+                "source": "landing_page",
+            },
+        )
+        if not created and subscriber.status == NewsletterSubscriber.Status.UNSUBSCRIBED:
+            subscriber.status = NewsletterSubscriber.Status.ACTIVE
+            subscriber.unsubscribed_at = None
+            subscriber.save(update_fields=["status", "unsubscribed_at"])
+            message = "Welcome back! You've been re-subscribed to our newsletter."
+        elif created:
+            message = "You're subscribed! Thanks for joining the InvoiceFlow community."
+        else:
+            message = "You're already subscribed — we'll keep you in the loop!"
+
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": True, "message": message})
+        messages.success(request, message)
+    except Exception:
+        logger.exception("Newsletter subscription error for %s", email)
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"success": False, "message": "Something went wrong. Please try again."}, status=500)
+        messages.error(request, "Something went wrong. Please try again.")
+
+    return redirect("invoices:home")
