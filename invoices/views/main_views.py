@@ -1,32 +1,46 @@
 """
-Production-Grade Authentication Views
-Handles all authentication flows with proper security, validation, and UX.
+InvoiceFlow – Main Views
+Rebuilt auth views: Login, Sign-Up, Logout, Password Reset, Session Management.
+All other app views (landing, pages, settings, etc.) preserved.
 """
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from __future__ import annotations
+
+import logging
+
 from django.contrib import messages
-from django.views.decorators.http import require_POST, require_GET
-from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
+from django.views.decorators.cache import cache_page
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST, require_GET
 from django_ratelimit.decorators import ratelimit
 
-from ..auth_services import (
-    AuthService, MFAService, SessionService, InvitationService
-)
+from ..auth_services import AuthService, MFAService, SessionService, InvitationService
 from ..forms import (
-    SignUpForm, LoginForm, MFAVerifyForm, MFASetupVerifyForm, MFADisableForm,
-    PasswordResetRequestForm, PasswordResetConfirmForm, ResendVerificationForm
+    LoginForm,
+    SignUpForm,
+    PasswordResetRequestForm,
+    PasswordResetConfirmForm,
+    MFAVerifyForm,
+    MFASetupVerifyForm,
+    MFADisableForm,
+    ResendVerificationForm,
+    ChangePasswordForm,
 )
 from ..models import MFAProfile
 
+logger = logging.getLogger(__name__)
 
-from django.views.decorators.cache import cache_page
 
-@cache_page(60 * 15) # Cache for 15 minutes
+# ============================================================================
+# Utility / System Views
+# ============================================================================
+
+@cache_page(60 * 15)
 def landing_view(request):
-    """Fast landing page - cached for 15 minutes."""
     if request.user.is_authenticated:
-        return redirect('invoices:dashboard')
+        return redirect("invoices:dashboard")
     return render(request, "pages/landing.html")
 
 
@@ -50,256 +64,224 @@ def custom_500_view(request):
     return render(request, "500.html", status=500)
 
 
+# ============================================================================
+# Authentication Views
+# ============================================================================
+
 @csrf_protect
-@ratelimit(key='ip', rate='10/m', method='POST', block=True)
+@ratelimit(key="ip", rate="10/m", method="POST", block=True)
 def signup_view(request):
     """
-    Production-grade signup view with:
-    - Comprehensive error handling (never returns 500)
-    - Graceful degradation on service failures
-    - Proper user feedback for all scenarios
+    User registration. On success → auto-login and redirect to onboarding.
+    No email verification required.
     """
-    try:
-        if request.user.is_authenticated:
-            return redirect('invoices:onboarding_router')
+    if request.user.is_authenticated:
+        return redirect("invoices:onboarding_router")
 
-        if request.method == 'POST':
-            form = SignUpForm(request.POST)
-            if form.is_valid():
-                try:
-                    user, message = AuthService.register_user(
-                        username=form.cleaned_data['username'],
-                        email=form.cleaned_data['email'],
-                        password=form.cleaned_data['password'],
-                        request=request
-                    )
-                    if user:
-                        AuthService.complete_login(request, user)
-                        return redirect('invoices:onboarding_router')
-                    else:
-                        messages.error(request, message)
-                except Exception as e:
-                    import logging
-                    logging.getLogger(__name__).error(f"Signup error: {e}")
-                    messages.error(request, "We couldn't create your account right now. Please try again in a moment.")
-        else:
-            form = SignUpForm()
+    if request.method == "POST":
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            try:
+                # Split full_name into first/last for the User model
+                full_name = form.cleaned_data.get("full_name", "").strip()
+                name_parts = full_name.split(" ", 1)
+                first_name = name_parts[0]
+                last_name = name_parts[1] if len(name_parts) > 1 else ""
 
-        return render(request, 'pages/auth/signup.html', {'form': form})
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"Critical signup view error: {e}")
-        messages.error(request, "Something went wrong. Please try again.")
-        return render(request, 'pages/auth/signup.html', {'form': SignUpForm()})
+                user, message = AuthService.register_user(
+                    username=form.cleaned_data["username"],
+                    email=form.cleaned_data["email"],
+                    password=form.cleaned_data["password"],
+                    request=request,
+                )
+                if user:
+                    # Persist first/last name
+                    user.first_name = first_name
+                    user.last_name = last_name
+                    user.save(update_fields=["first_name", "last_name"])
+
+                    AuthService.complete_login(request, user)
+                    messages.success(request, f"Welcome to InvoiceFlow, {first_name}!")
+                    return redirect("invoices:onboarding_router")
+                else:
+                    messages.error(request, message)
+            except Exception as exc:
+                logger.error("Signup view error: %s", exc)
+                messages.error(request, "We couldn't create your account right now. Please try again.")
+    else:
+        form = SignUpForm()
+
+    return render(request, "pages/auth/signup.html", {"form": form})
 
 
 @csrf_protect
-@ratelimit(key='ip', rate='10/m', method='POST', block=True)
+@ratelimit(key="ip", rate="10/m", method="POST", block=True)
 def login_view(request):
     """
-    Production-grade login view with comprehensive error handling.
+    Login with email/username + password.
+    Supports 'remember_me' (2-week session) and 'next' redirect.
     """
-    try:
-        if request.user.is_authenticated:
-            return redirect('invoices:onboarding_router')
+    if request.user.is_authenticated:
+        return redirect("invoices:onboarding_router")
 
-        if request.method == 'POST':
-            form = LoginForm(request.POST)
-            if form.is_valid():
-                try:
-                    user, message, requires_mfa = AuthService.authenticate_user(
-                        request=request,
-                        username_or_email=form.cleaned_data['username_or_email'],
-                        password=form.cleaned_data['password']
-                    )
+    if request.method == "POST":
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            try:
+                user, message, requires_mfa = AuthService.authenticate_user(
+                    request=request,
+                    username_or_email=form.cleaned_data["username_or_email"],
+                    password=form.cleaned_data["password"],
+                )
+                if user:
+                    if requires_mfa:
+                        request.session["pending_user_id"] = user.id
+                        request.session["pending_login_remember"] = form.cleaned_data.get("remember_me", False)
+                        return redirect("invoices:mfa_verify")
 
-                    if user:
-                        if requires_mfa:
-                            request.session['pending_user_id'] = user.id
-                            request.session['pending_login_remember'] = form.cleaned_data.get('remember_me', False)
-                            return redirect('invoices:mfa_verify')
-                        else:
-                            AuthService.complete_login(request, user)
+                    AuthService.complete_login(request, user)
 
-                            if not form.cleaned_data.get('remember_me'):
-                                request.session.set_expiry(0)
-
-                            messages.success(request, "Welcome back!")
-                            next_url = request.GET.get('next', '')
-                            if next_url and next_url.startswith('/') and not next_url.startswith('//'):
-                                return redirect(next_url)
-                            return redirect('invoices:dashboard')
+                    remember = form.cleaned_data.get("remember_me", False)
+                    if remember:
+                        request.session.set_expiry(60 * 60 * 24 * 14)  # 2 weeks
                     else:
-                        messages.error(request, message)
-                except Exception as e:
-                    import logging
-                    logging.getLogger(__name__).error(f"Login error: {e}")
-                    messages.error(request, "Login failed. Please try again.")
-        else:
-            form = LoginForm()
+                        request.session.set_expiry(0)  # browser session
 
-        return render(request, 'pages/auth/login.html', {'form': form})
-    except Exception as e:
-        import logging
-        logging.getLogger(__name__).error(f"Critical login view error: {e}")
-        messages.error(request, "Something went wrong. Please try again.")
-        return render(request, 'pages/auth/login.html', {'form': LoginForm()})
+                    messages.success(request, f"Welcome back, {user.first_name or user.username}!")
+
+                    next_url = request.GET.get("next", "")
+                    if next_url and next_url.startswith("/") and not next_url.startswith("//"):
+                        return redirect(next_url)
+                    return redirect("invoices:dashboard")
+                else:
+                    messages.error(request, message)
+            except Exception as exc:
+                logger.error("Login view error: %s", exc)
+                messages.error(request, "Login failed. Please try again.")
+    else:
+        form = LoginForm()
+
+    return render(request, "pages/auth/login.html", {"form": form, "next": request.GET.get("next", "")})
 
 
 def logout_view(request):
+    """
+    Sign out the current user.  Accepts GET for convenience (also handles POST).
+    """
     if request.user.is_authenticated:
         AuthService.logout_user(request)
-    messages.info(request, "You have been logged out.")
-    return redirect('invoices:home')
+        messages.info(request, "You've been signed out successfully.")
+    return redirect("invoices:home")
 
 
 @login_required
 def dashboard(request):
-    return render(request, 'pages/dashboard.html')
+    return render(request, "pages/dashboard.html")
 
 
-@require_GET
-def verification_sent(request):
-    return render(request, "pages/auth/verification_sent.html")
-
-
-@ratelimit(key='ip', rate='5/m', method='GET', block=True)
-def verify_email(request, token):
-    success, message = AuthService.verify_email(token, request)
-    if success:
-        from ..models import EmailToken
-        try:
-            email_token = EmailToken.objects.get(token=token)
-            user = email_token.user
-            # Auto-login after verification for better UX
-            AuthService.complete_login(request, user)
-            messages.success(request, "Email verified successfully! Welcome to InvoiceFlow.")
-            return redirect('invoices:onboarding_router')
-        except Exception:
-            messages.success(request, message)
-            return redirect('invoices:login')
-    else:
-        return render(request, 'pages/auth/verification_failed.html', {
-            'message': message,
-            'can_resend': 'expired' in message.lower()
-        })
-
+# ============================================================================
+# Password Reset
+# ============================================================================
 
 @csrf_protect
-@ratelimit(key='ip', rate='5/m', method='POST', block=True)
-def resend_verification(request):
-    if request.method == 'POST':
-        form = ResendVerificationForm(request.POST)
-        if form.is_valid():
-            success, message = AuthService.resend_verification(
-                email=form.cleaned_data['email'],
-                request=request
-            )
-            if success:
-                messages.success(request, message)
-                return redirect('invoices:verification_sent')
-            else:
-                messages.error(request, message)
-    else:
-        form = ResendVerificationForm()
-
-    return render(request, "pages/auth/resend_verification.html", {'form': form})
-
-
-@csrf_protect
-@ratelimit(key='ip', rate='5/m', method='POST', block=True)
+@ratelimit(key="ip", rate="5/m", method="POST", block=True)
 def password_reset_request(request):
-    if request.method == 'POST':
+    """
+    Step 1: User submits email → we send a secure 1-hour reset link.
+    Always shows a success-type page to prevent user enumeration.
+    """
+    if request.method == "POST":
         form = PasswordResetRequestForm(request.POST)
         if form.is_valid():
-            success, message = AuthService.initiate_password_reset(
-                email=form.cleaned_data['email'],
-                request=request
+            AuthService.request_password_reset(
+                email=form.cleaned_data["email"],
+                request=request,
             )
-            messages.success(request, message)
-            return redirect('invoices:password_reset_done')
+            return redirect("invoices:password_reset_done")
     else:
         form = PasswordResetRequestForm()
 
-    return render(request, "pages/auth/password_reset.html", {'form': form})
+    return render(request, "pages/auth/password_reset.html", {"form": form})
 
 
 def password_reset_done(request):
+    """Step 2: Informational page — 'check your email'."""
     return render(request, "pages/auth/password_reset_done.html")
 
 
 @csrf_protect
-@ratelimit(key='ip', rate='5/m', method='POST', block=True)
+@ratelimit(key="ip", rate="5/m", method="POST", block=True)
 def password_reset_confirm(request, token):
+    """
+    Step 3: User clicks link in email → validate token → set new password.
+    """
     is_valid, token_obj, error = AuthService.validate_reset_token(token)
 
     if not is_valid:
-        return render(request, 'pages/auth/password_reset_invalid.html', {'message': error})
+        return render(request, "pages/auth/password_reset_invalid.html", {"message": error})
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = PasswordResetConfirmForm(request.POST)
         if form.is_valid():
-            success, message = AuthService.complete_password_reset(
-                token_str=token,
-                new_password=form.cleaned_data['password'],
-                request=request
+            success, msg = AuthService.complete_password_reset(
+                token=token,
+                new_password=form.cleaned_data["password"],
+                request=request,
             )
             if success:
-                messages.success(request, message)
-                return redirect('invoices:login')
+                messages.success(request, msg)
+                return redirect("invoices:login")
             else:
-                messages.error(request, message)
+                messages.error(request, msg)
     else:
         form = PasswordResetConfirmForm()
 
-    return render(request, "pages/auth/password_reset_confirm.html", {'form': form, 'token': token})
+    return render(request, "pages/auth/password_reset_confirm.html", {"form": form, "token": token})
 
+
+# ============================================================================
+# MFA Views (kept intact for users who have MFA enabled)
+# ============================================================================
 
 @csrf_protect
-@ratelimit(key='ip', rate='10/m', method='POST', block=True)
+@ratelimit(key="ip", rate="10/m", method="POST", block=True)
 def mfa_verify(request):
-    pending_user_id = request.session.get('pending_user_id')
-    if not pending_user_id:
-        messages.error(request, "Session expired. Please log in again.")
-        return redirect('invoices:login')
-
     from django.contrib.auth import get_user_model
     User = get_user_model()
+
+    pending_user_id = request.session.get("pending_user_id")
+    if not pending_user_id:
+        messages.error(request, "Session expired. Please sign in again.")
+        return redirect("invoices:login")
+
     try:
         user = User.objects.get(id=pending_user_id)
     except User.DoesNotExist:
-        messages.error(request, "Session expired. Please log in again.")
-        return redirect('invoices:login')
+        messages.error(request, "Session expired. Please sign in again.")
+        return redirect("invoices:login")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = MFAVerifyForm(request.POST)
         if form.is_valid():
-            success, message = MFAService.verify_mfa(
-                user=user,
-                code=form.cleaned_data['code'],
-                request=request
-            )
+            success, message = MFAService.verify_mfa(user=user, code=form.cleaned_data["code"], request=request)
             if success:
-                remember_me = request.session.pop('pending_login_remember', False)
-                del request.session['pending_user_id']
-
+                remember = request.session.pop("pending_login_remember", False)
+                del request.session["pending_user_id"]
                 AuthService.complete_login(request, user, mfa_verified=True)
-
-                if not remember_me:
+                if remember:
+                    request.session.set_expiry(60 * 60 * 24 * 14)
+                else:
                     request.session.set_expiry(0)
-
                 messages.success(request, "Welcome back!")
-                return redirect('invoices:dashboard')
+                return redirect("invoices:dashboard")
             else:
                 messages.error(request, message)
     else:
         form = MFAVerifyForm()
 
-    remaining_codes = MFAService.get_remaining_codes(user)
-
-    return render(request, 'pages/auth/mfa_verify.html', {
-        'form': form,
-        'remaining_codes': remaining_codes
+    return render(request, "pages/auth/mfa_verify.html", {
+        "form": form,
+        "remaining_codes": MFAService.get_remaining_codes(user),
     })
 
 
@@ -307,50 +289,40 @@ def mfa_verify(request):
 def mfa_setup(request):
     if MFAService.is_mfa_enabled(request.user):
         messages.info(request, "Two-factor authentication is already enabled.")
-        return redirect('invoices:security_settings')
+        return redirect("invoices:security_settings")
 
-    secret = request.session.get('mfa_setup_secret')
-    qr_code = request.session.get('mfa_setup_qr_code')
+    secret = request.session.get("mfa_setup_secret")
+    qr_code = request.session.get("mfa_setup_qr_code")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = MFASetupVerifyForm(request.POST)
-
         if not secret:
             messages.error(request, "Setup session expired. Please try again.")
-            return redirect('invoices:mfa_setup')
-
+            return redirect("invoices:mfa_setup")
         if form.is_valid():
             success, backup_codes, message = MFAService.enable_mfa(
-                user=request.user,
-                secret=secret,
-                code=form.cleaned_data['code'],
-                request=request
+                user=request.user, secret=secret, code=form.cleaned_data["code"], request=request
             )
-
             if success:
-                request.session.pop('mfa_setup_secret', None)
-                request.session.pop('mfa_setup_qr_code', None)
-                request.session['mfa_backup_codes'] = backup_codes
+                request.session.pop("mfa_setup_secret", None)
+                request.session.pop("mfa_setup_qr_code", None)
+                request.session["mfa_backup_codes"] = backup_codes
                 messages.success(request, message)
-                return redirect('invoices:mfa_backup_codes')
+                return redirect("invoices:mfa_backup_codes")
             else:
                 messages.error(request, message)
     else:
         form = MFASetupVerifyForm()
-        secret, qr_code, provisioning_uri = MFAService.generate_setup_data(request.user)
-        request.session['mfa_setup_secret'] = secret
-        request.session['mfa_setup_qr_code'] = qr_code
+        secret, qr_code, _ = MFAService.generate_setup_data(request.user)
+        request.session["mfa_setup_secret"] = secret
+        request.session["mfa_setup_qr_code"] = qr_code
 
-    return render(request, 'pages/auth/mfa_setup.html', {
-        'form': form,
-        'qr_code': qr_code,
-        'secret': secret,
-    })
+    return render(request, "pages/auth/mfa_setup.html", {"form": form, "qr_code": qr_code, "secret": secret})
 
 
 @login_required
 def mfa_backup_codes(request):
-    backup_codes = request.session.get('mfa_backup_codes')
+    backup_codes = request.session.get("mfa_backup_codes")
     if not backup_codes:
         try:
             mfa_profile = request.user.mfa_profile
@@ -361,20 +333,18 @@ def mfa_backup_codes(request):
 
     if not backup_codes:
         messages.info(request, "No backup codes to display.")
-        return redirect('invoices:security_settings')
+        return redirect("invoices:security_settings")
 
-    if 'mfa_backup_codes' in request.session:
-        del request.session['mfa_backup_codes']
+    if "mfa_backup_codes" in request.session:
+        del request.session["mfa_backup_codes"]
         try:
-            mfa_profile = request.user.mfa_profile
-            mfa_profile.recovery_codes_viewed = True
-            mfa_profile.save(update_fields=['recovery_codes_viewed'])
+            mp = request.user.mfa_profile
+            mp.recovery_codes_viewed = True
+            mp.save(update_fields=["recovery_codes_viewed"])
         except MFAProfile.DoesNotExist:
             pass
 
-    return render(request, 'pages/auth/mfa_backup_codes.html', {
-        'backup_codes': backup_codes
-    })
+    return render(request, "pages/auth/mfa_backup_codes.html", {"backup_codes": backup_codes})
 
 
 @login_required
@@ -382,26 +352,28 @@ def mfa_backup_codes(request):
 def mfa_disable(request):
     if not MFAService.is_mfa_enabled(request.user):
         messages.info(request, "Two-factor authentication is not enabled.")
-        return redirect('invoices:security_settings')
+        return redirect("invoices:security_settings")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         form = MFADisableForm(request.POST)
         if form.is_valid():
             success, message = MFAService.disable_mfa(
-                user=request.user,
-                password=form.cleaned_data['password'],
-                request=request
+                user=request.user, password=form.cleaned_data["password"], request=request
             )
             if success:
                 messages.success(request, message)
-                return redirect('invoices:security_settings')
+                return redirect("invoices:security_settings")
             else:
                 messages.error(request, message)
     else:
         form = MFADisableForm()
 
-    return render(request, 'pages/auth/mfa_disable.html', {'form': form})
+    return render(request, "pages/auth/mfa_disable.html", {"form": form})
 
+
+# ============================================================================
+# Security Settings & Session Management
+# ============================================================================
 
 @login_required
 def security_settings(request):
@@ -409,10 +381,15 @@ def security_settings(request):
     mfa_enabled = MFAService.is_mfa_enabled(request.user)
     remaining_codes = MFAService.get_remaining_codes(request.user) if mfa_enabled else 0
 
-    return render(request, 'pages/auth/security_settings.html', {
-        'sessions': sessions,
-        'mfa_enabled': mfa_enabled,
-        'remaining_codes': remaining_codes,
+    # Mark current session
+    current_key = request.session.session_key
+    for s in sessions:
+        s.is_current = s.session_key == current_key
+
+    return render(request, "pages/auth/security_settings.html", {
+        "sessions": sessions,
+        "mfa_enabled": mfa_enabled,
+        "remaining_codes": remaining_codes,
     })
 
 
@@ -421,94 +398,84 @@ def security_settings(request):
 @csrf_protect
 def revoke_session(request, session_id):
     success, message = SessionService.revoke_session(
-        user=request.user,
-        session_id=session_id,
-        request=request
+        user=request.user, session_id=session_id, request=request
     )
     if success:
         messages.success(request, message)
     else:
         messages.error(request, message)
-    return redirect('invoices:security_settings')
+    return redirect("invoices:security_settings")
 
 
 @login_required
 @require_POST
 @csrf_protect
 def revoke_all_sessions(request):
-    success, message = SessionService.revoke_all_other_sessions(
-        user=request.user,
-        request=request
-    )
-    messages.success(request, message)
-    return redirect('invoices:security_settings')
+    success, message = SessionService.revoke_all_other_sessions(user=request.user, request=request)
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+    return redirect("invoices:security_settings")
 
 
 @login_required
 @require_POST
 @csrf_protect
 def change_password(request):
-    current_password = request.POST.get('current_password')
-    new_password = request.POST.get('new_password')
-    confirm_password = request.POST.get('confirm_password')
+    current = request.POST.get("current_password", "")
+    new_pw = request.POST.get("new_password", "")
+    confirm = request.POST.get("confirm_password", "")
 
-    if new_password != confirm_password:
+    if new_pw != confirm:
         messages.error(request, "New passwords don't match.")
-        return redirect('invoices:settings')
-
-    if not request.user.check_password(current_password):
-        messages.error(request, "Current password is incorrect.")
-        return redirect('invoices:settings')
+        return redirect("invoices:security_settings")
 
     success, message = AuthService.change_password(
         user=request.user,
-        current_password=current_password,
-        new_password=new_password,
-        request=request
+        current_password=current,
+        new_password=new_pw,
+        request=request,
     )
-
     if success:
         messages.success(request, message)
     else:
         messages.error(request, message)
 
-    return redirect('invoices:settings')
+    return redirect("invoices:security_settings")
 
 
-@login_required
-def security_activity(request):
-    from ..models import SecurityEvent
-    events = SecurityEvent.objects.filter(user=request.user).order_by('-created_at')[:50]
-    return render(request, 'pages/auth/security_activity.html', {'events': events})
-
+# ============================================================================
+# Invitation Acceptance
+# ============================================================================
 
 def accept_invitation(request, token):
     is_valid, invitation, error = InvitationService.validate_invitation(token)
 
     if not is_valid:
-        return render(request, 'pages/auth/invitation_invalid.html', {'message': error})
+        return render(request, "pages/auth/invitation_invalid.html", {"message": error})
 
     if not request.user.is_authenticated:
-        request.session['pending_invitation'] = token
-        messages.info(request, "Please log in or create an account to accept this invitation.")
-        return redirect('invoices:login')
+        request.session["pending_invitation"] = token
+        messages.info(request, "Please sign in or create an account to accept this invitation.")
+        return redirect("invoices:login")
 
-    if request.method == 'POST':
+    if request.method == "POST":
         success, message = InvitationService.accept_invitation(
-            token=token,
-            user=request.user,
-            request=request
+            token=token, user=request.user, request=request
         )
         if success:
             messages.success(request, message)
-            return redirect('invoices:dashboard')
+            return redirect("invoices:dashboard")
         else:
             messages.error(request, message)
 
-    return render(request, 'pages/auth/accept_invitation.html', {
-        'invitation': invitation
-    })
+    return render(request, "pages/auth/accept_invitation.html", {"invitation": invitation})
 
+
+# ============================================================================
+# Static / Marketing Pages
+# ============================================================================
 
 def about_view(request):
     return render(request, "pages/about.html")
@@ -555,22 +522,37 @@ def resources_view(request):
 
 
 def settings_page(request):
-    return redirect('invoices:security_settings')
+    return redirect("invoices:security_settings")
 
 
+# ============================================================================
+# AJAX / API helpers (settings page)
+# ============================================================================
+
+@login_required
 def profile_update_ajax(request):
-    if request.method == 'POST':
-        profile = request.user.profile
-        profile.user.first_name = request.POST.get('full_name', '').split(' ')[0]
-        profile.user.last_name = ' '.join(request.POST.get('full_name', '').split(' ')[1:])
-        profile.user.save()
+    if request.method == "POST":
+        try:
+            profile = request.user.profile
+            full_name = request.POST.get("full_name", "").strip()
+            if full_name:
+                parts = full_name.split(" ", 1)
+                request.user.first_name = parts[0]
+                request.user.last_name = parts[1] if len(parts) > 1 else ""
+                request.user.save(update_fields=["first_name", "last_name"])
 
-        profile.timezone = request.POST.get('timezone')
-        profile.locale = request.POST.get('locale')
-        profile.save()
-
-        messages.success(request, "Profile updated successfully.")
-        return redirect('invoices:settings')
+            timezone_val = request.POST.get("timezone")
+            locale_val = request.POST.get("locale")
+            if timezone_val:
+                profile.timezone = timezone_val
+            if locale_val:
+                profile.locale = locale_val
+            profile.save()
+            messages.success(request, "Profile updated successfully.")
+        except Exception as exc:
+            logger.error("Profile update error: %s", exc)
+            messages.error(request, "Failed to update profile.")
+        return redirect("invoices:settings")
     return JsonResponse({"success": True})
 
 
@@ -578,18 +560,21 @@ def security_update_ajax(request):
     return JsonResponse({"success": True})
 
 
+@login_required
 def notifications_update_ajax(request):
-    if request.method == 'POST':
-        profile = request.user.profile
-        profile.notify_payment_received = request.POST.get('notify_payment_received') == 'on'
-        profile.notify_invoice_viewed = request.POST.get('notify_invoice_viewed') == 'on'
-        profile.notify_invoice_overdue = request.POST.get('notify_invoice_overdue') == 'on'
-        profile.notify_weekly_summary = request.POST.get('notify_weekly_summary') == 'on'
-        profile.notify_security_alerts = request.POST.get('notify_security_alerts') == 'on'
-        profile.save()
-
-        messages.success(request, "Notification preferences updated.")
-        return redirect('invoices:settings')
+    if request.method == "POST":
+        try:
+            profile = request.user.profile
+            profile.notify_payment_received = request.POST.get("notify_payment_received") == "on"
+            profile.notify_invoice_viewed = request.POST.get("notify_invoice_viewed") == "on"
+            profile.notify_invoice_overdue = request.POST.get("notify_invoice_overdue") == "on"
+            profile.notify_weekly_summary = request.POST.get("notify_weekly_summary") == "on"
+            profile.notify_security_alerts = request.POST.get("notify_security_alerts") == "on"
+            profile.save()
+            messages.success(request, "Notification preferences updated.")
+        except Exception as exc:
+            logger.error("Notifications update error: %s", exc)
+        return redirect("invoices:settings")
     return JsonResponse({"success": True})
 
 
@@ -602,11 +587,11 @@ def reminder_dashboard(request):
 
 
 def reminder_settings(request):
-    return redirect('invoices:reminder_dashboard')
+    return redirect("invoices:reminder_dashboard")
 
 
 def track_reminder_click(request, log_id):
-    return redirect('invoices:home')
+    return redirect("invoices:home")
 
 
 def track_reminder_open(request, log_id):
@@ -623,3 +608,31 @@ def submit_feedback(request):
 
 def faq_api(request):
     return JsonResponse({"faqs": []})
+
+
+# ============================================================================
+# Legacy email verification stubs
+# (redirected to login — email verification not required in this system)
+# ============================================================================
+
+@require_GET
+def verification_sent(request):
+    """Kept for URL backward-compat; redirect to login."""
+    return redirect("invoices:login")
+
+
+def verify_email(request, token):
+    """Legacy route — redirect to login."""
+    return redirect("invoices:login")
+
+
+@csrf_protect
+def resend_verification(request):
+    """Legacy route — redirect to login."""
+    return redirect("invoices:login")
+
+
+def security_activity(request):
+    from ..models import SecurityEvent
+    events = SecurityEvent.objects.filter(user=request.user).order_by("-created_at")[:50]
+    return render(request, "pages/auth/security_activity.html", {"events": events})

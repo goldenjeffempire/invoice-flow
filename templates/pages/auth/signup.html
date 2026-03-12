@@ -1,394 +1,311 @@
-{% extends "base/auth_layout.html" %}
+{% extends "pages/auth/auth_base.html" %}
 {% load static %}
 
-{% block title %}Create Account — InvoiceFlow{% endblock %}
+{% block title %}Create Account – InvoiceFlow{% endblock %}
+{% block meta_description %}Create your free InvoiceFlow account and start sending professional invoices today.{% endblock %}
 
-{% block auth_topbar_right %}
-  <span class="if-topbar-text">Already have an account?</span>
-  <a href="{% url 'invoices:login' %}" class="if-topbar-btn">Sign in</a>
-{% endblock %}
-
-{% block auth_content %}
-<div class="if-split"
-     x-data="signupPage()"
-     x-init="init()">
-
-  <!-- ── Hero Panel ─────────────────────── -->
-  <div class="if-split-hero" aria-hidden="true">
-    <div class="if-hero-eyebrow">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-      Free Forever Plan Available
-    </div>
-    <h2 class="if-hero-title">Start invoicing<br>like a <em>pro</em></h2>
-    <p class="if-hero-sub">Join thousands of freelancers and businesses who invoice smarter, get paid faster, and grow confidently.</p>
-    <div class="if-hero-feats">
-      <div class="if-feat">
-        <div class="if-feat-icon" style="background:rgba(99,102,241,.12)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        </div>
-        <div>
-          <p class="if-feat-title">Beautiful Invoices</p>
-          <p class="if-feat-text">Professional templates, your brand, in seconds.</p>
-        </div>
-      </div>
-      <div class="if-feat">
-        <div class="if-feat-icon" style="background:rgba(16,185,129,.1)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-        </div>
-        <div>
-          <p class="if-feat-title">Accept Payments Online</p>
-          <p class="if-feat-text">Paystack, Stripe, bank transfer — all built in.</p>
-        </div>
-      </div>
-      <div class="if-feat">
-        <div class="if-feat-icon" style="background:rgba(245,158,11,.1)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-        </div>
-        <div>
-          <p class="if-feat-title">Smart Analytics</p>
-          <p class="if-feat-text">Revenue, expenses and cash flow dashboards.</p>
-        </div>
-      </div>
-    </div>
+{% block brand_content %}
+<div class="mb-8">
+  <div class="w-16 h-16 bg-white/15 rounded-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
+    <svg class="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+    </svg>
   </div>
-
-  <!-- ── Form Panel ─────────────────────── -->
-  <div class="if-split-form" :class="{ 'if-card--shake': shaking }">
-
-    <!-- Step indicator -->
-    <div class="if-steps" role="progressbar" :aria-valuenow="step" aria-valuemin="1" aria-valuemax="2">
-      <div class="if-step" :class="step >= 1 ? (step > 1 ? 'if-step--done' : 'if-step--act') : ''">
-        <div class="if-step-dot">
-          <template x-if="step > 1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          </template>
-          <template x-if="step <= 1"><span>1</span></template>
-        </div>
-        <span class="if-step-label">Account</span>
-      </div>
-
-      <div class="if-step-line" :class="step > 1 ? 'if-step-line--done' : ''"></div>
-
-      <div class="if-step" :class="step >= 2 ? 'if-step--act' : ''">
-        <div class="if-step-dot"><span>2</span></div>
-        <span class="if-step-label">Security</span>
-      </div>
-
-      <div class="if-step-line"></div>
-
-      <div class="if-step">
-        <div class="if-step-dot"><span>3</span></div>
-        <span class="if-step-label">Ready</span>
-      </div>
-    </div>
-
-    {% if messages %}
-    <div class="if-alerts" role="alert" aria-live="polite">
-      {% for message in messages %}
-      <div class="if-alert {% if message.tags == 'error' %}if-alert--error{% else %}if-alert--info{% endif %}">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <span>{{ message }}</span>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- ── STEP 1 ── -->
-    <div x-show="step === 1" x-cloak style="animation: cardIn .3s ease both">
-      <h1 class="if-card-title">Create your account</h1>
-      <p class="if-card-sub">Start free. No credit card needed.</p>
-
-      <form class="if-form" @submit.prevent="nextStep" novalidate aria-label="Account details">
-        <!-- Username -->
-        <div class="if-field" :class="{ 'if-field--err': err.username, 'if-field--ok': ok.username }">
-          <label class="if-label" for="id_username">Username</label>
-          <div class="if-input-wrap">
-            <svg class="if-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <input type="text"
-                   id="id_username"
-                   class="if-input"
-                   placeholder="e.g. janedoe"
-                   autocomplete="username"
-                   autocapitalize="none"
-                   spellcheck="false"
-                   x-model="form.username"
-                   @input.debounce.350ms="validateUsername"
-                   @blur="validateUsername"
-                   :aria-invalid="err.username ? 'true' : 'false'"
-                   :aria-describedby="err.username ? 'un-err' : 'un-hint'"
-                   required>
-          </div>
-          <p class="if-field-err" id="un-err" x-show="err.username" x-text="err.username" x-cloak role="alert"></p>
-          <p class="if-field-hint" id="un-hint" x-show="!err.username">3–30 characters, letters, numbers and underscores only</p>
-        </div>
-
-        <!-- Email -->
-        <div class="if-field" :class="{ 'if-field--err': err.email, 'if-field--ok': ok.email }">
-          <label class="if-label" for="id_email">Work Email</label>
-          <div class="if-input-wrap">
-            <svg class="if-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            <input type="email"
-                   id="id_email"
-                   class="if-input"
-                   placeholder="you@company.com"
-                   autocomplete="email"
-                   x-model="form.email"
-                   @input.debounce.350ms="validateEmail"
-                   @blur="validateEmail"
-                   :aria-invalid="err.email ? 'true' : 'false'"
-                   :aria-describedby="err.email ? 'em-err' : undefined"
-                   required>
-          </div>
-          <p class="if-field-err" id="em-err" x-show="err.email" x-text="err.email" x-cloak role="alert"></p>
-        </div>
-
-        <button type="submit" class="if-btn" style="margin-top:4px">
-          Continue
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </button>
-      </form>
-
-      <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--a-text2)">
-        Already have an account?
-        <a href="{% url 'invoices:login' %}" class="if-link">Sign in</a>
-      </p>
-    </div>
-
-    <!-- ── STEP 2 ── -->
-    <div x-show="step === 2" x-cloak style="animation: cardIn .3s ease both">
-      <h2 class="if-card-title">Secure your account</h2>
-      <p class="if-card-sub">Choose a strong password to protect your account.</p>
-
-      <form class="if-form"
-            method="post"
-            novalidate
-            @submit.prevent="submitFinal"
-            id="signup-form"
-            aria-label="Security setup">
-        {% csrf_token %}
-        <input type="hidden" name="username" :value="form.username">
-        <input type="hidden" name="email"    :value="form.email">
-
-        <!-- Password -->
-        <div class="if-field" :class="{ 'if-field--err': err.password }">
-          <label class="if-label" for="id_password">Password</label>
-          <div class="if-input-wrap">
-            <svg class="if-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <input :type="showPw ? 'text' : 'password'"
-                   name="password"
-                   id="id_password"
-                   class="if-input if-input--suffix"
-                   placeholder="Min. 8 characters"
-                   autocomplete="new-password"
-                   x-model="form.password"
-                   @input="updateStrength"
-                   @blur="validatePassword"
-                   :aria-invalid="err.password ? 'true' : 'false'"
-                   :aria-describedby="'pw-strength'"
-                   required>
-            <button type="button" class="if-input-suffix-btn" @click="showPw = !showPw" :aria-label="showPw ? 'Hide' : 'Show'">
-              <svg x-show="!showPw" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg x-show="showPw" x-cloak width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </button>
-          </div>
-          <p class="if-field-err" x-show="err.password" x-text="err.password" x-cloak role="alert"></p>
-
-          <!-- Strength meter -->
-          <div id="pw-strength" x-show="form.password.length > 0" x-cloak>
-            <div class="if-strength-bar" role="meter" :aria-valuenow="strength" aria-valuemin="0" aria-valuemax="5">
-              <div class="if-strength-fill" :class="'s' + strength" :style="'width:' + (strength * 20) + '%'"></div>
-            </div>
-            <div class="if-strength-label">
-              <span style="color:var(--a-text3)">Strength:</span>
-              <span :style="strengthColor" x-text="strengthLabel"></span>
-            </div>
-            <div class="if-req-grid" role="list">
-              <div class="if-req" :class="reqs.len ? 'ok' : ''" role="listitem">
-                <span class="dot"></span>At least 8 characters
-              </div>
-              <div class="if-req" :class="reqs.upper ? 'ok' : ''" role="listitem">
-                <span class="dot"></span>Uppercase letter
-              </div>
-              <div class="if-req" :class="reqs.lower ? 'ok' : ''" role="listitem">
-                <span class="dot"></span>Lowercase letter
-              </div>
-              <div class="if-req" :class="reqs.num ? 'ok' : ''" role="listitem">
-                <span class="dot"></span>Number
-              </div>
-              <div class="if-req" :class="reqs.special ? 'ok' : ''" role="listitem">
-                <span class="dot"></span>Special character
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Confirm Password -->
-        <div class="if-field" :class="{ 'if-field--err': err.confirm, 'if-field--ok': form.confirm && !err.confirm }">
-          <label class="if-label" for="id_confirm">Confirm Password</label>
-          <div class="if-input-wrap">
-            <svg class="if-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-            <input :type="showPw ? 'text' : 'password'"
-                   name="confirm_password"
-                   id="id_confirm"
-                   class="if-input"
-                   placeholder="Repeat your password"
-                   autocomplete="new-password"
-                   x-model="form.confirm"
-                   @input="validateConfirm"
-                   @blur="validateConfirm"
-                   :aria-invalid="err.confirm ? 'true' : 'false'"
-                   required>
-          </div>
-          <p class="if-field-err" x-show="err.confirm" x-text="err.confirm" x-cloak role="alert"></p>
-        </div>
-
-        <!-- Terms -->
-        <label class="if-check-wrap" :class="{ 'if-field--err': err.terms }">
-          <input type="checkbox" name="agree_terms" class="if-check" x-model="form.terms" @change="validateTerms">
-          <span class="if-check-box" aria-hidden="true">
-            <svg x-show="form.terms" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-          </span>
-          <span class="if-check-text">
-            I agree to InvoiceFlow's
-            <a href="#" target="_blank" rel="noopener">Terms of Service</a>
-            and
-            <a href="#" target="_blank" rel="noopener">Privacy Policy</a>
-          </span>
-        </label>
-        <p class="if-field-err" x-show="err.terms" x-text="err.terms" x-cloak role="alert" style="margin-top:-8px"></p>
-
-        <!-- Action buttons -->
-        <div style="display:flex;gap:10px;margin-top:4px">
-          <button type="button" class="if-btn-ghost" @click="step = 1" style="flex:0 0 auto;width:auto;padding:13px 18px" aria-label="Go back">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-          </button>
-          <button type="submit" class="if-btn" :disabled="loading">
-            <template x-if="!loading"><span>Create Account</span></template>
-            <template x-if="loading">
-              <span style="display:flex;align-items:center;gap:8px">
-                <svg class="if-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,.25)" stroke-width="3"/><path d="M12 2a10 10 0 0 1 10 10" stroke="white" stroke-width="3" stroke-linecap="round"/></svg>
-                Creating account…
-              </span>
-            </template>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Trust row (always visible) -->
-    <div class="if-trust" aria-label="Trust signals">
-      <div class="if-trust-item">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
-        No card required
-      </div>
-      <div class="if-trust-item">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        256-bit encryption
-      </div>
-      <div class="if-trust-item">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
-        Cancel anytime
-      </div>
-    </div>
-  </div>
+  <h1 class="text-3xl xl:text-4xl font-bold text-white leading-snug mb-4">
+    Start getting paid faster.
+  </h1>
+  <p class="text-white/70 text-lg leading-relaxed">
+    Join thousands of freelancers and small businesses who use InvoiceFlow to invoice professionally and get paid on time.
+  </p>
 </div>
+<ul class="space-y-4">
+  <li class="flex items-start gap-3">
+    <div class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-0.5">
+      <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <span class="text-white/80 text-sm leading-relaxed">Free to start — no credit card required</span>
+  </li>
+  <li class="flex items-start gap-3">
+    <div class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-0.5">
+      <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <span class="text-white/80 text-sm leading-relaxed">Professional PDF invoices in seconds</span>
+  </li>
+  <li class="flex items-start gap-3">
+    <div class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-0.5">
+      <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <span class="text-white/80 text-sm leading-relaxed">Automated payment reminders</span>
+  </li>
+  <li class="flex items-start gap-3">
+    <div class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-0.5">
+      <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <span class="text-white/80 text-sm leading-relaxed">Paystack payments &amp; expense tracking</span>
+  </li>
+  <li class="flex items-start gap-3">
+    <div class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 flex items-center justify-center mt-0.5">
+      <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+    </div>
+    <span class="text-white/80 text-sm leading-relaxed">Bank-level security &amp; data encryption</span>
+  </li>
+</ul>
 {% endblock %}
 
-{% block auth_extra_script %}
-<script>
-function signupPage() {
-  return {
-    step: 1,
-    form: { username: '', email: '', password: '', confirm: '', terms: false },
-    err: {},
-    ok: {},
-    loading: false,
-    showPw: false,
-    shaking: false,
-    strength: 0,
-    strengthLabel: '',
-    strengthColor: '',
-    reqs: { len: false, upper: false, lower: false, num: false, special: false },
+{% block form_content %}
+<div class="mb-7">
+  <h2 class="text-2xl sm:text-3xl font-bold text-gray-900">Create your free account</h2>
+  <p class="mt-2 text-sm text-gray-500">
+    Already have an account?
+    <a href="{% url 'invoices:login' %}" class="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
+      Sign in
+    </a>
+  </p>
+</div>
 
-    init() {
-      // If server returned errors, go to step 2
-      const hasMsg = document.querySelector('.if-alert--error');
-      {% if form.errors %}
-      this.step = 2;
+<form id="signup-form" method="post" action="{% url 'invoices:signup' %}" novalidate class="space-y-4">
+  {% csrf_token %}
+
+  <!-- Non-field errors -->
+  {% if form.non_field_errors %}
+  <div class="rounded-xl bg-red-50 border border-red-200 p-4" role="alert" aria-live="polite">
+    <div class="flex gap-3">
+      <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+      </svg>
+      <p class="text-sm text-red-700 font-medium">{{ form.non_field_errors.0 }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Full Name -->
+  <div>
+    <label for="id_full_name" class="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
+    {{ form.full_name }}
+    {% if form.full_name.errors %}
+    <p class="field-error mt-1.5" role="alert">
+      <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      {{ form.full_name.errors.0 }}
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- Username + Email side by side on lg -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+      <label for="id_username" class="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+      {{ form.username }}
+      <p class="mt-1 text-xs text-gray-400" id="username-hint">Letters, numbers, underscores only.</p>
+      {% if form.username.errors %}
+      <p class="field-error mt-1" role="alert">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        {{ form.username.errors.0 }}
+      </p>
       {% endif %}
-    },
+    </div>
+    <div>
+      <label for="id_email" class="block text-sm font-medium text-gray-700 mb-1.5">Work email</label>
+      {{ form.email }}
+      {% if form.email.errors %}
+      <p class="field-error mt-1" role="alert">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        {{ form.email.errors.0 }}
+      </p>
+      {% endif %}
+    </div>
+  </div>
 
-    validateUsername() {
-      const v = this.form.username.trim();
-      if (!v) { this.err.username = 'Username is required.'; this.ok.username = false; return; }
-      if (v.length < 3)  { this.err.username = 'Username must be at least 3 characters.'; this.ok.username = false; return; }
-      if (v.length > 30) { this.err.username = 'Username cannot exceed 30 characters.'; this.ok.username = false; return; }
-      if (!/^[a-zA-Z0-9_]+$/.test(v)) { this.err.username = 'Only letters, numbers and underscores allowed.'; this.ok.username = false; return; }
-      this.err.username = '';
-      this.ok.username = true;
-    },
+  <!-- Password -->
+  <div>
+    <label for="id_password" class="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+    <div class="relative">
+      {{ form.password }}
+      <button type="button" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors" aria-label="Show password" onclick="togglePwd('id_password', this)">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+      </button>
+    </div>
 
-    validateEmail() {
-      const v = this.form.email.trim();
-      if (!v) { this.err.email = 'Email is required.'; this.ok.email = false; return; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { this.err.email = 'Please enter a valid email address.'; this.ok.email = false; return; }
-      this.err.email = '';
-      this.ok.email = true;
-    },
+    <!-- Strength meter -->
+    <div class="mt-2" aria-label="Password strength" role="status">
+      <div class="flex gap-1 mb-1">
+        <div id="s1" class="flex-1 strength-bar bg-gray-200" style="width:100%"></div>
+        <div id="s2" class="flex-1 strength-bar bg-gray-200" style="width:100%"></div>
+        <div id="s3" class="flex-1 strength-bar bg-gray-200" style="width:100%"></div>
+        <div id="s4" class="flex-1 strength-bar bg-gray-200" style="width:100%"></div>
+      </div>
+      <p id="strength-label" class="text-xs text-gray-400"></p>
+    </div>
 
-    nextStep() {
-      this.validateUsername();
-      this.validateEmail();
-      if (this.err.username || this.err.email) { this.shaking = true; setTimeout(() => this.shaking = false, 450); return; }
-      this.step = 2;
-      this.$nextTick(() => document.getElementById('id_password')?.focus());
-    },
+    <p class="mt-1 text-xs text-gray-400" id="password-hint">8+ chars, uppercase, lowercase, number &amp; special character.</p>
+    {% if form.password.errors %}
+    <p class="field-error mt-1" role="alert">
+      <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      {{ form.password.errors.0 }}
+    </p>
+    {% endif %}
+  </div>
 
-    updateStrength() {
-      const p = this.form.password;
-      this.reqs.len     = p.length >= 8;
-      this.reqs.upper   = /[A-Z]/.test(p);
-      this.reqs.lower   = /[a-z]/.test(p);
-      this.reqs.num     = /[0-9]/.test(p);
-      this.reqs.special = /[^A-Za-z0-9]/.test(p);
-      const score = Object.values(this.reqs).filter(Boolean).length;
-      this.strength = score;
-      const labels = ['', 'Very Weak', 'Weak', 'Fair', 'Strong', 'Excellent'];
-      const colors = ['', '#f87171', '#fbbf24', '#84cc16', '#10b981', '#06b6d4'];
-      this.strengthLabel = labels[score] || '';
-      this.strengthColor = `color:${colors[score] || 'var(--a-text3)'}`;
-    },
+  <!-- Confirm Password -->
+  <div>
+    <label for="id_confirm_password" class="block text-sm font-medium text-gray-700 mb-1.5">Confirm password</label>
+    <div class="relative">
+      {{ form.confirm_password }}
+      <button type="button" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors" aria-label="Show confirm password" onclick="togglePwd('id_confirm_password', this)">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+      </button>
+    </div>
+    <p id="match-hint" class="mt-1 text-xs hidden"></p>
+    {% if form.confirm_password.errors %}
+    <p class="field-error mt-1" role="alert">
+      <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      {{ form.confirm_password.errors.0 }}
+    </p>
+    {% endif %}
+  </div>
 
-    validatePassword() {
-      if (!this.form.password)      { this.err.password = 'Password is required.'; return; }
-      if (this.form.password.length < 8) { this.err.password = 'Password must be at least 8 characters.'; return; }
-      if (!this.reqs.upper || !this.reqs.lower || !this.reqs.num) {
-        this.err.password = 'Password needs uppercase, lowercase and a number.'; return;
-      }
-      this.err.password = '';
-    },
+  <!-- Terms -->
+  <div>
+    <div class="flex items-start gap-3">
+      {{ form.agree_terms }}
+      <label for="id_agree_terms" class="text-sm text-gray-600 cursor-pointer leading-snug -mt-0.5">
+        I agree to InvoiceFlow's
+        <a href="/terms/" class="text-indigo-600 hover:underline font-medium" target="_blank" rel="noopener">Terms of Service</a>
+        and
+        <a href="/privacy/" class="text-indigo-600 hover:underline font-medium" target="_blank" rel="noopener">Privacy Policy</a>
+      </label>
+    </div>
+    {% if form.agree_terms.errors %}
+    <p class="field-error mt-1.5" role="alert">
+      <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+      {{ form.agree_terms.errors.0 }}
+    </p>
+    {% endif %}
+  </div>
 
-    validateConfirm() {
-      if (!this.form.confirm)                          { this.err.confirm = 'Please confirm your password.'; return; }
-      if (this.form.confirm !== this.form.password)    { this.err.confirm = 'Passwords do not match.'; return; }
-      this.err.confirm = '';
-    },
+  <!-- Submit -->
+  <button type="submit" id="submit-btn" class="btn-primary">
+    <span id="submit-text">Create account</span>
+    <svg id="submit-spinner" class="hidden w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+    </svg>
+  </button>
+</form>
 
-    validateTerms() {
-      this.err.terms = this.form.terms ? '' : 'You must accept the Terms of Service to continue.';
-    },
+<p class="mt-6 text-center text-xs text-gray-400">
+  By creating an account you agree to our
+  <a href="/terms/" class="text-indigo-500 hover:underline">Terms</a> and
+  <a href="/privacy/" class="text-indigo-500 hover:underline">Privacy Policy</a>.
+</p>
+{% endblock %}
 
-    submitFinal() {
-      this.validatePassword();
-      this.validateConfirm();
-      this.validateTerms();
-      if (this.err.password || this.err.confirm || this.err.terms) {
-        this.shaking = true; setTimeout(() => this.shaking = false, 450); return;
-      }
-      this.loading = true;
-      document.getElementById('signup-form').submit();
+{% block extra_scripts %}
+<script>
+  function togglePwd(inputId, btn) {
+    var inp = document.getElementById(inputId);
+    var showing = inp.type === 'text';
+    inp.type = showing ? 'password' : 'text';
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    btn.querySelector('svg').innerHTML = showing
+      ? '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>'
+      : '<path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>';
+  }
+
+  /* ---- Password strength meter ---- */
+  (function () {
+    var pwInput = document.getElementById('id_password');
+    var bars = [document.getElementById('s1'), document.getElementById('s2'), document.getElementById('s3'), document.getElementById('s4')];
+    var label = document.getElementById('strength-label');
+    var levels = [
+      { color: '#ef4444', text: 'Too weak' },
+      { color: '#f97316', text: 'Weak' },
+      { color: '#eab308', text: 'Fair' },
+      { color: '#10b981', text: 'Strong' },
+    ];
+
+    function score(pw) {
+      var s = 0;
+      if (pw.length >= 8) s++;
+      if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+      if (/\d/.test(pw)) s++;
+      if (/[^A-Za-z0-9]/.test(pw)) s++;
+      return s;
     }
-  };
-}
+
+    if (pwInput) {
+      pwInput.addEventListener('input', function () {
+        var pw = pwInput.value;
+        if (!pw) {
+          bars.forEach(function (b) { b.style.backgroundColor = '#e5e7eb'; });
+          label.textContent = '';
+          return;
+        }
+        var s = score(pw);
+        bars.forEach(function (b, i) {
+          b.style.backgroundColor = i < s ? levels[s - 1].color : '#e5e7eb';
+        });
+        label.textContent = levels[s - 1] ? levels[s - 1].text : '';
+        label.style.color = levels[s - 1] ? levels[s - 1].color : '';
+      });
+    }
+  })();
+
+  /* ---- Confirm password match ---- */
+  (function () {
+    var pw = document.getElementById('id_password');
+    var cpw = document.getElementById('id_confirm_password');
+    var hint = document.getElementById('match-hint');
+    if (!pw || !cpw || !hint) return;
+
+    function check() {
+      if (!cpw.value) { hint.classList.add('hidden'); return; }
+      if (pw.value === cpw.value) {
+        hint.textContent = '✓ Passwords match';
+        hint.className = 'mt-1 text-xs text-emerald-600';
+        hint.classList.remove('hidden');
+        cpw.classList.remove('input-error');
+        cpw.classList.add('input-success');
+      } else {
+        hint.textContent = '✗ Passwords do not match';
+        hint.className = 'mt-1 text-xs text-red-500';
+        hint.classList.remove('hidden');
+        cpw.classList.remove('input-success');
+        cpw.classList.add('input-error');
+      }
+    }
+    cpw.addEventListener('input', check);
+    pw.addEventListener('input', function () { if (cpw.value) check(); });
+  })();
+
+  /* ---- Username live validation ---- */
+  (function () {
+    var usernameInput = document.getElementById('id_username');
+    if (!usernameInput) return;
+    usernameInput.addEventListener('input', function () {
+      var val = usernameInput.value;
+      if (val && /^[a-zA-Z0-9_]+$/.test(val)) {
+        usernameInput.classList.remove('input-error');
+        usernameInput.classList.add('input-success');
+      } else if (val) {
+        usernameInput.classList.remove('input-success');
+        usernameInput.classList.add('input-error');
+      } else {
+        usernameInput.classList.remove('input-error', 'input-success');
+      }
+    });
+  })();
+
+  /* ---- Submit loading state ---- */
+  document.getElementById('signup-form').addEventListener('submit', function () {
+    document.getElementById('submit-text').textContent = 'Creating account…';
+    document.getElementById('submit-spinner').classList.remove('hidden');
+    document.getElementById('submit-btn').disabled = true;
+  });
 </script>
 {% endblock %}

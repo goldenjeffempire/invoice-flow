@@ -24,7 +24,7 @@ A production-ready Django invoicing application for freelancers and small busine
 - **Templates:** Django templates with Tailwind CSS
 - **PDF Generation:** WeasyPrint + ReportLab
 - **Email:** SendGrid
-- **Auth:** Django auth + MFA (TOTP via pyotp)
+- **Auth:** Enterprise-grade rebuild — AuthService, SessionService, PasswordValidator (HIBP breach check), SecurityService. No email verification required. MFA (TOTP via pyotp) preserved for existing users.
 - **Encryption:** cryptography library with ENCRYPTION_SALT env var
 
 ## Project Structure
