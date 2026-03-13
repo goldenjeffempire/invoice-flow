@@ -475,11 +475,12 @@
 </div>
 
 <!-- ════════════════════════ COMMAND PALETTE ════════════════════════ -->
-<div x-show="srch" x-cloak class="srch-sh" @keydown.escape.window="srch=false"
+<template x-if="srch">
+<div x-show="srch" class="srch-sh" @keydown.escape.window="srch=false"
      x-transition:enter="transition duration-150" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
      x-transition:leave="transition duration-100" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
   <div class="srch-bd" @click="srch=false"></div>
-  <div class="srch-pn" x-data="cmdSearch()" x-init="$watch('srch',v=>{if(v)$nextTick(()=>$refs.si&&$refs.si.focus())})">
+  <div class="srch-pn" x-data="cmdSearch()" x-init="$nextTick(()=>$refs.si&&$refs.si.focus())">
     <div class="flex items-center gap-3 px-4 h-13 h-[52px] border-b border-slate-100 dark:border-slate-800">
       <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
       <input x-ref="si" x-model="q" @input.debounce.250ms="doSearch()"
@@ -568,6 +569,7 @@
     </div>
   </div>
 </div>
+</template>
 
 <script>
 function appShell(){
