@@ -1,203 +1,126 @@
 {% extends "base/layout_app.html" %}
 {% load static %}
-
 {% block title %}New Recurring Schedule — InvoiceFlow{% endblock %}
-
-{% block breadcrumb %}
-<nav class="flex items-center gap-2 text-sm">
-  <a href="{% url 'invoices:schedule_list' %}" class="text-slate-400 hover:text-brand-600 dark:text-slate-500 transition-colors">Recurring</a>
-  <svg class="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-  <span class="font-semibold text-slate-800 dark:text-slate-200">New Schedule</span>
-</nav>
-{% endblock %}
+{% block page_title %}New Recurring Schedule{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-
-  <div class="mb-6">
-    <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">New Recurring Schedule</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Automate invoice generation for a client on a repeating basis.</p>
-  </div>
-
-  {% if messages %}
-  <div class="mb-4 space-y-2">
-    {% for message in messages %}
-    <div class="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium
-      {% if message.tags == 'error' %}bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-400
-      {% else %}bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400{% endif %}">
-      {{ message }}
+  <!-- Header -->
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{% url 'invoices:schedule_list' %}" class="flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
+    <div>
+      <h1 class="text-xl font-bold text-slate-900 dark:text-white">New Recurring Schedule</h1>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Set up automated invoice generation</p>
     </div>
-    {% endfor %}
   </div>
-  {% endif %}
 
-  <form method="post" x-data="{ intervalType: 'monthly', autoSend: true, retryEnabled: true }">
+  <form method="post" class="space-y-5">
     {% csrf_token %}
 
-    <!-- Client & Description -->
-    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 mb-4">
-      <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">Basic Details</h2>
-      <div class="grid grid-cols-1 gap-4">
+    <!-- Basic -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Schedule Details</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2">
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Schedule Name *</label>
+          <input type="text" name="description" required placeholder="Monthly retainer, Weekly report…"
+                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 placeholder-slate-400 transition-colors">
+        </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Client <span class="text-rose-500">*</span></label>
-          <select name="client_id" required
-                  class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-            <option value="">Select a client…</option>
-            {% for client in clients %}
-            <option value="{{ client.id }}">{{ client.name }}</option>
-            {% endfor %}
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Client *</label>
+          <select name="client_id" required class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
+            <option value="">Select client…</option>
+            {% for c in clients %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
           </select>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Description <span class="text-rose-500">*</span></label>
-          <input type="text" name="description" required placeholder="e.g. Monthly retainer, SaaS subscription…"
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Currency</label>
+          <select name="currency" class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
+            <option value="USD">$ — USD</option>
+            <option value="EUR">€ — EUR</option>
+            <option value="GBP">£ — GBP</option>
+            <option value="NGN">₦ — NGN</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Amount *</label>
+          <input type="number" name="total_amount" required min="0.01" step="0.01" placeholder="0.00"
+                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 placeholder-slate-400 transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Frequency *</label>
+          <select name="interval_type" required class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Bi-weekly</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Annually</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Start Date *</label>
+          <input type="date" name="start_date" required
+                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">End Date (optional)</label>
+          <input type="date" name="end_date"
+                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Due Days After Issue</label>
+          <input type="number" name="due_days" value="30" min="0" max="365"
+                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
         </div>
       </div>
     </div>
 
-    <!-- Billing Schedule -->
-    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 mb-4">
-      <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">Billing Schedule</h2>
+    <!-- Line Items -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5" x-data="{items:[{desc:'',qty:1,price:0}]}">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Invoice Items</h3>
+        <button type="button" @click="items.push({desc:'',qty:1,price:0})" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          Add Item
+        </button>
+      </div>
+      <div class="space-y-2">
+        <template x-for="(item, idx) in items" :key="idx">
+          <div class="flex items-center gap-2">
+            <input type="text" x-model="item.desc" :name="'item_desc_'+idx" placeholder="Service description" class="flex-1 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:border-brand-400 placeholder-slate-400">
+            <input type="number" x-model.number="item.qty" :name="'item_qty_'+idx" placeholder="Qty" min="1" class="w-16 px-2 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:border-brand-400 text-center">
+            <input type="number" x-model.number="item.price" :name="'item_price_'+idx" placeholder="Price" min="0" step="0.01" class="w-24 px-2 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:border-brand-400 text-right">
+            <button type="button" @click="if(items.length>1)items.splice(idx,1)" class="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors flex-shrink-0">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Notes</h3>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Interval <span class="text-rose-500">*</span></label>
-          <select name="interval_type" x-model="intervalType"
-                  class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-            {% for value, label in interval_choices %}
-            <option value="{{ value }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div x-show="intervalType === 'custom'" x-cloak>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Custom Interval (days)</label>
-          <input type="number" name="custom_interval_days" min="1" value="30"
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Client Note</label>
+          <textarea name="client_memo" rows="3" placeholder="Thank you for your continued business…" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 placeholder-slate-400 resize-none"></textarea>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Start Date <span class="text-rose-500">*</span></label>
-          <input type="date" name="start_date" required
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">End Date <span class="text-slate-400 font-normal">(optional)</span></label>
-          <input type="date" name="end_date"
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Anchor Day <span class="text-slate-400 font-normal">(1–31, optional)</span></label>
-          <input type="number" name="anchor_day" min="1" max="31" placeholder="e.g. 1 for first of month"
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-        </div>
-      </div>
-    </div>
-
-    <!-- Amount & Currency -->
-    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 mb-4">
-      <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">Amount & Currency</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="sm:col-span-1">
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Currency</label>
-          <select name="currency"
-                  class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-            {% for value, label in currency_choices %}
-            <option value="{{ value }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="sm:col-span-1">
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Base Amount <span class="text-rose-500">*</span></label>
-          <input type="number" name="base_amount" step="0.01" min="0" required placeholder="0.00"
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-        </div>
-        <div class="sm:col-span-1">
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tax Rate (%)</label>
-          <input type="number" name="tax_rate" step="0.01" min="0" max="100" value="0.00" placeholder="0.00"
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-        </div>
-      </div>
-      <div class="mt-4">
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Payment Terms (days)</label>
-        <input type="number" name="payment_terms_days" min="0" value="30"
-               class="w-full sm:w-40 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-      </div>
-    </div>
-
-    <!-- Invoice Settings -->
-    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 mb-4">
-      <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">Invoice Settings</h2>
-      <div class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Invoice Terms</label>
-          <textarea name="invoice_terms" rows="2" placeholder="Payment due within 30 days…"
-                    class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Invoice Notes</label>
-          <textarea name="invoice_notes" rows="2" placeholder="Thank you for your business…"
-                    class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 resize-none focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
-        </div>
-        <!-- Toggles -->
-        <div class="flex flex-col sm:flex-row gap-5 pt-1">
-          <label class="flex items-center gap-3 cursor-pointer group">
-            <div class="relative">
-              <input type="checkbox" name="auto_send" class="sr-only peer" x-model="autoSend" checked>
-              <div class="w-10 h-6 rounded-full bg-slate-200 dark:bg-slate-600 peer-checked:bg-brand-600 transition-colors"></div>
-              <div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4 shadow"></div>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Auto-send invoices</p>
-              <p class="text-xs text-slate-400 dark:text-slate-500">Automatically email invoice to client</p>
-            </div>
-          </label>
-          <label class="flex items-center gap-3 cursor-pointer group">
-            <div class="relative">
-              <input type="checkbox" name="proration_enabled" class="sr-only peer">
-              <div class="w-10 h-6 rounded-full bg-slate-200 dark:bg-slate-600 peer-checked:bg-brand-600 transition-colors"></div>
-              <div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4 shadow"></div>
-            </div>
-            <div>
-              <p class="text-sm font-medium text-slate-800 dark:text-slate-200">Proration</p>
-              <p class="text-xs text-slate-400 dark:text-slate-500">Prorate partial billing periods</p>
-            </div>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- Retry Settings -->
-    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 mb-6">
-      <h2 class="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4">Retry Settings</h2>
-      <label class="flex items-center gap-3 cursor-pointer mb-4">
-        <div class="relative">
-          <input type="checkbox" name="retry_enabled" class="sr-only peer" x-model="retryEnabled" checked>
-          <div class="w-10 h-6 rounded-full bg-slate-200 dark:bg-slate-600 peer-checked:bg-brand-600 transition-colors"></div>
-          <div class="absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-4 shadow"></div>
-        </div>
-        <span class="text-sm font-medium text-slate-800 dark:text-slate-200">Enable automatic retries on failure</span>
-      </label>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" x-show="retryEnabled">
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Max Retry Attempts</label>
-          <input type="number" name="max_retry_attempts" min="1" max="10" value="3"
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Hours Between Retries</label>
-          <input type="number" name="retry_interval_hours" min="1" value="24"
-                 class="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm text-slate-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Terms & Conditions</label>
+          <textarea name="terms_conditions" rows="3" placeholder="Payment due within 30 days…" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 placeholder-slate-400 resize-none"></textarea>
         </div>
       </div>
     </div>
 
     <!-- Actions -->
-    <div class="flex items-center justify-end gap-3">
-      <a href="{% url 'invoices:schedule_list' %}"
-         class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-        Cancel
-      </a>
-      <button type="submit"
-              class="px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold shadow-sm transition-all active:scale-95">
+    <div class="flex items-center gap-3 justify-end">
+      <a href="{% url 'invoices:schedule_list' %}" class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancel</a>
+      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
         Create Schedule
       </button>
     </div>

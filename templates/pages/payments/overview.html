@@ -1,149 +1,169 @@
 {% extends "base/layout_app.html" %}
 {% load static %}
-
 {% block title %}Payments Overview — InvoiceFlow{% endblock %}
-
-{% block breadcrumb %}
-<nav class="flex items-center gap-2 text-sm">
-  <span class="font-semibold text-slate-800 dark:text-slate-200">Payments</span>
-</nav>
-{% endblock %}
+{% block page_title %}Payments Overview{% endblock %}
 
 {% block content %}
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+<!-- Header -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
   <div>
-    <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Payments Overview</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Monitor payment activity, disputes, and payouts.</p>
+    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Payments Overview</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Financial snapshot of all transactions</p>
   </div>
-  <a href="{% url 'invoices:payment_history' %}"
-     class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-    All Transactions
-  </a>
-</div>
-
-<!-- KPI Cards -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
-    <p class="text-xs text-slate-400 dark:text-slate-500 mb-1.5">Total Collected</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white">{{ workspace.default_currency|default:"NGN" }} {{ total_collected|floatformat:2 }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
-    <p class="text-xs text-slate-400 dark:text-slate-500 mb-1.5">Active Disputes</p>
-    <p class="text-xl font-bold {% if disputes.count > 0 %}text-rose-600{% else %}text-slate-900 dark:text-white{% endif %}">{{ disputes.count }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
-    <p class="text-xs text-slate-400 dark:text-slate-500 mb-1.5">Payouts</p>
-    <p class="text-xl font-bold text-brand-600 dark:text-brand-400">{{ payouts.count }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
-    <p class="text-xs text-slate-400 dark:text-slate-500 mb-1.5">Success Rate</p>
-    <p class="text-xl font-bold text-emerald-600">100%</p>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'invoices:payment_history' %}" class="flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-xl transition-colors">
+      Full History
+    </a>
+    <a href="{% url 'invoices:invoice_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      New Invoice
+    </a>
   </div>
 </div>
 
-<!-- Main Content -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-  <!-- Recent Payments Table -->
-  <div class="lg:col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-      <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Recent Payments</h2>
-      <a href="{% url 'invoices:payment_history' %}" class="text-xs font-semibold text-brand-600 hover:text-brand-700 transition-colors">View all →</a>
+<!-- KPI Row -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+  {% if overview %}
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+    <div class="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center mb-3">
+      <svg class="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
     </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-700">
-        <thead class="bg-slate-50 dark:bg-slate-800/60">
-          <tr>
-            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Invoice</th>
-            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Customer</th>
-            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Amount</th>
-            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Method</th>
-            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Status</th>
-            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Date</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-          {% for payment in payments %}
-          <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
-            <td class="px-5 py-3.5 whitespace-nowrap text-sm font-semibold text-brand-600 hover:text-brand-700">
-              <a href="{% url 'invoices:invoice_detail' payment.invoice.id %}">#{{ payment.invoice.invoice_number }}</a>
-            </td>
-            <td class="px-5 py-3.5 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300">{{ payment.invoice.client.name }}</td>
-            <td class="px-5 py-3.5 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-white">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</td>
-            <td class="px-5 py-3.5 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 capitalize">{{ payment.payment_method|default:"—" }}</td>
-            <td class="px-5 py-3.5 whitespace-nowrap">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold
-                {% if payment.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
-                {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
-                {{ payment.get_status_display }}
-              </span>
-            </td>
-            <td class="px-5 py-3.5 whitespace-nowrap text-sm text-slate-400 dark:text-slate-500">{{ payment.created_at|date:"M j, Y" }}</td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="6" class="px-5 py-12 text-center">
-              <div class="flex flex-col items-center">
-                <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center mb-3">
-                  <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                  </svg>
-                </div>
-                <p class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-0.5">No payments yet</p>
-                <p class="text-xs text-slate-400 dark:text-slate-500">Share an invoice to start receiving payments.</p>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Total Collected</p>
+    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums">{{ overview.total_collected|floatformat:0 }}</p>
+    <p class="text-[10.5px] text-slate-400 mt-0.5">All time</p>
   </div>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+    <div class="w-9 h-9 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center mb-3">
+      <svg class="w-[18px] h-[18px] text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    </div>
+    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">This Month</p>
+    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums">{{ overview.this_month|floatformat:0 }}</p>
+    <p class="text-[10.5px] text-slate-400 mt-0.5">{{ overview.this_month_count }} payments</p>
+  </div>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+    <div class="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center mb-3">
+      <svg class="w-[18px] h-[18px] text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    </div>
+    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Outstanding</p>
+    <p class="text-[22px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">{{ overview.outstanding|floatformat:0 }}</p>
+    <p class="text-[10.5px] text-slate-400 mt-0.5">Awaiting payment</p>
+  </div>
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+    <div class="w-9 h-9 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center mb-3">
+      <svg class="w-[18px] h-[18px] text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+    </div>
+    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Avg Payment</p>
+    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums">{{ overview.avg_days|default:0 }}<span class="text-sm font-semibold text-slate-400 ml-1">days</span></p>
+    <p class="text-[10.5px] text-slate-400 mt-0.5">Avg collection time</p>
+  </div>
+  {% endif %}
+</div>
 
-  <!-- Sidebar: Payouts + Disputes -->
-  <div class="space-y-4">
-    <!-- Payouts -->
-    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Pending Payouts</h3>
-      </div>
-      <div class="p-4 space-y-3">
-        {% for payout in payouts %}
-        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-          <div>
-            <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ payout.currency }} {{ payout.amount|floatformat:2 }}</p>
-            <p class="text-xs text-slate-400 dark:text-slate-500">Est. {{ payout.arrival_date|date:"M j"|default:"TBD" }}</p>
-          </div>
-          <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 uppercase">{{ payout.status }}</span>
-        </div>
-        {% empty %}
-        <p class="text-sm text-slate-400 dark:text-slate-500 text-center py-4">No pending payouts.</p>
-        {% endfor %}
+<!-- Charts Row -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5">
+  <!-- Monthly Trend -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Monthly Collections</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Last 12 months</p>
       </div>
     </div>
-
-    <!-- Disputes -->
-    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Recent Disputes</h3>
-      </div>
-      <div class="p-4 space-y-3">
-        {% for dispute in disputes %}
-        <div class="flex items-center justify-between p-3 rounded-xl bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30">
-          <div>
-            <p class="text-sm font-semibold text-rose-700 dark:text-rose-400">{{ dispute.currency }} {{ dispute.amount|floatformat:2 }}</p>
-            <p class="text-xs text-slate-500 dark:text-slate-400">{{ dispute.reason|truncatechars:35 }}</p>
-          </div>
-          <span class="text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30 px-2 py-0.5 rounded-full">{{ dispute.status }}</span>
-        </div>
-        {% empty %}
-        <div class="flex items-center gap-2 py-4 justify-center">
-          <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-          <p class="text-sm text-emerald-600 dark:text-emerald-400 font-medium">No active disputes</p>
-        </div>
-        {% endfor %}
+    <div style="height:180px;position:relative"><canvas id="trendChart"></canvas></div>
+  </div>
+  <!-- Payment Methods -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Payment Methods</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Distribution by method</p>
       </div>
     </div>
+    {% if method_breakdown %}
+    <div class="space-y-3">
+      {% for m in method_breakdown %}
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1.5">
+          <span class="font-medium text-slate-600 dark:text-slate-400 capitalize">{{ m.method|default:"Other" }}</span>
+          <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">{{ m.pct|floatformat:0 }}% · {{ m.total|floatformat:0 }}</span>
+        </div>
+        <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div class="h-full bg-brand-500 rounded-full" style="width:{{ m.pct }}%"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="flex items-center justify-center h-32 text-xs text-slate-400">No payment data yet</div>
+    {% endif %}
   </div>
 </div>
+
+<!-- Recent Payments -->
+<div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Recent Payments</h3>
+    <a href="{% url 'invoices:payment_history' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">View all <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg></a>
+  </div>
+  {% if recent_payments %}
+  <table class="w-full text-xs">
+    <thead>
+      <tr class="bg-slate-50 dark:bg-slate-800/40">
+        <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Date</th>
+        <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Client</th>
+        <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 hidden md:table-cell">Invoice</th>
+        <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 hidden lg:table-cell">Method</th>
+        <th class="text-right px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Amount</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-50 dark:divide-slate-800/60">
+      {% for p in recent_payments %}
+      <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors">
+        <td class="px-5 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{{ p.payment_date|date:"M d, Y" }}</td>
+        <td class="px-3 py-3">{% if p.invoice.client %}<span class="font-semibold text-slate-700 dark:text-slate-300">{{ p.invoice.client.name }}</span>{% endif %}</td>
+        <td class="px-3 py-3 hidden md:table-cell"><a href="{% url 'invoices:invoice_detail' p.invoice.id %}" class="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{{ p.invoice.invoice_number }}</a></td>
+        <td class="px-3 py-3 text-slate-500 dark:text-slate-400 hidden lg:table-cell capitalize">{{ p.get_payment_method_display }}</td>
+        <td class="px-5 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400 tabular-nums whitespace-nowrap">{{ p.invoice.currency }} {{ p.amount|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="flex flex-col items-center justify-center py-16 text-center">
+    <p class="text-sm text-slate-400">No payments recorded yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const dark = document.documentElement.classList.contains('dark');
+  const gridCol = dark ? 'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
+  const tickCol = dark ? '#4b5563':'#9ca3af';
+
+  const trendData = {{ trend_json|default:'null'|safe }};
+  if(trendData && trendData.labels){
+    new Chart(document.getElementById('trendChart'),{
+      type:'bar',
+      data:{
+        labels:trendData.labels,
+        datasets:[{label:'Collected',data:trendData.values,backgroundColor:'rgba(16,185,129,.8)',borderRadius:5,borderSkipped:false,maxBarThickness:36}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:tickCol,font:{size:10}},border:{display:false}},
+          y:{grid:{color:gridCol},ticks:{color:tickCol,font:{size:10},callback:v=>v.toLocaleString()},border:{display:false}}
+        }
+      }
+    });
+  } else {
+    const c=document.getElementById('trendChart');
+    if(c)c.parentElement.innerHTML='<div class="flex h-full items-center justify-center text-xs text-slate-400">No trend data yet</div>';
+  }
+});
+</script>
 {% endblock %}
