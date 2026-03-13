@@ -23,7 +23,7 @@ def onboarding_router(request):
             return redirect('invoices:verification_sent')
 
         if profile.onboarding_completed:
-            return redirect('invoices:dashboard')
+            return redirect('invoices:invoice_list')
 
         current_step = profile.onboarding_step
         step_url = OnboardingService.get_step_url(current_step)
@@ -325,7 +325,7 @@ def onboarding_complete(request):
 
             if success:
                 messages.success(request, message)
-                return redirect('invoices:dashboard')
+                return redirect('invoices:invoice_list')
             else:
                 messages.error(request, message)
 

@@ -1,5 +1,5 @@
 import logging
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.db.models import Q
@@ -95,22 +95,6 @@ def global_search(request):
         logger.debug("Search estimates error: %s", e)
 
     return JsonResponse({'results': results})
-
-
-@login_required
-def activity_timeline(request):
-    workspace = getattr(request, 'workspace', None)
-    activities = []
-    if workspace:
-        try:
-            from ..models import ActivityLog
-            activities = ActivityLog.objects.filter(
-                workspace=workspace
-            ).order_by('-timestamp').select_related('user')[:50]
-        except Exception as e:
-            logger.debug("Activity timeline error: %s", e)
-
-    return render(request, 'pages/activity_timeline.html', {'activities': activities})
 
 
 @login_required

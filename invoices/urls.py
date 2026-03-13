@@ -3,7 +3,6 @@ from django.urls import path
 from django.views.generic import TemplateView
 
 from .views import client_views
-from .views import dashboard_views
 from .views import estimate_views
 from .views import expense_views
 from .views import export_views
@@ -71,14 +70,7 @@ urlpatterns = [
     path("onboarding/back/", onboarding_views.onboarding_go_back, name="onboarding_go_back"),
     path("onboarding/complete/", onboarding_views.onboarding_complete, name="onboarding_complete"),
 
-    # ── Dashboard ─────────────────────────────────────────────────────────────
-    path("dashboard/", dashboard_views.dashboard_overview, name="dashboard"),
-    path("api/dashboard/kpis/", dashboard_views.dashboard_kpis_api, name="dashboard_kpis_api"),
-    path("api/dashboard/alerts/", dashboard_views.dashboard_alerts_api, name="dashboard_alerts_api"),
-    path("api/dashboard/charts/", dashboard_views.dashboard_chart_api, name="dashboard_chart_api"),
-
     # ── Activity ──────────────────────────────────────────────────────────────
-    path("activity/", ux_views.activity_timeline, name="activity_timeline"),
     path("api/search/", ux_views.global_search, name="global_search"),
     path("notifications/mark-read/<int:pk>/", ux_views.mark_notification_read, name="mark_notification_read"),
     path("api/appearance/", ux_views.set_appearance_preference, name="set_appearance"),
@@ -111,7 +103,6 @@ urlpatterns = [
 
     # ── Newsletter ────────────────────────────────────────────────────────────
     path("newsletter/subscribe/", views.newsletter_subscribe, name="newsletter_subscribe"),
-    path("newsletter/", newsletter_views.newsletter_dashboard, name="newsletter_dashboard"),
     path("newsletter/export/", newsletter_views.subscriber_export_csv, name="subscriber_export_csv"),
     path("newsletter/unsubscribe/<uuid:token>/", newsletter_views.newsletter_unsubscribe, name="newsletter_unsubscribe"),
     path("newsletter/unsubscribe/done/", newsletter_views.newsletter_unsubscribe_done, name="newsletter_unsubscribe_done"),

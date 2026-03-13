@@ -11,10 +11,11 @@ A production-ready Django invoicing application for freelancers and small busine
 - Estimates
 - Multi-workspace support
 - MFA authentication
-- Admin dashboard
+- Admin panel
 - REST API (DRF)
 - Email notifications (SendGrid)
-- Email marketing plugin (newsletter subscribers + campaign management)
+- Email marketing (newsletter subscribers + campaign management)
+- Reports (revenue, aging, cashflow, profitability, tax, forecast)
 
 ## Architecture
 
@@ -23,7 +24,7 @@ A production-ready Django invoicing application for freelancers and small busine
 - **Cache:** In-memory (LocMemCache) in dev, Redis in production
 - **Static Files:** WhiteNoise for serving static assets
 - **Templates:** Django templates with Tailwind CSS (CDN), Alpine.js (CDN), Chart.js (CDN)
-- **UI System:** Fully rebuilt app shell (layout_app.html, 815 lines). CSS-variable-driven collapsible sidebar (256px ↔ 64px icon-only mode with tooltips), mobile off-canvas drawer with overlay, sticky glassmorphism topbar, workspace switcher dropdown, user profile footer menu, notification dropdown, dark mode toggle (persisted in localStorage, system-preference fallback), ⌘K global search palette with quick actions, keyboard shortcuts (⌘K search, ⌘N new invoice, Esc close). Dashboard rebuilt (overview.html, 686 lines) with KPI cards + trend badges, 6-month revenue bar chart, invoice status donut chart, recent invoices table, due-soon list, A/R aging progress bars, top clients, activity feed, 6 quick-action tiles, and smart alert banners. Full audit complete: all `primary-` Tailwind class references replaced with `brand-` throughout all templates (settings, reports, landing, auth, expense, invoice, client, error pages); `exp.date` → `exp.expense_date` field bug fixed; sidebar logo links to dashboard; stale `.bak` file deleted; expense search field name corrected; report home URL for expense_analysis fixed; zero broken URL references across all templates.
+- **UI System:** App shell (layout_app.html). CSS-variable-driven collapsible sidebar (256px ↔ 64px icon-only mode with tooltips), mobile off-canvas drawer with overlay, sticky topbar, workspace switcher dropdown, user profile footer menu, notification dropdown, dark mode toggle, ⌘K global search palette. **Note: The dashboard system has been fully removed** — `dashboard_views.py`, `templates/pages/dashboard/`, `templates/pages/activity_timeline.html`, newsletter dashboard view and template, and all dashboard API endpoints (`/api/dashboard/*`, `/api/invoices/stats/`) have been deleted. All former dashboard redirects now point to `invoices:invoice_list`. `LOGIN_REDIRECT_URL` updated to `/invoices/`. Sidebar logo and nav now link to invoice list as the primary landing page post-login. Ready for a production-grade dashboard rebuild.
 - **PDF Generation:** WeasyPrint + ReportLab
 - **Email:** SendGrid
 - **Auth:** Enterprise-grade rebuild — AuthService, SessionService, PasswordValidator (HIBP breach check), SecurityService. No email verification required. MFA (TOTP via pyotp) preserved for existing users.

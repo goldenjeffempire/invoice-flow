@@ -22,72 +22,6 @@ def _is_staff(user):
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Subscriber Dashboard
-# ──────────────────────────────────────────────────────────────────────────────
-
-@login_required
-@user_passes_test(_is_staff)
-def newsletter_dashboard(request):
-    qs = NewsletterSubscriber.objects.all()
-
-    # Search
-    q = request.GET.get("q", "").strip()
-    if q:
-        qs = qs.filter(Q(email__icontains=q) | Q(first_name__icontains=q))
-
-    # Status filter
-    status = request.GET.get("status", "")
-    if status in (NewsletterSubscriber.Status.ACTIVE, NewsletterSubscriber.Status.UNSUBSCRIBED):
-        qs = qs.filter(status=status)
-
-    # Source filter
-    source = request.GET.get("source", "")
-    if source:
-        qs = qs.filter(source=source)
-
-    # Pagination
-    paginator = Paginator(qs, 25)
-    page_obj = paginator.get_page(request.GET.get("page"))
-
-    # Stats
-    total = NewsletterSubscriber.objects.count()
-    active = NewsletterSubscriber.objects.filter(status=NewsletterSubscriber.Status.ACTIVE).count()
-    unsubscribed = NewsletterSubscriber.objects.filter(status=NewsletterSubscriber.Status.UNSUBSCRIBED).count()
-    now = timezone.now()
-    new_this_month = NewsletterSubscriber.objects.filter(
-        subscribed_at__gte=now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    ).count()
-    new_last_7d = NewsletterSubscriber.objects.filter(
-        subscribed_at__gte=now - timedelta(days=7)
-    ).count()
-
-    sources = (
-        NewsletterSubscriber.objects.values_list("source", flat=True)
-        .distinct()
-        .order_by("source")
-    )
-
-    recent_campaigns = EmailCampaign.objects.order_by("-created_at")[:5]
-
-    context = {
-        "page_obj": page_obj,
-        "q": q,
-        "status_filter": status,
-        "source_filter": source,
-        "sources": sources,
-        "stats": {
-            "total": total,
-            "active": active,
-            "unsubscribed": unsubscribed,
-            "new_this_month": new_this_month,
-            "new_last_7d": new_last_7d,
-        },
-        "recent_campaigns": recent_campaigns,
-    }
-    return render(request, "pages/newsletter/dashboard.html", context)
-
-
-# ──────────────────────────────────────────────────────────────────────────────
 # Export
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -216,4 +150,4 @@ def subscriber_delete(request, pk):
     email = subscriber.email
     subscriber.delete()
     messages.success(request, f"{email} removed from subscribers.")
-    return redirect("invoices:newsletter_dashboard")
+    return redirect("invoices:campaign_list")

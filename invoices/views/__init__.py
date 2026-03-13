@@ -2,7 +2,6 @@ from .main_views import *
 from .onboarding_views import *
 from .workspace_views import *
 from .ux_views import *
-from .dashboard_views import *
 from .invoice_views import *
 from .payment_views import *
 from .client_views import *

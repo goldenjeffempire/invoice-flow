@@ -192,20 +192,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             content_type="application/pdf",
         )
 
-    @extend_schema(
-        summary="Get dashboard statistics",
-        description="Get aggregated statistics for the authenticated user's invoices.",
-    )
-    @action(detail=False, methods=["get"], url_path="stats")
-    def stats(self, request: Request, version: Optional[str] = None) -> Response:
-        from invoices.services.reports_service import DateRange
-        workspace = request.user.profile.current_workspace
-        date_range = DateRange.from_preset('this_month')
-        stats = ReportsService.get_reports_home_data(workspace, date_range)
-        return APIResponse.success(
-            data=stats.get('kpis', {}),
-            message="Dashboard statistics loaded.",
-        )
 
 
 # ------------------------------
