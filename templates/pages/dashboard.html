@@ -1,0 +1,485 @@
+{% extends "base/layout_app.html" %}
+{% load static %}
+{% block title %}Dashboard — InvoiceFlow{% endblock %}
+
+{% block head %}
+<style>
+  .kpi-card { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+  .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.07); }
+  .activity-dot { flex-shrink: 0; }
+  @keyframes pulse-ring { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .pulse-dot { animation: pulse-ring 2s infinite; }
+  .chart-container { position:relative; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% with sym=workspace.currency_symbol|default:"₦" %}
+
+<!-- ── Page Header ── -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+  <div>
+    <h1 class="text-[20px] font-bold text-slate-900 dark:text-white leading-tight">
+      Welcome back, {{ request.user.first_name|default:request.user.username }}
+    </h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Here's what's happening with your business today.</p>
+  </div>
+  <div class="flex items-center gap-2 self-start sm:self-auto">
+    <a href="{% url 'invoices:invoice_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      New Invoice
+    </a>
+    <a href="{% url 'invoices:client_create' %}" class="flex items-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold rounded-xl transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      Add Client
+    </a>
+  </div>
+</div>
+
+<!-- ── Overdue Alert Banner ── -->
+{% if kpis.overdue_count %}
+<div class="flex items-center gap-3 px-4 py-3 mb-5 rounded-xl bg-rose-50 dark:bg-rose-900/15 border border-rose-200 dark:border-rose-800/50">
+  <span class="w-2 h-2 rounded-full bg-rose-500 pulse-dot flex-shrink-0"></span>
+  <p class="text-sm font-medium text-rose-700 dark:text-rose-300 flex-1">
+    <span class="font-bold">{{ kpis.overdue_count }} invoice{{ kpis.overdue_count|pluralize }}</span> overdue — {{ sym }}{{ kpis.total_overdue|floatformat:0 }} outstanding
+  </p>
+  <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline whitespace-nowrap">View all →</a>
+</div>
+{% endif %}
+
+<!-- ── KPI Cards ── -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+
+  <!-- Revenue This Month -->
+  <div class="kpi-card card p-4 sm:p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div class="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+        <svg class="w-4.5 h-4.5 text-brand-600 dark:text-brand-400 w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      {% if kpis.revenue_change_pct is not None %}
+      <span class="inline-flex items-center gap-0.5 text-[11px] font-bold px-1.5 py-0.5 rounded-lg {% if kpis.revenue_change_pct >= 0 %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-400{% else %}bg-rose-100 text-rose-700 dark:bg-rose-900/25 dark:text-rose-400{% endif %}">
+        {% if kpis.revenue_change_pct >= 0 %}↑{% else %}↓{% endif %}{{ kpis.revenue_change_pct|floatformat:1 }}%
+      </span>
+      {% endif %}
+    </div>
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Revenue (MTD)</p>
+    <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums leading-tight">{{ sym }}{{ kpis.this_month_revenue|floatformat:0 }}</p>
+    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">vs last month</p>
+  </div>
+
+  <!-- Outstanding -->
+  <div class="kpi-card card p-4 sm:p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+        <svg class="w-[18px] h-[18px] text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+    </div>
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Outstanding</p>
+    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 tabular-nums leading-tight">{{ sym }}{{ kpis.total_outstanding|floatformat:0 }}</p>
+    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">awaiting payment</p>
+  </div>
+
+  <!-- Overdue -->
+  <div class="kpi-card card p-4 sm:p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+        <svg class="w-[18px] h-[18px] text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      {% if kpis.overdue_count %}
+      <span class="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/25 px-1.5 py-0.5 rounded-lg">{{ kpis.overdue_count }}</span>
+      {% endif %}
+    </div>
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Overdue</p>
+    <p class="text-2xl font-bold {% if kpis.total_overdue %}text-rose-600 dark:text-rose-400{% else %}text-slate-900 dark:text-white{% endif %} tabular-nums leading-tight">{{ sym }}{{ kpis.total_overdue|floatformat:0 }}</p>
+    <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="text-[11px] text-rose-500 dark:text-rose-400 hover:underline mt-1 block">View overdue →</a>
+  </div>
+
+  <!-- Active Clients -->
+  <div class="kpi-card card p-4 sm:p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+        <svg class="w-[18px] h-[18px] text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </div>
+      {% if kpis.new_clients_this_month %}
+      <span class="text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/25 px-1.5 py-0.5 rounded-lg">+{{ kpis.new_clients_this_month }} new</span>
+      {% endif %}
+    </div>
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Active Clients</p>
+    <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums leading-tight">{{ kpis.total_clients }}</p>
+    <a href="{% url 'invoices:client_list' %}" class="text-[11px] text-violet-500 dark:text-violet-400 hover:underline mt-1 block">View all clients →</a>
+  </div>
+
+</div>
+
+<!-- ── Main Content Grid ── -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-5">
+
+  <!-- Revenue Chart (2/3 width) -->
+  <div class="xl:col-span-2 card p-5">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Revenue vs Expenses</h3>
+        <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Last 6 months</p>
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-400">
+        <span class="flex items-center gap-1.5"><span class="w-3 h-1.5 rounded-full bg-brand-500 inline-block"></span>Revenue</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-1.5 rounded-full bg-rose-400 inline-block"></span>Expenses</span>
+      </div>
+    </div>
+    <div class="chart-container h-52 sm:h-64">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Invoice Status Breakdown (1/3 width) -->
+  <div class="card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-white">Invoice Status</h3>
+      <a href="{% url 'invoices:invoice_list' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">View all</a>
+    </div>
+    <div class="chart-container h-36 mb-5">
+      <canvas id="statusChart"></canvas>
+    </div>
+    <div class="space-y-2.5">
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>Draft</span>
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 tabular-nums">{{ invoice_status_counts.draft }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-brand-400"></span>Sent</span>
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 tabular-nums">{{ invoice_status_counts.sent }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span>Viewed</span>
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 tabular-nums">{{ invoice_status_counts.viewed }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-teal-400"></span>Part Paid</span>
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 tabular-nums">{{ invoice_status_counts.part_paid }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>Paid</span>
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 tabular-nums">{{ invoice_status_counts.paid }}</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400"><span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>Overdue</span>
+        <span class="text-xs font-bold {% if invoice_status_counts.overdue %}text-rose-600 dark:text-rose-400{% else %}text-slate-700 dark:text-slate-300{% endif %} tabular-nums">{{ invoice_status_counts.overdue }}</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Secondary Grid ── -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-5">
+
+  <!-- Recent Invoices (2/3) -->
+  <div class="xl:col-span-2 card overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-white">Recent Invoices</h3>
+      <a href="{% url 'invoices:invoice_list' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">View all →</a>
+    </div>
+    {% if recent_invoices %}
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-slate-50 dark:border-slate-800/60">
+            <th class="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Invoice</th>
+            <th class="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 hidden sm:table-cell">Client</th>
+            <th class="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400 hidden md:table-cell">Date</th>
+            <th class="px-3 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+            <th class="px-5 py-3 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50 dark:divide-slate-800/40">
+          {% for inv in recent_invoices %}
+          <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition-colors">
+            <td class="px-5 py-3">
+              <a href="{% url 'invoices:invoice_detail' inv.id %}" class="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">{{ inv.invoice_number }}</a>
+            </td>
+            <td class="px-3 py-3 hidden sm:table-cell">
+              <p class="text-sm text-slate-600 dark:text-slate-400 truncate max-w-[140px]">{{ inv.client.name|default:"—" }}</p>
+            </td>
+            <td class="px-3 py-3 hidden md:table-cell">
+              <p class="text-xs text-slate-400">{{ inv.issue_date|date:"M d, Y" }}</p>
+            </td>
+            <td class="px-3 py-3">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold
+                {% if inv.status == 'paid' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-400
+                {% elif inv.status == 'overdue' %}bg-rose-100 text-rose-700 dark:bg-rose-900/25 dark:text-rose-400
+                {% elif inv.status == 'sent' %}bg-brand-100 text-brand-700 dark:bg-brand-900/25 dark:text-brand-400
+                {% elif inv.status == 'viewed' %}bg-blue-100 text-blue-700 dark:bg-blue-900/25 dark:text-blue-400
+                {% elif inv.status == 'part_paid' %}bg-teal-100 text-teal-700 dark:bg-teal-900/25 dark:text-teal-400
+                {% else %}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400{% endif %}">
+                {{ inv.get_status_display }}
+              </span>
+            </td>
+            <td class="px-5 py-3 text-right">
+              <p class="text-sm font-bold text-slate-900 dark:text-white tabular-nums">{{ sym }}{{ inv.total_amount|floatformat:0 }}</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="py-12 flex flex-col items-center">
+      <div class="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center mb-3">
+        <svg class="w-6 h-6 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+      </div>
+      <p class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-1">No invoices yet</p>
+      <p class="text-xs text-slate-400 mb-3">Create your first invoice to start tracking revenue</p>
+      <a href="{% url 'invoices:invoice_create' %}" class="flex items-center gap-1.5 px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        Create Invoice
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right column: Due Soon + Top Clients -->
+  <div class="space-y-5">
+
+    <!-- Due Soon -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Due Within 7 Days</h3>
+        <a href="{% url 'invoices:invoice_list' %}?status=sent" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">See all</a>
+      </div>
+      {% if invoices_due_soon %}
+      <div class="space-y-3">
+        {% for inv in invoices_due_soon %}
+        <a href="{% url 'invoices:invoice_detail' inv.id %}" class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors group">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">{{ inv.invoice_number }}</p>
+            <p class="text-[11px] text-slate-400 truncate">{{ inv.client.name|default:"No client" }}</p>
+          </div>
+          <div class="text-right ml-2">
+            <p class="text-xs font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ sym }}{{ inv.amount_due|floatformat:0 }}</p>
+            <p class="text-[11px] text-amber-600 dark:text-amber-400">{{ inv.due_date|date:"M d" }}</p>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="flex flex-col items-center py-6">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-2">
+          <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <p class="text-xs font-medium text-slate-500 dark:text-slate-400">No invoices due soon</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Top Clients -->
+    {% if top_clients %}
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Top Clients</h3>
+        <a href="{% url 'invoices:client_list' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">See all</a>
+      </div>
+      <div class="space-y-3">
+        {% for client in top_clients %}
+        <a href="{% url 'invoices:client_detail' client.id %}" class="flex items-center gap-3 group hover:bg-slate-50 dark:hover:bg-slate-800/40 -mx-1 px-1 py-1.5 rounded-xl transition-colors">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white flex-shrink-0"
+               style="background:linear-gradient(135deg,{{ client.avatar_color|default:'#6366f1' }},#8b5cf6)">
+            {{ client.name|slice:":1"|upper }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">{{ client.name }}</p>
+          </div>
+          <p class="text-xs font-bold text-emerald-600 dark:text-emerald-400 tabular-nums flex-shrink-0">{{ sym }}{{ client.paid_total|floatformat:0 }}</p>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- ── Quick Stats Row ── -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-5">
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">All-Time Collected</p>
+    <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ sym }}{{ kpis.all_time_paid|floatformat:0 }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Expenses (MTD)</p>
+    <p class="text-lg font-bold text-orange-600 dark:text-orange-400 tabular-nums">{{ sym }}{{ kpis.this_month_expenses|floatformat:0 }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Net Profit (MTD)</p>
+    {% with net=kpis.this_month_revenue|add:"-1"|floatformat:0 %}
+    <p class="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{{ sym }}{{ kpis.this_month_revenue|floatformat:0 }}</p>
+    {% endwith %}
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Drafts Pending</p>
+    <p class="text-lg font-bold text-slate-900 dark:text-white tabular-nums">{{ kpis.draft_count }}</p>
+  </div>
+</div>
+
+<!-- ── Quick Actions ── -->
+<div class="card p-5">
+  <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Quick Actions</h3>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <a href="{% url 'invoices:invoice_create' %}" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 hover:bg-brand-100 dark:hover:bg-brand-900/30 transition-colors group">
+      <div class="w-9 h-9 rounded-xl bg-brand-600 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      </div>
+      <p class="text-[11px] font-bold text-brand-700 dark:text-brand-300 text-center leading-tight">New Invoice</p>
+    </a>
+    <a href="{% url 'invoices:client_create' %}" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 hover:bg-violet-100 dark:hover:bg-violet-900/30 transition-colors">
+      <div class="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      </div>
+      <p class="text-[11px] font-bold text-violet-700 dark:text-violet-300 text-center leading-tight">Add Client</p>
+    </a>
+    <a href="{% url 'invoices:expense_create' %}" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors">
+      <div class="w-9 h-9 rounded-xl bg-orange-500 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </div>
+      <p class="text-[11px] font-bold text-orange-700 dark:text-orange-300 text-center leading-tight">Log Expense</p>
+    </a>
+    <a href="{% url 'invoices:estimate_create' %}" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-colors">
+      <div class="w-9 h-9 rounded-xl bg-teal-600 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+      </div>
+      <p class="text-[11px] font-bold text-teal-700 dark:text-teal-300 text-center leading-tight">New Estimate</p>
+    </a>
+    <a href="{% url 'invoices:reports_home' %}" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+      <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <p class="text-[11px] font-bold text-blue-700 dark:text-blue-300 text-center leading-tight">View Reports</p>
+    </a>
+    <a href="{% url 'invoices:settings' %}" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+      <div class="w-9 h-9 rounded-xl bg-slate-600 dark:bg-slate-700 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </div>
+      <p class="text-[11px] font-bold text-slate-600 dark:text-slate-400 text-center leading-tight">Settings</p>
+    </a>
+  </div>
+</div>
+
+{% endwith %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function(){
+  const isDark = document.documentElement.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+  const textColor = isDark ? '#64748b' : '#94a3b8';
+
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+  Chart.defaults.font.size = 11;
+
+  // Revenue vs Expenses Bar Chart
+  const revCtx = document.getElementById('revenueChart');
+  if(revCtx){
+    new Chart(revCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [
+          {
+            label: 'Revenue',
+            data: {{ chart_revenue|safe }},
+            backgroundColor: isDark ? 'rgba(99,102,241,0.8)' : 'rgba(99,102,241,0.85)',
+            borderRadius: 6,
+            borderSkipped: false,
+          },
+          {
+            label: 'Expenses',
+            data: {{ chart_expenses|safe }},
+            backgroundColor: isDark ? 'rgba(251,113,133,0.7)' : 'rgba(251,113,133,0.8)',
+            borderRadius: 6,
+            borderSkipped: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: isDark ? '#1e293b' : '#fff',
+            titleColor: isDark ? '#f0f6fc' : '#0f172a',
+            bodyColor: isDark ? '#94a3b8' : '#475569',
+            borderColor: isDark ? '#334155' : '#e2e8f0',
+            borderWidth: 1,
+            padding: 10,
+            callbacks: {
+              label: function(ctx){
+                return ' ' + ctx.dataset.label + ': ₦' + ctx.parsed.y.toLocaleString();
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: gridColor, drawBorder: false },
+            ticks: { color: textColor },
+            border: { display: false }
+          },
+          y: {
+            grid: { color: gridColor, drawBorder: false },
+            ticks: { color: textColor, callback: v => '₦' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v) },
+            border: { display: false },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  // Invoice Status Doughnut Chart
+  const statusCtx = document.getElementById('statusChart');
+  if(statusCtx){
+    const counts = [
+      {{ invoice_status_counts.draft }},
+      {{ invoice_status_counts.sent }},
+      {{ invoice_status_counts.viewed }},
+      {{ invoice_status_counts.part_paid }},
+      {{ invoice_status_counts.paid }},
+      {{ invoice_status_counts.overdue }},
+    ];
+    const total = counts.reduce((a,b)=>a+b,0);
+    new Chart(statusCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Draft','Sent','Viewed','Part Paid','Paid','Overdue'],
+        datasets: [{
+          data: total > 0 ? counts : [1],
+          backgroundColor: total > 0
+            ? ['#cbd5e1','#818cf8','#60a5fa','#2dd4bf','#34d399','#f87171']
+            : ['#f1f5f9'],
+          borderWidth: 2,
+          borderColor: isDark ? '#0c0f16' : '#fff',
+          hoverOffset: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: total > 0,
+            backgroundColor: isDark ? '#1e293b' : '#fff',
+            titleColor: isDark ? '#f0f6fc' : '#0f172a',
+            bodyColor: isDark ? '#94a3b8' : '#475569',
+            borderColor: isDark ? '#334155' : '#e2e8f0',
+            borderWidth: 1,
+          }
+        }
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

@@ -226,6 +226,13 @@
       </div>
     </div>
 
+    <!-- Revenue Chart -->
+    <div class="card p-5">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-1">Revenue (12 months)</h3>
+      <p class="text-[11px] text-slate-400 dark:text-slate-500 mb-4">Paid invoices by month</p>
+      <div style="height:130px;position:relative"><canvas id="clientRevenueChart"></canvas></div>
+    </div>
+
     <!-- Notes -->
     {% if client.notes %}
     <div class="card p-5">
@@ -236,4 +243,47 @@
   </div>
 </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const el = document.getElementById('clientRevenueChart');
+  if(!el) return;
+  const dark = document.documentElement.classList.contains('dark');
+  const gc = dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+  const tc = dark ? '#4b5563' : '#9ca3af';
+  const data = {{ revenue_chart_json|safe }};
+  new Chart(el, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.values,
+        backgroundColor: 'rgba(99,102,241,0.75)',
+        borderRadius: 4,
+        borderSkipped: false,
+        maxBarThickness: 24
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: dark ? '#0d1117' : '#fff',
+        titleColor: dark ? '#e2e8f0' : '#1e293b',
+        bodyColor: dark ? '#94a3b8' : '#64748b',
+        borderColor: dark ? '#1c2333' : '#e2e8f0',
+        borderWidth: 1,
+        padding: 8,
+        cornerRadius: 8
+      }},
+      scales: {
+        x: { grid: { display: false }, ticks: { color: tc, font: { size: 10 } }, border: { display: false } },
+        y: { grid: { color: gc }, ticks: { color: tc, font: { size: 10 }, callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v }, border: { display: false } }
+      }
+    }
+  });
+});
+</script>
 {% endblock %}

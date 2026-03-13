@@ -1,3 +1,6 @@
+import json
+from datetime import date, timedelta
+from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -81,6 +84,22 @@ def client_detail(request, client_id):
         resource_id=str(client.id)
     ).order_by('-created_at')[:20]
 
+    today = date.today()
+    months_labels = []
+    months_revenue = []
+    for i in range(11, -1, -1):
+        mo_start = (today.replace(day=1) - relativedelta(months=i))
+        mo_end = (mo_start + relativedelta(months=1)) - timedelta(days=1)
+        rev = invoices.filter(
+            status='paid',
+            issue_date__gte=mo_start,
+            issue_date__lte=mo_end
+        ).aggregate(s=Sum('amount_paid'))['s'] or 0
+        months_labels.append(mo_start.strftime('%b'))
+        months_revenue.append(float(rev))
+
+    revenue_chart_json = json.dumps({'labels': months_labels, 'values': months_revenue})
+
     return render(request, 'pages/clients/detail.html', {
         'client': client,
         'notes': notes,
@@ -89,7 +108,8 @@ def client_detail(request, client_id):
         'estimates': estimates,
         'payments': payments,
         'activities': activities,
-        'stats': stats
+        'stats': stats,
+        'revenue_chart_json': revenue_chart_json,
     })
 
 @login_required

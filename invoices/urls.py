@@ -16,12 +16,16 @@ from .views import report_views
 from .views import ux_views
 from .views import workspace_views
 from .views import newsletter_views
+from .views import dashboard_views
 
 app_name = "invoices"
 
 urlpatterns = [
     # ── Landing ──────────────────────────────────────────────────────────────
     path("", views.landing_view, name="home"),
+
+    # ── Dashboard ─────────────────────────────────────────────────────────────
+    path("dashboard/", dashboard_views.dashboard, name="dashboard"),
 
     # ── Core Authentication ───────────────────────────────────────────────────
     path("login/", views.login_view, name="login"),
