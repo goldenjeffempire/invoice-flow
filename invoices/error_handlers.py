@@ -70,7 +70,7 @@ def handle_invoice_errors(view_func: Callable) -> Callable:
         except PermissionDenied:
             logger.warning(f"Permission denied for user {request.user.id}")
             messages.error(request, "You don't have permission to perform this action.")
-            return redirect("invoices:invoice_list")
+            return redirect("invoices:dashboard")
 
         except ObjectDoesNotExist as e:
             logger.error(f"Object not found: {str(e)}")

@@ -17,7 +17,7 @@ def switch_workspace(request, workspace_identifier):
         messages.success(request, f"Switched to workspace: {member.workspace.name}")
     except (WorkspaceMember.DoesNotExist, ValueError):
         messages.error(request, "You do not have access to this workspace.")
-    return redirect(request.META.get('HTTP_REFERER', reverse('invoices:invoice_list')))
+    return redirect(request.META.get('HTTP_REFERER', reverse('invoices:dashboard')))
 
 
 @login_required

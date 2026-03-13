@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 @cache_page(60 * 15)
 def landing_view(request):
     if request.user.is_authenticated:
-        return redirect("invoices:invoice_list")
+        return redirect("invoices:dashboard")
     return render(request, "pages/landing.html")
 
 
@@ -153,7 +153,7 @@ def login_view(request):
                     next_url = request.GET.get("next", "")
                     if next_url and next_url.startswith("/") and not next_url.startswith("//"):
                         return redirect(next_url)
-                    return redirect("invoices:invoice_list")
+                    return redirect("invoices:dashboard")
                 else:
                     messages.error(request, message)
             except Exception as exc:
@@ -174,10 +174,6 @@ def logout_view(request):
         messages.info(request, "You've been signed out successfully.")
     return redirect("invoices:home")
 
-
-@login_required
-def dashboard(request):
-    return render(request, "pages/dashboard.html")
 
 
 # ============================================================================
@@ -274,7 +270,7 @@ def mfa_verify(request):
                 else:
                     request.session.set_expiry(0)
                 messages.success(request, "Welcome back!")
-                return redirect("invoices:invoice_list")
+                return redirect("invoices:dashboard")
             else:
                 messages.error(request, message)
     else:
@@ -467,7 +463,7 @@ def accept_invitation(request, token):
         )
         if success:
             messages.success(request, message)
-            return redirect("invoices:invoice_list")
+            return redirect("invoices:dashboard")
         else:
             messages.error(request, message)
 

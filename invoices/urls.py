@@ -3,6 +3,7 @@ from django.urls import path
 from django.views.generic import TemplateView
 
 from .views import client_views
+from .views import dashboard_views
 from .views import estimate_views
 from .views import expense_views
 from .views import export_views
@@ -69,6 +70,12 @@ urlpatterns = [
     path("onboarding/team/", onboarding_views.onboarding_team, name="onboarding_team"),
     path("onboarding/back/", onboarding_views.onboarding_go_back, name="onboarding_go_back"),
     path("onboarding/complete/", onboarding_views.onboarding_complete, name="onboarding_complete"),
+
+    # ── Dashboard ─────────────────────────────────────────────────────────────
+    path("dashboard/", dashboard_views.dashboard_overview, name="dashboard"),
+    path("api/dashboard/kpis/", dashboard_views.dashboard_kpis_api, name="dashboard_kpis_api"),
+    path("api/dashboard/alerts/", dashboard_views.dashboard_alerts_api, name="dashboard_alerts_api"),
+    path("api/dashboard/charts/", dashboard_views.dashboard_chart_api, name="dashboard_chart_api"),
 
     # ── Activity ──────────────────────────────────────────────────────────────
     path("activity/", ux_views.activity_timeline, name="activity_timeline"),

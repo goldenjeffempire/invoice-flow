@@ -400,15 +400,15 @@ def payment_callback(request, invoice_id):
     reference = request.GET.get("reference")
 
     if not reference:
-        return redirect("invoices:invoice_list")
+        return redirect("invoices:dashboard")
 
     try:
         payment = Payment.objects.get(reference=reference, user=request.user)
     except Payment.DoesNotExist:
-        return redirect("invoices:invoice_list")
+        return redirect("invoices:dashboard")
 
     if not payment.invoice or payment.invoice.invoice_id != invoice_id:
-        return redirect("invoices:invoice_list")
+        return redirect("invoices:dashboard")
 
     if payment.status == Payment.Status.SUCCESS:
         return redirect("invoices:invoice_detail", invoice_id=invoice_id)
