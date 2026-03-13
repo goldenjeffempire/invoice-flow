@@ -35,7 +35,7 @@ def schedule_list(request):
     workspace = get_user_workspace(request.user)
     if not workspace:
         messages.error(request, "No workspace found.")
-        return redirect('invoices:dashboard')
+        return redirect('invoices:invoice_list')
 
     status_filter = request.GET.get('status', '')
     schedules = RecurringBillingService.get_schedules_for_workspace(
@@ -66,7 +66,7 @@ def schedule_create(request):
     workspace = get_user_workspace(request.user)
     if not workspace:
         messages.error(request, "No workspace found.")
-        return redirect('invoices:dashboard')
+        return redirect('invoices:invoice_list')
 
     clients = Client.objects.filter(workspace=workspace).order_by('name')
 
@@ -220,7 +220,7 @@ def schedule_detail(request, schedule_id):
     workspace = get_user_workspace(request.user)
     if not workspace:
         messages.error(request, "No workspace found.")
-        return redirect('invoices:dashboard')
+        return redirect('invoices:invoice_list')
 
     schedule = RecurringBillingService.get_schedule_by_id(schedule_id, workspace)
     if not schedule:
@@ -247,7 +247,7 @@ def schedule_edit(request, schedule_id):
     workspace = get_user_workspace(request.user)
     if not workspace:
         messages.error(request, "No workspace found.")
-        return redirect('invoices:dashboard')
+        return redirect('invoices:invoice_list')
 
     schedule = RecurringBillingService.get_schedule_by_id(schedule_id, workspace)
     if not schedule:
