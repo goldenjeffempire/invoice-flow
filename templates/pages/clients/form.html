@@ -1,86 +1,136 @@
 {% extends 'base/layout_app.html' %}
 {% block title %}{% if client %}Edit {{ client.name }}{% else %}New Client{% endif %} — InvoiceFlow{% endblock %}
-{% block page_title %}{% if client %}Edit Client{% else %}Add Client{% endif %}{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-
-  <!-- Header -->
   <div class="flex items-center gap-3 mb-6">
     <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}"
        class="flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
     </a>
     <div>
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white">{% if client %}Edit {{ client.name }}{% else %}Add New Client{% endif %}</h1>
-      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{% if client %}Update client information{% else %}Enter client details to get started{% endif %}</p>
+      <h1 class="text-xl font-bold text-slate-900 dark:text-white">{% if client %}Edit {{ client.name }}{% else %}New Client{% endif %}</h1>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{% if client %}Update client information{% else %}Add a new client to your workspace{% endif %}</p>
     </div>
   </div>
 
-  <form method="post" class="space-y-5">
+  <form method="post" action="{% if client %}{% url 'invoices:client_edit' client.id %}{% else %}{% url 'invoices:client_create' %}{% endif %}">
     {% csrf_token %}
+    <div class="space-y-5">
 
-    <!-- Basic Info -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Basic Information</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="sm:col-span-2">
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Client / Company Name *</label>
-          <input type="text" name="name" value="{{ client.name|default:'' }}" required placeholder="Acme Corporation"
-                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 dark:focus:border-brand-500 placeholder-slate-400 transition-colors">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Email Address</label>
-          <input type="email" name="email" value="{{ client.email|default:'' }}" placeholder="accounts@acme.com"
-                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 dark:focus:border-brand-500 placeholder-slate-400 transition-colors">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Phone Number</label>
-          <input type="tel" name="phone" value="{{ client.phone|default:'' }}" placeholder="+1 555 000 0000"
-                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 dark:focus:border-brand-500 placeholder-slate-400 transition-colors">
+      <!-- Basic Info -->
+      <div class="card p-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          Basic Information
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="lbl" for="name">Client Name *</label>
+            <input type="text" id="name" name="name" value="{{ client.name|default:'' }}" placeholder="Acme Corp or John Doe" class="fi" required autofocus>
+          </div>
+          <div>
+            <label class="lbl" for="email">Email Address</label>
+            <input type="email" id="email" name="email" value="{{ client.email|default:'' }}" placeholder="client@example.com" class="fi">
+          </div>
+          <div>
+            <label class="lbl" for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" value="{{ client.phone|default:'' }}" placeholder="+1 (555) 000-0000" class="fi">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="lbl" for="website">Website</label>
+            <input type="url" id="website" name="website" value="{{ client.website|default:'' }}" placeholder="https://example.com" class="fi">
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Billing -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Billing Details</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="sm:col-span-2">
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Billing Address</label>
-          <textarea name="billing_address" rows="3" placeholder="123 Business Street&#10;Suite 100&#10;New York, NY 10001"
-                    class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 dark:focus:border-brand-500 placeholder-slate-400 transition-colors resize-none">{{ client.billing_address|default:'' }}</textarea>
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Currency</label>
-          <select name="currency" class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
-            <option value="USD" {% if client.currency == 'USD' or not client %}selected{% endif %}>$ — US Dollar</option>
-            <option value="EUR" {% if client.currency == 'EUR' %}selected{% endif %}>€ — Euro</option>
-            <option value="GBP" {% if client.currency == 'GBP' %}selected{% endif %}>£ — British Pound</option>
-            <option value="NGN" {% if client.currency == 'NGN' %}selected{% endif %}>₦ — Nigerian Naira</option>
-            <option value="ZAR" {% if client.currency == 'ZAR' %}selected{% endif %}>R — South African Rand</option>
-            <option value="GHS" {% if client.currency == 'GHS' %}selected{% endif %}>₵ — Ghanaian Cedi</option>
-            <option value="KES" {% if client.currency == 'KES' %}selected{% endif %}>KSh — Kenyan Shilling</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Tax / VAT Number</label>
-          <input type="text" name="tax_id" value="{{ client.tax_id|default:'' }}" placeholder="VAT123456789"
-                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 dark:focus:border-brand-500 placeholder-slate-400 transition-colors">
+      <!-- Business Info -->
+      <div class="card p-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Business Details
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="lbl" for="company_name">Company Name</label>
+            <input type="text" id="company_name" name="company_name" value="{{ client.company_name|default:'' }}" placeholder="Company Ltd" class="fi">
+          </div>
+          <div>
+            <label class="lbl" for="tax_number">Tax / VAT Number</label>
+            <input type="text" id="tax_number" name="tax_number" value="{{ client.tax_number|default:'' }}" placeholder="Tax ID" class="fi">
+          </div>
+          <div>
+            <label class="lbl" for="currency">Preferred Currency</label>
+            <select id="currency" name="currency" class="fi">
+              {% with currencies="NGN,USD,EUR,GBP,GHS,KES,ZAR,CAD,AUD" %}
+              {% for cur in currencies.split %}
+              <option value="{{ cur }}" {% if client.currency == cur %}selected{% elif not client and cur == 'NGN' %}selected{% endif %}>{{ cur }}</option>
+              {% endfor %}
+              {% endwith %}
+            </select>
+          </div>
+          <div>
+            <label class="lbl" for="payment_terms">Default Payment Terms</label>
+            <select id="payment_terms" name="payment_terms" class="fi">
+              <option value="">Select terms…</option>
+              <option value="due_on_receipt" {% if client.payment_terms == 'due_on_receipt' %}selected{% endif %}>Due on receipt</option>
+              <option value="net_7" {% if client.payment_terms == 'net_7' %}selected{% endif %}>Net 7 days</option>
+              <option value="net_14" {% if client.payment_terms == 'net_14' %}selected{% endif %}>Net 14 days</option>
+              <option value="net_30" {% if client.payment_terms == 'net_30' %}selected{% endif %}>Net 30 days</option>
+              <option value="net_60" {% if client.payment_terms == 'net_60' %}selected{% endif %}>Net 60 days</option>
+              <option value="net_90" {% if client.payment_terms == 'net_90' %}selected{% endif %}>Net 90 days</option>
+            </select>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Actions -->
-    <div class="flex items-center gap-3 justify-end">
-      <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}"
-         class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-        Cancel
-      </a>
-      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        {% if client %}Save Changes{% else %}Create Client{% endif %}
-      </button>
+      <!-- Address -->
+      <div class="card p-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+          Address
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="lbl" for="address">Street Address</label>
+            <textarea id="address" name="address" rows="2" placeholder="123 Main Street, Suite 400" class="fi">{{ client.address|default:'' }}</textarea>
+          </div>
+          <div>
+            <label class="lbl" for="city">City</label>
+            <input type="text" id="city" name="city" value="{{ client.city|default:'' }}" placeholder="Lagos" class="fi">
+          </div>
+          <div>
+            <label class="lbl" for="state">State / Province</label>
+            <input type="text" id="state" name="state" value="{{ client.state|default:'' }}" placeholder="Lagos State" class="fi">
+          </div>
+          <div>
+            <label class="lbl" for="postal_code">Postal Code</label>
+            <input type="text" id="postal_code" name="postal_code" value="{{ client.postal_code|default:'' }}" placeholder="100001" class="fi">
+          </div>
+          <div>
+            <label class="lbl" for="country">Country</label>
+            <input type="text" id="country" name="country" value="{{ client.country|default:'' }}" placeholder="Nigeria" class="fi">
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card p-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Notes</h3>
+        <textarea name="notes" rows="3" placeholder="Internal notes about this client…" class="fi">{{ client.notes|default:'' }}</textarea>
+      </div>
+
+      <!-- Submit -->
+      <div class="flex items-center gap-3 justify-end pb-4">
+        <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}"
+           class="px-5 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+          Cancel
+        </a>
+        <button type="submit" class="flex items-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          {% if client %}Save Changes{% else %}Add Client{% endif %}
+        </button>
+      </div>
     </div>
   </form>
 </div>

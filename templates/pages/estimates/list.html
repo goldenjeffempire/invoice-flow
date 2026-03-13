@@ -1,293 +1,146 @@
 {% extends "base/layout_app.html" %}
-{% block title %}Estimates - InvoiceFlow{% endblock %}
+{% block title %}Estimates — InvoiceFlow{% endblock %}
+
 {% block content %}
-<div class="py-8" x-data="{ 
-    selectedEstimates: [],
-    allSelected: false,
-    toggleAll() {
-        this.allSelected = !this.allSelected;
-        if (this.allSelected) {
-            this.selectedEstimates = Array.from(document.querySelectorAll('input[name=\'estimate_ids\']')).map(el => el.value);
-        } else {
-            this.selectedEstimates = [];
-        }
-    }
-}">
-    <!-- Header Section -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Estimates</h1>
-            <p class="text-slate-500 dark:text-slate-400 mt-1">Create and manage quotes for your clients</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-3">
-            <a href="{% url 'invoices:estimate_builder' %}" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-500/25">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                New Estimate
-            </a>
-        </div>
+<div>
+<!-- Header -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+  <div>
+    <h1 class="text-[20px] font-bold text-slate-900 dark:text-white">Estimates</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Create and manage quotes for your clients</p>
+  </div>
+  <a href="{% url 'invoices:estimate_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-600/20 self-start">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+    New Estimate
+  </a>
+</div>
+
+<!-- Stats -->
+{% if stats %}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total</p>
+    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ stats.total_value|default:0|floatformat:0 }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Accepted</p>
+    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ stats.accepted_value|default:0|floatformat:0 }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Pending</p>
+    <p class="text-xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">{{ stats.pending_count|default:0 }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Win Rate</p>
+    <p class="text-xl font-bold text-brand-600 dark:text-brand-400 tabular-nums">{{ stats.win_rate|default:0|floatformat:0 }}%</p>
+  </div>
+</div>
+{% endif %}
+
+<!-- Status Filters + Search -->
+<div class="card p-4 mb-4">
+  <div class="flex flex-col sm:flex-row gap-3">
+    <form method="get" class="flex-1">
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="Search estimates…" class="fi pl-9 h-9">
+        {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+      </div>
+    </form>
+    <div class="flex items-center gap-1.5 flex-wrap">
+      <a href="{% url 'invoices:estimate_list' %}" class="px-3 py-1.5 text-xs font-semibold rounded-lg {% if not current_status %}bg-teal-100 text-teal-700 dark:bg-teal-900/25 dark:text-teal-400{% else %}text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %} transition-colors">All</a>
+      {% for tab in status_tabs %}
+      <a href="{% url 'invoices:estimate_list' %}?status={{ tab.status }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg {% if current_status == tab.status %}bg-teal-100 text-teal-700 dark:bg-teal-900/25 dark:text-teal-400{% else %}text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %} transition-colors">{{ tab.label }}{% if tab.count %} ({{ tab.count }}){% endif %}</a>
+      {% endfor %}
     </div>
+  </div>
+</div>
 
-    <!-- Stats Bar -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+<div class="card overflow-hidden">
+  {% if estimates %}
+  <div class="overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="border-b border-slate-100 dark:border-slate-800">
+          <th class="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Estimate #</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Client</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden sm:table-cell">Issued</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden md:table-cell">Expiry</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+          <th class="px-5 py-3 text-right text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
+          <th class="px-4 py-3 w-8"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+        {% for est in estimates %}
+        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors">
+          <td class="px-5 py-3.5">
+            <a href="{% url 'invoices:estimate_detail' est.id %}" class="font-semibold text-teal-600 dark:text-teal-400 hover:underline text-sm">{{ est.estimate_number }}</a>
+          </td>
+          <td class="px-4 py-3.5 text-sm text-slate-700 dark:text-slate-300 font-medium">
+            {% if est.client %}<a href="{% url 'invoices:client_detail' est.client.id %}" class="hover:text-brand-600 dark:hover:text-brand-400">{{ est.client.name }}</a>{% else %}—{% endif %}
+          </td>
+          <td class="px-4 py-3.5 text-sm text-slate-500 dark:text-slate-400 hidden sm:table-cell">{{ est.issue_date|date:"M d, Y" }}</td>
+          <td class="px-4 py-3.5 hidden md:table-cell">
+            {% if est.expiry_date %}<span class="text-sm text-slate-500 dark:text-slate-400">{{ est.expiry_date|date:"M d, Y" }}</span>{% else %}<span class="text-sm text-slate-300 dark:text-slate-600">—</span>{% endif %}
+          </td>
+          <td class="px-4 py-3.5">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold
+              {% if est.status == 'accepted' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-400
+              {% elif est.status == 'declined' %}bg-rose-100 text-rose-700 dark:bg-rose-900/25 dark:text-rose-400
+              {% elif est.status == 'sent' %}bg-teal-100 text-teal-700 dark:bg-teal-900/25 dark:text-teal-400
+              {% elif est.status == 'expired' %}bg-amber-100 text-amber-700 dark:bg-amber-900/25 dark:text-amber-400
+              {% else %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400{% endif %}">
+              {{ est.get_status_display }}
+            </span>
+          </td>
+          <td class="px-5 py-3.5 text-right text-sm font-bold tabular-nums text-slate-900 dark:text-white">{{ workspace.currency_symbol|default:"₦" }}{{ est.total_amount|floatformat:0 }}</td>
+          <td class="px-4 py-3.5">
+            <div x-data="{open:false}" class="relative flex justify-end">
+              <button @click.stop="open=!open" class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/></svg>
+              </button>
+              <div x-show="open" x-cloak @click.outside="open=false" class="dd w-44" style="right:0;top:calc(100% + 4px)">
+                <div class="p-1.5">
+                  <a href="{% url 'invoices:estimate_detail' est.id %}" class="dd-item rounded-lg">View</a>
+                  <a href="{% url 'invoices:estimate_edit' est.id %}" class="dd-item rounded-lg">Edit</a>
+                  {% if est.status == 'accepted' %}
+                  <a href="{% url 'invoices:estimate_convert' est.id %}" class="dd-item rounded-lg text-brand-600 dark:text-brand-400">Convert to Invoice</a>
+                  {% endif %}
                 </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Total Estimates</p>
-                    <p class="text-xl font-bold text-slate-900 dark:text-white">{{ stats.total_count }}</p>
-                </div>
+              </div>
             </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Accepted Value</p>
-                    <p class="text-xl font-bold text-emerald-600">{{ stats.accepted_value|floatformat:2 }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Conversion Rate</p>
-                    <p class="text-xl font-bold text-indigo-600">{{ stats.conversion_rate|floatformat:1 }}%</p>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm">
-            <div class="flex items-center gap-4">
-                <div class="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Value</p>
-                    <p class="text-xl font-bold text-amber-600">{{ stats.pending_value|floatformat:2 }}</p>
-                </div>
-            </div>
-        </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if estimates.has_other_pages %}
+  <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+    <p class="text-xs text-slate-500 dark:text-slate-400">{{ estimates.start_index }}–{{ estimates.end_index }} of {{ estimates.paginator.count }}</p>
+    <div class="flex gap-1">
+      {% if estimates.has_previous %}<a href="?page={{ estimates.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}" class="px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">← Prev</a>{% endif %}
+      <span class="px-3 py-1.5 text-xs font-semibold bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 rounded-lg">{{ estimates.number }}</span>
+      {% if estimates.has_next %}<a href="?page={{ estimates.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}" class="px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">Next →</a>{% endif %}
     </div>
-
-    <!-- Filters and Table -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
-        <!-- Status Tabs -->
-        <div class="border-b border-slate-100 dark:border-slate-700 px-4">
-            <nav class="flex overflow-x-auto no-scrollbar gap-8" aria-label="Status tabs">
-                {% for tab in status_tabs %}
-                <a href="?status={{ tab.key }}{% if search_query %}&q={{ search_query }}{% endif %}" 
-                   class="relative py-4 text-sm font-semibold whitespace-nowrap transition-all
-                          {% if current_status == tab.key %}text-indigo-600 dark:text-indigo-400{% else %}text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200{% endif %}">
-                    {{ tab.label }}
-                    <span class="ml-2 px-2 py-0.5 rounded-full text-[10px] {% if current_status == tab.key %}bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400{% else %}bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400{% endif %}">
-                        {{ tab.count }}
-                    </span>
-                    {% if current_status == tab.key %}
-                    <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 dark:bg-indigo-400 rounded-full"></div>
-                    {% endif %}
-                </a>
-                {% endfor %}
-            </nav>
-        </div>
-
-        <!-- Search and Filters -->
-        <div class="p-4 bg-slate-50/50 dark:bg-slate-900/20 border-b border-slate-100 dark:border-slate-700">
-            <form method="get" class="flex flex-col lg:flex-row gap-4">
-                <input type="hidden" name="status" value="{{ current_status }}">
-                <div class="flex-1 relative">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search by number, client name, or email..." 
-                           class="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all dark:text-white">
-                </div>
-                <div class="flex flex-wrap gap-3">
-                    <div class="relative min-w-[140px]">
-                        <select name="ordering" onchange="this.form.submit()" class="w-full pl-3 pr-10 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm appearance-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all dark:text-white">
-                            <option value="-created_at" {% if ordering == '-created_at' %}selected{% endif %}>Newest First</option>
-                            <option value="created_at" {% if ordering == 'created_at' %}selected{% endif %}>Oldest First</option>
-                            <option value="-expiry_date" {% if ordering == '-expiry_date' %}selected{% endif %}>Expiry Date (Desc)</option>
-                            <option value="expiry_date" {% if ordering == 'expiry_date' %}selected{% endif %}>Expiry Date (Asc)</option>
-                            <option value="-total_amount" {% if ordering == '-total_amount' %}selected{% endif %}>Amount (High)</option>
-                            <option value="total_amount" {% if ordering == 'total_amount' %}selected{% endif %}>Amount (Low)</option>
-                        </select>
-                        <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                    </div>
-                    <button type="submit" class="px-6 py-2 bg-slate-900 dark:bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 dark:hover:bg-indigo-700 transition-all shadow-sm">
-                        Filter
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Bulk Actions Bar -->
-        <div x-show="selectedEstimates.length > 0" 
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 -translate-y-2"
-             x-transition:enter-end="opacity-100 translate-y-0"
-             class="bg-indigo-600 px-4 py-2 flex items-center justify-between text-white" x-cloak>
-            <div class="flex items-center gap-4">
-                <span class="text-sm font-bold"><span x-text="selectedEstimates.length"></span> items selected</span>
-                <div class="h-4 w-px bg-indigo-500"></div>
-                <div class="flex gap-2">
-                    <form action="#" method="post" x-ref="bulkForm">
-                        {% csrf_token %}
-                        <input type="hidden" name="bulk_action" x-ref="bulkActionInput">
-                        <template x-for="id in selectedEstimates">
-                            <input type="hidden" name="ids" :value="id">
-                        </template>
-                        <button type="button" @click="$refs.bulkActionInput.value='send'; $refs.bulkForm.submit()" class="text-xs font-semibold bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
-                            Send Selected
-                        </button>
-                    </form>
-                    <button @click="if(confirm('Are you sure you want to delete selected estimates?')) { $refs.bulkActionInput.value='delete'; $refs.bulkForm.submit() }" class="text-xs font-semibold bg-rose-500 hover:bg-rose-600 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
-                        Delete Selected
-                    </button>
-                </div>
-            </div>
-            <button @click="selectedEstimates = []; allSelected = false" class="text-xs font-bold hover:underline">Cancel</button>
-        </div>
-
-        <!-- Desktop Table View -->
-        <div class="hidden md:block overflow-x-auto">
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="bg-slate-50 dark:bg-slate-900/50 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
-                        <th class="px-6 py-4 w-10">
-                            <input type="checkbox" x-model="allSelected" @change="toggleAll" class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-800">
-                        </th>
-                        <th class="px-6 py-4">Estimate</th>
-                        <th class="px-6 py-4">Client</th>
-                        <th class="px-6 py-4">Amount</th>
-                        <th class="px-6 py-4">Status</th>
-                        <th class="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                    {% for estimate in estimates %}
-                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition-colors group">
-                        <td class="px-6 py-4">
-                            <input type="checkbox" name="estimate_ids" value="{{ estimate.id }}" x-model="selectedEstimates" class="rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 dark:bg-slate-800">
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-col">
-                                <a href="{% url 'invoices:estimate_detail' estimate.id %}" class="font-bold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400">
-                                    {{ estimate.estimate_number }}
-                                </a>
-                                <span class="text-xs text-slate-500 dark:text-slate-400">Dated: {{ estimate.issue_date|date:"M d, Y" }}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-bold text-xs">
-                                    {{ estimate.client.name|first|upper }}
-                                </div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ estimate.client.name }}</span>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400">{{ estimate.client.email }}</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex flex-col">
-                                <span class="text-sm font-bold text-slate-900 dark:text-white">{{ estimate.currency }} {{ estimate.total_amount|floatformat:2 }}</span>
-                                <span class="text-[10px] text-slate-500 dark:text-slate-400 uppercase">Expires: {{ estimate.expiry_date|date:"M d, Y" }}</span>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider
-                                {% if estimate.status == 'approved' %}bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400
-                                {% elif estimate.status == 'draft' %}bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300
-                                {% elif estimate.status == 'declined' %}bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400
-                                {% elif estimate.status == 'sent' %}bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400
-                                {% elif estimate.status == 'invoiced' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400
-                                {% else %}bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300{% endif %}">
-                                {{ estimate.get_status_display }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <a href="{% url 'invoices:estimate_detail' estimate.id %}" class="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all" title="View Detail">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                </a>
-                                <a href="{% url 'invoices:estimate_builder' estimate.id %}" class="p-2 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all" title="Edit">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                </a>
-                                <div class="relative" x-data="{ open: false }">
-                                    <button @click="open = !open" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
-                                    </button>
-                                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl ring-1 ring-black/5 dark:ring-white/5 py-1 z-10">
-                                        <a href="#" class="flex items-center px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
-                                            Send Estimate
-                                        </a>
-                                        <form action="{% url 'invoices:convert_estimate' estimate.id %}" method="post">
-                                            {% csrf_token %}
-                                            <button type="submit" class="w-full text-left px-4 py-2 text-sm text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20">
-                                                Convert to Invoice
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Mobile Grid View -->
-        <div class="md:hidden divide-y divide-slate-100 dark:divide-slate-700">
-            {% for estimate in estimates %}
-            <div class="p-4 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <input type="checkbox" name="estimate_ids" value="{{ estimate.id }}" x-model="selectedEstimates" class="rounded border-slate-300 dark:border-slate-600 text-indigo-600">
-                        <a href="{% url 'invoices:estimate_detail' estimate.id %}" class="font-bold text-slate-900 dark:text-white">{{ estimate.estimate_number }}</a>
-                    </div>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider
-                                {% if estimate.status == 'approved' %}bg-emerald-50 text-emerald-600
-                                {% elif estimate.status == 'declined' %}bg-rose-50 text-rose-600
-                                {% else %}bg-slate-100 text-slate-600{% endif %}">
-                        {{ estimate.get_status_display }}
-                    </span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold">{{ estimate.client.name|first }}</div>
-                        <span class="text-slate-700 dark:text-slate-300 font-medium">{{ estimate.client.name }}</span>
-                    </div>
-                    <span class="font-bold text-slate-900 dark:text-white">{{ estimate.currency }} {{ estimate.total_amount|floatformat:2 }}</span>
-                </div>
-                <div class="flex items-center justify-between text-xs text-slate-500">
-                    <span>Expires {{ estimate.expiry_date|date:"M d" }}</span>
-                    <div class="flex gap-4">
-                        <a href="{% url 'invoices:estimate_detail' estimate.id %}" class="text-indigo-600 font-bold">View</a>
-                        <a href="{% url 'invoices:estimate_builder' estimate.id %}" class="text-slate-600">Edit</a>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-
-        {% if not estimates %}
-        <div class="p-12 text-center">
-            <div class="w-20 h-20 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 dark:text-slate-700">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            </div>
-            <h3 class="text-lg font-bold text-slate-900 dark:text-white">No estimates found</h3>
-            <p class="text-slate-500 dark:text-slate-400 mt-1 max-w-xs mx-auto text-sm">Create your first estimate to start quoting your clients for work.</p>
-            <a href="{% url 'invoices:estimate_builder' %}" class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-indigo-500/25 mt-6">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                New Estimate
-            </a>
-        </div>
-        {% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="py-14 flex flex-col items-center">
+    <div class="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center mb-3">
+      <svg class="w-6 h-6 text-teal-400 dark:text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
     </div>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">{% if current_status %}No {{ current_status }} estimates{% else %}No estimates yet{% endif %}</p>
+    <p class="text-xs text-slate-400 dark:text-slate-600 mb-4">Send professional quotes to win clients</p>
+    {% if not current_status %}
+    <a href="{% url 'invoices:estimate_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Create First Estimate
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
 </div>
 {% endblock %}

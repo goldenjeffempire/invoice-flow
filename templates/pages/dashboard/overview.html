@@ -1,38 +1,24 @@
 {% extends "base/layout_app.html" %}
 {% load static %}
 {% block title %}Dashboard — InvoiceFlow{% endblock %}
-{% block page_title %}Dashboard{% endblock %}
-{% block head %}
-<style>
-.kpi-card{transition:transform .15s,box-shadow .15s}
-.kpi-card:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.07)}
-.dark .kpi-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.3)}
-.ag-bar{height:6px;border-radius:99px;background:#e2e8f0;overflow:hidden}
-.dark .ag-bar{background:rgba(255,255,255,.06)}
-.ag-fill{height:100%;border-radius:99px;transition:width .6s ease}
-</style>
-{% endblock %}
 
 {% block content %}
-{% if error %}
-<div class="bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800 rounded-xl p-4 text-rose-700 dark:text-rose-400 text-sm mb-4">{{ error }}</div>
-{% endif %}
+<div x-data="dashboardPage()" x-init="init()">
 
-<!-- Page Header -->
+<!-- Header -->
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
   <div>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Good day, {{ request.user.first_name|default:request.user.username }} 👋</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-      Here's what's happening with
-      <span class="font-semibold text-slate-700 dark:text-slate-300">{% if workspace %}{{ workspace.name }}{% endif %}</span> today.
-    </p>
+    <h1 class="text-[20px] font-bold text-slate-900 dark:text-white tracking-tight">
+      Good {% now "G" as hr %}{% if hr < 12 %}morning{% elif hr < 17 %}afternoon{% else %}evening{% endif %}, {{ request.user.first_name|default:request.user.username }} 👋
+    </h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Here's your business overview for today.</p>
   </div>
   <div class="flex items-center gap-2">
-    <a href="{% url 'invoices:expense_create' %}" class="flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition-colors">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-      Log Expense
+    <a href="{% url 'invoices:reports_home' %}" class="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-xs font-semibold rounded-xl transition-colors">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Reports
     </a>
-    <a href="{% url 'invoices:invoice_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
+    <a href="{% url 'invoices:invoice_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition-colors shadow-sm shadow-brand-600/25">
       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
       New Invoice
     </a>
@@ -41,37 +27,20 @@
 
 <!-- Smart Alerts -->
 {% if smart_alerts %}
-<div class="space-y-2 mb-6">
+<div class="space-y-2 mb-5">
   {% for alert in smart_alerts %}
-  <div x-data="{vis:true}" x-show="vis"
-       x-transition:leave="transition ease-in duration-150"
-       x-transition:leave-start="opacity-100 max-h-24"
-       x-transition:leave-end="opacity-0 max-h-0"
-       class="flex items-center gap-3 px-4 py-3 rounded-xl border text-sm
-       {% if alert.type == 'warning' %}bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/10 dark:border-amber-700/40 dark:text-amber-300
-       {% elif alert.type == 'success' %}bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-900/10 dark:border-emerald-700/40 dark:text-emerald-300
-       {% elif alert.type == 'info' %}bg-sky-50 border-sky-200 text-sky-800 dark:bg-sky-900/10 dark:border-sky-700/40 dark:text-sky-300
-       {% else %}bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-400{% endif %}">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      {% if alert.type == 'warning' or alert.type == 'error' %}
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-      {% elif alert.type == 'success' %}
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-      {% else %}
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      {% endif %}
-    </svg>
-    <p class="flex-1 font-medium">
-      <strong>{{ alert.title }}.</strong> {{ alert.message }}
-    </p>
-    <div class="flex items-center gap-2 flex-shrink-0">
-      {% if alert.action_url %}
-      <a href="{{ alert.action_url }}" class="text-xs font-bold underline underline-offset-2 hover:no-underline whitespace-nowrap">{{ alert.action_label }}</a>
-      {% endif %}
-      <button @click="vis=false" class="opacity-50 hover:opacity-100 transition-opacity ml-1">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
+  <div x-data="{v:true}" x-show="v" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+       class="flex items-start gap-3 px-4 py-3 rounded-xl border text-sm font-medium
+         {% if alert.level == 'danger' %}bg-rose-50 border-rose-200 dark:bg-rose-900/10 dark:border-rose-800/40
+         {% elif alert.level == 'warning' %}bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800/40
+         {% else %}bg-brand-50 border-brand-100 dark:bg-brand-900/10 dark:border-brand-800/30{% endif %}">
+    <svg class="w-4 h-4 flex-shrink-0 mt-0.5 {% if alert.level == 'danger' %}text-rose-500{% elif alert.level == 'warning' %}text-amber-500{% else %}text-brand-500{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold {% if alert.level == 'danger' %}text-rose-800 dark:text-rose-300{% elif alert.level == 'warning' %}text-amber-800 dark:text-amber-300{% else %}text-brand-800 dark:text-brand-300{% endif %}">{{ alert.title }}</p>
+      <p class="text-xs font-normal mt-0.5 {% if alert.level == 'danger' %}text-rose-600 dark:text-rose-400{% elif alert.level == 'warning' %}text-amber-600 dark:text-amber-400{% else %}text-brand-600 dark:text-brand-400{% endif %}">{{ alert.message }}</p>
     </div>
+    {% if alert.action_url %}<a href="{{ alert.action_url }}" class="text-xs font-bold underline-offset-2 hover:underline flex-shrink-0 {% if alert.level == 'danger' %}text-rose-700 dark:text-rose-300{% elif alert.level == 'warning' %}text-amber-700 dark:text-amber-300{% else %}text-brand-700 dark:text-brand-300{% endif %}">{{ alert.action_label|default:"View" }} →</a>{% endif %}
+    <button @click="v=false" class="opacity-40 hover:opacity-70 flex-shrink-0 -mt-0.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
   </div>
   {% endfor %}
 </div>
@@ -79,300 +48,198 @@
 
 <!-- KPI Cards -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-  <!-- Revenue -->
-  <div class="kpi-card bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div class="w-9 h-9 bg-brand-100 dark:bg-brand-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-        <svg class="w-[18px] h-[18px] text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+
+  <div class="card p-5 relative overflow-hidden group hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between mb-4">
+      <div class="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center">
+        <svg class="w-[18px] h-[18px] text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
       </div>
-      {% if kpis %}
-      <span class="inline-flex items-center gap-0.5 text-[10.5px] font-bold px-1.5 py-0.5 rounded-full
-        {% if kpis.revenue_change >= 0 %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400
-        {% else %}bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400{% endif %}">
-        {% if kpis.revenue_change >= 0 %}↑{% else %}↓{% endif %}
-        {{ kpis.revenue_change|floatformat:1 }}%
-      </span>
-      {% endif %}
+      {% if kpis and kpis.outstanding_change %}<span class="text-[10.5px] font-bold px-1.5 py-0.5 rounded-full {% if kpis.outstanding_change > 0 %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">{{ kpis.outstanding_change|floatformat:0 }}%</span>{% endif %}
     </div>
-    <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Revenue This Month</p>
-    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums leading-tight">
-      {% if profile %}{{ profile.default_currency }}{% endif %} {% if kpis %}{{ kpis.revenue_month|floatformat:0 }}{% else %}0{% endif %}
-    </p>
-    <p class="text-[10.5px] text-slate-400 mt-1">{% if kpis %}{{ kpis.paid_count_month }}{% else %}0{% endif %} invoice{{ kpis.paid_count_month|pluralize }} paid</p>
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">Outstanding</p>
+    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums leading-none">{{ workspace.currency_symbol|default:"₦" }}{% if kpis %}{{ kpis.total_outstanding|default:0|floatformat:0 }}{% else %}0{% endif %}</p>
+    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">{% if kpis %}{{ kpis.outstanding_count|default:0 }} invoice{{ kpis.outstanding_count|default:0|pluralize }}{% else %}No invoices{% endif %}</p>
   </div>
 
-  <!-- Outstanding -->
-  <div class="kpi-card bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div class="w-9 h-9 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-        <svg class="w-[18px] h-[18px] text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+  <div class="card p-5 relative overflow-hidden group hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between mb-4">
+      <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+        <svg class="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
       </div>
-      <a href="{% url 'invoices:invoice_list' %}?status=sent" class="text-[10.5px] font-semibold text-brand-600 dark:text-brand-400 hover:underline">View →</a>
+      {% if kpis and kpis.revenue_change %}<span class="text-[10.5px] font-bold px-1.5 py-0.5 rounded-full {% if kpis.revenue_change >= 0 %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% else %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400{% endif %}">{% if kpis.revenue_change >= 0 %}+{% endif %}{{ kpis.revenue_change|floatformat:0 }}%</span>{% endif %}
     </div>
-    <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Outstanding</p>
-    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums leading-tight">
-      {% if profile %}{{ profile.default_currency }}{% endif %} {% if kpis %}{{ kpis.outstanding|floatformat:0 }}{% else %}0{% endif %}
-    </p>
-    <p class="text-[10.5px] text-slate-400 mt-1">Awaiting payment</p>
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">This Month</p>
+    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums leading-none">{{ workspace.currency_symbol|default:"₦" }}{% if kpis %}{{ kpis.revenue_this_month|default:0|floatformat:0 }}{% else %}0{% endif %}</p>
+    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">vs last month</p>
   </div>
 
-  <!-- Overdue -->
-  <div class="kpi-card bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div class="w-9 h-9 {% if kpis and kpis.overdue_count %}bg-rose-100 dark:bg-rose-900/30{% else %}bg-slate-100 dark:bg-slate-800{% endif %} rounded-xl flex items-center justify-center flex-shrink-0">
-        <svg class="w-[18px] h-[18px] {% if kpis and kpis.overdue_count %}text-rose-600 dark:text-rose-400{% else %}text-slate-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  <div class="card p-5 relative overflow-hidden group hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between mb-4">
+      <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+        <svg class="w-[18px] h-[18px] text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      {% if kpis and kpis.overdue_count %}
-      <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="text-[10.5px] font-semibold text-rose-600 dark:text-rose-400 hover:underline">View →</a>
-      {% endif %}
+      {% if overdue_count %}<span class="text-[10.5px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">{{ overdue_count }} overdue</span>{% endif %}
     </div>
-    <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Overdue</p>
-    <p class="text-[22px] font-bold {% if kpis and kpis.overdue_count %}text-rose-600 dark:text-rose-400{% else %}text-slate-900 dark:text-white{% endif %} tabular-nums leading-tight">
-      {% if profile %}{{ profile.default_currency }}{% endif %} {% if kpis %}{{ kpis.overdue_amount|floatformat:0 }}{% else %}0{% endif %}
-    </p>
-    <p class="text-[10.5px] text-slate-400 mt-1">{% if kpis %}{{ kpis.overdue_count }}{% else %}0{% endif %} invoice{{ kpis.overdue_count|pluralize }} overdue</p>
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">Overdue</p>
+    <p class="text-[22px] font-bold {% if kpis and kpis.total_overdue %}text-rose-600 dark:text-rose-400{% else %}text-slate-900 dark:text-white{% endif %} tabular-nums leading-none">{{ workspace.currency_symbol|default:"₦" }}{% if kpis %}{{ kpis.total_overdue|default:0|floatformat:0 }}{% else %}0{% endif %}</p>
+    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">{% if kpis %}{{ kpis.overdue_count|default:0 }} invoice{{ kpis.overdue_count|default:0|pluralize }}{% else %}All good!{% endif %}</p>
   </div>
 
-  <!-- Collection Rate -->
-  <div class="kpi-card bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-    <div class="flex items-start justify-between mb-3">
-      <div class="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
-        <svg class="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  <div class="card p-5 relative overflow-hidden group hover:shadow-md transition-shadow">
+    <div class="flex items-start justify-between mb-4">
+      <div class="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+        <svg class="w-[18px] h-[18px] text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
-      <span class="text-[10.5px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">{% if kpis %}{{ kpis.collection_rate }}{% else %}0{% endif %}%</span>
     </div>
-    <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1">Collection Rate</p>
-    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums leading-tight">
-      {% if kpis %}{{ kpis.avg_payment_days }}{% else %}0{% endif %}<span class="text-sm font-semibold text-slate-400 ml-1">days avg</span>
-    </p>
-    <p class="text-[10.5px] text-slate-400 mt-1">Avg time to payment</p>
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">Collected YTD</p>
+    <p class="text-[22px] font-bold text-slate-900 dark:text-white tabular-nums leading-none">{{ workspace.currency_symbol|default:"₦" }}{% if kpis %}{{ kpis.total_paid_ytd|default:0|floatformat:0 }}{% else %}0{% endif %}</p>
+    <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5">Year to date</p>
   </div>
 </div>
 
-<!-- Charts Row -->
-<div class="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-5">
-  <!-- Revenue Bar Chart -->
-  <div class="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-    <div class="flex items-center justify-between mb-5">
-      <div>
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Revenue Trend</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Paid invoices by month</p>
-      </div>
-      <a href="{% url 'invoices:revenue_report' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">Full report <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg></a>
-    </div>
-    <div style="height:190px;position:relative"><canvas id="revenueChart"></canvas></div>
-  </div>
-  <!-- Status Donut -->
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Invoice Status</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">This month</p>
-      </div>
-    </div>
-    <div class="flex items-center justify-center mb-4" style="height:130px"><canvas id="statusChart"></canvas></div>
-    <div class="space-y-2 text-xs">
-      <div class="flex justify-between items-center"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span><span class="text-slate-600 dark:text-slate-400">Paid</span></span><span id="s-paid" class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">–</span></div>
-      <div class="flex justify-between items-center"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-brand-500 inline-block"></span><span class="text-slate-600 dark:text-slate-400">Sent</span></span><span id="s-sent" class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">–</span></div>
-      <div class="flex justify-between items-center"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span><span class="text-slate-600 dark:text-slate-400">Overdue</span></span><span id="s-overdue" class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">–</span></div>
-      <div class="flex justify-between items-center"><span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 inline-block"></span><span class="text-slate-600 dark:text-slate-400">Draft</span></span><span id="s-draft" class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">–</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- Cashflow + Aging -->
-<div class="grid grid-cols-1 xl:grid-cols-5 gap-5 mb-5">
-  <!-- Cashflow -->
-  <div class="xl:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-    <div class="flex items-center justify-between mb-5">
-      <div>
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Cash Flow</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Income vs expenses — last 90 days</p>
-      </div>
-      <a href="{% url 'invoices:cashflow_report' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">Report <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg></a>
-    </div>
-    <div style="height:160px;position:relative"><canvas id="cashflowChart"></canvas></div>
-    <div class="flex items-center gap-5 mt-3">
-      <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="w-3 h-2 rounded-sm bg-emerald-500 block"></span>Income</div>
-      <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="w-3 h-2 rounded-sm bg-rose-400 block"></span>Expenses</div>
-      <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="w-3 h-2 rounded-sm bg-brand-500 block"></span>Net</div>
-    </div>
-  </div>
-  <!-- Aging -->
-  <div class="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-    <div class="flex items-center justify-between mb-5">
-      <div>
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">A/R Aging</h3>
-        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Outstanding by age</p>
-      </div>
-      <a href="{% url 'invoices:aging_report' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">Report <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg></a>
-    </div>
-    <div class="space-y-3">
-      {% if aging_data %}
-      {% with aging_data.current as b %}{% if b %}
-      <div>
-        <div class="flex items-center justify-between text-xs mb-1.5">
-          <span class="font-medium text-slate-600 dark:text-slate-400">Current</span>
-          <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">{% if profile %}{{ profile.default_currency }}{% endif %} {{ b.amount|floatformat:0 }} <span class="text-slate-400 font-normal">({{ b.count }})</span></span>
-        </div>
-        <div class="ag-bar"><div class="ag-fill bg-emerald-500" style="width:{{ b.pct }}%"></div></div>
-      </div>
-      {% endif %}{% endwith %}
-      {% with aging_data.days_1_30 as b %}{% if b %}
-      <div>
-        <div class="flex items-center justify-between text-xs mb-1.5">
-          <span class="font-medium text-slate-600 dark:text-slate-400">1–30 days</span>
-          <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">{% if profile %}{{ profile.default_currency }}{% endif %} {{ b.amount|floatformat:0 }} <span class="text-slate-400 font-normal">({{ b.count }})</span></span>
-        </div>
-        <div class="ag-bar"><div class="ag-fill bg-amber-400" style="width:{{ b.pct }}%"></div></div>
-      </div>
-      {% endif %}{% endwith %}
-      {% with aging_data.days_31_60 as b %}{% if b %}
-      <div>
-        <div class="flex items-center justify-between text-xs mb-1.5">
-          <span class="font-medium text-slate-600 dark:text-slate-400">31–60 days</span>
-          <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">{% if profile %}{{ profile.default_currency }}{% endif %} {{ b.amount|floatformat:0 }} <span class="text-slate-400 font-normal">({{ b.count }})</span></span>
-        </div>
-        <div class="ag-bar"><div class="ag-fill bg-orange-500" style="width:{{ b.pct }}%"></div></div>
-      </div>
-      {% endif %}{% endwith %}
-      {% with aging_data.days_61_90 as b %}{% if b %}
-      <div>
-        <div class="flex items-center justify-between text-xs mb-1.5">
-          <span class="font-medium text-slate-600 dark:text-slate-400">61–90 days</span>
-          <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">{% if profile %}{{ profile.default_currency }}{% endif %} {{ b.amount|floatformat:0 }} <span class="text-slate-400 font-normal">({{ b.count }})</span></span>
-        </div>
-        <div class="ag-bar"><div class="ag-fill bg-rose-500" style="width:{{ b.pct }}%"></div></div>
-      </div>
-      {% endif %}{% endwith %}
-      {% with aging_data.days_90p as b %}{% if b %}
-      <div>
-        <div class="flex items-center justify-between text-xs mb-1.5">
-          <span class="font-medium text-slate-600 dark:text-slate-400">90+ days</span>
-          <span class="font-bold text-slate-700 dark:text-slate-300 tabular-nums">{% if profile %}{{ profile.default_currency }}{% endif %} {{ b.amount|floatformat:0 }} <span class="text-slate-400 font-normal">({{ b.count }})</span></span>
-        </div>
-        <div class="ag-bar"><div class="ag-fill bg-red-700" style="width:{{ b.pct }}%"></div></div>
-      </div>
-      {% endif %}{% endwith %}
-      {% else %}
-      <p class="text-xs text-slate-400 text-center py-8">No aging data</p>
-      {% endif %}
-    </div>
-  </div>
-</div>
-
-<!-- Bottom: Invoices Table + Right Column -->
+<!-- Main Grid -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-  <!-- Recent Invoices -->
-  <div class="xl:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-      <div>
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Recent Invoices</h3>
-        <p class="text-xs text-slate-400 mt-0.5">Your latest activity</p>
+  <!-- Left: Chart + Aging + Recent Invoices -->
+  <div class="xl:col-span-2 space-y-5">
+
+    <!-- Revenue Chart -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-5">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Revenue Overview</h3>
+          <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Monthly invoiced & collected</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded bg-brand-400/60"></span>Invoiced</span>
+          <span class="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>Collected</span>
+        </div>
       </div>
-      <a href="{% url 'invoices:invoice_list' %}" class="flex items-center gap-1 text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">View all <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg></a>
+      <div class="h-52 relative"><canvas id="revChart"></canvas></div>
     </div>
-    {% if recent_invoices %}
-    <div class="overflow-x-auto">
-      <table class="w-full text-xs">
-        <thead>
-          <tr class="bg-slate-50 dark:bg-slate-800/40">
-            <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">Invoice #</th>
-            <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Client</th>
-            <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:table-cell">Date</th>
-            <th class="text-right px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Amount</th>
-            <th class="text-center px-4 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Status</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50 dark:divide-slate-800/60">
-          {% for inv in recent_invoices %}
-          <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors">
-            <td class="px-5 py-3">
-              <a href="{% url 'invoices:invoice_detail' inv.id %}" class="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{{ inv.invoice_number }}</a>
-            </td>
-            <td class="px-3 py-3">
-              <span class="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[120px] block">{{ inv.client.name }}</span>
-            </td>
-            <td class="px-3 py-3 text-slate-500 dark:text-slate-400 whitespace-nowrap hidden sm:table-cell">{{ inv.created_at|date:"M d, Y" }}</td>
-            <td class="px-3 py-3 text-right font-bold text-slate-800 dark:text-slate-200 tabular-nums whitespace-nowrap">{{ inv.currency }} {{ inv.total_amount|floatformat:2 }}</td>
-            <td class="px-4 py-3 text-center">
-              <span class="inline-flex px-2 py-0.5 rounded-full text-[10.5px] font-bold whitespace-nowrap
-                {% if inv.status == 'paid' %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400
-                {% elif inv.status == 'overdue' %}bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400
-                {% elif inv.status == 'sent' %}bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400
-                {% elif inv.status == 'viewed' %}bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400
-                {% elif inv.status == 'part_paid' %}bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400
-                {% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
-                {{ inv.get_status_display }}
-              </span>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="flex flex-col items-center justify-center py-16 px-5 text-center">
-      <div class="w-14 h-14 bg-brand-50 dark:bg-brand-900/20 rounded-2xl flex items-center justify-center mb-4">
-        <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 4v4h4"/></svg>
+
+    <!-- Aging Buckets -->
+    {% if aging_buckets %}
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Receivables Aging</h3>
+          <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Age breakdown of outstanding invoices</p>
+        </div>
+        <a href="{% url 'invoices:aging_report' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">Full report →</a>
       </div>
-      <p class="text-sm font-bold text-slate-700 dark:text-slate-300">No invoices yet</p>
-      <p class="text-xs text-slate-400 mt-1 mb-5">Create your first invoice and start getting paid faster.</p>
-      <a href="{% url 'invoices:invoice_create' %}" class="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors">Create Invoice</a>
+      <div class="space-y-3.5">
+        {% for b in aging_buckets %}
+        <div class="flex items-center gap-3">
+          <p class="text-xs font-medium text-slate-600 dark:text-slate-400 w-24 flex-shrink-0">{{ b.label }}</p>
+          <div class="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full" style="width:{{ b.percent|default:0 }}%;background:{% if b.label == 'Current' %}#10b981{% elif '1-30' in b.label %}#f59e0b{% elif '31-60' in b.label %}#f97316{% else %}#ef4444{% endif %};transition:width .8s ease"></div>
+          </div>
+          <p class="text-xs font-bold tabular-nums text-slate-800 dark:text-slate-200 w-28 text-right flex-shrink-0">{{ workspace.currency_symbol|default:"₦" }}{{ b.amount|default:0|floatformat:0 }}<span class="font-normal text-slate-400 ml-1">·{{ b.count|default:0 }}</span></p>
+        </div>
+        {% endfor %}
+      </div>
     </div>
     {% endif %}
+
+    <!-- Recent Invoices -->
+    <div class="card overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Recent Invoices</h3>
+        <a href="{% url 'invoices:invoice_list' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">View all →</a>
+      </div>
+      {% if recent_invoices %}
+      <div>
+        {% for inv in recent_invoices|slice:":8" %}
+        <a href="{% url 'invoices:invoice_detail' inv.id %}"
+           class="flex items-center gap-3 px-5 py-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-50 dark:border-slate-800/50 last:border-0">
+          <div class="w-8 h-8 rounded-lg bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center flex-shrink-0 text-[10px] font-black text-brand-600 dark:text-brand-400">
+            #{{ inv.invoice_number|slice:"-2:" }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200">{{ inv.invoice_number }}</p>
+              <span class="text-[10.5px] font-bold px-1.5 py-0.5 rounded-full
+                {% if inv.status == 'paid' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-400
+                {% elif inv.status == 'overdue' %}bg-rose-100 text-rose-700 dark:bg-rose-900/25 dark:text-rose-400
+                {% elif inv.status == 'sent' %}bg-brand-100 text-brand-700 dark:bg-brand-900/25 dark:text-brand-400
+                {% elif inv.status == 'viewed' %}bg-blue-100 text-blue-700 dark:bg-blue-900/25 dark:text-blue-400
+                {% elif inv.status == 'part_paid' %}bg-teal-100 text-teal-700 dark:bg-teal-900/25 dark:text-teal-400
+                {% else %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400{% endif %}">
+                {{ inv.get_status_display }}
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+              {% if inv.client %}{{ inv.client.name }}{% else %}No client{% endif %}
+              {% if inv.due_date %} · Due {{ inv.due_date|date:"M d, Y" }}{% endif %}
+            </p>
+          </div>
+          <p class="text-sm font-bold tabular-nums text-slate-900 dark:text-white flex-shrink-0">{{ inv.currency_symbol|default:"₦" }}{{ inv.total_amount|floatformat:0 }}</p>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="py-14 flex flex-col items-center">
+        <div class="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center mb-3">
+          <svg class="w-6 h-6 text-brand-400 dark:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-3">No invoices yet</p>
+        <a href="{% url 'invoices:invoice_create' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">Create your first invoice →</a>
+      </div>
+      {% endif %}
+    </div>
+
   </div>
 
-  <!-- Right Column -->
+  <!-- Right Sidebar -->
   <div class="space-y-5">
-    <!-- Quick Stats Grid -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Quick Stats</h3>
-      <div class="grid grid-cols-2 gap-3">
-        {% if quick_stats %}
-        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-center">
-          <p class="text-[20px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ quick_stats.total_clients }}</p>
-          <p class="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Total Clients</p>
-        </div>
-        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-center">
-          <p class="text-[20px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ quick_stats.active_clients }}</p>
-          <p class="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Active This Month</p>
-        </div>
-        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-center">
-          <p class="text-[20px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ quick_stats.recurring_schedules }}</p>
-          <p class="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Active Recurring</p>
-        </div>
-        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-center">
-          <p class="text-[14px] font-bold text-slate-800 dark:text-slate-200 tabular-nums leading-tight">{% if profile %}{{ profile.default_currency }}{% endif %} {{ quick_stats.expenses_month|floatformat:0 }}</p>
-          <p class="text-[10.5px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">Expenses MTD</p>
-        </div>
-        {% else %}
-        <div class="col-span-2 text-xs text-slate-400 text-center py-4">No data available</div>
-        {% endif %}
+
+    <!-- Quick Stats / Status Breakdown -->
+    <div class="card p-5">
+      <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Invoice Status</h3>
+      {% if status_counts %}
+      <div class="space-y-1.5">
+        {% for s in status_counts %}
+        <a href="{% url 'invoices:invoice_list' %}?status={{ s.status }}"
+           class="flex items-center gap-3 px-2.5 py-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors -mx-2">
+          <span class="w-2 h-2 rounded-full flex-shrink-0
+            {% if s.status == 'paid' %}bg-emerald-500{% elif s.status == 'overdue' %}bg-rose-500{% elif s.status == 'sent' %}bg-brand-500{% elif s.status == 'viewed' %}bg-blue-500{% elif s.status == 'part_paid' %}bg-teal-500{% elif s.status == 'draft' %}bg-slate-300 dark:bg-slate-600{% else %}bg-slate-300{% endif %}"></span>
+          <span class="flex-1 text-xs font-medium text-slate-600 dark:text-slate-400">{{ s.label|default:s.status|capfirst }}</span>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ s.count }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-xs text-slate-400 dark:text-slate-600 text-center py-4">No invoices yet</p>
+      {% endif %}
+      <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <a href="{% url 'invoices:invoice_create' %}" class="flex items-center justify-center gap-1.5 w-full px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          Create Invoice
+        </a>
       </div>
     </div>
 
     <!-- Top Clients -->
     {% if top_clients %}
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
+    <div class="card p-5">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Top Clients</h3>
-        <a href="{% url 'invoices:client_list' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">View all</a>
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Top Clients</h3>
+        <a href="{% url 'invoices:client_list' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">All →</a>
       </div>
       <div class="space-y-2.5">
-        {% for client in top_clients %}
+        {% for client in top_clients|slice:":5" %}
         <a href="{% url 'invoices:client_detail' client.id %}"
-           class="flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 py-1.5 rounded-xl transition-colors">
-          <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-               style="background:linear-gradient(135deg,hsl({{ forloop.counter|add:'200' }},55%,50%),hsl({{ forloop.counter|add:'230' }},60%,45%))">
+           class="flex items-center gap-3 -mx-2 px-2 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"
+               style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">
             {{ client.name|slice:":1"|upper }}
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{{ client.name }}</p>
-            <p class="text-[10.5px] text-slate-400 leading-tight">{{ client.invoice_count }} invoice{{ client.invoice_count|pluralize }}</p>
+            <p class="text-[12.5px] font-semibold text-slate-800 dark:text-slate-200 truncate">{{ client.name }}</p>
+            <p class="text-[10.5px] text-slate-400 dark:text-slate-500">{{ client.invoice_count|default:0 }} invoice{{ client.invoice_count|default:0|pluralize }}</p>
           </div>
-          <p class="text-xs font-bold text-slate-700 dark:text-slate-300 tabular-nums flex-shrink-0">{% if profile %}{{ profile.default_currency }}{% endif %} {{ client.total_revenue|floatformat:0 }}</p>
+          <p class="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300 flex-shrink-0">{{ workspace.currency_symbol|default:"₦" }}{{ client.total_value|default:0|floatformat:0 }}</p>
         </a>
         {% endfor %}
       </div>
@@ -381,20 +248,25 @@
 
     <!-- Upcoming Due -->
     {% if upcoming_due %}
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Due Soon</h3>
-      <div class="space-y-2.5">
-        {% for inv in upcoming_due %}
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Due Soon</h3>
+        <a href="{% url 'invoices:invoice_list' %}?status=sent" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">All →</a>
+      </div>
+      <div class="space-y-2">
+        {% for inv in upcoming_due|slice:":5" %}
         <a href="{% url 'invoices:invoice_detail' inv.id %}"
-           class="flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 -mx-2 px-2 py-1.5 rounded-xl transition-colors">
-          <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
-            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          </div>
+           class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-brand-200 dark:hover:border-brand-800/60 transition-colors">
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{{ inv.client.name }}</p>
-            <p class="text-[10.5px] text-slate-400">Due {{ inv.due_date|date:"M d, Y" }}</p>
+            <p class="text-[12px] font-semibold text-slate-800 dark:text-slate-200 truncate">{{ inv.invoice_number }}</p>
+            {% if inv.client %}<p class="text-[10.5px] text-slate-400 dark:text-slate-500 truncate">{{ inv.client.name }}</p>{% endif %}
           </div>
-          <p class="text-xs font-bold text-amber-600 dark:text-amber-400 tabular-nums flex-shrink-0">{{ inv.currency }} {{ inv.amount_due|floatformat:0 }}</p>
+          <div class="text-right flex-shrink-0">
+            <p class="text-xs font-bold tabular-nums text-slate-900 dark:text-white">{{ inv.currency_symbol|default:"₦" }}{{ inv.amount_due|default:inv.total_amount|floatformat:0 }}</p>
+            <p class="text-[10px] font-medium {% if inv.status == 'overdue' %}text-rose-500{% else %}text-amber-500{% endif %}">
+              {% if inv.status == 'overdue' %}Overdue{% elif inv.due_date %}{{ inv.due_date|date:"M d" }}{% endif %}
+            </p>
+          </div>
         </a>
         {% endfor %}
       </div>
@@ -403,111 +275,113 @@
 
     <!-- Activity Feed -->
     {% if activity_feed %}
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Recent Activity</h3>
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Activity</h3>
+        <a href="{% url 'invoices:activity_timeline' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">All →</a>
+      </div>
       <div class="space-y-3">
-        {% for item in activity_feed %}
-        <div class="flex items-start gap-3">
-          <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5
-            {% if not item.is_read %}bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400
-            {% else %}bg-slate-100 dark:bg-slate-800 text-slate-400{% endif %}">
-            <div class="w-1.5 h-1.5 rounded-full bg-current"></div>
+        {% for act in activity_feed|slice:":6" %}
+        <div class="flex items-start gap-2.5">
+          <div class="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg class="w-3 h-3 text-slate-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-tight">{{ item.title }}</p>
-            <p class="text-[10.5px] text-slate-400 mt-0.5 leading-relaxed">{{ item.message }}</p>
-            <p class="text-[10px] text-slate-300 dark:text-slate-600 mt-0.5">{{ item.created_at|timesince }} ago</p>
+            <p class="text-[12px] text-slate-700 dark:text-slate-300 leading-snug">{{ act.description|default:act.action }}</p>
+            <p class="text-[10.5px] text-slate-400 dark:text-slate-600 mt-0.5">{{ act.timestamp|timesince }} ago</p>
           </div>
         </div>
         {% endfor %}
       </div>
     </div>
     {% endif %}
+
   </div>
+</div>
+
+<!-- Quick Actions bar (bottom) -->
+<div class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+  <a href="{% url 'invoices:invoice_create' %}" class="flex flex-col items-center gap-2 p-4 card hover:border-brand-200 dark:hover:border-brand-800/60 hover:shadow-md transition-all group">
+    <div class="w-10 h-10 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center group-hover:bg-brand-200 dark:group-hover:bg-brand-900/50 transition-colors">
+      <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+    </div>
+    <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 text-center">New Invoice</p>
+  </a>
+  <a href="{% url 'invoices:client_create' %}" class="flex flex-col items-center gap-2 p-4 card hover:border-violet-200 dark:hover:border-violet-800/60 hover:shadow-md transition-all group">
+    <div class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-200 dark:group-hover:bg-violet-900/50 transition-colors">
+      <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+    </div>
+    <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 text-center">Add Client</p>
+  </a>
+  <a href="{% url 'invoices:expense_create' %}" class="flex flex-col items-center gap-2 p-4 card hover:border-orange-200 dark:hover:border-orange-800/60 hover:shadow-md transition-all group">
+    <div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50 transition-colors">
+      <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+    </div>
+    <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 text-center">Log Expense</p>
+  </a>
+  <a href="{% url 'invoices:estimate_create' %}" class="flex flex-col items-center gap-2 p-4 card hover:border-teal-200 dark:hover:border-teal-800/60 hover:shadow-md transition-all group">
+    <div class="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center group-hover:bg-teal-200 dark:group-hover:bg-teal-900/50 transition-colors">
+      <svg class="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    </div>
+    <p class="text-xs font-semibold text-slate-700 dark:text-slate-300 text-center">New Estimate</p>
+  </a>
+</div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  const dark = document.documentElement.classList.contains('dark');
-  const gridCol   = dark ? 'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
-  const tickCol   = dark ? '#4b5563':'#9ca3af';
-  const tTipCfg = {
-    backgroundColor: dark?'#0d1117':'#fff',
-    borderColor: dark?'#30363d':'#e2e8f0',
-    borderWidth:1, titleColor:dark?'#f0f6fc':'#1e293b',
-    bodyColor:dark?'#94a3b8':'#64748b',
-    padding:10, cornerRadius:10, boxPadding:4,
-  };
-
-  // Revenue chart
-  const rv = {{ revenue_json|safe }};
-  if(rv && rv.labels && rv.labels.length){
-    new Chart(document.getElementById('revenueChart'),{
-      type:'bar',
-      data:{labels:rv.labels,datasets:[{
-        label:'Revenue',data:rv.values,
-        backgroundColor:dark?'rgba(99,102,241,0.85)':'rgba(99,102,241,0.9)',
-        borderRadius:6,borderSkipped:false,maxBarThickness:44,
-      }]},
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{...tTipCfg,callbacks:{label:c=>' '+c.parsed.y.toLocaleString()}}},
-        scales:{
-          x:{grid:{display:false},ticks:{color:tickCol,font:{size:11}},border:{display:false}},
-          y:{grid:{color:gridCol},ticks:{color:tickCol,font:{size:11},callback:v=>v.toLocaleString()},border:{display:false}},
+function dashboardPage(){
+  return {
+    init(){
+      this.$nextTick(()=>{ try{this.buildChart()}catch(e){} });
+    },
+    buildChart(){
+      const el=document.getElementById('revChart');
+      if(!el) return;
+      const dark=document.documentElement.classList.contains('dark');
+      const gc=dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
+      const tc=dark?'#4b5563':'#94a3b8';
+      {% if revenue_chart %}
+      const labels={{ revenue_chart.labels|safe }};
+      const rev={{ revenue_chart.revenue|safe }};
+      const col={{ revenue_chart.collected|safe }};
+      {% else %}
+      const labels=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const rev=[0,0,0,0,0,0,0,0,0,0,0,0];
+      const col=[0,0,0,0,0,0,0,0,0,0,0,0];
+      {% endif %}
+      new Chart(el,{
+        type:'bar',
+        data:{
+          labels,
+          datasets:[
+            {label:'Invoiced',data:rev,backgroundColor:'rgba(99,102,241,0.14)',borderColor:'rgba(99,102,241,0.5)',borderWidth:1.5,borderRadius:6,borderSkipped:false},
+            {label:'Collected',data:col,type:'line',borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.07)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#10b981',tension:0.4,fill:true}
+          ]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          interaction:{mode:'index',intersect:false},
+          plugins:{
+            legend:{display:false},
+            tooltip:{
+              backgroundColor:dark?'#0d1117':'#fff',
+              titleColor:dark?'#e2e8f0':'#1e293b',
+              bodyColor:dark?'#94a3b8':'#64748b',
+              borderColor:dark?'#1c2333':'#e2e8f0',borderWidth:1,padding:10,
+              callbacks:{label(c){return ' '+c.dataset.label+': ₦'+c.raw.toLocaleString()}}
+            }
+          },
+          scales:{
+            x:{grid:{display:false},ticks:{color:tc,font:{size:11}}},
+            y:{grid:{color:gc},border:{dash:[3,3]},ticks:{color:tc,font:{size:11},callback:v=>'₦'+(v>=1000?(v/1000).toFixed(0)+'k':v)}}
+          }
         }
-      }
-    });
-  } else {
-    const c=document.getElementById('revenueChart');
-    if(c)c.parentElement.innerHTML='<div class="flex h-full items-center justify-center text-xs text-slate-400">No revenue data yet</div>';
+      });
+    }
   }
-
-  // Status donut
-  const st = {{ status_json|safe }};
-  const vals=[st.paid||0,st.sent||0,st.overdue||0,st.draft||0];
-  document.getElementById('s-paid').textContent=vals[0];
-  document.getElementById('s-sent').textContent=vals[1];
-  document.getElementById('s-overdue').textContent=vals[2];
-  document.getElementById('s-draft').textContent=vals[3];
-  new Chart(document.getElementById('statusChart'),{
-    type:'doughnut',
-    data:{labels:['Paid','Sent','Overdue','Draft'],datasets:[{
-      data:vals,
-      backgroundColor:['#10b981','#6366f1','#ef4444',dark?'#374151':'#e2e8f0'],
-      borderWidth:0,hoverOffset:4,
-    }]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{...tTipCfg}}},
-  });
-
-  // Cashflow chart
-  const cf = {{ cashflow_json|safe }};
-  if(cf && cf.length){
-    new Chart(document.getElementById('cashflowChart'),{
-      type:'bar',
-      data:{
-        labels:cf.map(d=>d.week),
-        datasets:[
-          {label:'Income',   data:cf.map(d=>d.income),   backgroundColor:'rgba(16,185,129,.7)', borderRadius:4,borderSkipped:false,maxBarThickness:28},
-          {label:'Expenses', data:cf.map(d=>d.expenses), backgroundColor:'rgba(239,68,68,.6)',  borderRadius:4,borderSkipped:false,maxBarThickness:28},
-          {type:'line',label:'Net',data:cf.map(d=>d.net),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.06)',borderWidth:2,tension:0.4,pointRadius:3,pointBackgroundColor:'#6366f1',fill:true},
-        ]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{...tTipCfg,mode:'index',intersect:false}},
-        scales:{
-          x:{grid:{display:false},ticks:{color:tickCol,font:{size:10}},border:{display:false}},
-          y:{grid:{color:gridCol},ticks:{color:tickCol,font:{size:10},callback:v=>v.toLocaleString()},border:{display:false}},
-        }
-      }
-    });
-  } else {
-    const c=document.getElementById('cashflowChart');
-    if(c)c.parentElement.innerHTML='<div class="flex h-full items-center justify-center text-xs text-slate-400">No cashflow data yet</div>';
-  }
-});
+}
 </script>
 {% endblock %}

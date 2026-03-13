@@ -1,10 +1,8 @@
 {% extends "base/layout_app.html" %}
 {% block title %}{% if expense %}Edit Expense{% else %}Log Expense{% endif %} — InvoiceFlow{% endblock %}
-{% block page_title %}{% if expense %}Edit Expense{% else %}Log Expense{% endif %}{% endblock %}
 
 {% block content %}
 <div class="max-w-2xl mx-auto">
-  <!-- Header -->
   <div class="flex items-center gap-3 mb-6">
     <a href="{% if expense %}{% url 'invoices:expense_detail' expense.id %}{% else %}{% url 'invoices:expense_list' %}{% endif %}"
        class="flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
@@ -12,110 +10,109 @@
     </a>
     <div>
       <h1 class="text-xl font-bold text-slate-900 dark:text-white">{% if expense %}Edit Expense{% else %}Log Expense{% endif %}</h1>
-      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{% if expense %}Update expense information{% else %}Record a new business expense{% endif %}</p>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{% if expense %}Update expense details{% else %}Record a new business expense{% endif %}</p>
     </div>
   </div>
 
-  <form method="post" enctype="multipart/form-data" class="space-y-5">
+  <form method="post" enctype="multipart/form-data"
+        action="{% if expense %}{% url 'invoices:expense_edit' expense.id %}{% else %}{% url 'invoices:expense_create' %}{% endif %}">
     {% csrf_token %}
+    <div class="space-y-5">
 
-    <!-- Basic Info -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Expense Details</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="sm:col-span-2">
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Description *</label>
-          <input type="text" name="description" value="{{ expense.description|default:'' }}" required placeholder="Office supplies, software subscription…"
-                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 dark:focus:border-brand-500 placeholder-slate-400 transition-colors">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Amount *</label>
-          <input type="number" name="amount" value="{{ expense.amount|default:'' }}" required min="0.01" step="0.01" placeholder="0.00"
-                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 placeholder-slate-400 transition-colors tabular-nums">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Currency</label>
-          <select name="currency" class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
-            <option value="USD" {% if expense.currency == 'USD' or not expense %}selected{% endif %}>$ — USD</option>
-            <option value="EUR" {% if expense.currency == 'EUR' %}selected{% endif %}>€ — EUR</option>
-            <option value="GBP" {% if expense.currency == 'GBP' %}selected{% endif %}>£ — GBP</option>
-            <option value="NGN" {% if expense.currency == 'NGN' %}selected{% endif %}>₦ — NGN</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Date *</label>
-          <input type="date" name="expense_date" value="{{ expense.expense_date|date:'Y-m-d'|default:'' }}" required
-                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Category</label>
-          <select name="category" class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
-            <option value="">Select category…</option>
-            <option value="Travel" {% if expense.category == 'Travel' %}selected{% endif %}>Travel</option>
-            <option value="Meals" {% if expense.category == 'Meals' %}selected{% endif %}>Meals & Entertainment</option>
-            <option value="Office" {% if expense.category == 'Office' %}selected{% endif %}>Office Supplies</option>
-            <option value="Software" {% if expense.category == 'Software' %}selected{% endif %}>Software & Tools</option>
-            <option value="Marketing" {% if expense.category == 'Marketing' %}selected{% endif %}>Marketing</option>
-            <option value="Utilities" {% if expense.category == 'Utilities' %}selected{% endif %}>Utilities</option>
-            <option value="Payroll" {% if expense.category == 'Payroll' %}selected{% endif %}>Payroll</option>
-            <option value="Professional" {% if expense.category == 'Professional' %}selected{% endif %}>Professional Services</option>
-            <option value="Other" {% if expense.category == 'Other' %}selected{% endif %}>Other</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Vendor / Merchant</label>
-          <input type="text" name="vendor" value="{{ expense.vendor|default:'' }}" placeholder="e.g. Amazon, Delta Airlines"
-                 class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 placeholder-slate-400 transition-colors">
-        </div>
-        <div>
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Client (if billable)</label>
-          <select name="client_id" class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 transition-colors">
-            <option value="">No client</option>
-            {% for client in clients %}
-            <option value="{{ client.id }}" {% if expense.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="block text-[11px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">Notes</label>
-          <textarea name="notes" rows="3" placeholder="Additional details…"
-                    class="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:border-brand-400 placeholder-slate-400 transition-colors resize-none">{{ expense.notes|default:'' }}</textarea>
-        </div>
-        <div class="sm:col-span-2 flex items-center gap-3">
-          <input type="checkbox" name="is_billable" id="is_billable" {% if expense.is_billable %}checked{% endif %}
-                 class="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500">
-          <label for="is_billable" class="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">Mark as billable to client</label>
+      <!-- Core Details -->
+      <div class="card p-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Expense Details</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="lbl">Description *</label>
+            <input type="text" name="description" value="{{ expense.description|default:'' }}" placeholder="What was this expense for?" class="fi" required autofocus>
+          </div>
+          <div>
+            <label class="lbl">Amount *</label>
+            <div class="relative">
+              <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">{{ workspace.currency_symbol|default:"₦" }}</span>
+              <input type="number" name="amount" value="{{ expense.amount|default:'' }}" step="0.01" min="0" placeholder="0.00" class="fi pl-7" required>
+            </div>
+          </div>
+          <div>
+            <label class="lbl">Date *</label>
+            <input type="date" name="date" value="{% if expense %}{{ expense.date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" class="fi" required>
+          </div>
+          <div>
+            <label class="lbl">Category</label>
+            <select name="category" class="fi">
+              <option value="">Select category…</option>
+              {% for cat in categories %}
+              <option value="{{ cat.id }}" {% if expense and expense.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Vendor / Payee</label>
+            <input type="text" name="vendor" value="{{ expense.vendor|default:'' }}" placeholder="Amazon, Staples, etc." class="fi">
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Receipt Upload -->
-    <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5">
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Receipt</h3>
-      <div class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-6 text-center hover:border-brand-400 dark:hover:border-brand-600 transition-colors">
-        <svg class="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-        <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Upload receipt</p>
-        <p class="text-[10.5px] text-slate-400 mb-3">PNG, JPG, PDF up to 10MB</p>
-        <input type="file" name="receipt" accept=".png,.jpg,.jpeg,.pdf" class="hidden" id="receiptFile">
-        <label for="receiptFile" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-lg cursor-pointer transition-colors">
-          Choose File
-        </label>
-        {% if expense.receipt %}
-        <p class="text-xs text-brand-600 dark:text-brand-400 mt-2 font-semibold">Current: <a href="{{ expense.receipt.url }}" target="_blank" class="hover:underline">View Receipt</a></p>
-        {% endif %}
+      <!-- Billing + Assignment -->
+      <div class="card p-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Billing & Assignment</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="lbl">Assign to Client</label>
+            <select name="client" class="fi">
+              <option value="">None (internal)</option>
+              {% for client in clients %}
+              <option value="{{ client.id }}" {% if expense and expense.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="flex items-end pb-1.5">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <div class="relative">
+                <input type="checkbox" name="is_billable" {% if expense and expense.is_billable %}checked{% endif %} class="sr-only peer">
+                <div class="w-10 h-5.5 h-[22px] bg-slate-200 dark:bg-slate-700 rounded-full peer-checked:bg-brand-600 transition-colors"></div>
+                <div class="absolute left-0.5 top-0.5 w-4.5 w-[18px] h-[18px] bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+              </div>
+              <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Billable to client</span>
+            </label>
+          </div>
+          <div>
+            <label class="lbl">Payment Method</label>
+            <select name="payment_method" class="fi">
+              <option value="">Select method…</option>
+              <option value="cash" {% if expense and expense.payment_method == 'cash' %}selected{% endif %}>Cash</option>
+              <option value="bank_transfer" {% if expense and expense.payment_method == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+              <option value="credit_card" {% if expense and expense.payment_method == 'credit_card' %}selected{% endif %}>Credit Card</option>
+              <option value="debit_card" {% if expense and expense.payment_method == 'debit_card' %}selected{% endif %}>Debit Card</option>
+              <option value="mobile_money" {% if expense and expense.payment_method == 'mobile_money' %}selected{% endif %}>Mobile Money</option>
+              <option value="cheque" {% if expense and expense.payment_method == 'cheque' %}selected{% endif %}>Cheque</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">Receipt / Reference</label>
+            <input type="text" name="reference" value="{{ expense.reference|default:'' }}" placeholder="Receipt #, order ID…" class="fi">
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Actions -->
-    <div class="flex items-center gap-3 justify-end">
-      <a href="{% if expense %}{% url 'invoices:expense_detail' expense.id %}{% else %}{% url 'invoices:expense_list' %}{% endif %}"
-         class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-        Cancel
-      </a>
-      <button type="submit" class="flex items-center gap-2 px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        {% if expense %}Save Changes{% else %}Log Expense{% endif %}
-      </button>
+      <!-- Notes -->
+      <div class="card p-6">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Notes</h3>
+        <textarea name="notes" rows="3" placeholder="Additional context about this expense…" class="fi">{{ expense.notes|default:'' }}</textarea>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-3 justify-end pb-4">
+        <a href="{% if expense %}{% url 'invoices:expense_detail' expense.id %}{% else %}{% url 'invoices:expense_list' %}{% endif %}"
+           class="px-5 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+          Cancel
+        </a>
+        <button type="submit" class="flex items-center gap-1.5 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          {% if expense %}Save Changes{% else %}Log Expense{% endif %}
+        </button>
+      </div>
     </div>
   </form>
 </div>

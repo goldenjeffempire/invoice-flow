@@ -1,182 +1,151 @@
 {% extends "base/layout_app.html" %}
 {% block title %}Invoices — InvoiceFlow{% endblock %}
-{% block page_title %}Invoices{% endblock %}
 
 {% block content %}
-<div x-data="invoiceListPage()" x-init="init()">
+<div x-data="{showFilters:false}">
 
-<!-- Page Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+<!-- Header -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
   <div>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Invoices</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-      {% if stats %}{{ stats.total_count }} total{% endif %}
-      {% if stats.overdue_count %} · <span class="text-rose-600 dark:text-rose-400 font-semibold">{{ stats.overdue_count }} overdue</span>{% endif %}
-    </p>
+    <h1 class="text-[20px] font-bold text-slate-900 dark:text-white">Invoices</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage and track all your invoices</p>
   </div>
-  <div class="flex items-center gap-2">
-    <a href="{% url 'invoices:invoice_export_csv' %}" class="flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-xl transition-colors">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-      Export CSV
-    </a>
-    <a href="{% url 'invoices:invoice_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-      New Invoice
-    </a>
-  </div>
+  <a href="{% url 'invoices:invoice_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-600/20 self-start sm:self-auto">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+    New Invoice
+  </a>
 </div>
 
-<!-- Stats Cards -->
+<!-- Stats Bar -->
 {% if stats %}
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-  {% with stat_items=stats %}
-  <a href="?status=" class="bg-white dark:bg-slate-900 border {% if not current_status %}border-brand-200 dark:border-brand-700{% else %}border-slate-200/80 dark:border-slate-800{% endif %} rounded-xl p-4 hover:border-brand-300 dark:hover:border-brand-600 transition-colors">
-    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">All Invoices</p>
-    <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ stats.total_count }}</p>
-  </a>
-  <a href="?status=sent" class="bg-white dark:bg-slate-900 border {% if current_status == 'sent' %}border-brand-200 dark:border-brand-700{% else %}border-slate-200/80 dark:border-slate-800{% endif %} rounded-xl p-4 hover:border-brand-300 dark:hover:border-brand-600 transition-colors">
-    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Sent</p>
-    <p class="text-2xl font-bold text-brand-600 dark:text-brand-400 tabular-nums">{{ stats.sent_count }}</p>
-  </a>
-  <a href="?status=overdue" class="bg-white dark:bg-slate-900 border {% if current_status == 'overdue' %}border-rose-200 dark:border-rose-700{% else %}border-slate-200/80 dark:border-slate-800{% endif %} rounded-xl p-4 hover:border-rose-300 dark:hover:border-rose-600 transition-colors">
-    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Overdue</p>
-    <p class="text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">{{ stats.overdue_count }}</p>
-  </a>
-  <a href="?status=paid" class="bg-white dark:bg-slate-900 border {% if current_status == 'paid' %}border-emerald-200 dark:border-emerald-700{% else %}border-slate-200/80 dark:border-slate-800{% endif %} rounded-xl p-4 hover:border-emerald-300 dark:hover:border-emerald-600 transition-colors">
-    <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Paid</p>
-    <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ stats.paid_count }}</p>
-  </a>
-  {% endwith %}
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Invoiced</p>
+    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ stats.total_invoiced|default:0|floatformat:0 }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Outstanding</p>
+    <p class="text-xl font-bold text-brand-600 dark:text-brand-400 tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ stats.total_outstanding|default:0|floatformat:0 }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Overdue</p>
+    <p class="text-xl font-bold {% if stats.total_overdue %}text-rose-600 dark:text-rose-400{% else %}text-slate-900 dark:text-white{% endif %} tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ stats.total_overdue|default:0|floatformat:0 }}</p>
+  </div>
+  <div class="card p-4">
+    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Paid</p>
+    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ stats.total_paid|default:0|floatformat:0 }}</p>
+  </div>
 </div>
 {% endif %}
 
 <!-- Filters + Search -->
-<div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden">
-
-  <!-- Tab Bar + Search Row -->
-  <div class="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 border-b border-slate-100 dark:border-slate-800">
-    <!-- Status Tabs -->
-    <div class="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1">
+<div class="card p-4 mb-4">
+  <div class="flex flex-col sm:flex-row gap-3">
+    <!-- Search -->
+    <form method="get" action="" class="flex-1">
+      <div class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" name="q" value="{{ search_query|default:'' }}"
+               placeholder="Search invoice #, client name…"
+               class="fi pl-9 pr-4 h-9">
+        {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+      </div>
+    </form>
+    <!-- Quick filter chips -->
+    <div class="flex items-center gap-1.5 flex-wrap">
+      <a href="{% url 'invoices:invoice_list' %}{% if search_query %}?q={{ search_query }}{% endif %}"
+         class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if not current_status %}bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300{% else %}text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+        All
+      </a>
       {% for tab in status_tabs %}
-      <a href="?status={{ tab.key }}{% if search_query %}&q={{ search_query }}{% endif %}"
-         class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors
-           {% if current_status == tab.key %}bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400 border border-brand-200 dark:border-brand-700
-           {% else %}text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300{% endif %}">
-        {{ tab.label }}
-        {% if tab.count %}<span class="tabular-nums
-          {% if current_status == tab.key %}text-brand-600 dark:text-brand-400{% else %}text-slate-400{% endif %}">
-          {{ tab.count }}
-        </span>{% endif %}
+      <a href="{% url 'invoices:invoice_list' %}?status={{ tab.status }}{% if search_query %}&q={{ search_query }}{% endif %}"
+         class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if current_status == tab.status %}bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300{% else %}text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800{% endif %}">
+        {{ tab.label }}{% if tab.count %} <span class="opacity-70">({{ tab.count }})</span>{% endif %}
       </a>
       {% endfor %}
     </div>
-    <!-- Search & Date Filters -->
-    <form method="get" class="flex items-center gap-2">
-      <input type="hidden" name="status" value="{{ current_status }}">
-      <div class="relative">
-        <svg class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" name="q" value="{{ search_query }}" placeholder="Search invoices…"
-               class="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-brand-400 dark:focus:border-brand-500 text-slate-800 dark:text-slate-200 placeholder-slate-400 w-48">
-      </div>
-      <input type="date" name="date_from" value="{{ request.GET.date_from }}"
-             class="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-brand-400 text-slate-700 dark:text-slate-300 hidden lg:block">
-      <input type="date" name="date_to" value="{{ request.GET.date_to }}"
-             class="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-brand-400 text-slate-700 dark:text-slate-300 hidden lg:block">
-      <button type="submit" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors">Go</button>
-    </form>
   </div>
+</div>
 
-  <!-- Invoice Table -->
+<!-- Table -->
+<div class="card overflow-hidden">
   {% if invoices %}
   <div class="overflow-x-auto">
-    <table class="w-full text-xs">
+    <table class="w-full">
       <thead>
-        <tr class="bg-slate-50/80 dark:bg-slate-800/40">
-          <th class="text-left px-5 py-3 font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-            <a href="?{% if current_status %}status={{ current_status }}&{% endif %}ordering={% if ordering == 'invoice_number' %}-{% endif %}invoice_number" class="flex items-center gap-1 hover:text-slate-700 dark:hover:text-slate-300">Invoice #</a>
+        <tr class="border-b border-slate-100 dark:border-slate-800">
+          <th class="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            <a href="?{% if current_status %}status={{ current_status }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}sort=number&dir={% if ordering == 'number' %}desc{% else %}asc{% endif %}" class="hover:text-slate-600 dark:hover:text-slate-300">Invoice #</a>
           </th>
-          <th class="text-left px-3 py-3 font-semibold text-slate-500 dark:text-slate-400">Client</th>
-          <th class="text-left px-3 py-3 font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden md:table-cell">
-            <a href="?{% if current_status %}status={{ current_status }}&{% endif %}ordering={% if ordering == 'issue_date' %}-{% endif %}issue_date" class="flex items-center gap-1 hover:text-slate-700 dark:hover:text-slate-300">Issue Date</a>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Client</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 hidden sm:table-cell">
+            <a href="?{% if current_status %}status={{ current_status }}&{% endif %}sort=date" class="hover:text-slate-600">Issued</a>
           </th>
-          <th class="text-left px-3 py-3 font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap hidden lg:table-cell">Due Date</th>
-          <th class="text-right px-3 py-3 font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-            <a href="?{% if current_status %}status={{ current_status }}&{% endif %}ordering={% if ordering == 'total_amount' %}-{% endif %}total_amount" class="flex items-center justify-end gap-1 hover:text-slate-700 dark:hover:text-slate-300">Amount</a>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 hidden md:table-cell">Due</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Status</th>
+          <th class="px-5 py-3 text-right text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            <a href="?{% if current_status %}status={{ current_status }}&{% endif %}sort=amount" class="hover:text-slate-600">Amount</a>
           </th>
-          <th class="text-center px-3 py-3 font-semibold text-slate-500 dark:text-slate-400">Status</th>
-          <th class="text-right px-5 py-3 font-semibold text-slate-500 dark:text-slate-400">Actions</th>
+          <th class="px-4 py-3 w-8"></th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-50 dark:divide-slate-800/60">
+      <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
         {% for inv in invoices %}
-        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors group">
+        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors">
           <td class="px-5 py-3.5">
-            <a href="{% url 'invoices:invoice_detail' inv.id %}" class="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{{ inv.invoice_number }}</a>
+            <a href="{% url 'invoices:invoice_detail' inv.id %}" class="font-semibold text-brand-600 dark:text-brand-400 hover:underline text-sm">{{ inv.invoice_number }}</a>
           </td>
-          <td class="px-3 py-3.5">
+          <td class="px-4 py-3.5">
             {% if inv.client %}
-            <a href="{% url 'invoices:client_detail' inv.client.id %}" class="font-medium text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 truncate max-w-[150px] block transition-colors">{{ inv.client.name }}</a>
-            {% else %}<span class="text-slate-400 italic">No client</span>{% endif %}
+            <a href="{% url 'invoices:client_detail' inv.client.id %}" class="text-sm text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 font-medium">{{ inv.client.name }}</a>
+            {% else %}
+            <span class="text-sm text-slate-400 dark:text-slate-600">—</span>
+            {% endif %}
           </td>
-          <td class="px-3 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap hidden md:table-cell">{{ inv.issue_date|date:"M d, Y" }}</td>
-          <td class="px-3 py-3.5 whitespace-nowrap hidden lg:table-cell">
+          <td class="px-4 py-3.5 text-sm text-slate-500 dark:text-slate-400 hidden sm:table-cell">{{ inv.issue_date|date:"M d, Y" }}</td>
+          <td class="px-4 py-3.5 hidden md:table-cell">
             {% if inv.due_date %}
-            <span class="{% if inv.status == 'overdue' %}text-rose-600 dark:text-rose-400 font-semibold{% else %}text-slate-500 dark:text-slate-400{% endif %}">
-              {{ inv.due_date|date:"M d, Y" }}
-            </span>
-            {% else %}<span class="text-slate-300 dark:text-slate-600">—</span>{% endif %}
+            <span class="text-sm {% if inv.status == 'overdue' %}text-rose-600 dark:text-rose-400 font-semibold{% else %}text-slate-500 dark:text-slate-400{% endif %}">{{ inv.due_date|date:"M d, Y" }}</span>
+            {% else %}<span class="text-sm text-slate-300 dark:text-slate-600">—</span>{% endif %}
           </td>
-          <td class="px-3 py-3.5 text-right">
-            <div>
-              <p class="font-bold text-slate-800 dark:text-slate-200 tabular-nums whitespace-nowrap">{{ inv.currency }} {{ inv.total_amount|floatformat:2 }}</p>
-              {% if inv.amount_due and inv.amount_due != inv.total_amount %}
-              <p class="text-[10.5px] text-slate-400 tabular-nums">Due: {{ inv.currency }} {{ inv.amount_due|floatformat:2 }}</p>
-              {% endif %}
-            </div>
-          </td>
-          <td class="px-3 py-3.5 text-center">
-            <span class="inline-flex px-2 py-0.5 rounded-full text-[10.5px] font-bold whitespace-nowrap
-              {% if inv.status == 'paid' %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400
-              {% elif inv.status == 'overdue' %}bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400
-              {% elif inv.status == 'sent' %}bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400
-              {% elif inv.status == 'viewed' %}bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400
-              {% elif inv.status == 'part_paid' %}bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400
-              {% elif inv.status == 'draft' %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400
-              {% elif inv.status == 'void' %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-500
-              {% else %}bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">
+          <td class="px-4 py-3.5">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold
+              {% if inv.status == 'paid' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-400
+              {% elif inv.status == 'overdue' %}bg-rose-100 text-rose-700 dark:bg-rose-900/25 dark:text-rose-400
+              {% elif inv.status == 'sent' %}bg-brand-100 text-brand-700 dark:bg-brand-900/25 dark:text-brand-400
+              {% elif inv.status == 'viewed' %}bg-blue-100 text-blue-700 dark:bg-blue-900/25 dark:text-blue-400
+              {% elif inv.status == 'part_paid' %}bg-teal-100 text-teal-700 dark:bg-teal-900/25 dark:text-teal-400
+              {% elif inv.status == 'draft' %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400
+              {% else %}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500{% endif %}">
               {{ inv.get_status_display }}
             </span>
           </td>
           <td class="px-5 py-3.5 text-right">
-            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" x-data="{om:false}">
-              <a href="{% url 'invoices:invoice_detail' inv.id %}" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" title="View">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-              </a>
-              {% if inv.can_edit %}
-              <a href="{% url 'invoices:invoice_edit' inv.id %}" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors" title="Edit">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-              </a>
-              {% endif %}
-              <div class="relative">
-                <button @click="om=!om" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-                </button>
-                <div x-show="om" x-cloak @click.outside="om=false"
-                     x-transition:enter="transition ease-out duration-100"
-                     x-transition:enter-start="opacity-0 scale-95"
-                     x-transition:enter-end="opacity-100 scale-100"
-                     class="absolute right-0 top-7 w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 z-20 py-1">
-                  <a href="{% url 'invoices:invoice_detail' inv.id %}" class="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    View Details
+            <p class="text-sm font-bold tabular-nums text-slate-900 dark:text-white">{{ inv.currency_symbol|default:"₦" }}{{ inv.total_amount|floatformat:0 }}</p>
+            {% if inv.amount_due and inv.amount_due != inv.total_amount %}
+            <p class="text-[10.5px] text-slate-400 dark:text-slate-500">due {{ inv.currency_symbol|default:"₦" }}{{ inv.amount_due|floatformat:0 }}</p>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3.5">
+            <div x-data="{open:false}" class="relative flex justify-end">
+              <button @click.stop="open=!open" class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/></svg>
+              </button>
+              <div x-show="open" x-cloak @click.outside="open=false"
+                   x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                   class="dd w-44" style="right:0;top:calc(100% + 4px)">
+                <div class="p-1.5">
+                  <a href="{% url 'invoices:invoice_detail' inv.id %}" class="dd-item rounded-lg">
+                    <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    View Invoice
                   </a>
-                  <a href="{% url 'invoices:invoice_pdf' inv.id %}" target="_blank" class="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  <a href="{% url 'invoices:invoice_edit' inv.id %}" class="dd-item rounded-lg">
+                    <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    Edit
+                  </a>
+                  <a href="{% url 'invoices:invoice_pdf' inv.id %}" target="_blank" class="dd-item rounded-lg">
+                    <svg class="w-3.5 h-3.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     Download PDF
-                  </a>
-                  <a href="{% url 'invoices:invoice_duplicate' inv.id %}" class="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
-                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    Duplicate
                   </a>
                 </div>
               </div>
@@ -190,63 +159,45 @@
 
   <!-- Pagination -->
   {% if invoices.has_other_pages %}
-  <div class="flex items-center justify-between px-5 py-3 border-t border-slate-100 dark:border-slate-800">
+  <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
     <p class="text-xs text-slate-500 dark:text-slate-400">
-      Page {{ invoices.number }} of {{ invoices.paginator.num_pages }} · {{ invoices.paginator.count }} total
+      Showing {{ invoices.start_index }}–{{ invoices.end_index }} of {{ invoices.paginator.count }} invoices
     </p>
     <div class="flex items-center gap-1">
       {% if invoices.has_previous %}
       <a href="?page={{ invoices.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-         class="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">
-        ← Prev
-      </a>
+         class="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">← Prev</a>
       {% endif %}
-      {% for num in invoices.paginator.page_range %}
-        {% if invoices.number == num %}
-        <span class="px-3 py-1.5 text-xs font-bold bg-brand-600 text-white rounded-lg">{{ num }}</span>
-        {% elif num > invoices.number|add:'-3' and num < invoices.number|add:'3' %}
-        <a href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-           class="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">{{ num }}</a>
-        {% endif %}
-      {% endfor %}
+      <span class="px-3 py-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 rounded-lg">{{ invoices.number }}</span>
       {% if invoices.has_next %}
       <a href="?page={{ invoices.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}"
-         class="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">
-        Next →
-      </a>
+         class="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Next →</a>
       {% endif %}
     </div>
   </div>
   {% endif %}
 
   {% else %}
-  <!-- Empty state -->
-  <div class="flex flex-col items-center justify-center py-20 px-8 text-center">
-    <div class="w-16 h-16 bg-brand-50 dark:bg-brand-900/20 rounded-2xl flex items-center justify-center mb-5">
-      <svg class="w-8 h-8 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 4v4h4"/></svg>
+  <div class="py-16 flex flex-col items-center">
+    <div class="w-14 h-14 rounded-2xl bg-brand-50 dark:bg-brand-900/20 flex items-center justify-center mb-4">
+      <svg class="w-7 h-7 text-brand-400 dark:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
     </div>
-    {% if search_query or current_status %}
-    <p class="text-base font-bold text-slate-700 dark:text-slate-300">No invoices found</p>
-    <p class="text-sm text-slate-400 mt-1 mb-5">Try adjusting your filters or search terms.</p>
-    <a href="{% url 'invoices:invoice_list' %}" class="px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Clear filters</a>
-    {% else %}
-    <p class="text-base font-bold text-slate-700 dark:text-slate-300">Create your first invoice</p>
-    <p class="text-sm text-slate-400 mt-1 mb-5">Send professional invoices to your clients and get paid faster.</p>
-    <a href="{% url 'invoices:invoice_create' %}" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">Create Invoice</a>
+    <p class="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">
+      {% if search_query %}No invoices found for "{{ search_query }}"{% elif current_status %}No {{ current_status }} invoices{% else %}No invoices yet{% endif %}
+    </p>
+    <p class="text-sm text-slate-400 dark:text-slate-600 mb-4">
+      {% if search_query or current_status %}Try adjusting your filters{% else %}Create your first invoice to get started{% endif %}
+    </p>
+    {% if not search_query and not current_status %}
+    <a href="{% url 'invoices:invoice_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Create Invoice
+    </a>
+    {% elif search_query or current_status %}
+    <a href="{% url 'invoices:invoice_list' %}" class="text-sm font-semibold text-brand-600 dark:text-brand-400 hover:underline">Clear filters</a>
     {% endif %}
   </div>
   {% endif %}
 </div>
-
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function invoiceListPage(){
-  return {
-    init(){}
-  }
-}
-</script>
 {% endblock %}

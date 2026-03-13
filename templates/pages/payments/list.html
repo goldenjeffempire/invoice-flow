@@ -1,135 +1,99 @@
 {% extends "base/layout_app.html" %}
 {% load static %}
 {% block title %}Payment History — InvoiceFlow{% endblock %}
-{% block page_title %}Payment History{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
   <div>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Payment History</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">All received payments across all invoices</p>
+    <h1 class="text-[20px] font-bold text-slate-900 dark:text-white">Transaction History</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">All recorded payment transactions</p>
   </div>
-  <div class="flex items-center gap-2">
-    <a href="{% url 'invoices:payment_overview' %}" class="flex items-center gap-1.5 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-xl transition-colors">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      Overview
-    </a>
-  </div>
+  <a href="{% url 'invoices:payment_overview' %}" class="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-xl transition-colors self-start">
+    ← Back to Overview
+  </a>
 </div>
 
-<!-- Summary Stats -->
-{% if summary %}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Total Received</p>
-    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ summary.total_received|floatformat:0 }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">This Month</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ summary.this_month|floatformat:0 }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Transactions</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ summary.count }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Avg Payment</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ summary.average|floatformat:0 }}</p>
-  </div>
+<!-- Search + Filters -->
+<div class="card p-4 mb-4">
+  <form method="get" class="flex flex-col sm:flex-row gap-3">
+    <div class="relative flex-1">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="Search by invoice, client, reference…" class="fi pl-9 h-9">
+    </div>
+    <select name="method" class="fi h-9 w-full sm:w-44" onchange="this.form.submit()">
+      <option value="">All methods</option>
+      <option value="bank_transfer" {% if request.GET.method == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+      <option value="cash" {% if request.GET.method == 'cash' %}selected{% endif %}>Cash</option>
+      <option value="credit_card" {% if request.GET.method == 'credit_card' %}selected{% endif %}>Credit Card</option>
+      <option value="mobile_money" {% if request.GET.method == 'mobile_money' %}selected{% endif %}>Mobile Money</option>
+      <option value="cheque" {% if request.GET.method == 'cheque' %}selected{% endif %}>Cheque</option>
+    </select>
+    <div class="flex gap-2">
+      <input type="date" name="date_from" value="{{ request.GET.date_from|default:'' }}" class="fi h-9 text-xs w-36" placeholder="From">
+      <input type="date" name="date_to" value="{{ request.GET.date_to|default:'' }}" class="fi h-9 text-xs w-36" placeholder="To">
+    </div>
+  </form>
 </div>
-{% endif %}
 
-<!-- Filters + Table -->
-<div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden">
-  <div class="flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 border-b border-slate-100 dark:border-slate-800">
-    <form method="get" class="flex items-center gap-2 flex-1 flex-wrap">
-      <div class="relative">
-        <svg class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search payments…"
-               class="pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-brand-400 text-slate-800 dark:text-slate-200 placeholder-slate-400 w-44">
-      </div>
-      <select name="method" class="px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-brand-400 text-slate-700 dark:text-slate-300">
-        <option value="">All Methods</option>
-        <option value="card" {% if request.GET.method == 'card' %}selected{% endif %}>Card</option>
-        <option value="bank_transfer" {% if request.GET.method == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
-        <option value="cash" {% if request.GET.method == 'cash' %}selected{% endif %}>Cash</option>
-        <option value="cheque" {% if request.GET.method == 'cheque' %}selected{% endif %}>Cheque</option>
-        <option value="mobile_money" {% if request.GET.method == 'mobile_money' %}selected{% endif %}>Mobile Money</option>
-        <option value="crypto" {% if request.GET.method == 'crypto' %}selected{% endif %}>Crypto</option>
-        <option value="paystack" {% if request.GET.method == 'paystack' %}selected{% endif %}>Paystack</option>
-        <option value="stripe" {% if request.GET.method == 'stripe' %}selected{% endif %}>Stripe</option>
-        <option value="other" {% if request.GET.method == 'other' %}selected{% endif %}>Other</option>
-      </select>
-      <input type="date" name="from" value="{{ request.GET.from }}" class="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-brand-400 text-slate-700 dark:text-slate-300">
-      <input type="date" name="to" value="{{ request.GET.to }}" class="px-2 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-brand-400 text-slate-700 dark:text-slate-300">
-      <button type="submit" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors">Filter</button>
-      {% if request.GET.q or request.GET.method or request.GET.from or request.GET.to %}
-      <a href="{% url 'invoices:payment_history' %}" class="px-3 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Clear</a>
-      {% endif %}
-    </form>
-  </div>
-
-  {% if payments %}
+<div class="card overflow-hidden">
+  {% if transactions %}
   <div class="overflow-x-auto">
-    <table class="w-full text-xs">
+    <table class="w-full">
       <thead>
-        <tr class="bg-slate-50 dark:bg-slate-800/40">
-          <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Date</th>
-          <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Client</th>
-          <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 hidden md:table-cell">Invoice</th>
-          <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 hidden lg:table-cell">Method</th>
-          <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 hidden lg:table-cell">Reference</th>
-          <th class="text-right px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Amount</th>
-          <th class="text-center px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Actions</th>
+        <tr class="border-b border-slate-100 dark:border-slate-800">
+          <th class="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Date</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Invoice</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden sm:table-cell">Client</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden md:table-cell">Method</th>
+          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden lg:table-cell">Reference</th>
+          <th class="px-5 py-3 text-right text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-50 dark:divide-slate-800/60">
-        {% for p in payments %}
-        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors group">
-          <td class="px-5 py-3 text-slate-600 dark:text-slate-400 whitespace-nowrap">{{ p.payment_date|date:"M d, Y" }}</td>
-          <td class="px-3 py-3">
-            {% if p.invoice.client %}
-            <a href="{% url 'invoices:client_detail' p.invoice.client.id %}" class="font-semibold text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 truncate max-w-[130px] block transition-colors">{{ p.invoice.client.name }}</a>
-            {% endif %}
+      <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+        {% for pmt in transactions %}
+        <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition-colors">
+          <td class="px-5 py-3.5">
+            <p class="text-sm text-slate-700 dark:text-slate-300 font-medium">{{ pmt.payment_date|date:"M d, Y" }}</p>
           </td>
-          <td class="px-3 py-3 hidden md:table-cell">
-            <a href="{% url 'invoices:invoice_detail' p.invoice.id %}" class="font-semibold text-brand-600 dark:text-brand-400 hover:underline">{{ p.invoice.invoice_number }}</a>
+          <td class="px-4 py-3.5">
+            {% if pmt.invoice %}
+            <a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="text-sm font-semibold text-brand-600 dark:text-brand-400 hover:underline">{{ pmt.invoice.invoice_number }}</a>
+            {% else %}<span class="text-sm text-slate-400">—</span>{% endif %}
           </td>
-          <td class="px-3 py-3 text-slate-500 dark:text-slate-400 hidden lg:table-cell capitalize">{{ p.get_payment_method_display }}</td>
-          <td class="px-3 py-3 text-slate-400 font-mono text-[10.5px] hidden lg:table-cell">{{ p.reference|default:"—" }}</td>
-          <td class="px-5 py-3 text-right">
-            <span class="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums whitespace-nowrap">{{ p.invoice.currency }} {{ p.amount|floatformat:2 }}</span>
+          <td class="px-4 py-3.5 hidden sm:table-cell">
+            {% if pmt.invoice and pmt.invoice.client %}
+            <a href="{% url 'invoices:client_detail' pmt.invoice.client.id %}" class="text-sm text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400">{{ pmt.invoice.client.name }}</a>
+            {% else %}<span class="text-sm text-slate-400">—</span>{% endif %}
           </td>
-          <td class="px-3 py-3 text-center">
-            <a href="{% url 'invoices:payment_detail' p.id %}" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 text-[10.5px] font-semibold transition-all">
-              View
-            </a>
+          <td class="px-4 py-3.5 hidden md:table-cell">
+            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">{{ pmt.get_payment_method_display|default:"—" }}</span>
+          </td>
+          <td class="px-4 py-3.5 hidden lg:table-cell text-xs text-slate-500 dark:text-slate-400 font-mono">{{ pmt.reference|default:"—" }}</td>
+          <td class="px-5 py-3.5 text-right">
+            <p class="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{{ workspace.currency_symbol|default:"₦" }}{{ pmt.amount|floatformat:2 }}</p>
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-
-  <!-- Pagination -->
-  {% if payments.has_other_pages %}
-  <div class="flex items-center justify-between px-5 py-3 border-t border-slate-100 dark:border-slate-800">
-    <p class="text-xs text-slate-500 dark:text-slate-400">Page {{ payments.number }} of {{ payments.paginator.num_pages }} · {{ payments.paginator.count }} records</p>
-    <div class="flex items-center gap-1">
-      {% if payments.has_previous %}<a href="?page={{ payments.previous_page_number }}" class="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">← Prev</a>{% endif %}
-      {% if payments.has_next %}<a href="?page={{ payments.next_page_number }}" class="px-3 py-1.5 text-xs font-semibold border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-colors">Next →</a>{% endif %}
+  {% if transactions.has_other_pages %}
+  <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+    <p class="text-xs text-slate-500 dark:text-slate-400">{{ transactions.start_index }}–{{ transactions.end_index }} of {{ transactions.paginator.count }}</p>
+    <div class="flex gap-1">
+      {% if transactions.has_previous %}<a href="?page={{ transactions.previous_page_number }}" class="px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">← Prev</a>{% endif %}
+      <span class="px-3 py-1.5 text-xs font-semibold bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 rounded-lg">{{ transactions.number }}</span>
+      {% if transactions.has_next %}<a href="?page={{ transactions.next_page_number }}" class="px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">Next →</a>{% endif %}
     </div>
   </div>
   {% endif %}
-
   {% else %}
-  <div class="flex flex-col items-center justify-center py-20 text-center">
-    <div class="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mb-4">
-      <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+  <div class="py-14 flex flex-col items-center">
+    <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mb-3">
+      <svg class="w-6 h-6 text-emerald-400 dark:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
     </div>
-    <p class="text-sm font-bold text-slate-700 dark:text-slate-300">No payments yet</p>
-    <p class="text-xs text-slate-400 mt-1">Payments will appear here once clients pay their invoices.</p>
+    <p class="text-sm text-slate-500 dark:text-slate-400">No transactions yet</p>
+    <p class="text-xs text-slate-400 dark:text-slate-600 mt-1">Record payments when clients pay their invoices</p>
   </div>
   {% endif %}
 </div>
