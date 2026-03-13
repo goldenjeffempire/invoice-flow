@@ -64,6 +64,25 @@ The app runs on port 5000 with `python manage.py runserver 0.0.0.0:5000`.
 ### Migration Notes
 Migration 0006 had a bug where it tried to modify the `invoices_payment` table after it was dropped by migration 0003's raw SQL. Fixed by adding a `CreateModel` for Payment in migration 0006 before the RemoveField operations.
 
+## Recent Improvements (2026-03)
+
+### New Public Pages
+- `templates/pages/support.html` — Full support centre with search, help topic cards, contact channels, and live platform status indicator.
+- `templates/pages/blog.html` — Blog listing with featured article, article grid, tag badges, and newsletter subscription form.
+- `templates/pages/careers.html` — Careers page with company values, open roles listing, and step-by-step hiring process.
+- `templates/pages/workspace/create.html` — Workspace creation form served by the existing `workspace_create` view.
+
+### Navigation & Footer
+- Resources nav dropdown now includes Blog and Support Centre links (desktop + mobile).
+- Footer updated to include Blog, Support, Careers, and Security in appropriate columns.
+
+### View Fixes
+- `settings_page` — Was a redirect stub; now `@login_required` and renders `pages/settings.html` with profile + workspace context.
+- `payment_settings_update_ajax` — Was a stub; now fully updates `accept_card_payments`, `accept_bank_transfers`, `accept_mobile_money`, and `payment_instructions` on the user profile.
+- `security_update_ajax` — Was a stub; now `@login_required` + `@require_POST`, updates security notification preferences.
+- `reminder_dashboard` — Added `@login_required` decorator.
+- `faq_api` — Now returns real FAQ data with optional search filtering via `?q=` query param.
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.

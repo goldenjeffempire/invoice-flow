@@ -520,8 +520,17 @@ def resources_view(request):
     return render(request, "pages/resources.html")
 
 
+@login_required
 def settings_page(request):
-    return redirect("invoices:security_settings")
+    profile = request.user.profile
+    workspace = getattr(profile, 'current_workspace', None)
+    context = {
+        'profile': profile,
+        'workspace': workspace,
+        'user': request.user,
+        'page_title': 'Settings',
+    }
+    return render(request, "pages/settings.html", context)
 
 
 # ============================================================================
@@ -555,8 +564,19 @@ def profile_update_ajax(request):
     return JsonResponse({"success": True})
 
 
+@login_required
+@require_POST
 def security_update_ajax(request):
-    return JsonResponse({"success": True})
+    try:
+        profile = request.user.profile
+        profile.notify_security_alerts = request.POST.get("notify_security_alerts") == "on"
+        profile.notify_password_changes = request.POST.get("notify_password_changes") == "on"
+        profile.save(update_fields=["notify_security_alerts", "notify_password_changes"])
+        messages.success(request, "Security preferences updated.")
+    except Exception as exc:
+        logger.error("Security update error: %s", exc)
+        messages.error(request, "Failed to update security preferences.")
+    return redirect("invoices:settings")
 
 
 @login_required
@@ -577,10 +597,30 @@ def notifications_update_ajax(request):
     return JsonResponse({"success": True})
 
 
+@login_required
+@require_POST
 def payment_settings_update_ajax(request):
-    return JsonResponse({"success": True})
+    try:
+        profile = request.user.profile
+        profile.accept_card_payments = request.POST.get("accept_card_payments") == "on"
+        profile.accept_bank_transfers = request.POST.get("accept_bank_transfers") == "on"
+        profile.accept_mobile_money = request.POST.get("accept_mobile_money") == "on"
+        payment_instructions = request.POST.get("payment_instructions", "").strip()
+        profile.payment_instructions = payment_instructions
+        profile.save(update_fields=[
+            "accept_card_payments",
+            "accept_bank_transfers",
+            "accept_mobile_money",
+            "payment_instructions",
+        ])
+        messages.success(request, "Payment settings updated.")
+    except Exception as exc:
+        logger.error("Payment settings update error: %s", exc)
+        messages.error(request, "Failed to update payment settings.")
+    return redirect("invoices:settings")
 
 
+@login_required
 def reminder_dashboard(request):
     return render(request, "pages/reminder_settings.html")
 
@@ -606,7 +646,52 @@ def submit_feedback(request):
 
 
 def faq_api(request):
-    return JsonResponse({"faqs": []})
+    faqs = [
+        {
+            "category": "Getting Started",
+            "question": "How do I create my first invoice?",
+            "answer": "Click 'New Invoice' from your dashboard or the Invoices menu. Add your client, line items, and payment details, then send it directly from InvoiceFlow.",
+        },
+        {
+            "category": "Getting Started",
+            "question": "Do I need a credit card to sign up?",
+            "answer": "No. You can create a free account and start invoicing right away with no credit card required.",
+        },
+        {
+            "category": "Payments",
+            "question": "How do clients pay their invoices?",
+            "answer": "Clients receive a payment link with their invoice. They can pay via card, bank transfer, or mobile money depending on the payment methods you've enabled.",
+        },
+        {
+            "category": "Payments",
+            "question": "What currencies are supported?",
+            "answer": "We support NGN, USD, EUR, GBP, GHS, KES, ZAR, and more. You can set a default currency per workspace or choose per invoice.",
+        },
+        {
+            "category": "Invoices",
+            "question": "Can I set up recurring invoices?",
+            "answer": "Yes. You can schedule recurring invoices to be automatically generated and sent on a daily, weekly, monthly, or custom schedule.",
+        },
+        {
+            "category": "Invoices",
+            "question": "Can I add my company logo and brand colours?",
+            "answer": "Absolutely. Upload your logo and choose your brand colour in the Branding settings. Every invoice will automatically reflect your brand.",
+        },
+        {
+            "category": "Security",
+            "question": "Is my data secure?",
+            "answer": "Yes. We use bank-grade TLS encryption for all data in transit and at rest. You can also enable two-factor authentication for extra security.",
+        },
+        {
+            "category": "Billing",
+            "question": "Can I export my data?",
+            "answer": "Yes. You can export invoices, client lists, and payment records as CSV or PDF at any time from the Reports section.",
+        },
+    ]
+    query = request.GET.get("q", "").lower()
+    if query:
+        faqs = [f for f in faqs if query in f["question"].lower() or query in f["answer"].lower()]
+    return JsonResponse({"faqs": faqs})
 
 
 # ============================================================================
