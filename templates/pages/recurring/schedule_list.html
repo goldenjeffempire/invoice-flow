@@ -1,114 +1,110 @@
 {% extends "base/layout_app.html" %}
-{% load static %}
 {% block title %}Recurring Schedules — InvoiceFlow{% endblock %}
-{% block page_title %}Recurring Billing{% endblock %}
+
+{% block head %}
+<style>
+  .s-active{background:#dcfce7;color:#15803d}.s-paused{background:#fef3c7;color:#92400e}.s-cancelled{background:#f1f5f9;color:#475569}.s-failed{background:#fee2e2;color:#b91c1c}.s-completed{background:#dbeafe;color:#1d4ed8}
+  .dark .s-active{background:rgba(21,128,61,.15);color:#4ade80}.dark .s-paused{background:rgba(146,64,14,.15);color:#fbbf24}.dark .s-cancelled{background:rgba(100,116,139,.15);color:#94a3b8}.dark .s-failed{background:rgba(185,28,28,.15);color:#f87171}.dark .s-completed{background:rgba(29,78,216,.15);color:#60a5fa}
+</style>
+{% endblock %}
 
 {% block content %}
-<!-- Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-  <div>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Recurring Billing</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Automated invoices on a schedule</p>
-  </div>
-  <a href="{% url 'invoices:schedule_create' %}" class="self-start flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
-    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-    New Schedule
-  </a>
-</div>
-
-<!-- Stats -->
-{% if stats %}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Active</p>
-    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ stats.active }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Paused</p>
-    <p class="text-xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">{{ stats.paused }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Monthly Value</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ stats.monthly_value|floatformat:0 }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Invoices Generated</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ stats.total_generated }}</p>
-  </div>
-</div>
-{% endif %}
-
-<!-- Schedules List -->
-<div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden">
-  {% if schedules %}
-  <div class="overflow-x-auto">
-    <table class="w-full text-xs">
-      <thead>
-        <tr class="bg-slate-50 dark:bg-slate-800/40">
-          <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Schedule</th>
-          <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 hidden md:table-cell">Client</th>
-          <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 hidden lg:table-cell">Frequency</th>
-          <th class="text-left px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400 hidden lg:table-cell">Next Invoice</th>
-          <th class="text-right px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Amount</th>
-          <th class="text-center px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Status</th>
-          <th class="text-right px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-50 dark:divide-slate-800/60">
-        {% for s in schedules %}
-        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors group">
-          <td class="px-5 py-3.5">
-            <a href="{% url 'invoices:schedule_detail' s.id %}" class="font-semibold text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400 transition-colors block">{{ s.description }}</a>
-            <p class="text-[10.5px] text-slate-400 mt-0.5">{{ s.invoices_generated }} invoices generated</p>
-          </td>
-          <td class="px-3 py-3.5 hidden md:table-cell">
-            {% if s.client %}<a href="{% url 'invoices:client_detail' s.client.id %}" class="font-semibold text-slate-600 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">{{ s.client.name }}</a>{% else %}<span class="text-slate-400">—</span>{% endif %}
-          </td>
-          <td class="px-3 py-3.5 text-slate-500 dark:text-slate-400 hidden lg:table-cell capitalize">{{ s.get_interval_type_display }}</td>
-          <td class="px-3 py-3.5 text-slate-500 dark:text-slate-400 whitespace-nowrap hidden lg:table-cell">
-            {% if s.next_invoice_date %}{{ s.next_invoice_date|date:"M d, Y" }}{% else %}—{% endif %}
-          </td>
-          <td class="px-3 py-3.5 text-right">
-            <p class="font-bold text-slate-800 dark:text-slate-200 tabular-nums whitespace-nowrap">{{ s.currency }} {{ s.total_amount|floatformat:2 }}</p>
-          </td>
-          <td class="px-3 py-3.5 text-center">
-            <span class="inline-flex px-2 py-0.5 rounded-full text-[10.5px] font-bold whitespace-nowrap
-              {% if s.status == 'active' %}bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400
-              {% elif s.status == 'paused' %}bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400
-              {% elif s.status == 'cancelled' %}bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400
-              {% elif s.status == 'failed' %}bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400
-              {% else %}bg-slate-100 dark:bg-slate-800 text-slate-500{% endif %}">
-              {{ s.get_status_display }}
-            </span>
-          </td>
-          <td class="px-5 py-3.5 text-right">
-            <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <a href="{% url 'invoices:schedule_detail' s.id %}" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-              </a>
-              <a href="{% url 'invoices:schedule_edit' s.id %}" class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-              </a>
-              {% if s.status == 'active' %}
-              <form method="post" action="{% url 'invoices:schedule_pause' s.id %}">{% csrf_token %}<button type="submit" class="p-1.5 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors" title="Pause"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button></form>
-              {% elif s.status == 'paused' %}
-              <form method="post" action="{% url 'invoices:schedule_resume' s.id %}">{% csrf_token %}<button type="submit" class="p-1.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors" title="Resume"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></button></form>
-              {% endif %}
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div class="flex flex-col items-center justify-center py-20 text-center">
-    <div class="w-14 h-14 bg-brand-50 dark:bg-brand-900/20 rounded-2xl flex items-center justify-center mb-4">
-      <svg class="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+<div class="max-w-[1440px] mx-auto">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Recurring Invoices</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Automate invoice generation on a schedule</p>
     </div>
-    <p class="text-sm font-bold text-slate-700 dark:text-slate-300">No recurring schedules</p>
-    <p class="text-xs text-slate-400 mt-1 mb-4">Automate invoicing for regular clients.</p>
-    <a href="{% url 'invoices:schedule_create' %}" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors">Create First Schedule</a>
+    <a href="{% url 'invoices:schedule_create' %}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-violet-600/20">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      New Schedule
+    </a>
+  </div>
+
+  <!-- Status filter tabs -->
+  <div class="flex items-center gap-1 mb-5">
+    {% for key, label, color in status_tab_data %}
+    <a href="?status={{ key }}"
+       class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if status_filter == key or (not status_filter and key == '') %}bg-violet-600 text-white{% else %}bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50{% endif %}">
+      {{ label }} {% if status_counts %}({{ status_counts|dictsort:key }}){% endif %}
+    </a>
+    {% empty %}
+    <a href="?" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if not status_filter %}bg-violet-600 text-white{% else %}bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400{% endif %}">All ({{ status_counts.all|default:0 }})</a>
+    <a href="?status=active" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if status_filter == 'active' %}bg-violet-600 text-white{% else %}bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400{% endif %}">Active ({{ status_counts.active|default:0 }})</a>
+    <a href="?status=paused" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if status_filter == 'paused' %}bg-violet-600 text-white{% else %}bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400{% endif %}">Paused ({{ status_counts.paused|default:0 }})</a>
+    <a href="?status=cancelled" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if status_filter == 'cancelled' %}bg-violet-600 text-white{% else %}bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400{% endif %}">Cancelled ({{ status_counts.cancelled|default:0 }})</a>
+    <a href="?status=failed" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if status_filter == 'failed' %}bg-violet-600 text-white{% else %}bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400{% endif %}">Failed ({{ status_counts.failed|default:0 }})</a>
+    {% endfor %}
+  </div>
+
+  {% if schedules %}
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    {% for sched in schedules %}
+    <div class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4.5 w-[18px] h-[18px] text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </div>
+          <div class="min-w-0">
+            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">{{ sched.description|truncatechars:40 }}</h3>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ sched.client.name }}</p>
+          </div>
+        </div>
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold s-{{ sched.status }} flex-shrink-0 ml-2">{{ sched.get_status_display }}</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div>
+          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Amount</p>
+          <p class="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ sched.currency }} {{ sched.amount|floatformat:2 }}</p>
+        </div>
+        <div>
+          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Frequency</p>
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-300 capitalize">Every {{ sched.interval_value }} {{ sched.interval_type }}</p>
+        </div>
+        {% if sched.next_invoice_date %}
+        <div>
+          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Next Invoice</p>
+          <p class="text-sm text-slate-600 dark:text-slate-400">{{ sched.next_invoice_date|date:"M j, Y" }}</p>
+        </div>
+        {% endif %}
+        {% if sched.invoices_generated %}
+        <div>
+          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Generated</p>
+          <p class="text-sm text-slate-600 dark:text-slate-400">{{ sched.invoices_generated }} invoices</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-2 pt-3 border-t border-[var(--card-b)]">
+        <a href="{% url 'invoices:schedule_detail' sched.id %}" class="flex-1 px-3 py-1.5 text-xs font-semibold text-center border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">View</a>
+        <a href="{% url 'invoices:schedule_edit' sched.id %}" class="flex-1 px-3 py-1.5 text-xs font-semibold text-center border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Edit</a>
+        {% if sched.status == 'active' %}
+        <form method="post" action="{% url 'invoices:schedule_pause' sched.id %}" class="flex-1">{% csrf_token %}
+          <button type="submit" class="w-full px-3 py-1.5 text-xs font-semibold border border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/15 transition-colors">Pause</button>
+        </form>
+        {% elif sched.status == 'paused' %}
+        <form method="post" action="{% url 'invoices:schedule_resume' sched.id %}" class="flex-1">{% csrf_token %}
+          <button type="submit" class="w-full px-3 py-1.5 text-xs font-semibold border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/15 transition-colors">Resume</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="card py-20 flex flex-col items-center text-center">
+    <div class="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
+      <svg class="w-8 h-8 text-violet-500 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    </div>
+    <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No recurring schedules</h3>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Set up automated invoicing to save time and never miss a billing cycle.</p>
+    <a href="{% url 'invoices:schedule_create' %}" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      Create First Schedule
+    </a>
   </div>
   {% endif %}
 </div>

@@ -1,302 +1,336 @@
 {% extends "base/layout_app.html" %}
-{% load static %}
-{% block title %}{% if is_edit %}Edit Invoice{% else %}New Invoice{% endif %} — InvoiceFlow{% endblock %}
+{% block title %}{% if invoice %}Edit Invoice{% else %}New Invoice{% endif %} — InvoiceFlow{% endblock %}
 
 {% block head %}
 <style>
-.item-row{animation:slideIn .2s ease}
-@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+  .line-row { border-bottom: 1px solid var(--card-b); }
+  .line-row:last-child { border-bottom: none; }
+  .fi-sm { width:100%;padding:.375rem .6rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.8rem;outline:none;background:#fff;color:#1e293b;transition:border-color .15s,box-shadow .15s; }
+  .dark .fi-sm { background:#0d1117;border-color:#30363d;color:#f0f6fc; }
+  .fi-sm:focus { border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+  [x-cloak] { display:none !important; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div x-data="invoiceBuilder()" x-init="init()">
+<div class="max-w-5xl mx-auto" x-data="invoiceBuilder()" x-init="init()">
 
-<!-- Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-  <div class="flex items-center gap-3">
-    <a href="{% if is_edit and invoice %}{% url 'invoices:invoice_detail' invoice.id %}{% else %}{% url 'invoices:invoice_list' %}{% endif %}"
-       class="flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-    </a>
-    <div>
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white">
-        {% if is_edit %}Edit Invoice{% if invoice %} {{ invoice.invoice_number }}{% endif %}{% else %}New Invoice{% endif %}
-      </h1>
-      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fill in the details below</p>
-    </div>
-  </div>
-  <div class="flex items-center gap-2 flex-wrap">
-    <button type="button" @click="submitForm('save')" class="px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition-colors">Save Draft</button>
-    <button type="button" @click="submitForm('save_and_preview')" class="hidden sm:flex items-center gap-1.5 px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition-colors">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-      Preview
-    </button>
-    <button type="button" @click="submitForm('save_and_send')" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-      Save & Send
-    </button>
-  </div>
-</div>
+  <form method="post" id="invoice-form" @submit.prevent="submitForm()">
+    {% csrf_token %}
 
-{% if errors %}
-<div class="mb-5 p-4 bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800/40 rounded-xl">
-  <p class="text-sm font-semibold text-rose-700 dark:text-rose-400 mb-1">Please fix the following errors:</p>
-  <ul class="list-disc list-inside space-y-0.5">
-    {% for err in errors %}<li class="text-xs text-rose-600 dark:text-rose-400">{{ err }}</li>{% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-<form id="invoice-form" method="post" action="{% if is_edit %}{% url 'invoices:invoice_edit' invoice.id %}{% else %}{% url 'invoices:invoice_create' %}{% endif %}">
-  {% csrf_token %}
-  <input type="hidden" name="action" x-bind:value="formAction">
-
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
-
-    <!-- Left: Main form -->
-    <div class="xl:col-span-2 space-y-5">
-
-      <!-- Client + Basics -->
-      <div class="card p-5">
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Invoice Details</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="sm:col-span-2">
-            <label class="lbl">Client *</label>
-            <select name="client" class="fi" required>
-              <option value="">Select a client…</option>
-              {% for client in clients %}
-              <option value="{{ client.id }}" {% if invoice and invoice.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
-              {% endfor %}
-            </select>
-            <a href="{% url 'invoices:client_create' %}?next={{ request.path }}" class="text-xs text-brand-600 dark:text-brand-400 hover:underline mt-1 inline-block">+ Add new client</a>
-          </div>
-          <div>
-            <label class="lbl">Invoice Number *</label>
-            <input type="text" name="invoice_number" value="{{ invoice.invoice_number|default:'' }}" placeholder="INV-001" class="fi" required>
-          </div>
-          <div>
-            <label class="lbl">Currency</label>
-            <select name="currency" class="fi">
-              {% with currencies="NGN,USD,EUR,GBP,GHS,KES,ZAR" %}
-              {% for cur in currencies.split %}
-              <option value="{{ cur }}" {% if invoice and invoice.currency == cur %}selected{% elif not invoice and cur == 'NGN' %}selected{% endif %}>{{ cur }}</option>
-              {% endfor %}
-              {% endwith %}
-            </select>
-          </div>
-          <div>
-            <label class="lbl">Issue Date *</label>
-            <input type="date" name="issue_date" value="{% if invoice %}{{ invoice.issue_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" class="fi" required>
-          </div>
-          <div>
-            <label class="lbl">Due Date</label>
-            <input type="date" name="due_date" value="{% if invoice and invoice.due_date %}{{ invoice.due_date|date:'Y-m-d' }}{% endif %}" class="fi">
-          </div>
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'invoices:invoice_list' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        </a>
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">{% if invoice %}Edit Invoice {{ invoice.invoice_number }}{% else %}New Invoice{% endif %}</h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fill in the details below and save or send to client.</p>
         </div>
       </div>
-
-      <!-- Line Items -->
-      <div class="card p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Line Items</h3>
-          <button type="button" @click="addItem()" class="flex items-center gap-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add Item
-          </button>
-        </div>
-
-        <!-- Column headers (desktop) -->
-        <div class="hidden sm:grid grid-cols-12 gap-2 mb-2 px-1">
-          <div class="col-span-5 text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Description</div>
-          <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-widest text-slate-400 text-center">Qty</div>
-          <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-widest text-slate-400 text-right">Rate</div>
-          <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-widest text-slate-400 text-right">Amount</div>
-          <div class="col-span-1"></div>
-        </div>
-
-        <!-- Items -->
-        <div class="space-y-2" id="line-items">
-          <template x-for="(item, idx) in items" :key="item.id">
-            <div class="item-row grid grid-cols-12 gap-2 items-start p-3 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 transition-colors bg-white dark:bg-slate-900/50">
-              <!-- Description -->
-              <div class="col-span-12 sm:col-span-5">
-                <input type="text" :name="'item_description_' + idx" x-model="item.description"
-                       placeholder="Item description" class="fi fi-sm w-full" required>
-                <input type="text" :name="'item_notes_' + idx" x-model="item.notes"
-                       placeholder="Notes (optional)" class="fi fi-sm w-full mt-1 text-slate-400">
-              </div>
-              <!-- Qty -->
-              <div class="col-span-4 sm:col-span-2">
-                <input type="number" :name="'item_quantity_' + idx" x-model.number="item.quantity"
-                       @input="calcItem(item)" min="0" step="any" placeholder="1" class="fi fi-sm text-center" required>
-              </div>
-              <!-- Rate -->
-              <div class="col-span-4 sm:col-span-2">
-                <input type="number" :name="'item_unit_price_' + idx" x-model.number="item.unit_price"
-                       @input="calcItem(item)" min="0" step="any" placeholder="0.00" class="fi fi-sm text-right" required>
-              </div>
-              <!-- Amount -->
-              <div class="col-span-3 sm:col-span-2 flex items-center justify-end">
-                <p class="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-200 pt-1.5"
-                   x-text="currency + formatNum(item.amount)"></p>
-              </div>
-              <!-- Remove -->
-              <div class="col-span-1 flex items-start justify-end pt-1.5">
-                <button type="button" @click="removeItem(idx)" :disabled="items.length <= 1"
-                        class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/15 transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-              </div>
-            </div>
-          </template>
-        </div>
-
-        <!-- Add item button -->
-        <button type="button" @click="addItem()"
-                class="mt-3 w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-700 rounded-xl text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Add Line Item
+      <div class="flex items-center gap-2">
+        <button type="button" @click="saveAsDraft()" class="px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+          Save Draft
+        </button>
+        <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-indigo-600/20">
+          {% if invoice %}Save Changes{% else %}Create Invoice{% endif %}
         </button>
       </div>
+    </div>
 
-      <!-- Notes + Terms -->
-      <div class="card p-5">
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Notes & Terms</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+      <!-- MAIN FORM -->
+      <div class="lg:col-span-2 space-y-5">
+
+        <!-- Client + Dates -->
+        <div class="card p-5 space-y-4">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <div class="w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center"><span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400">1</span></div>
+            Invoice Details
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+              <label class="lbl">Client <span class="text-rose-500">*</span></label>
+              <select name="client_id" required class="fi text-sm">
+                <option value="">Select a client…</option>
+                {% for client in clients %}
+                <option value="{{ client.id }}" {% if invoice and invoice.client.id == client.id %}selected{% endif %}>{{ client.name }}{% if client.email %} — {{ client.email }}{% endif %}</option>
+                {% endfor %}
+              </select>
+              <a href="{% url 'invoices:client_create' %}" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline mt-1 inline-block">+ Add new client</a>
+            </div>
+
+            <div>
+              <label class="lbl">Invoice Date <span class="text-rose-500">*</span></label>
+              <input type="date" name="issue_date" required
+                     value="{{ invoice.issue_date|date:'Y-m-d'|default:today|date:'Y-m-d' }}"
+                     class="fi text-sm">
+            </div>
+            <div>
+              <label class="lbl">Due Date <span class="text-rose-500">*</span></label>
+              <input type="date" name="due_date" required
+                     value="{{ invoice.due_date|date:'Y-m-d'|default:'' }}"
+                     class="fi text-sm">
+            </div>
+            <div>
+              <label class="lbl">Currency</label>
+              <select name="currency" class="fi text-sm">
+                {% for code, label in currency_choices %}
+                <option value="{{ code }}" {% if invoice and invoice.currency == code %}selected{% elif not invoice and code == default_currency %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="lbl">PO / Reference Number</label>
+              <input type="text" name="po_number" value="{{ invoice.po_number|default:'' }}" placeholder="Optional" class="fi text-sm">
+            </div>
+          </div>
+        </div>
+
+        <!-- Line Items -->
+        <div class="card p-5">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-4">
+            <div class="w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center"><span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400">2</span></div>
+            Line Items
+          </h2>
+
+          <!-- Header row -->
+          <div class="grid grid-cols-12 gap-2 mb-2 px-1">
+            <div class="col-span-5 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Description</div>
+            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 text-right">Qty</div>
+            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 text-right">Rate</div>
+            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 text-right">Amount</div>
+            <div class="col-span-1"></div>
+          </div>
+
+          <!-- Items -->
+          <div class="space-y-2" id="line-items">
+            <template x-for="(item, i) in items" :key="item._id">
+              <div class="grid grid-cols-12 gap-2 items-start">
+                <div class="col-span-5">
+                  <input type="text" :name="`items[${i}][description]`" x-model="item.description" placeholder="Item description…" class="fi-sm">
+                  <input type="text" :name="`items[${i}][unit]`" x-model="item.unit" placeholder="e.g. hrs, pcs" class="fi-sm mt-1 text-[11px] text-slate-400">
+                </div>
+                <div class="col-span-2">
+                  <input type="number" :name="`items[${i}][quantity]`" x-model.number="item.quantity" @input="calcLine(item)" min="0" step="any" class="fi-sm text-right">
+                </div>
+                <div class="col-span-2">
+                  <input type="number" :name="`items[${i}][unit_price]`" x-model.number="item.unit_price" @input="calcLine(item)" min="0" step="any" class="fi-sm text-right">
+                </div>
+                <div class="col-span-2 pt-1.5 text-right text-sm font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(item.line_total)"></div>
+                <div class="col-span-1 pt-1">
+                  <button type="button" @click="removeItem(i)" class="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-rose-500 dark:hover:text-rose-400 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <button type="button" @click="addItem()"
+                  class="mt-3 flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            Add Line Item
+          </button>
+
+          <!-- Totals -->
+          <div class="mt-5 pt-4 border-t border-[var(--card-b)]">
+            <div class="flex justify-end">
+              <div class="w-full max-w-xs space-y-2">
+                <div class="flex justify-between text-sm text-slate-600 dark:text-slate-400">
+                  <span>Subtotal</span>
+                  <span class="tabular-nums font-medium" x-text="fmt(subtotal)"></span>
+                </div>
+
+                <!-- Discount -->
+                <div class="flex items-center gap-2">
+                  <select name="discount_type" x-model="discountType" class="fi-sm flex-1 text-xs">
+                    <option value="flat">Flat Discount</option>
+                    <option value="percent">% Discount</option>
+                  </select>
+                  <input type="number" name="global_discount_value" x-model.number="discountValue" @input="calcTotals()" min="0" step="any" placeholder="0" class="fi-sm w-24 text-right text-xs">
+                </div>
+                <div class="flex justify-between text-sm text-slate-600 dark:text-slate-400">
+                  <span>Discount</span>
+                  <span class="tabular-nums text-rose-600 dark:text-rose-400" x-text="'-' + fmt(discountAmount)"></span>
+                </div>
+
+                <!-- Tax -->
+                <div class="flex items-center gap-2">
+                  <span class="text-sm text-slate-500 dark:text-slate-400 flex-1">Tax %</span>
+                  <input type="number" name="default_tax_rate" x-model.number="taxRate" @input="calcTotals()" min="0" max="100" step="any" placeholder="0" class="fi-sm w-24 text-right text-xs">
+                </div>
+                <div class="flex justify-between text-sm text-slate-600 dark:text-slate-400">
+                  <span>Tax</span>
+                  <span class="tabular-nums" x-text="fmt(taxAmount)"></span>
+                </div>
+
+                <div class="flex justify-between text-base font-bold text-slate-900 dark:text-white pt-2 border-t border-[var(--card-b)]">
+                  <span>Total</span>
+                  <span class="tabular-nums" x-text="fmt(total)"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes & Terms -->
+        <div class="card p-5 space-y-4">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <div class="w-6 h-6 rounded-md bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center"><span class="text-[10px] font-black text-indigo-600 dark:text-indigo-400">3</span></div>
+            Notes & Terms
+          </h2>
           <div>
-            <label class="lbl">Notes</label>
-            <textarea name="notes" rows="4" placeholder="Thank you for your business…" class="fi">{% if invoice %}{{ invoice.notes }}{% endif %}</textarea>
+            <label class="lbl">Client Memo / Note</label>
+            <textarea name="client_memo" rows="3" placeholder="Thank you for your business!" class="fi text-sm">{{ invoice.client_memo|default:'' }}</textarea>
+          </div>
+          <div>
+            <label class="lbl">Payment Instructions</label>
+            <textarea name="payment_instructions" rows="2" placeholder="Bank transfer, PayPal, etc." class="fi text-sm">{{ invoice.payment_instructions|default:'' }}</textarea>
           </div>
           <div>
             <label class="lbl">Terms & Conditions</label>
-            <textarea name="terms" rows="4" placeholder="Payment due within 30 days…" class="fi">{% if invoice %}{{ invoice.terms }}{% endif %}</textarea>
+            <textarea name="terms_conditions" rows="3" placeholder="Net 30, Late fees apply…" class="fi text-sm">{{ invoice.terms_conditions|default:'' }}</textarea>
+          </div>
+          <div>
+            <label class="lbl">Internal Notes (not visible to client)</label>
+            <textarea name="internal_notes" rows="2" placeholder="Internal reference notes…" class="fi text-sm">{{ invoice.internal_notes|default:'' }}</textarea>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Right: Summary -->
-    <div class="space-y-5">
-      <div class="card p-5 sticky top-[70px]">
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Summary</h3>
+      </div><!-- end main col -->
 
-        <!-- Totals -->
-        <div class="space-y-2 text-sm mb-4">
-          <div class="flex justify-between">
-            <span class="text-slate-500 dark:text-slate-400">Subtotal</span>
-            <span class="font-semibold tabular-nums text-slate-800 dark:text-slate-200" x-text="currency + formatNum(subtotal)"></span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-slate-500 dark:text-slate-400">Discount</span>
-            <div class="flex items-center gap-1">
-              <input type="number" name="discount_percent" x-model.number="discountPct" @input="calc()" min="0" max="100" step="0.01" class="fi fi-sm w-16 text-right text-xs py-1">
-              <span class="text-slate-400 text-xs">%</span>
+      <!-- SIDEBAR -->
+      <div class="space-y-4">
+
+        <!-- Tax mode -->
+        <div class="card p-4">
+          <label class="lbl mb-2">Tax Mode</label>
+          <select name="tax_mode" class="fi text-sm">
+            <option value="exclusive" {% if not invoice or invoice.tax_mode == 'exclusive' %}selected{% endif %}>Exclusive (tax added on top)</option>
+            <option value="inclusive" {% if invoice and invoice.tax_mode == 'inclusive' %}selected{% endif %}>Inclusive (tax included)</option>
+            <option value="none" {% if invoice and invoice.tax_mode == 'none' %}selected{% endif %}>No Tax</option>
+          </select>
+        </div>
+
+        <!-- Summary card -->
+        <div class="card p-4">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-4">Summary</h3>
+          <div class="space-y-2.5">
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500 dark:text-slate-400">Items</span>
+              <span class="font-semibold text-slate-700 dark:text-slate-300" x-text="items.length"></span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500 dark:text-slate-400">Subtotal</span>
+              <span class="font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(subtotal)"></span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500 dark:text-slate-400">Discount</span>
+              <span class="font-semibold text-rose-600 dark:text-rose-400 tabular-nums" x-text="'-' + fmt(discountAmount)"></span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-500 dark:text-slate-400">Tax</span>
+              <span class="font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(taxAmount)"></span>
+            </div>
+            <div class="border-t border-[var(--card-b)] pt-2.5 flex justify-between">
+              <span class="text-sm font-bold text-slate-900 dark:text-white">Total</span>
+              <span class="text-lg font-black text-indigo-600 dark:text-indigo-400 tabular-nums" x-text="fmt(total)"></span>
             </div>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-slate-500 dark:text-slate-400">Tax</span>
-            <div class="flex items-center gap-1">
-              <input type="number" name="tax_rate" x-model.number="taxRate" @input="calc()" min="0" max="100" step="0.01" class="fi fi-sm w-16 text-right text-xs py-1">
-              <span class="text-slate-400 text-xs">%</span>
-            </div>
-          </div>
-          <div class="flex justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
-            <span class="font-bold text-slate-900 dark:text-white">Total</span>
-            <span class="text-lg font-bold tabular-nums text-slate-900 dark:text-white" x-text="currency + formatNum(total)"></span>
-          </div>
         </div>
 
-        <!-- Currency display -->
-        <div class="text-xs text-slate-400 dark:text-slate-500 mb-4 text-center" x-text="'Currency: ' + currencyLabel"></div>
-
-        <!-- Action Buttons -->
-        <div class="space-y-2">
-          <button type="button" @click="submitForm('save')"
-                  class="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-xl transition-colors">
-            Save as Draft
+        <!-- Actions -->
+        <div class="card p-4 space-y-2">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">Actions</h3>
+          <button type="button" @click="saveAsDraft()" class="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+            💾 Save as Draft
           </button>
-          <button type="button" @click="submitForm('save_and_send')"
-                  class="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-brand-600/20">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            Save & Send
+          <button type="submit" class="w-full px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors">
+            ✓ {% if invoice %}Save Changes{% else %}Create Invoice{% endif %}
           </button>
+          {% if invoice %}
+          <a href="{% url 'invoices:invoice_preview' invoice.id %}" target="_blank"
+             class="w-full px-4 py-2 flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+            👁 Preview PDF
+          </a>
+          {% endif %}
         </div>
-      </div>
-    </div>
-  </div>
-</form>
+
+      </div><!-- end sidebar -->
+    </div><!-- end grid -->
+  </form>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-function invoiceBuilder(){
-  const currencySymbols = {NGN:'₦',USD:'$',EUR:'€',GBP:'£',GHS:'₵',KES:'KSh',ZAR:'R'};
+function invoiceBuilder() {
   return {
-    formAction: 'save',
-    currency: '{% if invoice %}{{ invoice.currency_symbol|default:"₦" }}{% else %}₦{% endif %}',
-    currencyLabel: '{% if invoice %}{{ invoice.currency|default:"NGN" }}{% else %}NGN{% endif %}',
     items: [],
+    discountType: 'flat',
+    discountValue: 0,
+    taxRate: {{ invoice.default_tax_rate|default:default_tax_rate|default:0 }},
     subtotal: 0,
-    discountPct: {% if invoice and invoice.discount_percent %}{{ invoice.discount_percent }}{% else %}0{% endif %},
-    taxRate: {% if invoice and invoice.tax_rate %}{{ invoice.tax_rate }}{% else %}0{% endif %},
+    discountAmount: 0,
+    taxAmount: 0,
     total: 0,
+    _uid: 0,
 
-    init(){
-      // Load existing items or start with 1 blank
-      {% if invoice and invoice.line_items.all %}
-      this.items = [
-        {% for item in invoice.line_items.all %}
-        {id: Date.now() + {{ forloop.counter }}, description:'{{ item.description|escapejs }}', notes:'{{ item.notes|default:''|escapejs }}', quantity:{{ item.quantity }}, unit_price:{{ item.unit_price }}, amount:{{ item.amount }}},
-        {% endfor %}
-      ];
-      {% else %}
-      this.items = [{id:1, description:'', notes:'', quantity:1, unit_price:0, amount:0}];
-      {% endif %}
-      // Watch currency changes
-      const currSel = document.querySelector('[name="currency"]');
-      if(currSel){
-        currSel.addEventListener('change', e=>{
-          const sym = currencySymbols[e.target.value] || e.target.value;
-          this.currency = sym;
-          this.currencyLabel = e.target.value;
-        });
+    init() {
+      const existing = {{ existing_items_json|default:'[]'|safe }};
+      if (existing.length) {
+        this.items = existing.map(it => ({ ...it, _id: this._uid++, line_total: parseFloat(it.quantity||0) * parseFloat(it.unit_price||0) }));
+      } else {
+        this.addItem();
       }
-      this.calc();
+      this.discountType = '{{ invoice.discount_type|default:"flat" }}';
+      this.discountValue = parseFloat('{{ invoice.global_discount_value|default:0 }}') || 0;
+      this.calcTotals();
     },
 
-    addItem(){
-      this.items.push({id:Date.now(), description:'', notes:'', quantity:1, unit_price:0, amount:0});
+    addItem() {
+      this.items.push({ _id: this._uid++, description: '', unit: '', quantity: 1, unit_price: 0, line_total: 0 });
     },
 
-    removeItem(idx){
-      if(this.items.length > 1) this.items.splice(idx,1);
-      this.calc();
+    removeItem(i) {
+      if (this.items.length === 1) return;
+      this.items.splice(i, 1);
+      this.calcTotals();
     },
 
-    calcItem(item){
-      item.amount = (parseFloat(item.quantity)||0) * (parseFloat(item.unit_price)||0);
-      this.calc();
+    calcLine(item) {
+      item.line_total = (parseFloat(item.quantity) || 0) * (parseFloat(item.unit_price) || 0);
+      this.calcTotals();
     },
 
-    calc(){
-      this.subtotal = this.items.reduce((s,i)=>s+(parseFloat(i.amount)||0),0);
-      const disc = this.subtotal * ((parseFloat(this.discountPct)||0)/100);
-      const afterDisc = this.subtotal - disc;
-      const tax = afterDisc * ((parseFloat(this.taxRate)||0)/100);
-      this.total = afterDisc + tax;
+    calcTotals() {
+      this.subtotal = this.items.reduce((s, it) => s + (parseFloat(it.line_total) || 0), 0);
+      if (this.discountType === 'percent') {
+        this.discountAmount = this.subtotal * (parseFloat(this.discountValue) || 0) / 100;
+      } else {
+        this.discountAmount = parseFloat(this.discountValue) || 0;
+      }
+      const afterDiscount = Math.max(0, this.subtotal - this.discountAmount);
+      this.taxAmount = afterDiscount * (parseFloat(this.taxRate) || 0) / 100;
+      this.total = afterDiscount + this.taxAmount;
     },
 
-    formatNum(n){
-      return parseFloat(n||0).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+    fmt(v) { return Number(v).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+
+    saveAsDraft() {
+      document.querySelector('[name="status_override"]')?.remove();
+      const h = document.createElement('input');
+      h.type = 'hidden'; h.name = 'status_override'; h.value = 'draft';
+      document.getElementById('invoice-form').appendChild(h);
+      document.getElementById('invoice-form').submit();
     },
 
-    submitForm(action){
-      this.formAction = action;
-      this.$nextTick(()=>document.getElementById('invoice-form').submit());
+    submitForm() {
+      document.getElementById('invoice-form').submit();
     }
-  }
+  };
 }
 </script>
 {% endblock %}

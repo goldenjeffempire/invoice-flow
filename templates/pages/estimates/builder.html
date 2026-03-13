@@ -1,181 +1,143 @@
 {% extends "base/layout_app.html" %}
 {% block title %}{% if estimate %}Edit Estimate{% else %}New Estimate{% endif %} — InvoiceFlow{% endblock %}
 
-{% block content %}
-<div x-data="estimateBuilder()" x-init="init()">
-
-<!-- Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-  <div class="flex items-center gap-3">
-    <a href="{% url 'invoices:estimate_list' %}" class="flex items-center justify-center w-8 h-8 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-    </a>
-    <div>
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white">{% if estimate %}Edit Estimate{% else %}New Estimate{% endif %}</h1>
-      <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Fill in the details to create a quote</p>
-    </div>
-  </div>
-  <div class="flex items-center gap-2">
-    <button type="button" @click="submitForm('save')" class="px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Save Draft</button>
-    <button type="button" @click="submitForm('save_and_send')" class="flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm shadow-teal-600/20">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-      Save & Send
-    </button>
-  </div>
-</div>
-
-<form id="estimate-form" method="post" action="{% if estimate %}{% url 'invoices:estimate_edit' estimate.id %}{% else %}{% url 'invoices:estimate_create' %}{% endif %}">
-  {% csrf_token %}
-  <input type="hidden" name="action" x-bind:value="formAction">
-
-  <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
-    <div class="xl:col-span-2 space-y-5">
-
-      <!-- Details -->
-      <div class="card p-5">
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Estimate Details</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div class="sm:col-span-2">
-            <label class="lbl">Client *</label>
-            <select name="client" class="fi" required>
-              <option value="">Select a client…</option>
-              {% for client in clients %}
-              <option value="{{ client.id }}" {% if estimate and estimate.client_id == client.id %}selected{% endif %}>{{ client.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div>
-            <label class="lbl">Estimate Number *</label>
-            <input type="text" name="estimate_number" value="{{ estimate.estimate_number|default:'' }}" placeholder="EST-001" class="fi" required>
-          </div>
-          <div>
-            <label class="lbl">Issue Date *</label>
-            <input type="date" name="issue_date" value="{% if estimate %}{{ estimate.issue_date|date:'Y-m-d' }}{% else %}{% now 'Y-m-d' %}{% endif %}" class="fi" required>
-          </div>
-          <div>
-            <label class="lbl">Expiry Date</label>
-            <input type="date" name="expiry_date" value="{% if estimate and estimate.expiry_date %}{{ estimate.expiry_date|date:'Y-m-d' }}{% endif %}" class="fi">
-          </div>
-          <div>
-            <label class="lbl">Currency</label>
-            <select name="currency" class="fi">
-              {% with currencies="NGN,USD,EUR,GBP,GHS,KES,ZAR" %}
-              {% for cur in currencies.split %}
-              <option value="{{ cur }}" {% if estimate and estimate.currency == cur %}selected{% elif not estimate and cur == 'NGN' %}selected{% endif %}>{{ cur }}</option>
-              {% endfor %}
-              {% endwith %}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Line Items -->
-      <div class="card p-5">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Line Items</h3>
-          <button type="button" @click="addItem()" class="text-xs font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 flex items-center gap-1">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add Item
-          </button>
-        </div>
-        <div class="hidden sm:grid grid-cols-12 gap-2 mb-2 px-1">
-          <div class="col-span-5 text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Description</div>
-          <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-widest text-slate-400 text-center">Qty</div>
-          <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-widest text-slate-400 text-right">Rate</div>
-          <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-widest text-slate-400 text-right">Amount</div>
-          <div class="col-span-1"></div>
-        </div>
-        <div class="space-y-2">
-          <template x-for="(item,idx) in items" :key="item.id">
-            <div class="grid grid-cols-12 gap-2 items-start p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50">
-              <div class="col-span-12 sm:col-span-5">
-                <input type="text" :name="'item_description_' + idx" x-model="item.description" placeholder="Description" class="fi w-full" required>
-              </div>
-              <div class="col-span-4 sm:col-span-2">
-                <input type="number" :name="'item_quantity_' + idx" x-model.number="item.quantity" @input="calcItem(item)" min="0" step="any" placeholder="1" class="fi text-center">
-              </div>
-              <div class="col-span-4 sm:col-span-2">
-                <input type="number" :name="'item_unit_price_' + idx" x-model.number="item.unit_price" @input="calcItem(item)" min="0" step="any" placeholder="0.00" class="fi text-right">
-              </div>
-              <div class="col-span-3 sm:col-span-2 flex items-center justify-end">
-                <p class="text-sm font-bold tabular-nums text-slate-800 dark:text-slate-200 pt-1.5" x-text="currency + formatNum(item.amount)"></p>
-              </div>
-              <div class="col-span-1 flex items-start justify-end pt-1.5">
-                <button type="button" @click="removeItem(idx)" :disabled="items.length<=1" class="w-6 h-6 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/15 transition-colors disabled:opacity-30">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-              </div>
-            </div>
-          </template>
-        </div>
-        <button type="button" @click="addItem()" class="mt-3 w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 rounded-xl text-xs font-semibold text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          Add Line Item
-        </button>
-      </div>
-
-      <!-- Notes / Terms -->
-      <div class="card p-5">
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Notes & Terms</h3>
-        <div class="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label class="lbl">Notes</label>
-            <textarea name="notes" rows="3" placeholder="Additional details…" class="fi">{% if estimate %}{{ estimate.notes }}{% endif %}</textarea>
-          </div>
-          <div>
-            <label class="lbl">Terms</label>
-            <textarea name="terms" rows="3" placeholder="Terms and conditions…" class="fi">{% if estimate %}{{ estimate.terms }}{% endif %}</textarea>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Summary -->
-    <div>
-      <div class="card p-5 sticky top-[70px]">
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Summary</h3>
-        <div class="space-y-2 text-sm mb-5">
-          <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><span class="font-semibold tabular-nums" x-text="currency + formatNum(subtotal)"></span></div>
-          <div class="flex justify-between items-center"><span class="text-slate-500">Discount</span><div class="flex items-center gap-1"><input type="number" name="discount_percent" x-model.number="discountPct" @input="calc()" min="0" max="100" class="fi w-16 text-xs py-1 text-right"><span class="text-slate-400 text-xs">%</span></div></div>
-          <div class="flex justify-between items-center"><span class="text-slate-500">Tax</span><div class="flex items-center gap-1"><input type="number" name="tax_rate" x-model.number="taxRate" @input="calc()" min="0" max="100" class="fi w-16 text-xs py-1 text-right"><span class="text-slate-400 text-xs">%</span></div></div>
-          <div class="flex justify-between pt-3 border-t border-slate-100 dark:border-slate-800"><span class="font-bold text-slate-900 dark:text-white">Total</span><span class="text-lg font-bold tabular-nums" x-text="currency + formatNum(total)"></span></div>
-        </div>
-        <div class="space-y-2">
-          <button type="button" @click="submitForm('save')" class="w-full px-4 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Save Draft</button>
-          <button type="button" @click="submitForm('save_and_send')" class="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold rounded-xl transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            Save & Send
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</form>
-</div>
+{% block head %}
+<style>
+  .fi-sm{width:100%;padding:.375rem .6rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.8rem;outline:none;background:#fff;color:#1e293b;transition:border-color .15s,box-shadow .15s}
+  .dark .fi-sm{background:#0d1117;border-color:#30363d;color:#f0f6fc}
+  .fi-sm:focus{border-color:#0d9488;box-shadow:0 0 0 3px rgba(13,148,136,.12)}
+</style>
 {% endblock %}
 
-{% block scripts %}
+{% block content %}
+<div class="max-w-5xl mx-auto" x-data="estimateBuilder()" x-init="init()">
+  <form method="post" id="est-form" action="{% if estimate %}{% url 'invoices:estimate_edit' estimate.id %}{% else %}{% url 'invoices:estimate_create' %}{% endif %}">
+    {% csrf_token %}
+
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'invoices:estimate_list' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        </a>
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white">{% if estimate %}Edit Estimate {{ estimate.estimate_number }}{% else %}New Estimate{% endif %}</h1>
+      </div>
+      <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-teal-600/20">
+        {% if estimate %}Save Changes{% else %}Create Estimate{% endif %}
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div class="lg:col-span-2 space-y-5">
+
+        <!-- Details card -->
+        <div class="card p-5 space-y-4">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Estimate Details</h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="col-span-2">
+              <label class="lbl">Client <span class="text-rose-500">*</span></label>
+              <select name="client_id" required class="fi text-sm">
+                <option value="">Select a client…</option>
+                {% for c in clients %}<option value="{{ c.id }}" {% if estimate and estimate.client.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Issue Date</label>
+              <input type="date" name="issue_date" value="{{ estimate.issue_date|date:'Y-m-d'|default:today|date:'Y-m-d' }}" class="fi text-sm">
+            </div>
+            <div>
+              <label class="lbl">Expiry Date</label>
+              <input type="date" name="expiry_date" value="{{ estimate.expiry_date|date:'Y-m-d'|default:'' }}" class="fi text-sm">
+            </div>
+            <div>
+              <label class="lbl">Currency</label>
+              <select name="currency" class="fi text-sm">
+                <option value="NGN" {% if not estimate or estimate.currency == 'NGN' %}selected{% endif %}>₦ NGN</option>
+                <option value="USD" {% if estimate and estimate.currency == 'USD' %}selected{% endif %}>$ USD</option>
+                <option value="EUR" {% if estimate and estimate.currency == 'EUR' %}selected{% endif %}>€ EUR</option>
+                <option value="GBP" {% if estimate and estimate.currency == 'GBP' %}selected{% endif %}>£ GBP</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Line items -->
+        <div class="card p-5">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Line Items</h2>
+          <div class="grid grid-cols-12 gap-2 mb-2 px-1">
+            <div class="col-span-5 text-[10.5px] font-bold uppercase tracking-wide text-slate-400">Description</div>
+            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 text-right">Qty</div>
+            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 text-right">Rate</div>
+            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 text-right">Amount</div>
+            <div class="col-span-1"></div>
+          </div>
+          <div class="space-y-2">
+            <template x-for="(item,i) in items" :key="item._id">
+              <div class="grid grid-cols-12 gap-2 items-center">
+                <div class="col-span-5"><input type="text" :name="`items[${i}][description]`" x-model="item.description" placeholder="Description" class="fi-sm"></div>
+                <div class="col-span-2"><input type="number" :name="`items[${i}][quantity]`" x-model.number="item.quantity" @input="calc(item)" min="0" step="any" class="fi-sm text-right"></div>
+                <div class="col-span-2"><input type="number" :name="`items[${i}][unit_price]`" x-model.number="item.unit_price" @input="calc(item)" min="0" step="any" class="fi-sm text-right"></div>
+                <div class="col-span-2 text-right text-sm font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(item.line_total)"></div>
+                <div class="col-span-1 flex justify-end"><button type="button" @click="rm(i)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+              </div>
+            </template>
+          </div>
+          <button type="button" @click="add()" class="mt-3 flex items-center gap-1.5 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>Add Item
+          </button>
+          <div class="mt-4 pt-4 border-t border-[var(--card-b)] flex justify-end">
+            <div class="w-56 space-y-1.5">
+              <div class="flex justify-between text-sm text-slate-500 dark:text-slate-400"><span>Subtotal</span><span x-text="fmt(subtotal)"></span></div>
+              <div class="flex items-center gap-2"><span class="text-sm text-slate-500 dark:text-slate-400 flex-1">Tax %</span><input type="number" name="tax_rate" x-model.number="taxRate" @input="calcT()" min="0" max="100" step="any" class="fi-sm w-16 text-right text-xs"></div>
+              <div class="flex justify-between text-sm text-slate-500 dark:text-slate-400"><span>Tax</span><span x-text="fmt(taxAmount)"></span></div>
+              <div class="flex justify-between font-bold text-slate-900 dark:text-white pt-1.5 border-t border-[var(--card-b)]"><span>Total</span><span x-text="fmt(total)"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="card p-5 space-y-4">
+          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Notes & Terms</h2>
+          <div><label class="lbl">Client Note</label><textarea name="client_note" rows="3" class="fi text-sm">{{ estimate.client_note|default:'' }}</textarea></div>
+          <div><label class="lbl">Terms</label><textarea name="terms" rows="2" class="fi text-sm">{{ estimate.terms|default:'' }}</textarea></div>
+        </div>
+
+      </div>
+
+      <!-- Sidebar -->
+      <div class="space-y-4">
+        <div class="card p-4">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-4">Summary</h3>
+          <div class="space-y-2">
+            <div class="flex justify-between text-sm"><span class="text-slate-500 dark:text-slate-400">Items</span><span class="font-semibold text-slate-700 dark:text-slate-300" x-text="items.length"></span></div>
+            <div class="flex justify-between text-sm"><span class="text-slate-500 dark:text-slate-400">Subtotal</span><span class="font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(subtotal)"></span></div>
+            <div class="flex justify-between text-sm"><span class="text-slate-500 dark:text-slate-400">Tax</span><span class="font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(taxAmount)"></span></div>
+            <div class="flex justify-between font-bold pt-2 border-t border-[var(--card-b)]"><span class="text-slate-900 dark:text-white">Total</span><span class="text-lg text-teal-600 dark:text-teal-400 tabular-nums" x-text="fmt(total)"></span></div>
+          </div>
+        </div>
+        <button type="submit" class="w-full px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold rounded-xl transition-colors">
+          {% if estimate %}Save Changes{% else %}Create Estimate{% endif %}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
 <script>
-function estimateBuilder(){
+function estimateBuilder() {
   return {
-    formAction:'save',
-    currency:'{% if estimate %}{{ estimate.currency_symbol|default:"₦" }}{% else %}₦{% endif %}',
-    items:[],subtotal:0,discountPct:{% if estimate and estimate.discount_percent %}{{ estimate.discount_percent }}{% else %}0{% endif %},taxRate:{% if estimate and estimate.tax_rate %}{{ estimate.tax_rate }}{% else %}0{% endif %},total:0,
-    init(){
-      {% if estimate and estimate.line_items.all %}
-      this.items=[{% for item in estimate.line_items.all %}{id:Date.now()+{{ forloop.counter }},description:'{{ item.description|escapejs }}',quantity:{{ item.quantity }},unit_price:{{ item.unit_price }},amount:{{ item.amount }}},{% endfor %}];
-      {% else %}
-      this.items=[{id:1,description:'',quantity:1,unit_price:0,amount:0}];
-      {% endif %}
-      this.calc();
+    items:[], taxRate:0, subtotal:0, taxAmount:0, total:0, _uid:0,
+    init() {
+      const ex = {{ existing_items_json|default:'[]'|safe }};
+      this.items = ex.length ? ex.map(it => ({...it,_id:this._uid++,line_total:parseFloat(it.quantity||0)*parseFloat(it.unit_price||0)})) : [{_id:this._uid++,description:'',quantity:1,unit_price:0,line_total:0}];
+      this.taxRate = parseFloat('{{ estimate.tax_rate|default:0 }}') || 0;
+      this.calcT();
     },
-    addItem(){this.items.push({id:Date.now(),description:'',quantity:1,unit_price:0,amount:0})},
-    removeItem(idx){if(this.items.length>1)this.items.splice(idx,1);this.calc()},
-    calcItem(item){item.amount=(parseFloat(item.quantity)||0)*(parseFloat(item.unit_price)||0);this.calc()},
-    calc(){this.subtotal=this.items.reduce((s,i)=>s+(parseFloat(i.amount)||0),0);const d=this.subtotal*((parseFloat(this.discountPct)||0)/100);const a=this.subtotal-d;this.total=a+(a*((parseFloat(this.taxRate)||0)/100))},
-    formatNum(n){return parseFloat(n||0).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})},
-    submitForm(action){this.formAction=action;this.$nextTick(()=>document.getElementById('estimate-form').submit())}
-  }
+    add(){ this.items.push({_id:this._uid++,description:'',quantity:1,unit_price:0,line_total:0}); },
+    rm(i){ if(this.items.length>1) { this.items.splice(i,1); this.calcT(); } },
+    calc(item){ item.line_total=(parseFloat(item.quantity)||0)*(parseFloat(item.unit_price)||0); this.calcT(); },
+    calcT(){ this.subtotal=this.items.reduce((s,it)=>s+(parseFloat(it.line_total)||0),0); this.taxAmount=this.subtotal*(parseFloat(this.taxRate)||0)/100; this.total=this.subtotal+this.taxAmount; },
+    fmt(v){ return Number(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  };
 }
 </script>
 {% endblock %}

@@ -2,151 +2,164 @@
 {% block title %}Expenses — InvoiceFlow{% endblock %}
 
 {% block content %}
-<div>
-<!-- Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-  <div>
-    <h1 class="text-[20px] font-bold text-slate-900 dark:text-white">Expenses</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track and categorize your business expenses</p>
-  </div>
-  <a href="{% url 'invoices:expense_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-600/20 self-start">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-    Log Expense
-  </a>
-</div>
+<div class="max-w-[1440px] mx-auto">
 
-<!-- Summary Cards -->
-{% if summary %}
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-  <div class="card p-4">
-    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Expenses</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ summary.total|default:0|floatformat:0 }}</p>
-  </div>
-  <div class="card p-4">
-    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">This Month</p>
-    <p class="text-xl font-bold text-orange-600 dark:text-orange-400 tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ summary.this_month|default:0|floatformat:0 }}</p>
-  </div>
-  <div class="card p-4">
-    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Billable</p>
-    <p class="text-xl font-bold text-brand-600 dark:text-brand-400 tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ summary.billable|default:0|floatformat:0 }}</p>
-  </div>
-  <div class="card p-4">
-    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Entries</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ summary.count|default:0 }}</p>
-  </div>
-</div>
-{% endif %}
-
-<!-- Filters -->
-<div class="card p-4 mb-4">
-  <form method="get" class="flex flex-col sm:flex-row gap-3 flex-wrap">
-    <div class="relative flex-1 min-w-48">
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" name="search" value="{{ filters.search|default:'' }}" placeholder="Search description, vendor…" class="fi pl-9 h-9">
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Expenses</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track and manage your business expenses</p>
     </div>
-    <select name="category" class="fi h-9 w-full sm:w-44" onchange="this.form.submit()">
-      <option value="">All categories</option>
-      {% for cat in categories %}
-      <option value="{{ cat.id }}" {% if filters.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
-      {% endfor %}
-    </select>
-    <select name="status" class="fi h-9 w-full sm:w-36" onchange="this.form.submit()">
-      <option value="">All status</option>
-      {% for val, label in status_choices %}
-      <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
-      {% endfor %}
-    </select>
-    <div class="flex gap-2">
-      <input type="date" name="date_from" value="{{ filters.date_from|default:'' }}" class="fi h-9 text-xs w-36">
-      <input type="date" name="date_to" value="{{ filters.date_to|default:'' }}" class="fi h-9 text-xs w-36">
+    <div class="flex items-center gap-2">
+      <a href="?export=csv" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Export
+      </a>
+      <a href="{% url 'invoices:expense_create' %}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-orange-600/20">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        Log Expense
+      </a>
     </div>
-    <button type="submit" class="px-4 h-9 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition-colors flex-shrink-0">Apply</button>
-  </form>
-</div>
+  </div>
 
-<!-- Expense Table -->
-<div class="card overflow-hidden">
-  {% if expenses %}
-  <div class="overflow-x-auto">
-    <table class="w-full">
-      <thead>
-        <tr class="border-b border-slate-100 dark:border-slate-800">
-          <th class="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Date</th>
-          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Description</th>
-          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden sm:table-cell">Category</th>
-          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden md:table-cell">Vendor</th>
-          <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden lg:table-cell">Billable</th>
-          <th class="px-5 py-3 text-right text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
-          <th class="px-4 py-3 w-8"></th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
-        {% for exp in expenses %}
-        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors">
-          <td class="px-5 py-3.5 text-sm text-slate-600 dark:text-slate-400">{{ exp.expense_date|date:"M d, Y" }}</td>
-          <td class="px-4 py-3.5">
-            <a href="{% url 'invoices:expense_detail' exp.id %}" class="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-brand-600 dark:hover:text-brand-400">{{ exp.description|truncatechars:40 }}</a>
-          </td>
-          <td class="px-4 py-3.5 hidden sm:table-cell">
-            {% if exp.category %}
-            <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/25 dark:text-orange-400">{{ exp.category.name }}</span>
-            {% else %}<span class="text-sm text-slate-400">—</span>{% endif %}
-          </td>
-          <td class="px-4 py-3.5 text-sm text-slate-500 dark:text-slate-400 hidden md:table-cell">{{ exp.vendor|default:"—" }}</td>
-          <td class="px-4 py-3.5 hidden lg:table-cell">
-            {% if exp.is_billable %}
-            <span class="text-xs font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/25 dark:text-teal-400">Billable</span>
-            {% else %}
-            <span class="text-xs text-slate-400 dark:text-slate-500">Personal</span>
-            {% endif %}
-          </td>
-          <td class="px-5 py-3.5 text-right text-sm font-bold tabular-nums text-orange-600 dark:text-orange-400">{{ workspace.currency_symbol|default:"₦" }}{{ exp.amount|floatformat:2 }}</td>
-          <td class="px-4 py-3.5">
-            <div x-data="{open:false}" class="relative flex justify-end">
-              <button @click.stop="open=!open" class="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/></svg>
-              </button>
-              <div x-show="open" x-cloak @click.outside="open=false" class="dd w-36" style="right:0;top:calc(100% + 4px)">
-                <div class="p-1.5">
-                  <a href="{% url 'invoices:expense_detail' exp.id %}" class="dd-item rounded-lg">View</a>
-                  <a href="{% url 'invoices:expense_edit' exp.id %}" class="dd-item rounded-lg">Edit</a>
-                  <div class="dd-sep"></div>
-                  <form method="post" action="{% url 'invoices:expense_delete' exp.id %}">
-                    {% csrf_token %}
-                    <button type="submit" onclick="return confirm('Delete this expense?')" class="dd-item danger rounded-lg w-full text-left">Delete</button>
-                  </form>
+  <!-- KPI strip -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card p-4">
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Total Expenses</p>
+      <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ summary.total|floatformat:2 }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">This Month</p>
+      <p class="text-xl font-bold text-orange-600 dark:text-orange-400 tabular-nums">{{ summary.this_month|floatformat:2 }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Billable</p>
+      <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ summary.billable|floatformat:2 }}</p>
+    </div>
+    <div class="card p-4">
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Pending</p>
+      <p class="text-xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">{{ summary.pending|floatformat:2 }}</p>
+    </div>
+  </div>
+
+  <!-- Filters + Table -->
+  <div class="card overflow-hidden">
+    <!-- Search + filters -->
+    <form method="get" class="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-[var(--card-b)] bg-slate-50/40 dark:bg-slate-900/20">
+      <div class="relative flex-1 min-w-[180px] max-w-xs">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search expenses…" class="fi pl-9 h-8 text-xs">
+      </div>
+      <select name="category" class="fi h-8 text-xs w-auto">
+        <option value="">All Categories</option>
+        {% for cat in categories %}<option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>{% endfor %}
+      </select>
+      <select name="status" class="fi h-8 text-xs w-auto">
+        <option value="">All Status</option>
+        <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="approved" {% if request.GET.status == 'approved' %}selected{% endif %}>Approved</option>
+        <option value="rejected" {% if request.GET.status == 'rejected' %}selected{% endif %}>Rejected</option>
+        <option value="reimbursed" {% if request.GET.status == 'reimbursed' %}selected{% endif %}>Reimbursed</option>
+      </select>
+      <select name="is_billable" class="fi h-8 text-xs w-auto">
+        <option value="">All Expenses</option>
+        <option value="true" {% if request.GET.is_billable == 'true' %}selected{% endif %}>Billable Only</option>
+        <option value="false" {% if request.GET.is_billable == 'false' %}selected{% endif %}>Non-Billable</option>
+      </select>
+      <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="fi h-8 text-xs w-32">
+      <input type="date" name="date_to" value="{{ request.GET.date_to }}" class="fi h-8 text-xs w-32">
+      <button type="submit" class="px-3 h-8 bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition-colors">Filter</button>
+      <a href="{% url 'invoices:expense_list' %}" class="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2">Clear</a>
+    </form>
+
+    {% if expenses %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50/60 dark:bg-slate-900/30">
+          <tr class="border-b border-[var(--card-b)]">
+            <th class="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Date</th>
+            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Description</th>
+            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Category</th>
+            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Vendor</th>
+            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Status</th>
+            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Amount</th>
+            <th class="px-4 py-3 w-10"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--card-b)]">
+          {% for exp in expenses %}
+          <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30 transition-colors group">
+            <td class="px-5 py-3.5 text-xs text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap">{{ exp.expense_date|date:"M j, Y" }}</td>
+            <td class="px-4 py-3.5">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-3.5 h-3.5 text-orange-500 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </div>
+                <div>
+                  <a href="{% url 'invoices:expense_detail' exp.id %}" class="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-orange-600 dark:hover:text-orange-400 transition-colors">{{ exp.description|truncatechars:40 }}</a>
+                  {% if exp.is_billable %}<span class="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Billable</span>{% endif %}
                 </div>
               </div>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% if expenses.has_other_pages %}
-  <div class="px-5 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-    <p class="text-xs text-slate-500 dark:text-slate-400">{{ expenses.start_index }}–{{ expenses.end_index }} of {{ expenses.paginator.count }}</p>
-    <div class="flex gap-1">
-      {% if expenses.has_previous %}<a href="?page={{ expenses.previous_page_number }}" class="px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">← Prev</a>{% endif %}
-      <span class="px-3 py-1.5 text-xs font-semibold bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 rounded-lg">{{ expenses.number }}</span>
-      {% if expenses.has_next %}<a href="?page={{ expenses.next_page_number }}" class="px-3 py-1.5 text-xs border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">Next →</a>{% endif %}
+            </td>
+            <td class="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400">{% if exp.category %}{{ exp.category.name }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400">{% if exp.vendor %}{{ exp.vendor.name }}{% elif exp.merchant_name %}{{ exp.merchant_name }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3.5">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold
+                {% if exp.status == 'approved' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400
+                {% elif exp.status == 'pending' %}bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400
+                {% elif exp.status == 'rejected' %}bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400
+                {% else %}bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400{% endif %}">
+                {{ exp.get_status_display }}
+              </span>
+            </td>
+            <td class="px-4 py-3.5 text-right">
+              <span class="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ exp.currency }} {{ exp.total_amount|floatformat:2 }}</span>
+            </td>
+            <td class="px-4 py-3.5">
+              <div x-data="{o:false}" class="relative flex justify-end">
+                <button @click="o=!o" @click.stop class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4z"/></svg>
+                </button>
+                <div x-show="o" x-cloak @click.outside="o=false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="dd w-40" style="right:0;top:calc(100% + 4px);z-index:50">
+                  <div class="p-1.5">
+                    <a href="{% url 'invoices:expense_detail' exp.id %}" class="dd-item rounded-md text-xs">View</a>
+                    <a href="{% url 'invoices:expense_edit' exp.id %}" class="dd-item rounded-md text-xs">Edit</a>
+                    <div class="dd-sep"></div>
+                    <form method="post" action="{% url 'invoices:expense_delete' exp.id %}" onsubmit="return confirm('Delete this expense?')">{% csrf_token %}<button type="submit" class="dd-item danger rounded-md text-xs w-full text-left">Delete</button></form>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  </div>
-  {% endif %}
-  {% else %}
-  <div class="py-14 flex flex-col items-center">
-    <div class="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center mb-3">
-      <svg class="w-6 h-6 text-orange-400 dark:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+
+    {% if expenses.has_other_pages %}
+    <div class="flex items-center justify-between px-5 py-3.5 border-t border-[var(--card-b)] bg-slate-50/40 dark:bg-slate-900/20">
+      <p class="text-xs text-slate-500 dark:text-slate-400">Page {{ expenses.number }} of {{ expenses.paginator.num_pages }}</p>
+      <div class="flex items-center gap-1">
+        {% if expenses.has_previous %}<a href="?page={{ expenses.previous_page_number }}" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">‹ Prev</a>{% endif %}
+        {% if expenses.has_next %}<a href="?page={{ expenses.next_page_number }}" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">Next ›</a>{% endif %}
+      </div>
     </div>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mb-1">No expenses recorded yet</p>
-    <p class="text-xs text-slate-400 dark:text-slate-600 mb-4">Track your business expenses to understand profitability</p>
-    <a href="{% url 'invoices:expense_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-      Log First Expense
-    </a>
+    {% endif %}
+
+    {% else %}
+    <div class="py-16 flex flex-col items-center text-center">
+      <div class="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4">
+        <svg class="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </div>
+      <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No expenses found</h3>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Start tracking your business expenses.</p>
+      <a href="{% url 'invoices:expense_create' %}" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold rounded-xl transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        Log Expense
+      </a>
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
-</div>
+
 </div>
 {% endblock %}

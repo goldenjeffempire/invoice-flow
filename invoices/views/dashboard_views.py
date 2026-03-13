@@ -202,6 +202,15 @@ def dashboard(request):
     chart_labels, chart_revenue, chart_expenses = _monthly_trend(workspace, months=6)
     sparkline = _daily_sparkline(workspace, days=30)
 
+    import json as _json
+    invoice_status_items = [
+        ("draft",     "Draft",     "#94a3b8"),
+        ("sent",      "Sent",      "#a78bfa"),
+        ("viewed",    "Viewed",    "#60a5fa"),
+        ("part_paid", "Part Paid", "#2dd4bf"),
+        ("paid",      "Paid",      "#4ade80"),
+        ("overdue",   "Overdue",   "#f87171"),
+    ]
     ctx = {
         "workspace": workspace,
         "today": today,
@@ -227,11 +236,14 @@ def dashboard(request):
         "invoices_due_soon": invoices_due_soon,
         "recent_expenses": recent_expenses,
         "invoice_status_counts": invoice_status_counts,
+        "invoice_status_counts_json": _json.dumps(invoice_status_counts),
+        "invoice_status_items": invoice_status_items,
         "top_clients": top_clients,
         "aging": aging,
-        "chart_labels": chart_labels,
-        "chart_revenue": chart_revenue,
-        "chart_expenses": chart_expenses,
+        "chart_labels": _json.dumps(chart_labels),
+        "chart_revenue": _json.dumps(chart_revenue),
+        "chart_expenses": _json.dumps(chart_expenses),
         "sparkline": sparkline,
+        "quick_actions": [],
     }
     return render(request, "pages/dashboard.html", ctx)

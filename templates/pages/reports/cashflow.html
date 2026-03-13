@@ -1,132 +1,103 @@
 {% extends "base/layout_app.html" %}
-{% load static %}
-{% block title %}Cash Flow Report — InvoiceFlow{% endblock %}
-{% block page_title %}Cash Flow Report{% endblock %}
+{% block title %}Cash Flow — InvoiceFlow{% endblock %}
 
 {% block content %}
-<!-- Header + Period -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-  <div>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white">Cash Flow Report</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Income vs expenses over time</p>
-  </div>
-  <form method="get" class="flex items-center gap-2 flex-wrap">
-    {% for preset in presets %}
-    <a href="?preset={{ preset.key }}" class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors {% if current_preset == preset.key %}bg-brand-600 text-white{% else %}border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400{% endif %}">{{ preset.label }}</a>
-    {% endfor %}
-    <input type="date" name="date_from" value="{{ date_range.start|date:'Y-m-d' }}" class="px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:border-brand-400">
-    <input type="date" name="date_to" value="{{ date_range.end|date:'Y-m-d' }}" class="px-2 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 focus:outline-none focus:border-brand-400">
-    <button type="submit" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors">Apply</button>
-    <a href="{% url 'invoices:export_report_csv' 'cashflow' %}?preset={{ current_preset }}" class="flex items-center gap-1 px-3 py-1.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-lg transition-colors">
-      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-      CSV
-    </a>
-  </form>
-</div>
-
-<!-- KPI Cards -->
-{% if totals %}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Total Income</p>
-    <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ totals.income|floatformat:0 }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Total Expenses</p>
-    <p class="text-xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">{{ totals.expenses|floatformat:0 }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Net Cash Flow</p>
-    <p class="text-xl font-bold {% if totals.net >= 0 %}text-brand-600 dark:text-brand-400{% else %}text-rose-600 dark:text-rose-400{% endif %} tabular-nums">{{ totals.net|floatformat:0 }}</p>
-  </div>
-  <div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
-    <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-1">Profit Margin</p>
-    <p class="text-xl font-bold text-slate-900 dark:text-white tabular-nums">{{ totals.margin|floatformat:0 }}%</p>
-  </div>
-</div>
-{% endif %}
-
-<!-- Chart -->
-<div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 mb-5">
-  <div class="flex items-center justify-between mb-5">
-    <div>
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Cash Flow Over Time</h3>
-      <p class="text-xs text-slate-400 mt-0.5">Income, expenses, and net by period</p>
+<div class="max-w-[1440px] mx-auto">
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div class="flex items-center gap-3">
+      <a href="{% url 'invoices:reports_home' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      </a>
+      <div>
+        <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Cash Flow Report</h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ date_range.label|default:"Last 12 months" }}</p>
+      </div>
     </div>
-    <div class="flex items-center gap-4">
-      <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="w-3 h-2 rounded-sm bg-emerald-500 block"></span>Income</div>
-      <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="w-3 h-2 rounded-sm bg-rose-400 block"></span>Expenses</div>
-      <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400"><span class="w-3 h-2 rounded-sm bg-brand-500 block"></span>Net</div>
+    <div class="flex items-center gap-2">
+      <form method="get" class="flex items-center gap-2">
+        <select name="preset" onchange="this.form.submit()" class="fi h-9 text-sm w-36">
+          <option value="this_month" {% if current_preset == 'this_month' %}selected{% endif %}>This Month</option>
+          <option value="this_quarter" {% if current_preset == 'this_quarter' %}selected{% endif %}>This Quarter</option>
+          <option value="this_year" {% if current_preset == 'this_year' %}selected{% endif %}>This Year</option>
+          <option value="last_year" {% if current_preset == 'last_year' %}selected{% endif %}>Last Year</option>
+        </select>
+      </form>
+      <a href="{% url 'invoices:export_report_csv' 'cashflow' %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">Export CSV</a>
     </div>
   </div>
-  <div style="height:220px;position:relative"><canvas id="cashflowChart"></canvas></div>
-</div>
 
-<!-- Period Breakdown Table -->
-{% if periods %}
-<div class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden">
-  <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200">Period Breakdown</h3>
+  <!-- Summary cards -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card p-5"><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Total Inflow</p><p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ summary.total_inflow|floatformat:2 }}</p></div>
+    <div class="card p-5"><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Total Outflow</p><p class="text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">{{ summary.total_outflow|floatformat:2 }}</p></div>
+    <div class="card p-5"><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Net Cash Flow</p><p class="text-2xl font-bold {% if summary.net_cashflow >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %} tabular-nums">{{ summary.net_cashflow|floatformat:2 }}</p></div>
+    <div class="card p-5"><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Best Month</p><p class="text-sm font-bold text-slate-900 dark:text-white">{{ summary.best_month|default:"—" }}</p></div>
   </div>
-  <table class="w-full text-xs">
-    <thead>
-      <tr class="bg-slate-50 dark:bg-slate-800/40">
-        <th class="text-left px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Period</th>
-        <th class="text-right px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Income</th>
-        <th class="text-right px-3 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Expenses</th>
-        <th class="text-right px-5 py-2.5 font-semibold text-slate-500 dark:text-slate-400">Net</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-50 dark:divide-slate-800/60">
-      {% for p in periods %}
-      <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/20 transition-colors">
-        <td class="px-5 py-3 font-semibold text-slate-700 dark:text-slate-300">{{ p.label }}</td>
-        <td class="px-3 py-3 text-right font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ p.income|floatformat:2 }}</td>
-        <td class="px-3 py-3 text-right font-semibold text-rose-600 dark:text-rose-400 tabular-nums">{{ p.expenses|floatformat:2 }}</td>
-        <td class="px-5 py-3 text-right font-bold {% if p.net >= 0 %}text-brand-600 dark:text-brand-400{% else %}text-rose-600 dark:text-rose-400{% endif %} tabular-nums">{{ p.net|floatformat:2 }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="4" class="text-center py-10 text-slate-400">No data for this period.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-{% endblock %}
 
-{% block scripts %}
+  <!-- Chart -->
+  <div class="card p-5 mb-5">
+    <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Monthly Cash Flow</h2>
+    <div class="h-64"><canvas id="cashflowChart"></canvas></div>
+  </div>
+
+  <!-- Monthly breakdown table -->
+  <div class="card overflow-hidden">
+    <div class="px-5 py-4 border-b border-[var(--card-b)]">
+      <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Monthly Breakdown</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50/60 dark:bg-slate-900/30">
+          <tr class="border-b border-[var(--card-b)]">
+            <th class="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Month</th>
+            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Inflow</th>
+            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Outflow</th>
+            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Net</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-[var(--card-b)]">
+          {% for row in monthly_data %}
+          <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30 transition-colors">
+            <td class="px-5 py-3.5 text-sm font-medium text-slate-800 dark:text-slate-200">{{ row.month }}</td>
+            <td class="px-4 py-3.5 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ row.inflow|floatformat:2 }}</td>
+            <td class="px-4 py-3.5 text-right text-sm font-semibold text-rose-600 dark:text-rose-400 tabular-nums">{{ row.outflow|floatformat:2 }}</td>
+            <td class="px-4 py-3.5 text-right text-sm font-bold tabular-nums {% if row.net >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">{{ row.net|floatformat:2 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="py-10 text-center text-sm text-slate-400 dark:text-slate-500">No data available for this period</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-  const dark = document.documentElement.classList.contains('dark');
-  const gridCol = dark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)';
-  const tickCol = dark?'#4b5563':'#9ca3af';
-  const tTip = {backgroundColor:dark?'#0d1117':'#fff',borderColor:dark?'#30363d':'#e2e8f0',borderWidth:1,titleColor:dark?'#f0f6fc':'#1e293b',bodyColor:dark?'#94a3b8':'#64748b',padding:10,cornerRadius:10};
-
-  const cf = {{ chart_json|default:'null'|safe }};
-  if(cf && cf.labels){
-    new Chart(document.getElementById('cashflowChart'),{
-      type:'bar',
-      data:{
-        labels:cf.labels,
-        datasets:[
-          {label:'Income',data:cf.income,backgroundColor:'rgba(16,185,129,.75)',borderRadius:4,borderSkipped:false,maxBarThickness:28},
-          {label:'Expenses',data:cf.expenses,backgroundColor:'rgba(239,68,68,.65)',borderRadius:4,borderSkipped:false,maxBarThickness:28},
-          {type:'line',label:'Net',data:cf.net,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.08)',borderWidth:2,tension:0.4,pointRadius:3,pointBackgroundColor:'#6366f1',fill:true},
-        ]
-      },
-      options:{
-        responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{...tTip,mode:'index',intersect:false}},
-        scales:{
-          x:{grid:{display:false},ticks:{color:tickCol,font:{size:11}},border:{display:false}},
-          y:{grid:{color:gridCol},ticks:{color:tickCol,font:{size:11},callback:v=>v.toLocaleString()},border:{display:false}}
-        }
+const cfCtx = document.getElementById('cashflowChart');
+if (cfCtx) {
+  const labels = {{ chart_labels|safe }};
+  const inflow = {{ chart_inflow|safe }};
+  const outflow = {{ chart_outflow|safe }};
+  const net = {{ chart_net|safe }};
+  new Chart(cfCtx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Inflow', data: inflow, backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 4 },
+        { label: 'Outflow', data: outflow, backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 4 },
+        { label: 'Net', data: net, type: 'line', borderColor: '#6366f1', borderWidth: 2.5, fill: false, tension: 0.3, pointRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 }, usePointStyle: true } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 11 } } }
       }
-    });
-  } else {
-    const c=document.getElementById('cashflowChart');
-    if(c)c.parentElement.innerHTML='<div class="flex h-full items-center justify-center text-xs text-slate-400">No cashflow data for this period</div>';
-  }
-});
+    }
+  });
+}
 </script>
 {% endblock %}

@@ -1,107 +1,85 @@
-{% extends 'base/layout_app.html' %}
+{% extends "base/layout_app.html" %}
 {% block title %}Clients — InvoiceFlow{% endblock %}
 
 {% block content %}
-<div>
-<!-- Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-  <div>
-    <h1 class="text-[20px] font-bold text-slate-900 dark:text-white">Clients</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage your clients and their billing information</p>
+<div class="max-w-[1440px] mx-auto">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Clients</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ clients|length }} client{{ clients|length|pluralize }} in your workspace</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <form method="get" class="relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" name="q" value="{{ query }}" placeholder="Search clients…" class="fi pl-9 h-9 text-sm w-56">
+      </form>
+      <a href="{% url 'invoices:client_create' %}"
+         class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-indigo-600/20">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        Add Client
+      </a>
+    </div>
   </div>
-  <a href="{% url 'invoices:client_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-brand-600/20 self-start">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-    Add Client
-  </a>
-</div>
 
-<!-- Search + Filters -->
-<div class="card p-4 mb-4">
-  <form method="get" class="flex flex-col sm:flex-row gap-3">
-    <div class="relative flex-1">
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search by name, email, phone…" class="fi pl-9 h-9">
-    </div>
-    <select name="status" onchange="this.form.submit()" class="fi h-9 w-full sm:w-40">
-      <option value="">All clients</option>
-      <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-      <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
-    </select>
-  </form>
-</div>
+  {% if clients %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    {% for client in clients %}
+    <a href="{% url 'invoices:client_detail' client.id %}"
+       class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all group cursor-pointer block">
+      <div class="flex items-start gap-3 mb-4">
+        <div class="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-white font-black text-base flex-shrink-0 shadow-sm">
+          {{ client.name|slice:":1"|upper }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">{{ client.name }}</h3>
+          {% if client.email %}<p class="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{{ client.email }}</p>{% endif %}
+          {% if client.phone %}<p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ client.phone }}</p>{% endif %}
+        </div>
+        <span class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0 mt-1" title="Active"></span>
+      </div>
 
-{% if clients %}
-<!-- Client Grid -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-  {% for client in clients %}
-  <a href="{% url 'invoices:client_detail' client.id %}"
-     class="card p-5 hover:shadow-md hover:border-brand-200 dark:hover:border-brand-800/50 transition-all group">
-    <div class="flex items-start gap-3 mb-4">
-      <div class="w-11 h-11 rounded-full flex items-center justify-center text-base font-black text-white flex-shrink-0 shadow-sm"
-           style="background:linear-gradient(135deg,{{ client.avatar_color|default:'#6366f1' }},#8b5cf6)">
-        {{ client.name|slice:":1"|upper }}
+      <div class="grid grid-cols-2 gap-3 pt-4 border-t border-[var(--card-b)]">
+        <div>
+          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Invoiced</p>
+          <p class="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ client.total_invoiced|floatformat:0 }}</p>
+        </div>
+        <div>
+          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Outstanding</p>
+          <p class="text-sm font-bold {% if client.outstanding_amount > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %} tabular-nums">{{ client.outstanding_amount|floatformat:0 }}</p>
+        </div>
+        <div>
+          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Invoices</p>
+          <p class="text-sm font-bold text-slate-700 dark:text-slate-300 tabular-nums">{{ client.invoice_count }}</p>
+        </div>
+        <div>
+          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Last Invoice</p>
+          <p class="text-xs text-slate-600 dark:text-slate-400">{% if client.last_invoice_date %}{{ client.last_invoice_date|date:"M j" }}{% else %}—{% endif %}</p>
+        </div>
       </div>
-      <div class="flex-1 min-w-0">
-        <p class="text-sm font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors truncate">{{ client.name }}</p>
-        {% if client.email %}<p class="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{{ client.email }}</p>{% endif %}
-        {% if client.phone %}<p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ client.phone }}</p>{% endif %}
-      </div>
-      {% if client.is_active is False %}
-      <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500 flex-shrink-0">Inactive</span>
-      {% endif %}
-    </div>
-    <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-      <div class="text-center">
-        <p class="text-base font-bold text-slate-900 dark:text-white tabular-nums">{{ client.invoice_count|default:0 }}</p>
-        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Invoices</p>
-      </div>
-      <div class="text-center border-x border-slate-100 dark:border-slate-800">
-        <p class="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ client.total_paid|default:0|floatformat:0 }}</p>
-        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Paid</p>
-      </div>
-      <div class="text-center">
-        <p class="text-base font-bold {% if client.total_outstanding %}text-brand-600 dark:text-brand-400{% else %}text-slate-900 dark:text-white{% endif %} tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ client.total_outstanding|default:0|floatformat:0 }}</p>
-        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Outstanding</p>
-      </div>
-    </div>
-  </a>
-  {% endfor %}
-</div>
+    </a>
+    {% endfor %}
+  </div>
 
-<!-- Pagination -->
-{% if clients.has_other_pages %}
-<div class="mt-5 flex items-center justify-between">
-  <p class="text-xs text-slate-500 dark:text-slate-400">Showing {{ clients.start_index }}–{{ clients.end_index }} of {{ clients.paginator.count }} clients</p>
-  <div class="flex items-center gap-1">
-    {% if clients.has_previous %}
-    <a href="?page={{ clients.previous_page_number }}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">← Prev</a>
-    {% endif %}
-    <span class="px-3 py-1.5 text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 rounded-lg">{{ clients.number }}</span>
-    {% if clients.has_next %}
-    <a href="?page={{ clients.next_page_number }}{% if query %}&q={{ query }}{% endif %}" class="px-3 py-1.5 text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-slate-600 dark:text-slate-400">Next →</a>
+  {% else %}
+  <div class="card py-20 flex flex-col items-center text-center">
+    <div class="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
+      <svg class="w-8 h-8 text-violet-500 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </div>
+    {% if query %}
+    <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No clients match "{{ query }}"</h3>
+    <a href="{% url 'invoices:client_list' %}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2">Clear search</a>
+    {% else %}
+    <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No clients yet</h3>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Add your first client to start creating invoices.</p>
+    <a href="{% url 'invoices:client_create' %}" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      Add First Client
+    </a>
     {% endif %}
   </div>
-</div>
-{% endif %}
-
-{% else %}
-<div class="card py-16 flex flex-col items-center">
-  <div class="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center mb-4">
-    <svg class="w-7 h-7 text-violet-400 dark:text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-  </div>
-  <p class="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">
-    {% if query %}No clients found{% else %}No clients yet{% endif %}
-  </p>
-  <p class="text-sm text-slate-400 dark:text-slate-600 mb-5">
-    {% if query %}Try adjusting your search{% else %}Add your first client to start creating invoices{% endif %}
-  </p>
-  {% if not query %}
-  <a href="{% url 'invoices:client_create' %}" class="flex items-center gap-1.5 px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors">
-    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-    Add First Client
-  </a>
   {% endif %}
-</div>
-{% endif %}
+
 </div>
 {% endblock %}

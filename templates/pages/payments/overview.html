@@ -1,178 +1,116 @@
 {% extends "base/layout_app.html" %}
-{% load static %}
 {% block title %}Payments — InvoiceFlow{% endblock %}
 
 {% block content %}
-<div x-data="paymentsOverview()" x-init="init()">
+<div class="max-w-[1440px] mx-auto">
 
-<!-- Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-  <div>
-    <h1 class="text-[20px] font-bold text-slate-900 dark:text-white">Payments</h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Track and manage all payment activity</p>
-  </div>
-  <div class="flex items-center gap-2">
-    <a href="{% url 'invoices:payment_history' %}" class="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold rounded-xl transition-colors">
-      View All Transactions
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Payments</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Payment overview and financial transactions</p>
+    </div>
+    <a href="{% url 'invoices:transaction_list' %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+      View All Transactions →
     </a>
   </div>
-</div>
 
-<!-- KPI Cards -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-  <div class="card p-5">
-    <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3">
-      <svg class="w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  <!-- KPI -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="card p-5">
+      <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-3">
+        <svg class="w-4.5 w-[18px] h-[18px] text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Total Collected</p>
+      <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ total_collected|floatformat:2 }}</p>
     </div>
-    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Total Collected</p>
-    <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ total_collected|default:0|floatformat:0 }}</p>
-    <p class="text-[11px] text-slate-400 mt-1">All time</p>
-  </div>
-  <div class="card p-5">
-    <div class="w-9 h-9 rounded-xl bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center mb-3">
-      <svg class="w-[18px] h-[18px] text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <div class="card p-5">
+      <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-3">
+        <svg class="w-[18px] h-[18px] text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+      </div>
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Transactions</p>
+      <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ payments|length }}</p>
     </div>
-    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">This Month</p>
-    <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ monthly_collected|default:0|floatformat:0 }}</p>
-    <p class="text-[11px] text-slate-400 mt-1">Current month</p>
-  </div>
-  <div class="card p-5">
-    <div class="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-3">
-      <svg class="w-[18px] h-[18px] text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+    <div class="card p-5">
+      <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-3">
+        <svg class="w-[18px] h-[18px] text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Payouts</p>
+      <p class="text-2xl font-bold text-slate-900 dark:text-white">{{ payouts|length }}</p>
     </div>
-    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Transactions</p>
-    <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ total_transactions|default:0 }}</p>
-    <p class="text-[11px] text-slate-400 mt-1">All time</p>
-  </div>
-  <div class="card p-5">
-    <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-3">
-      <svg class="w-[18px] h-[18px] text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+    <div class="card p-5">
+      <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-3">
+        <svg class="w-[18px] h-[18px] text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Disputes</p>
+      <p class="text-2xl font-bold text-rose-600 dark:text-rose-400">{{ disputes|length }}</p>
     </div>
-    <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 mb-1">Avg. Payment</p>
-    <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ workspace.currency_symbol|default:"₦" }}{{ avg_payment|default:0|floatformat:0 }}</p>
-    <p class="text-[11px] text-slate-400 mt-1">Per transaction</p>
   </div>
-</div>
 
-<!-- Charts + Recent Payments -->
-<div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-  <!-- Payment trend chart -->
-  <div class="xl:col-span-2 card p-5">
-    <div class="flex items-center justify-between mb-5">
-      <div>
-        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Payment Trend</h3>
-        <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Monthly payment volume</p>
+    <!-- Recent Payments -->
+    <div class="card">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--card-b)]">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white">Recent Payments</h2>
+        <a href="{% url 'invoices:transaction_list' %}" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">View all →</a>
+      </div>
+      <div class="divide-y divide-[var(--card-b)]">
+        {% for pmt in payments %}
+        <a href="{% url 'invoices:payment_detail' pmt.id %}" class="flex items-center gap-3 px-5 py-3.5 hover:bg-slate-50/60 dark:hover:bg-slate-900/30 transition-colors">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ pmt.invoice.client.name }}</p>
+            <p class="text-xs text-slate-400 dark:text-slate-500">{{ pmt.created_at|date:"M j, Y" }} · {{ pmt.invoice.invoice_number }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">+{{ pmt.amount|floatformat:2 }}</p>
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full font-bold {% if pmt.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400{% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400{% endif %}">{{ pmt.get_status_display }}</span>
+          </div>
+        </a>
+        {% empty %}
+        <div class="py-10 text-center text-sm text-slate-400 dark:text-slate-500">No payments yet</div>
+        {% endfor %}
       </div>
     </div>
-    <div class="h-52 relative"><canvas id="paymentChart"></canvas></div>
-  </div>
 
-  <!-- Payment Methods Breakdown -->
-  <div class="card p-5">
-    <h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4">Payment Methods</h3>
-    {% if payment_methods %}
-    <div class="space-y-3 mb-4">
-      {% for method in payment_methods %}
-      <div>
-        <div class="flex justify-between mb-1">
-          <span class="text-xs font-medium text-slate-600 dark:text-slate-400">{{ method.label }}</span>
-          <span class="text-xs font-bold tabular-nums text-slate-700 dark:text-slate-300">{{ method.percent|floatformat:0 }}%</span>
-        </div>
-        <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-          <div class="h-full rounded-full bg-brand-500" style="width:{{ method.percent|floatformat:0 }}%"></div>
-        </div>
+    <!-- Recent Payouts -->
+    <div class="card">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--card-b)]">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white">Payouts & Disputes</h2>
       </div>
-      {% endfor %}
+      <div class="divide-y divide-[var(--card-b)]">
+        {% for payout in payouts %}
+        <div class="flex items-center gap-3 px-5 py-3.5">
+          <div class="w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">Payout</p>
+            <p class="text-xs text-slate-400 dark:text-slate-500">{{ payout.created_at|date:"M j, Y" }}</p>
+          </div>
+          <p class="text-sm font-bold text-violet-600 dark:text-violet-400 tabular-nums">{{ payout.amount|floatformat:2 }}</p>
+        </div>
+        {% endfor %}
+        {% for dispute in disputes %}
+        <div class="flex items-center gap-3 px-5 py-3.5">
+          <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-semibold text-rose-600 dark:text-rose-400">Dispute</p>
+            <p class="text-xs text-slate-400 dark:text-slate-500">{{ dispute.created_at|date:"M j, Y" }}</p>
+          </div>
+          <p class="text-sm font-bold text-rose-600 dark:text-rose-400 tabular-nums">{{ dispute.amount|floatformat:2 }}</p>
+        </div>
+        {% endfor %}
+        {% if not payouts and not disputes %}
+        <div class="py-10 text-center text-sm text-slate-400 dark:text-slate-500">No payouts or disputes</div>
+        {% endif %}
+      </div>
     </div>
-    {% else %}
-    <div class="h-36 relative mb-4"><canvas id="methodsChart"></canvas></div>
-    <div class="space-y-2">
-      <div class="flex justify-between items-center"><span class="flex items-center gap-2 text-xs text-slate-500"><span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span>Bank Transfer</span><span class="text-xs font-bold text-slate-700 dark:text-slate-300">—</span></div>
-      <div class="flex justify-between items-center"><span class="flex items-center gap-2 text-xs text-slate-500"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>Cash</span><span class="text-xs font-bold text-slate-700 dark:text-slate-300">—</span></div>
-      <div class="flex justify-between items-center"><span class="flex items-center gap-2 text-xs text-slate-500"><span class="w-2.5 h-2.5 rounded-full bg-violet-400"></span>Card</span><span class="text-xs font-bold text-slate-700 dark:text-slate-300">—</span></div>
-    </div>
-    {% endif %}
-  </div>
 
-  <!-- Recent Payments -->
-  <div class="xl:col-span-3 card overflow-hidden">
-    <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-      <h3 class="text-sm font-bold text-slate-900 dark:text-white">Recent Payments</h3>
-      <a href="{% url 'invoices:payment_history' %}" class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">View all →</a>
-    </div>
-    {% if payments %}
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-slate-100 dark:border-slate-800">
-            <th class="px-5 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Date</th>
-            <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Invoice</th>
-            <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden sm:table-cell">Client</th>
-            <th class="px-4 py-3 text-left text-[10.5px] font-bold uppercase tracking-widest text-slate-400 hidden md:table-cell">Method</th>
-            <th class="px-5 py-3 text-right text-[10.5px] font-bold uppercase tracking-widest text-slate-400">Amount</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
-          {% for pmt in payments|slice:":10" %}
-          <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/20 transition-colors">
-            <td class="px-5 py-3.5 text-sm text-slate-600 dark:text-slate-400">{{ pmt.payment_date|date:"M d, Y" }}</td>
-            <td class="px-4 py-3.5">
-              {% if pmt.invoice %}
-              <a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="text-sm font-semibold text-brand-600 dark:text-brand-400 hover:underline">{{ pmt.invoice.invoice_number }}</a>
-              {% else %}<span class="text-sm text-slate-400">—</span>{% endif %}
-            </td>
-            <td class="px-4 py-3.5 hidden sm:table-cell text-sm text-slate-600 dark:text-slate-400">
-              {% if pmt.invoice and pmt.invoice.client %}{{ pmt.invoice.client.name }}{% else %}—{% endif %}
-            </td>
-            <td class="px-4 py-3.5 hidden md:table-cell">
-              <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">{{ pmt.get_payment_method_display|default:"—" }}</span>
-            </td>
-            <td class="px-5 py-3.5 text-right text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{{ workspace.currency_symbol|default:"₦" }}{{ pmt.amount|floatformat:2 }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="py-12 text-center">
-      <svg class="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-      <p class="text-sm text-slate-400 dark:text-slate-600">No payments recorded yet</p>
-    </div>
-    {% endif %}
   </div>
 </div>
-
-</div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function paymentsOverview(){
-  return {
-    init(){
-      this.$nextTick(()=>{ try{this.buildChart()}catch(e){} });
-    },
-    buildChart(){
-      const el=document.getElementById('paymentChart');
-      if(!el) return;
-      const dark=document.documentElement.classList.contains('dark');
-      const gc=dark?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.04)';
-      const tc=dark?'#4b5563':'#94a3b8';
-      {% if payment_chart %}
-      const labels={{ payment_chart.labels|safe }};
-      const data={{ payment_chart.data|safe }};
-      {% else %}
-      const labels=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const data=[0,0,0,0,0,0,0,0,0,0,0,0];
-      {% endif %}
-      new Chart(el,{
-        type:'line',
-        data:{labels,datasets:[{label:'Collected',data,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',borderWidth:2.5,fill:true,tension:0.4,pointRadius:3,pointBackgroundColor:'#10b981'}]},
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:dark?'#0d1117':'#fff',titleColor:dark?'#e2e8f0':'#1e293b',bodyColor:dark?'#94a3b8':'#64748b',borderColor:dark?'#1c2333':'#e2e8f0',borderWidth:1,padding:10,callbacks:{label(c){return ' ₦'+c.raw.toLocaleString()}}}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:11}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:11},callback:v=>'₦'+(v>=1000?(v/1000).toFixed(0)+'k':v)}}}}
-      });
-    }
-  }
-}
-</script>
 {% endblock %}
