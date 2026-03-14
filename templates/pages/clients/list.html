@@ -1,85 +1,110 @@
 {% extends "base/layout_app.html" %}
 {% block title %}Clients — InvoiceFlow{% endblock %}
+{% block page_title %}Clients{% endblock %}
 
 {% block content %}
-<div class="max-w-[1440px] mx-auto">
-
-  <!-- Header -->
-  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+<div style="max-width:1400px">
+  <div class="page-hdr">
     <div>
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Clients</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ clients|length }} client{{ clients|length|pluralize }} in your workspace</p>
+      <h1 class="page-title">Clients</h1>
+      <p class="page-sub">{{ total_count|default:0 }} client{{ total_count|pluralize }}</p>
     </div>
-    <div class="flex items-center gap-2">
-      <form method="get" class="relative">
-        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" name="q" value="{{ query }}" placeholder="Search clients…" class="fi pl-9 h-9 text-sm w-56">
-      </form>
-      <a href="{% url 'invoices:client_create' %}"
-         class="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-indigo-600/20">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-        Add Client
+    <div class="page-hdr-actions">
+      <a href="{% url 'invoices:client_create' %}" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        New Client
       </a>
     </div>
   </div>
 
-  {% if clients %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-    {% for client in clients %}
-    <a href="{% url 'invoices:client_detail' client.id %}"
-       class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all group cursor-pointer block">
-      <div class="flex items-start gap-3 mb-4">
-        <div class="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-white font-black text-base flex-shrink-0 shadow-sm">
-          {{ client.name|slice:":1"|upper }}
+  <div class="card">
+    <!-- Search -->
+    <div class="filter-bar">
+      <form method="get" style="display:contents">
+        <div class="search-wrap">
+          <svg class="icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" name="q" value="{{ query }}" class="search-field" placeholder="Search by name, email, phone…">
         </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">{{ client.name }}</h3>
-          {% if client.email %}<p class="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5">{{ client.email }}</p>{% endif %}
-          {% if client.phone %}<p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ client.phone }}</p>{% endif %}
-        </div>
-        <span class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0 mt-1" title="Active"></span>
-      </div>
-
-      <div class="grid grid-cols-2 gap-3 pt-4 border-t border-[var(--card-b)]">
-        <div>
-          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Invoiced</p>
-          <p class="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ client.total_invoiced|floatformat:0 }}</p>
-        </div>
-        <div>
-          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Outstanding</p>
-          <p class="text-sm font-bold {% if client.outstanding_amount > 0 %}text-amber-600 dark:text-amber-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %} tabular-nums">{{ client.outstanding_amount|floatformat:0 }}</p>
-        </div>
-        <div>
-          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Invoices</p>
-          <p class="text-sm font-bold text-slate-700 dark:text-slate-300 tabular-nums">{{ client.invoice_count }}</p>
-        </div>
-        <div>
-          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Last Invoice</p>
-          <p class="text-xs text-slate-600 dark:text-slate-400">{% if client.last_invoice_date %}{{ client.last_invoice_date|date:"M j" }}{% else %}—{% endif %}</p>
-        </div>
-      </div>
-    </a>
-    {% endfor %}
-  </div>
-
-  {% else %}
-  <div class="card py-20 flex flex-col items-center text-center">
-    <div class="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
-      <svg class="w-8 h-8 text-violet-500 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+        {% if query %}<a href="{% url 'invoices:client_list' %}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+      </form>
     </div>
-    {% if query %}
-    <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No clients match "{{ query }}"</h3>
-    <a href="{% url 'invoices:client_list' %}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mt-2">Clear search</a>
+
+    {% if clients %}
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th style="text-align:right">Total Invoiced</th>
+            <th style="text-align:right">Outstanding</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in clients %}
+          <tr onclick="window.location='{% url 'invoices:client_detail' client.id %}'" style="cursor:pointer">
+            <td>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ client.name|slice:":1"|upper }}</div>
+                <div>
+                  <p style="font-size:13.5px;font-weight:700;color:var(--text-primary)">{{ client.name }}</p>
+                  {% if client.company_name %}<p style="font-size:11px;color:var(--text-muted)">{{ client.company_name }}</p>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td><span style="font-size:13px;color:var(--text-secondary)">{{ client.email|default:"—" }}</span></td>
+            <td><span style="font-size:13px;color:var(--text-secondary)">{{ client.phone|default:"—" }}</span></td>
+            <td style="text-align:right">
+              <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ client.total_invoiced|default:"—" }}</span>
+            </td>
+            <td style="text-align:right">
+              {% if client.outstanding_amount %}
+              <span class="tabular" style="font-size:13px;font-weight:600;color:#dc2626">{{ client.outstanding_amount }}</span>
+              {% else %}<span style="font-size:13px;color:var(--text-muted)">—</span>{% endif %}
+            </td>
+            <td onclick="event.stopPropagation()">
+              <div x-data="{open:false}" class="relative" style="display:flex;justify-content:flex-end">
+                <button @click="open=!open" class="btn btn-ghost btn-icon btn-sm">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
+                </button>
+                <div x-show="open" x-cloak @click.outside="open=false" class="dropdown" style="right:0;min-width:160px"
+                     x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+                  <div style="padding:6px">
+                    <a href="{% url 'invoices:client_detail' client.id %}" class="dd-item">View Profile</a>
+                    <a href="{% url 'invoices:client_edit' client.id %}" class="dd-item">Edit</a>
+                    <a href="{% url 'invoices:invoice_create' %}?client={{ client.id }}" class="dd-item">New Invoice</a>
+                    <a href="{% url 'invoices:estimate_create' %}?client={{ client.id }}" class="dd-item">New Estimate</a>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if clients.has_other_pages %}
+    <div class="pagination">
+      <span style="font-size:12.5px;color:var(--text-muted)">Page {{ clients.number }} of {{ clients.paginator.num_pages }}</span>
+      <div class="page-links">
+        {% if clients.has_previous %}<a href="?page={{ clients.previous_page_number }}&q={{ query|urlencode }}" class="pg-btn"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></a>{% endif %}
+        {% if clients.has_next %}<a href="?page={{ clients.next_page_number }}&q={{ query|urlencode }}" class="pg-btn"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></a>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
     {% else %}
-    <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No clients yet</h3>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Add your first client to start creating invoices.</p>
-    <a href="{% url 'invoices:client_create' %}" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-      Add First Client
-    </a>
+    <div class="empty-state">
+      <div class="empty-icon"><svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+      <p class="empty-title">{% if query %}No clients found{% else %}No clients yet{% endif %}</p>
+      <p class="empty-desc">{% if query %}Try a different search.{% else %}Add your first client to start invoicing.{% endif %}</p>
+      {% if not query %}<a href="{% url 'invoices:client_create' %}" class="btn btn-primary">Add Client</a>{% endif %}
+    </div>
     {% endif %}
   </div>
-  {% endif %}
-
 </div>
 {% endblock %}

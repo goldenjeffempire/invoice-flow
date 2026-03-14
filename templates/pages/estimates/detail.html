@@ -1,127 +1,174 @@
 {% extends "base/layout_app.html" %}
 {% block title %}{{ estimate.estimate_number }} — InvoiceFlow{% endblock %}
-
-{% block head %}
-<style>
-  .s-draft{background:#f1f5f9;color:#475569}.s-sent{background:#ede9fe;color:#7c3aed}.s-approved{background:#dcfce7;color:#15803d}.s-declined{background:#fee2e2;color:#b91c1c}.s-expired{background:#fef3c7;color:#92400e}.s-viewed{background:#dbeafe;color:#1d4ed8}
-  .dark .s-draft{background:rgba(100,116,139,.15);color:#94a3b8}.dark .s-sent{background:rgba(124,58,237,.15);color:#a78bfa}.dark .s-approved{background:rgba(21,128,61,.15);color:#4ade80}.dark .s-declined{background:rgba(185,28,28,.15);color:#f87171}.dark .s-expired{background:rgba(146,64,14,.15);color:#fbbf24}
-</style>
-{% endblock %}
+{% block page_title %}{{ estimate.estimate_number }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto">
-
-  <!-- Header -->
-  <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
-    <div class="flex items-start gap-3">
-      <a href="{% url 'invoices:estimate_list' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors mt-1">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      </a>
-      <div>
-        <div class="flex items-center gap-3 flex-wrap">
-          <h1 class="text-xl font-bold text-slate-900 dark:text-white">{{ estimate.estimate_number }}</h1>
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold s-{{ estimate.status }}">{{ estimate.get_status_display }}</span>
-        </div>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          <a href="{% url 'invoices:client_detail' estimate.client.id %}" class="text-teal-600 dark:text-teal-400 hover:underline font-medium">{{ estimate.client.name }}</a>
-          · Created {{ estimate.created_at|date:"M j, Y" }}
-        </p>
+<div style="max-width:1100px">
+  <div class="page-hdr">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <a href="{% url 'invoices:estimate_list' %}" style="font-size:12.5px;color:var(--text-muted);font-weight:500">Estimates</a>
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span style="font-size:12.5px;color:var(--text-muted)">{{ estimate.estimate_number }}</span>
+      </div>
+      <h1 class="page-title">{{ estimate.estimate_number }}</h1>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <span class="badge b-{{ estimate.status|lower }}"><span class="badge-dot"></span>{{ estimate.get_status_display }}</span>
+        <span style="font-size:12px;color:var(--text-muted)">{{ estimate.client.name }}</span>
       </div>
     </div>
-    <div class="flex items-center gap-2 flex-wrap">
-      <a href="{% url 'invoices:estimate_edit' estimate.id %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">Edit</a>
-      {% if estimate.status == 'approved' %}
-      <a href="{% url 'invoices:convert_estimate' estimate.id %}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-colors">Convert to Invoice</a>
+    <div class="page-hdr-actions">
+      {% if estimate.status == 'draft' or estimate.status == 'sent' %}
+      <a href="{% url 'invoices:estimate_edit' estimate.id %}" class="btn btn-secondary btn-sm">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Edit
+      </a>
       {% endif %}
+      {% if estimate.status == 'accepted' %}
+      <a href="{% url 'invoices:estimate_convert' estimate.id %}" class="btn btn-primary btn-sm">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+        Convert to Invoice
+      </a>
+      {% endif %}
+      <a href="{% url 'invoices:estimate_download_pdf' estimate.id %}" class="btn btn-secondary btn-sm">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        PDF
+      </a>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-    <div class="lg:col-span-2">
-      <!-- Estimate body -->
-      <div class="card p-6 sm:p-8">
-        <div class="flex justify-between items-start mb-8">
-          <div>
-            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">From</p>
-            <p class="text-base font-bold text-slate-900 dark:text-white">{{ estimate.workspace.name }}</p>
-          </div>
-          <div class="text-right">
-            <p class="text-2xl font-black text-teal-600 dark:text-teal-400">ESTIMATE</p>
-            <p class="text-sm font-bold text-slate-700 dark:text-slate-300 mt-1"># {{ estimate.estimate_number }}</p>
-          </div>
+  <div style="display:grid;grid-template-columns:1fr 280px;gap:20px">
+    <!-- Estimate document -->
+    <div class="card" style="padding:40px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px">
+        <div>
+          <h2 style="font-size:28px;font-weight:900;color:var(--text-primary);letter-spacing:-.5px">ESTIMATE</h2>
+          <p style="font-size:14px;color:var(--text-muted);margin-top:4px">{{ estimate.estimate_number }}</p>
         </div>
+        <p style="font-size:16px;font-weight:800;color:var(--text-primary)">{{ workspace.name }}</p>
+      </div>
 
-        <div class="grid grid-cols-2 gap-8 mb-8">
-          <div>
-            <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">Estimate For</p>
-            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ estimate.client.name }}</p>
-            {% if estimate.client.billing_address %}<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 whitespace-pre-line">{{ estimate.client.billing_address }}</p>{% endif %}
-          </div>
-          <div class="text-right space-y-2">
-            <div><p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Created</p><p class="text-sm text-slate-700 dark:text-slate-300">{{ estimate.created_at|date:"M j, Y" }}</p></div>
-            {% if estimate.expiry_date %}<div><p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Expires</p><p class="text-sm text-slate-700 dark:text-slate-300">{{ estimate.expiry_date|date:"M j, Y" }}</p></div>{% endif %}
-          </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:40px">
+        <div>
+          <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:8px">From</p>
+          <p style="font-size:14px;font-weight:700;color:var(--text-primary)">{{ workspace.name }}</p>
         </div>
+        <div>
+          <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:8px">Prepared For</p>
+          <p style="font-size:14px;font-weight:700;color:var(--text-primary)">{{ estimate.client.name }}</p>
+          {% if estimate.client.email %}<p style="font-size:13px;color:var(--text-secondary);margin-top:2px">{{ estimate.client.email }}</p>{% endif %}
+        </div>
+      </div>
 
-        <table class="w-full text-sm mb-6">
-          <thead>
-            <tr class="border-b-2 border-slate-200 dark:border-slate-700">
-              <th class="text-left py-2.5 font-bold text-[10.5px] uppercase tracking-wide text-slate-400 dark:text-slate-500 w-1/2">Description</th>
-              <th class="text-right py-2.5 font-bold text-[10.5px] uppercase tracking-wide text-slate-400 dark:text-slate-500">Qty</th>
-              <th class="text-right py-2.5 font-bold text-[10.5px] uppercase tracking-wide text-slate-400 dark:text-slate-500">Rate</th>
-              <th class="text-right py-2.5 font-bold text-[10.5px] uppercase tracking-wide text-slate-400 dark:text-slate-500">Amount</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            {% for item in estimate.items.all %}
-            <tr>
-              <td class="py-3 font-medium text-slate-800 dark:text-slate-200">{{ item.description }}</td>
-              <td class="py-3 text-right text-slate-600 dark:text-slate-400 tabular-nums">{{ item.quantity }}</td>
-              <td class="py-3 text-right text-slate-600 dark:text-slate-400 tabular-nums">{{ item.unit_price|floatformat:2 }}</td>
-              <td class="py-3 text-right font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{{ item.line_total|floatformat:2 }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4" class="py-8 text-center text-slate-400 text-sm">No items</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 20px;background:var(--bg-subtle);border-radius:10px;margin-bottom:32px">
+        <div>
+          <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:4px">Issue Date</p>
+          <p style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ estimate.issue_date|date:"M d, Y" }}</p>
+        </div>
+        <div>
+          <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:4px">Expiry Date</p>
+          <p style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ estimate.expiry_date|date:"M d, Y"|default:"—" }}</p>
+        </div>
+      </div>
 
-        <div class="flex justify-end">
-          <div class="w-56 space-y-2">
-            <div class="flex justify-between text-sm text-slate-600 dark:text-slate-400"><span>Subtotal</span><span class="tabular-nums">{{ estimate.subtotal|floatformat:2 }}</span></div>
-            {% if estimate.tax_amount %}<div class="flex justify-between text-sm text-slate-600 dark:text-slate-400"><span>Tax</span><span class="tabular-nums">{{ estimate.tax_amount|floatformat:2 }}</span></div>{% endif %}
-            <div class="flex justify-between font-bold text-base text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700"><span>Total</span><span class="tabular-nums">{{ estimate.total_amount|floatformat:2 }}</span></div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+        <thead>
+          <tr style="background:var(--bg-subtle)">
+            <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border)">Item</th>
+            <th style="padding:10px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);width:80px">Qty</th>
+            <th style="padding:10px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);width:120px">Price</th>
+            <th style="padding:10px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);width:120px">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in estimate.items.all %}
+          <tr>
+            <td style="padding:12px 14px;border-bottom:1px solid var(--border)">
+              <p style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ item.description }}</p>
+              {% if item.long_description %}<p style="font-size:12px;color:var(--text-muted);margin-top:3px">{{ item.long_description }}</p>{% endif %}
+            </td>
+            <td style="padding:12px 14px;text-align:right;border-bottom:1px solid var(--border)"><span class="tabular" style="font-size:13px;color:var(--text-secondary)">{{ item.quantity }}</span></td>
+            <td style="padding:12px 14px;text-align:right;border-bottom:1px solid var(--border)"><span class="tabular" style="font-size:13px;color:var(--text-secondary)">{{ estimate.currency_symbol }}{{ item.unit_price|floatformat:2 }}</span></td>
+            <td style="padding:12px 14px;text-align:right;border-bottom:1px solid var(--border)"><span class="tabular" style="font-size:13.5px;font-weight:700;color:var(--text-primary)">{{ estimate.currency_symbol }}{{ item.total|floatformat:2 }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <div style="display:flex;justify-content:flex-end">
+        <div style="width:260px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0">
+            <span style="font-size:13px;color:var(--text-muted)">Subtotal</span>
+            <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ estimate.currency_symbol }}{{ estimate.subtotal|floatformat:2 }}</span>
+          </div>
+          {% if estimate.tax_total > 0 %}
+          <div style="display:flex;justify-content:space-between;padding:8px 0">
+            <span style="font-size:13px;color:var(--text-muted)">Tax</span>
+            <span class="tabular" style="font-size:13.5px;color:var(--text-primary)">{{ estimate.currency_symbol }}{{ estimate.tax_total|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          <div class="divider" style="margin:8px 0"></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0">
+            <span style="font-size:15px;font-weight:800;color:var(--text-primary)">Total</span>
+            <span class="tabular" style="font-size:24px;font-weight:900;color:var(--text-primary)">{{ estimate.currency_symbol }}{{ estimate.total_amount|floatformat:2 }}</span>
           </div>
         </div>
       </div>
+
+      {% if estimate.client_memo %}
+      <div style="margin-top:32px;padding:16px 20px;background:var(--bg-subtle);border-radius:10px">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">Notes</p>
+        <p style="font-size:13px;color:var(--text-secondary);white-space:pre-line">{{ estimate.client_memo }}</p>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Sidebar -->
-    <div class="space-y-4">
-      <div class="card p-5">
-        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-3">Amount</h3>
-        <p class="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{{ estimate.total_amount|floatformat:2 }}</p>
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold s-{{ estimate.status }} mt-2">{{ estimate.get_status_display }}</span>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card" style="padding:20px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:16px">Status</p>
+        <span class="badge b-{{ estimate.status|lower }}" style="margin-bottom:16px;display:inline-flex"><span class="badge-dot"></span>{{ estimate.get_status_display }}</span>
+        {% if estimate.status == 'accepted' %}
+        <a href="{% url 'invoices:estimate_convert' estimate.id %}" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:8px">Convert to Invoice</a>
+        {% endif %}
+        {% if estimate.status == 'draft' %}
+        <form method="post" action="{% url 'invoices:estimate_send' estimate.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;margin-top:8px">Send to Client</button>
+        </form>
+        {% endif %}
       </div>
 
-      <div class="card p-5">
-        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-3">Client</h3>
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white text-sm font-black flex-shrink-0">{{ estimate.client.name|slice:":1"|upper }}</div>
-          <div><p class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ estimate.client.name }}</p>{% if estimate.client.email %}<p class="text-xs text-slate-400 dark:text-slate-500">{{ estimate.client.email }}</p>{% endif %}</div>
+      <div class="card" style="padding:20px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:14px">Details</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Client</p>
+            <a href="{% url 'invoices:client_detail' estimate.client.id %}" style="font-size:13px;font-weight:600;color:var(--brand-600)">{{ estimate.client.name }}</a>
+          </div>
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Created</p>
+            <p style="font-size:13px;color:var(--text-secondary)">{{ estimate.created_at|date:"M d, Y" }}</p>
+          </div>
+          {% if estimate.expiry_date %}
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Valid Until</p>
+            <p style="font-size:13px;color:{% if estimate.is_expired %}#dc2626{% else %}var(--text-secondary){% endif %}">{{ estimate.expiry_date|date:"M d, Y" }}</p>
+          </div>
+          {% endif %}
         </div>
       </div>
 
       {% if activities %}
-      <div class="card p-5">
-        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-3">Activity</h3>
-        <div class="space-y-3">
+      <div class="card" style="padding:20px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:14px">Activity</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
           {% for act in activities %}
-          <div class="flex items-start gap-2">
-            <div class="w-2 h-2 rounded-full bg-teal-400 flex-shrink-0 mt-1.5"></div>
+          <div style="display:flex;gap:8px">
+            <div style="width:6px;height:6px;border-radius:50%;background:var(--brand-500);margin-top:6px;flex-shrink:0"></div>
             <div>
-              <p class="text-xs text-slate-700 dark:text-slate-300">{{ act.action }}</p>
-              <p class="text-[10.5px] text-slate-400 dark:text-slate-500 mt-0.5">{{ act.created_at|date:"M j, Y g:i A" }}</p>
+              <p style="font-size:12.5px;color:var(--text-primary)">{{ act.action }}</p>
+              <p style="font-size:11px;color:var(--text-muted)">{{ act.created_at|date:"M d, Y H:i" }}</p>
             </div>
           </div>
           {% endfor %}

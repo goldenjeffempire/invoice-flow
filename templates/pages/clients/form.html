@@ -1,108 +1,97 @@
 {% extends "base/layout_app.html" %}
-{% block title %}{% if client %}Edit Client{% else %}New Client{% endif %} — InvoiceFlow{% endblock %}
+{% block title %}{% if client %}Edit {{ client.name }}{% else %}New Client{% endif %} — InvoiceFlow{% endblock %}
+{% block page_title %}{% if client %}Edit Client{% else %}New Client{% endif %}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto">
-
-  <div class="flex items-center gap-3 mb-6">
-    <a href="{% url 'invoices:client_list' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-    </a>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">{% if client %}Edit {{ client.name }}{% else %}Add New Client{% endif %}</h1>
+<div style="max-width:720px">
+  <div class="page-hdr">
+    <div>
+      <h1 class="page-title">{% if client %}Edit {{ client.name }}{% else %}New Client{% endif %}</h1>
+      <p class="page-sub">{% if client %}Update client details{% else %}Add a new client to your workspace{% endif %}</p>
+    </div>
+    <div class="page-hdr-actions">
+      <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+    </div>
   </div>
 
-  <form method="post" action="{% if client %}{% url 'invoices:client_edit' client.id %}{% else %}{% url 'invoices:client_create' %}{% endif %}">
+  <form method="post">
     {% csrf_token %}
+    <div style="display:flex;flex-direction:column;gap:20px">
 
-    <!-- Basic info -->
-    <div class="card p-6 mb-4">
-      <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center"><span class="text-[10px] font-black text-violet-600 dark:text-violet-400">1</span></div>
-        Basic Information
-      </h2>
-      <div class="space-y-4">
-        <div>
-          <label class="lbl">Company / Client Name <span class="text-rose-500">*</span></label>
-          <input type="text" name="name" value="{{ client.name|default:'' }}" required placeholder="Acme Corporation" class="fi text-sm">
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="lbl">Email</label>
-            <input type="email" name="email" value="{{ client.email|default:'' }}" placeholder="billing@company.com" class="fi text-sm">
+      <!-- Basic info -->
+      <div class="card" style="padding:24px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Basic Information</p>
+        <div class="form-row cols-2" style="margin-bottom:0">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" name="name" class="form-input" value="{{ client.name|default:'' }}" placeholder="John Smith" required>
           </div>
-          <div>
-            <label class="lbl">Phone</label>
-            <input type="text" name="phone" value="{{ client.phone|default:'' }}" placeholder="+1 (555) 000-0000" class="fi text-sm">
+          <div class="form-group">
+            <label class="form-label">Company Name</label>
+            <input type="text" name="company_name" class="form-input" value="{{ client.company_name|default:'' }}" placeholder="Acme Corporation">
           </div>
-        </div>
-        <div>
-          <label class="lbl">Website</label>
-          <input type="url" name="website" value="{{ client.website|default:'' }}" placeholder="https://example.com" class="fi text-sm">
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" name="email" class="form-input" value="{{ client.email|default:'' }}" placeholder="client@company.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone</label>
+            <input type="tel" name="phone" class="form-input" value="{{ client.phone|default:'' }}" placeholder="+234 xxx xxx xxxx">
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Billing -->
-    <div class="card p-6 mb-4">
-      <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center"><span class="text-[10px] font-black text-violet-600 dark:text-violet-400">2</span></div>
-        Billing Details
-      </h2>
-      <div class="space-y-4">
-        <div>
-          <label class="lbl">Billing Address</label>
-          <textarea name="billing_address" rows="3" placeholder="123 Main St, City, State, ZIP, Country" class="fi text-sm">{{ client.billing_address|default:'' }}</textarea>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="lbl">Currency</label>
-            <select name="currency" class="fi text-sm">
-              <option value="USD" {% if client.currency == 'USD' %}selected{% endif %}>$ USD</option>
-              <option value="NGN" {% if client.currency == 'NGN' or not client %}selected{% endif %}>₦ NGN</option>
-              <option value="EUR" {% if client.currency == 'EUR' %}selected{% endif %}>€ EUR</option>
-              <option value="GBP" {% if client.currency == 'GBP' %}selected{% endif %}>£ GBP</option>
-              <option value="GHS" {% if client.currency == 'GHS' %}selected{% endif %}>₵ GHS</option>
-              <option value="KES" {% if client.currency == 'KES' %}selected{% endif %}>KSh KES</option>
-              <option value="ZAR" {% if client.currency == 'ZAR' %}selected{% endif %}>R ZAR</option>
+      <!-- Billing -->
+      <div class="card" style="padding:24px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Billing & Tax</p>
+        <div class="form-row cols-2" style="margin-bottom:0">
+          <div class="form-group">
+            <label class="form-label">Tax ID / VAT Number</label>
+            <input type="text" name="tax_id" class="form-input" value="{{ client.tax_id|default:'' }}" placeholder="RC-000000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Default Currency</label>
+            <select name="currency" class="form-select">
+              {% for code, label in currencies %}
+              <option value="{{ code }}" {% if client.currency == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
             </select>
           </div>
-          <div>
-            <label class="lbl">Tax ID / VAT Number</label>
-            <input type="text" name="tax_id" value="{{ client.tax_id|default:'' }}" placeholder="Optional" class="fi text-sm">
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Billing Address</label>
+            <textarea name="address" class="form-textarea" rows="3" placeholder="123 Business St, Lagos, Nigeria">{{ client.address|default:'' }}</textarea>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Contact person -->
-    <div class="card p-6 mb-5">
-      <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-5 flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center"><span class="text-[10px] font-black text-violet-600 dark:text-violet-400">3</span></div>
-        Primary Contact
-      </h2>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="lbl">Contact Name</label>
-          <input type="text" name="contact_name" value="{{ client.contact_name|default:'' }}" placeholder="Jane Doe" class="fi text-sm">
-        </div>
-        <div>
-          <label class="lbl">Contact Email</label>
-          <input type="email" name="contact_email" value="{{ client.contact_email|default:'' }}" placeholder="jane@company.com" class="fi text-sm">
+      <!-- Contact -->
+      <div class="card" style="padding:24px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Additional Info</p>
+        <div class="form-row cols-2" style="margin-bottom:0">
+          <div class="form-group">
+            <label class="form-label">Website</label>
+            <input type="url" name="website" class="form-input" value="{{ client.website|default:'' }}" placeholder="https://company.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Terms (days)</label>
+            <input type="number" name="payment_terms" class="form-input" value="{{ client.payment_terms|default:30 }}" min="0" max="365">
+          </div>
+          <div class="form-group" style="grid-column:1/-1">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-textarea" rows="3" placeholder="Internal notes about this client…">{{ client.notes|default:'' }}</textarea>
+          </div>
         </div>
       </div>
-      <div class="mt-4">
-        <label class="lbl">Notes</label>
-        <textarea name="notes" rows="2" placeholder="Any additional notes about this client…" class="fi text-sm mt-1">{{ client.notes|default:'' }}</textarea>
-      </div>
-    </div>
 
-    <div class="flex items-center justify-end gap-3">
-      <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}" class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">Cancel</a>
-      <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-colors">
-        {% if client %}Save Changes{% else %}Create Client{% endif %}
-      </button>
+      <!-- Actions -->
+      <div style="display:flex;gap:12px;justify-content:flex-end">
+        <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}" class="btn btn-secondary btn-lg">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-lg">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          {% if client %}Update Client{% else %}Add Client{% endif %}
+        </button>
+      </div>
     </div>
   </form>
-
 </div>
 {% endblock %}

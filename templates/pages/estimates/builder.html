@@ -1,143 +1,165 @@
 {% extends "base/layout_app.html" %}
 {% block title %}{% if estimate %}Edit Estimate{% else %}New Estimate{% endif %} — InvoiceFlow{% endblock %}
-
-{% block head %}
-<style>
-  .fi-sm{width:100%;padding:.375rem .6rem;border:1px solid #e2e8f0;border-radius:8px;font-size:.8rem;outline:none;background:#fff;color:#1e293b;transition:border-color .15s,box-shadow .15s}
-  .dark .fi-sm{background:#0d1117;border-color:#30363d;color:#f0f6fc}
-  .fi-sm:focus{border-color:#0d9488;box-shadow:0 0 0 3px rgba(13,148,136,.12)}
-</style>
-{% endblock %}
+{% block page_title %}{% if estimate %}Edit Estimate{% else %}New Estimate{% endif %}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto" x-data="estimateBuilder()" x-init="init()">
-  <form method="post" id="est-form" action="{% if estimate %}{% url 'invoices:estimate_edit' estimate.id %}{% else %}{% url 'invoices:estimate_create' %}{% endif %}">
-    {% csrf_token %}
+<div style="max-width:1200px"
+     x-data="invoiceBuilder({
+       items: {{ items_json|default:'[]'|safe }},
+       currency: '{{ estimate.currency|default:'NGN' }}',
+       taxMode: '{{ estimate.tax_mode|default:'exclusive' }}',
+       defaultTaxRate: {{ estimate.default_tax_rate|default:0 }},
+       discountType: '{{ estimate.discount_type|default:'flat' }}',
+       globalDiscount: {{ estimate.global_discount_value|default:0 }}
+     })">
 
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-      <div class="flex items-center gap-3">
-        <a href="{% url 'invoices:estimate_list' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-        </a>
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white">{% if estimate %}Edit Estimate {{ estimate.estimate_number }}{% else %}New Estimate{% endif %}</h1>
-      </div>
-      <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-teal-600/20">
-        {% if estimate %}Save Changes{% else %}Create Estimate{% endif %}
+  <div class="page-hdr">
+    <div>
+      <h1 class="page-title">{% if estimate %}Edit {{ estimate.estimate_number }}{% else %}New Estimate{% endif %}</h1>
+      <p class="page-sub">Create a professional quote for your client</p>
+    </div>
+    <div class="page-hdr-actions">
+      <a href="{% if estimate %}{% url 'invoices:estimate_detail' estimate.id %}{% else %}{% url 'invoices:estimate_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" form="estimateForm" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        {% if estimate %}Update Estimate{% else %}Create Estimate{% endif %}
       </button>
     </div>
+  </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-      <div class="lg:col-span-2 space-y-5">
+  <form id="estimateForm" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="items" :value="itemsJson">
 
-        <!-- Details card -->
-        <div class="card p-5 space-y-4">
-          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Estimate Details</h2>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="col-span-2">
-              <label class="lbl">Client <span class="text-rose-500">*</span></label>
-              <select name="client_id" required class="fi text-sm">
+    <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start">
+      <div style="display:flex;flex-direction:column;gap:20px">
+
+        <!-- Details -->
+        <div class="card" style="padding:24px">
+          <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Estimate Details</p>
+          <div class="form-row cols-2" style="margin-bottom:16px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Client *</label>
+              <select name="client_id" class="form-select" required>
                 <option value="">Select a client…</option>
-                {% for c in clients %}<option value="{{ c.id }}" {% if estimate and estimate.client.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                {% for c in clients %}
+                <option value="{{ c.id }}" {% if estimate.client_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
               </select>
             </div>
-            <div>
-              <label class="lbl">Issue Date</label>
-              <input type="date" name="issue_date" value="{{ estimate.issue_date|date:'Y-m-d'|default:today|date:'Y-m-d' }}" class="fi text-sm">
-            </div>
-            <div>
-              <label class="lbl">Expiry Date</label>
-              <input type="date" name="expiry_date" value="{{ estimate.expiry_date|date:'Y-m-d'|default:'' }}" class="fi text-sm">
-            </div>
-            <div>
-              <label class="lbl">Currency</label>
-              <select name="currency" class="fi text-sm">
-                <option value="NGN" {% if not estimate or estimate.currency == 'NGN' %}selected{% endif %}>₦ NGN</option>
-                <option value="USD" {% if estimate and estimate.currency == 'USD' %}selected{% endif %}>$ USD</option>
-                <option value="EUR" {% if estimate and estimate.currency == 'EUR' %}selected{% endif %}>€ EUR</option>
-                <option value="GBP" {% if estimate and estimate.currency == 'GBP' %}selected{% endif %}>£ GBP</option>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Currency</label>
+              <select name="currency" x-model="currency" class="form-select">
+                {% for code, label in currencies %}
+                <option value="{{ code }}" {% if estimate.currency == code %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
               </select>
+            </div>
+          </div>
+          <div class="form-row cols-2" style="margin-bottom:16px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Issue Date</label>
+              <input type="date" name="issue_date" class="form-input" value="{{ estimate.issue_date|date:'Y-m-d'|default:default_issue_date }}">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Expiry Date</label>
+              <input type="date" name="expiry_date" class="form-input" value="{{ estimate.expiry_date|date:'Y-m-d'|default:default_expiry_date }}">
+            </div>
+          </div>
+          <div class="form-row cols-2">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Tax Mode</label>
+              <select name="tax_mode" x-model="taxMode" class="form-select">
+                <option value="exclusive">Tax Exclusive</option>
+                <option value="inclusive">Tax Inclusive</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Default Tax Rate (%)</label>
+              <input type="number" name="default_tax_rate" x-model.number="defaultTaxRate" min="0" max="100" step="0.01" class="form-input" value="{{ estimate.default_tax_rate|default:0 }}">
             </div>
           </div>
         </div>
 
         <!-- Line items -->
-        <div class="card p-5">
-          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Line Items</h2>
-          <div class="grid grid-cols-12 gap-2 mb-2 px-1">
-            <div class="col-span-5 text-[10.5px] font-bold uppercase tracking-wide text-slate-400">Description</div>
-            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 text-right">Qty</div>
-            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 text-right">Rate</div>
-            <div class="col-span-2 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 text-right">Amount</div>
-            <div class="col-span-1"></div>
+        <div class="card" style="padding:24px">
+          <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Line Items</p>
+          <div style="overflow-x:auto;margin-bottom:12px">
+            <table style="width:100%;border-collapse:collapse">
+              <thead>
+                <tr>
+                  <th style="padding:8px 10px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle)">Description</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);width:80px">Qty</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);width:120px">Price</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);width:80px">Tax %</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);width:120px">Total</th>
+                  <th style="padding:8px 10px;border-bottom:1px solid var(--border);background:var(--bg-subtle);width:36px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(item, idx) in items" :key="item.id">
+                  <tr>
+                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)">
+                      <input type="text" x-model="item.description" placeholder="Item description" class="form-input" style="margin-bottom:4px">
+                      <input type="text" x-model="item.long_description" placeholder="Additional details (optional)" class="form-input" style="font-size:12px;color:var(--text-muted)">
+                    </td>
+                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)"><input type="number" x-model.number="item.quantity" min="0" step="0.001" class="form-input tabular" style="text-align:right"></td>
+                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)"><input type="number" x-model.number="item.unit_price" min="0" step="0.01" class="form-input tabular" style="text-align:right"></td>
+                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)"><input type="number" x-model.number="item.tax_rate" min="0" max="100" step="0.01" class="form-input tabular" style="text-align:right"></td>
+                    <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right"><span class="tabular" style="font-size:13.5px;font-weight:700;color:var(--text-primary)" x-text="fmt(itemSubtotal(item))"></span></td>
+                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)"><button type="button" @click="removeItem(idx)" class="btn btn-ghost btn-icon btn-sm" style="color:#ef4444"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
           </div>
-          <div class="space-y-2">
-            <template x-for="(item,i) in items" :key="item._id">
-              <div class="grid grid-cols-12 gap-2 items-center">
-                <div class="col-span-5"><input type="text" :name="`items[${i}][description]`" x-model="item.description" placeholder="Description" class="fi-sm"></div>
-                <div class="col-span-2"><input type="number" :name="`items[${i}][quantity]`" x-model.number="item.quantity" @input="calc(item)" min="0" step="any" class="fi-sm text-right"></div>
-                <div class="col-span-2"><input type="number" :name="`items[${i}][unit_price]`" x-model.number="item.unit_price" @input="calc(item)" min="0" step="any" class="fi-sm text-right"></div>
-                <div class="col-span-2 text-right text-sm font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(item.line_total)"></div>
-                <div class="col-span-1 flex justify-end"><button type="button" @click="rm(i)" class="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
-              </div>
-            </template>
-          </div>
-          <button type="button" @click="add()" class="mt-3 flex items-center gap-1.5 text-xs font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>Add Item
+          <button type="button" @click="addItem()" class="btn btn-outline btn-sm">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            Add Line Item
           </button>
-          <div class="mt-4 pt-4 border-t border-[var(--card-b)] flex justify-end">
-            <div class="w-56 space-y-1.5">
-              <div class="flex justify-between text-sm text-slate-500 dark:text-slate-400"><span>Subtotal</span><span x-text="fmt(subtotal)"></span></div>
-              <div class="flex items-center gap-2"><span class="text-sm text-slate-500 dark:text-slate-400 flex-1">Tax %</span><input type="number" name="tax_rate" x-model.number="taxRate" @input="calcT()" min="0" max="100" step="any" class="fi-sm w-16 text-right text-xs"></div>
-              <div class="flex justify-between text-sm text-slate-500 dark:text-slate-400"><span>Tax</span><span x-text="fmt(taxAmount)"></span></div>
-              <div class="flex justify-between font-bold text-slate-900 dark:text-white pt-1.5 border-t border-[var(--card-b)]"><span>Total</span><span x-text="fmt(total)"></span></div>
-            </div>
-          </div>
         </div>
 
         <!-- Notes -->
-        <div class="card p-5 space-y-4">
-          <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Notes & Terms</h2>
-          <div><label class="lbl">Client Note</label><textarea name="client_note" rows="3" class="fi text-sm">{{ estimate.client_note|default:'' }}</textarea></div>
-          <div><label class="lbl">Terms</label><textarea name="terms" rows="2" class="fi text-sm">{{ estimate.terms|default:'' }}</textarea></div>
-        </div>
-
-      </div>
-
-      <!-- Sidebar -->
-      <div class="space-y-4">
-        <div class="card p-4">
-          <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 mb-4">Summary</h3>
-          <div class="space-y-2">
-            <div class="flex justify-between text-sm"><span class="text-slate-500 dark:text-slate-400">Items</span><span class="font-semibold text-slate-700 dark:text-slate-300" x-text="items.length"></span></div>
-            <div class="flex justify-between text-sm"><span class="text-slate-500 dark:text-slate-400">Subtotal</span><span class="font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(subtotal)"></span></div>
-            <div class="flex justify-between text-sm"><span class="text-slate-500 dark:text-slate-400">Tax</span><span class="font-semibold text-slate-700 dark:text-slate-300 tabular-nums" x-text="fmt(taxAmount)"></span></div>
-            <div class="flex justify-between font-bold pt-2 border-t border-[var(--card-b)]"><span class="text-slate-900 dark:text-white">Total</span><span class="text-lg text-teal-600 dark:text-teal-400 tabular-nums" x-text="fmt(total)"></span></div>
+        <div class="card" style="padding:24px">
+          <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Notes</p>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Client Note</label>
+            <textarea name="client_memo" class="form-textarea" rows="3" placeholder="Thank you for the opportunity…">{{ estimate.client_memo|default:'' }}</textarea>
+          </div>
+          <div class="form-group" style="margin-top:16px;margin-bottom:0">
+            <label class="form-label">Terms & Conditions</label>
+            <textarea name="terms_conditions" class="form-textarea" rows="3">{{ estimate.terms_conditions|default:profile.terms_conditions|default:'' }}</textarea>
           </div>
         </div>
-        <button type="submit" class="w-full px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold rounded-xl transition-colors">
-          {% if estimate %}Save Changes{% else %}Create Estimate{% endif %}
+      </div>
+
+      <!-- Summary -->
+      <div style="position:sticky;top:80px;display:flex;flex-direction:column;gap:16px">
+        <div class="card" style="padding:24px">
+          <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Summary</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between">
+              <span style="font-size:13px;color:var(--text-muted)">Subtotal</span>
+              <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)" x-text="fmt(subtotal)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="font-size:13px;color:var(--text-muted)">Tax</span>
+              <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)" x-text="fmt(taxTotal)"></span>
+            </div>
+            <div class="divider" style="margin:4px 0"></div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="font-size:15px;font-weight:800;color:var(--text-primary)">Total</span>
+              <span class="tabular" style="font-size:22px;font-weight:900;color:var(--text-primary)" x-text="fmt(total)"></span>
+            </div>
+          </div>
+        </div>
+        <button type="submit" form="estimateForm" class="btn btn-primary btn-lg" style="width:100%;justify-content:center">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+          {% if estimate %}Update Estimate{% else %}Create Estimate{% endif %}
         </button>
+        <a href="{% if estimate %}{% url 'invoices:estimate_detail' estimate.id %}{% else %}{% url 'invoices:estimate_list' %}{% endif %}" class="btn btn-secondary" style="width:100%;justify-content:center">Cancel</a>
       </div>
     </div>
   </form>
 </div>
-
-<script>
-function estimateBuilder() {
-  return {
-    items:[], taxRate:0, subtotal:0, taxAmount:0, total:0, _uid:0,
-    init() {
-      const ex = {{ existing_items_json|default:'[]'|safe }};
-      this.items = ex.length ? ex.map(it => ({...it,_id:this._uid++,line_total:parseFloat(it.quantity||0)*parseFloat(it.unit_price||0)})) : [{_id:this._uid++,description:'',quantity:1,unit_price:0,line_total:0}];
-      this.taxRate = parseFloat('{{ estimate.tax_rate|default:0 }}') || 0;
-      this.calcT();
-    },
-    add(){ this.items.push({_id:this._uid++,description:'',quantity:1,unit_price:0,line_total:0}); },
-    rm(i){ if(this.items.length>1) { this.items.splice(i,1); this.calcT(); } },
-    calc(item){ item.line_total=(parseFloat(item.quantity)||0)*(parseFloat(item.unit_price)||0); this.calcT(); },
-    calcT(){ this.subtotal=this.items.reduce((s,it)=>s+(parseFloat(it.line_total)||0),0); this.taxAmount=this.subtotal*(parseFloat(this.taxRate)||0)/100; this.total=this.subtotal+this.taxAmount; },
-    fmt(v){ return Number(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  };
-}
-</script>
 {% endblock %}

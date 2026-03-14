@@ -1,112 +1,96 @@
 {% extends "base/layout_app.html" %}
 {% block title %}Estimates — InvoiceFlow{% endblock %}
-
-{% block head %}
-<style>
-  .s-draft{background:#f1f5f9;color:#475569}.s-sent{background:#ede9fe;color:#7c3aed}.s-approved{background:#dcfce7;color:#15803d}.s-declined{background:#fee2e2;color:#b91c1c}.s-expired{background:#fef3c7;color:#92400e}.s-viewed{background:#dbeafe;color:#1d4ed8}.s-void{background:#f1f5f9;color:#94a3b8}
-  .dark .s-draft{background:rgba(100,116,139,.15);color:#94a3b8}.dark .s-sent{background:rgba(124,58,237,.15);color:#a78bfa}.dark .s-approved{background:rgba(21,128,61,.15);color:#4ade80}.dark .s-declined{background:rgba(185,28,28,.15);color:#f87171}.dark .s-expired{background:rgba(146,64,14,.15);color:#fbbf24}.dark .s-viewed{background:rgba(29,78,216,.15);color:#60a5fa}
-</style>
-{% endblock %}
+{% block page_title %}Estimates{% endblock %}
 
 {% block content %}
-<div class="max-w-[1440px] mx-auto">
-
-  <!-- Header -->
-  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+<div style="max-width:1400px">
+  <div class="page-hdr">
     <div>
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Estimates</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ stats.total_count }} estimate{{ stats.total_count|pluralize }} · {{ stats.conversion_rate|floatformat:0 }}% conversion rate</p>
+      <h1 class="page-title">Estimates</h1>
+      <p class="page-sub">{{ stats.total_count|default:0 }} estimate{{ stats.total_count|pluralize }}</p>
     </div>
-    <a href="{% url 'invoices:estimate_create' %}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-teal-600/20">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-      New Estimate
-    </a>
-  </div>
-
-  <!-- KPI strip -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="card p-4">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Total Estimates</p>
-      <p class="text-xl font-bold text-slate-900 dark:text-white">{{ stats.total_count }}</p>
-    </div>
-    <div class="card p-4">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Accepted Value</p>
-      <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ stats.accepted_value|floatformat:0 }}</p>
-    </div>
-    <div class="card p-4">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Pending Value</p>
-      <p class="text-xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">{{ stats.pending_value|floatformat:0 }}</p>
-    </div>
-    <div class="card p-4">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Conversion Rate</p>
-      <p class="text-xl font-bold text-indigo-600 dark:text-indigo-400">{{ stats.conversion_rate|floatformat:0 }}%</p>
+    <div class="page-hdr-actions">
+      <a href="{% url 'invoices:estimate_create' %}" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        New Estimate
+      </a>
     </div>
   </div>
 
-  <!-- Main card -->
-  <div class="card overflow-hidden">
-    <!-- Status tabs -->
-    <div class="flex border-b border-[var(--card-b)] overflow-x-auto">
+  <div class="card">
+    <!-- Tabs -->
+    <div class="tab-nav" style="padding:0 20px">
       {% for tab in status_tabs %}
-      <a href="?status={{ tab.key }}{% if search_query %}&q={{ search_query }}{% endif %}"
-         class="flex items-center gap-1.5 px-4 py-3 text-xs font-semibold whitespace-nowrap border-b-2 -mb-px transition-colors
-         {% if current_status == tab.key %}border-teal-600 text-teal-700 dark:text-teal-400 dark:border-teal-400{% else %}border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200{% endif %}">
-        {{ tab.label }}
-        {% if tab.count > 0 %}<span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {% if current_status == tab.key %}bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400{% else %}bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500{% endif %}">{{ tab.count }}</span>{% endif %}
+      <a href="?status={{ tab.key }}&q={{ search_query|urlencode }}"
+         class="tab-item {% if current_status == tab.key %}active{% endif %}">
+        {{ tab.label }}<span class="tab-count">{{ tab.count }}</span>
       </a>
       {% endfor %}
     </div>
 
-    <!-- Search -->
-    <div class="px-4 py-3 border-b border-[var(--card-b)] bg-slate-50/40 dark:bg-slate-900/20">
-      <form method="get" class="flex items-center gap-2">
+    <!-- Filter -->
+    <div class="filter-bar">
+      <form method="get" style="display:contents">
         <input type="hidden" name="status" value="{{ current_status }}">
-        <div class="relative flex-1 max-w-sm">
-          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input type="text" name="q" value="{{ search_query }}" placeholder="Search estimates…" class="fi pl-9 h-8 text-xs">
+        <div class="search-wrap">
+          <svg class="icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input type="text" name="q" value="{{ search_query }}" class="search-field" placeholder="Search estimates…">
         </div>
-        <button type="submit" class="px-3 h-8 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-lg transition-colors">Search</button>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        {% if search_query or current_status %}
+        <a href="{% url 'invoices:estimate_list' %}" class="btn btn-ghost btn-sm">Clear</a>
+        {% endif %}
       </form>
     </div>
 
     {% if estimates %}
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-50/60 dark:bg-slate-900/30">
-          <tr class="border-b border-[var(--card-b)]">
-            <th class="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Estimate</th>
-            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Client</th>
-            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Status</th>
-            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Created</th>
-            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Amount</th>
-            <th class="px-4 py-3 w-10"></th>
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Estimate #</th>
+            <th>Client</th>
+            <th>Issue Date</th>
+            <th>Expiry</th>
+            <th style="text-align:right">Amount</th>
+            <th>Status</th>
+            <th></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-[var(--card-b)]">
+        <tbody>
           {% for est in estimates %}
-          <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30 transition-colors group">
-            <td class="px-5 py-3.5">
-              <a href="{% url 'invoices:estimate_detail' est.id %}" class="font-bold text-teal-700 dark:text-teal-400 hover:underline text-sm tabular-nums">{{ est.estimate_number }}</a>
+          <tr onclick="window.location='{% url 'invoices:estimate_detail' est.id %}'" style="cursor:pointer">
+            <td><a href="{% url 'invoices:estimate_detail' est.id %}" style="font-weight:700;color:var(--text-primary);font-size:13px;text-decoration:none">{{ est.estimate_number }}</a></td>
+            <td>
+              <div style="font-size:13px;color:var(--text-primary);font-weight:500">{{ est.client.name }}</div>
+              <div style="font-size:11px;color:var(--text-muted)">{{ est.client.email }}</div>
             </td>
-            <td class="px-4 py-3.5">
-              <div class="flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0">{{ est.client.name|slice:":1"|upper }}</div>
-                <span class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate max-w-[140px]">{{ est.client.name }}</span>
-              </div>
+            <td><span style="font-size:12.5px;color:var(--text-muted)">{{ est.issue_date|date:"M d, Y" }}</span></td>
+            <td>
+              <span style="font-size:12.5px;color:{% if est.is_expired %}#dc2626{% else %}var(--text-muted){% endif %}">
+                {{ est.expiry_date|date:"M d, Y"|default:"—" }}
+              </span>
             </td>
-            <td class="px-4 py-3.5"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10.5px] font-bold s-{{ est.status }}">{{ est.get_status_display }}</span></td>
-            <td class="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400 tabular-nums">{{ est.created_at|date:"M j, Y" }}</td>
-            <td class="px-4 py-3.5 text-right"><span class="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ est.total_amount|floatformat:2 }}</span></td>
-            <td class="px-4 py-3.5">
-              <div x-data="{o:false}" class="relative flex justify-end">
-                <button @click="o=!o" @click.stop class="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">
-                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4z"/></svg>
+            <td style="text-align:right"><span class="tabular" style="font-size:13.5px;font-weight:700;color:var(--text-primary)">{{ est.currency_symbol }}{{ est.total_amount|floatformat:2 }}</span></td>
+            <td><span class="badge b-{{ est.status|lower }}"><span class="badge-dot"></span>{{ est.get_status_display }}</span></td>
+            <td onclick="event.stopPropagation()">
+              <div x-data="{open:false}" class="relative" style="display:flex;justify-content:flex-end">
+                <button @click="open=!open" class="btn btn-ghost btn-icon btn-sm">
+                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
                 </button>
-                <div x-show="o" x-cloak @click.outside="o=false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="dd w-44" style="right:0;top:calc(100% + 4px);z-index:50">
-                  <div class="p-1.5">
-                    <a href="{% url 'invoices:estimate_detail' est.id %}" class="dd-item rounded-md text-xs">View</a>
-                    <a href="{% url 'invoices:estimate_edit' est.id %}" class="dd-item rounded-md text-xs">Edit</a>
-                    {% if est.status == 'approved' %}<a href="{% url 'invoices:convert_estimate' est.id %}" class="dd-item rounded-md text-xs">Convert to Invoice</a>{% endif %}
+                <div x-show="open" x-cloak @click.outside="open=false" class="dropdown" style="right:0;min-width:180px"
+                     x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+                  <div style="padding:6px">
+                    <a href="{% url 'invoices:estimate_detail' est.id %}" class="dd-item">View</a>
+                    {% if est.status == 'draft' or est.status == 'sent' %}
+                    <a href="{% url 'invoices:estimate_edit' est.id %}" class="dd-item">Edit</a>
+                    {% endif %}
+                    {% if est.status == 'accepted' %}
+                    <a href="{% url 'invoices:estimate_convert' est.id %}" class="dd-item">
+                      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+                      Convert to Invoice
+                    </a>
+                    {% endif %}
                   </div>
                 </div>
               </div>
@@ -116,22 +100,26 @@
         </tbody>
       </table>
     </div>
-    {% else %}
-    <div class="py-16 flex flex-col items-center text-center">
-      <div class="w-14 h-14 rounded-2xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mb-4">
-        <svg class="w-7 h-7 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+
+    {% if estimates.has_other_pages %}
+    <div class="pagination">
+      <span style="font-size:12.5px;color:var(--text-muted)">Showing {{ estimates.start_index }}–{{ estimates.end_index }} of {{ estimates.paginator.count }}</span>
+      <div class="page-links">
+        {% if estimates.has_previous %}<a href="?page={{ estimates.previous_page_number }}&status={{ current_status }}&q={{ search_query|urlencode }}" class="pg-btn"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></a>{% endif %}
+        {% for i in estimates.paginator.page_range %}{% if i == estimates.number %}<span class="pg-btn current">{{ i }}</span>{% elif i >= estimates.number|add:"-2" and i <= estimates.number|add:"2" %}<a href="?page={{ i }}&status={{ current_status }}&q={{ search_query|urlencode }}" class="pg-btn">{{ i }}</a>{% endif %}{% endfor %}
+        {% if estimates.has_next %}<a href="?page={{ estimates.next_page_number }}&status={{ current_status }}&q={{ search_query|urlencode }}" class="pg-btn"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></a>{% endif %}
       </div>
-      <h3 class="text-base font-bold text-slate-800 dark:text-slate-200 mb-1">No estimates{% if current_status != 'all' %} with this status{% endif %}</h3>
-      {% if not current_status or current_status == 'all' %}
-      <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">Create professional estimates to send to clients.</p>
-      <a href="{% url 'invoices:estimate_create' %}" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-        New Estimate
-      </a>
-      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon"><svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+      <p class="empty-title">No estimates yet</p>
+      <p class="empty-desc">Send a quote to win new business.</p>
+      <a href="{% url 'invoices:estimate_create' %}" class="btn btn-primary">Create Estimate</a>
     </div>
     {% endif %}
   </div>
-
 </div>
 {% endblock %}

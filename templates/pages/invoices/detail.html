@@ -1,290 +1,405 @@
 {% extends "base/layout_app.html" %}
 {% block title %}{{ invoice.invoice_number }} — InvoiceFlow{% endblock %}
-
-{% block head %}
-<style>
-  .s-draft     {background:#f1f5f9;color:#475569}
-  .s-sent      {background:#ede9fe;color:#7c3aed}
-  .s-viewed    {background:#dbeafe;color:#1d4ed8}
-  .s-part_paid {background:#ccfbf1;color:#0f766e}
-  .s-paid      {background:#dcfce7;color:#15803d}
-  .s-overdue   {background:#fee2e2;color:#b91c1c}
-  .s-void      {background:#f1f5f9;color:#94a3b8}
-  .dark .s-draft     {background:rgba(100,116,139,.15);color:#94a3b8}
-  .dark .s-sent      {background:rgba(124,58,237,.15);color:#a78bfa}
-  .dark .s-viewed    {background:rgba(29,78,216,.15);color:#60a5fa}
-  .dark .s-part_paid {background:rgba(15,118,110,.15);color:#2dd4bf}
-  .dark .s-paid      {background:rgba(21,128,61,.15);color:#4ade80}
-  .dark .s-overdue   {background:rgba(185,28,28,.15);color:#f87171}
-  .tl-dot { width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px; }
-</style>
-{% endblock %}
+{% block page_title %}{{ invoice.invoice_number }}{% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto">
+<div style="max-width:1100px" x-data="{voidModal:false,payModal:false,sendModal:false}">
 
-  <!-- Header -->
-  <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
-    <div class="flex items-start gap-3">
-      <a href="{% url 'invoices:invoice_list' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors mt-0.5">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      </a>
-      <div>
-        <div class="flex items-center gap-3 flex-wrap">
-          <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">{{ invoice.invoice_number }}</h1>
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold s-{{ invoice.status }}">{{ invoice.get_status_display }}</span>
-        </div>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          <a href="{% url 'invoices:client_detail' invoice.client.id %}" class="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">{{ invoice.client.name }}</a>
-          · Issued {{ invoice.issue_date|date:"M j, Y" }} · Due {{ invoice.due_date|date:"M j, Y" }}
-        </p>
+  <!-- Breadcrumb + header -->
+  <div class="page-hdr">
+    <div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <a href="{% url 'invoices:invoice_list' %}" style="font-size:12.5px;color:var(--text-muted);font-weight:500">Invoices</a>
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span style="font-size:12.5px;color:var(--text-muted)">{{ invoice.invoice_number }}</span>
+      </div>
+      <h1 class="page-title">{{ invoice.invoice_number }}</h1>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+        <span class="badge b-{{ invoice.status|lower }}"><span class="badge-dot"></span>{{ invoice.get_status_display }}</span>
+        {% if invoice.is_overdue %}<span class="badge b-overdue">{{ invoice.days_overdue }} days overdue</span>{% endif %}
+        <span style="font-size:12px;color:var(--text-muted)">{{ invoice.client.name }}</span>
       </div>
     </div>
-    <!-- Action buttons -->
-    <div class="flex items-center gap-2 flex-wrap">
-      {% if invoice.status == 'draft' %}
-      <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+    <div class="page-hdr-actions">
+      {% if can_edit %}
+      <a href="{% url 'invoices:invoice_edit' invoice.id %}" class="btn btn-secondary btn-sm">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
         Edit
       </a>
       {% endif %}
-      <a href="{% url 'invoices:invoice_preview' invoice.id %}" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-        Preview
-      </a>
-      {% if invoice.status != 'paid' and invoice.status != 'void' %}
-      <a href="{% url 'invoices:send_invoice' invoice.id %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+      {% if can_send %}
+      <button @click="sendModal=true" class="btn btn-secondary btn-sm">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
         Send
-      </a>
+      </button>
       {% endif %}
-      {% if invoice.amount_due > 0 and invoice.status != 'draft' %}
-      <a href="{% url 'invoices:record_offline_payment' invoice.id %}"
-         class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-emerald-600/20">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      {% if can_record_payment %}
+      <button @click="payModal=true" class="btn btn-primary btn-sm">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
         Record Payment
-      </a>
+      </button>
       {% endif %}
-      <div x-data="{o:false}" class="relative">
-        <button @click="o=!o" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4zm0 4a2 2 0 110-4 2 2 0 010 4z"/></svg>
+
+      <div x-data="{open:false}" class="relative">
+        <button @click="open=!open" class="btn btn-secondary btn-sm btn-icon">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
         </button>
-        <div x-show="o" x-cloak @click.outside="o=false" x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="dd w-44" style="right:0;top:calc(100% + 6px)">
-          <div class="p-1.5">
-            <a href="{% url 'invoices:invoice_duplicate' invoice.id %}" class="dd-item rounded-md text-xs">Duplicate Invoice</a>
-            {% if invoice.status != 'paid' %}<a href="{% url 'invoices:share_invoice' invoice.id %}" class="dd-item rounded-md text-xs">Share Link</a>{% endif %}
+        <div x-show="open" x-cloak @click.outside="open=false" class="dropdown" style="right:0;min-width:190px"
+             x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+          <div style="padding:6px">
+            <a href="{% url 'invoices:invoice_preview' invoice.id %}" target="_blank" class="dd-item">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              Preview PDF
+            </a>
+            <a href="{% url 'invoices:invoice_download_pdf' invoice.id %}" class="dd-item">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              Download PDF
+            </a>
+            <a href="{% url 'invoices:invoice_duplicate' invoice.id %}" class="dd-item">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              Duplicate
+            </a>
+            {% if can_void %}
             <div class="dd-sep"></div>
-            {% if invoice.status == 'draft' %}
-            <form method="post" action="{% url 'invoices:invoice_void' invoice.id %}">{% csrf_token %}<button type="submit" class="dd-item danger rounded-md text-xs w-full text-left">Void Invoice</button></form>
+            <button @click="voidModal=true;open=false" class="dd-item danger" style="width:100%">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+              Void Invoice
+            </button>
             {% endif %}
-            <form method="post" action="{% url 'invoices:invoice_delete' invoice.id %}" onsubmit="return confirm('Delete this invoice?')">{% csrf_token %}<button type="submit" class="dd-item danger rounded-md text-xs w-full text-left">Delete</button></form>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+  <div style="display:grid;grid-template-columns:1fr 300px;gap:20px">
 
-    <!-- LEFT: Invoice body -->
-    <div class="lg:col-span-2 space-y-5">
+    <!-- Main invoice -->
+    <div style="display:flex;flex-direction:column;gap:20px">
 
       <!-- Invoice preview card -->
-      <div class="card p-6 sm:p-8">
+      <div class="card" style="padding:40px">
         <!-- Header -->
-        <div class="flex justify-between items-start mb-8">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px">
           <div>
-            <p class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">From</p>
-            {% if invoice.workspace.logo %}<img src="{{ invoice.workspace.logo.url }}" alt="Logo" class="h-10 mb-2 object-contain">{% endif %}
-            <p class="text-base font-bold text-slate-900 dark:text-white">{{ invoice.workspace.name }}</p>
-            {% if invoice.workspace.address %}<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 whitespace-pre-line">{{ invoice.workspace.address }}</p>{% endif %}
+            <h2 style="font-size:28px;font-weight:900;color:var(--text-primary);letter-spacing:-.5px">INVOICE</h2>
+            <p style="font-size:14px;color:var(--text-muted);margin-top:4px">{{ invoice.invoice_number }}</p>
           </div>
-          <div class="text-right">
-            <p class="text-2xl font-black text-indigo-600 dark:text-indigo-400">INVOICE</p>
-            <p class="text-sm font-bold text-slate-700 dark:text-slate-300 mt-1"># {{ invoice.invoice_number }}</p>
+          <div style="text-align:right">
+            {% if workspace.logo %}
+            <img src="{{ workspace.logo.url }}" alt="{{ workspace.name }}" style="height:48px;margin-bottom:8px;margin-left:auto">
+            {% endif %}
+            <p style="font-size:15px;font-weight:800;color:var(--text-primary)">{{ workspace.name }}</p>
           </div>
         </div>
 
-        <!-- Bill To + Dates -->
-        <div class="grid grid-cols-2 gap-8 mb-8">
+        <!-- From / To -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:40px">
           <div>
-            <p class="text-[10.5px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">Bill To</p>
-            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ invoice.client.name }}</p>
-            {% if invoice.client.billing_address %}<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 whitespace-pre-line">{{ invoice.client.billing_address }}</p>{% endif %}
-            {% if invoice.client.email %}<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{{ invoice.client.email }}</p>{% endif %}
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:8px">From</p>
+            <p style="font-size:14px;font-weight:700;color:var(--text-primary)">{{ workspace.name }}</p>
+            {% if workspace.address %}<p style="font-size:13px;color:var(--text-secondary);margin-top:4px;white-space:pre-line">{{ workspace.address }}</p>{% endif %}
           </div>
-          <div class="text-right">
-            <div class="space-y-2">
-              <div><p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Issue Date</p><p class="text-sm text-slate-700 dark:text-slate-300">{{ invoice.issue_date|date:"M j, Y" }}</p></div>
-              <div><p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Due Date</p><p class="text-sm font-semibold {% if invoice.status == 'overdue' %}text-rose-600 dark:text-rose-400{% else %}text-slate-700 dark:text-slate-300{% endif %}">{{ invoice.due_date|date:"M j, Y" }}</p></div>
-              {% if invoice.po_number %}<div><p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">PO Number</p><p class="text-sm text-slate-700 dark:text-slate-300">{{ invoice.po_number }}</p></div>{% endif %}
-            </div>
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:8px">Bill To</p>
+            <p style="font-size:14px;font-weight:700;color:var(--text-primary)">{{ invoice.client.name }}</p>
+            {% if invoice.client.email %}<p style="font-size:13px;color:var(--text-secondary);margin-top:2px">{{ invoice.client.email }}</p>{% endif %}
+            {% if invoice.client.phone %}<p style="font-size:13px;color:var(--text-secondary);margin-top:2px">{{ invoice.client.phone }}</p>{% endif %}
+            {% if invoice.client.address %}<p style="font-size:13px;color:var(--text-secondary);margin-top:4px;white-space:pre-line">{{ invoice.client.address }}</p>{% endif %}
           </div>
         </div>
 
-        <!-- Line items table -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b-2 border-slate-200 dark:border-slate-700">
-                <th class="text-left py-2.5 font-bold text-[10.5px] uppercase tracking-wide text-slate-400 dark:text-slate-500 w-1/2">Description</th>
-                <th class="text-right py-2.5 font-bold text-[10.5px] uppercase tracking-wide text-slate-400 dark:text-slate-500 w-1/6">Qty</th>
-                <th class="text-right py-2.5 font-bold text-[10.5px] uppercase tracking-wide text-slate-400 dark:text-slate-500 w-1/6">Rate</th>
-                <th class="text-right py-2.5 font-bold text-[10.5px] uppercase tracking-wide text-slate-400 dark:text-slate-500 w-1/6">Amount</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-              {% for item in invoice.items.all %}
-              <tr>
-                <td class="py-3">
-                  <p class="font-medium text-slate-800 dark:text-slate-200">{{ item.description }}</p>
-                  {% if item.unit %}<p class="text-xs text-slate-400 dark:text-slate-500">{{ item.unit }}</p>{% endif %}
-                </td>
-                <td class="py-3 text-right text-slate-600 dark:text-slate-400 tabular-nums">{{ item.quantity }}</td>
-                <td class="py-3 text-right text-slate-600 dark:text-slate-400 tabular-nums">{{ item.unit_price|floatformat:2 }}</td>
-                <td class="py-3 text-right font-semibold text-slate-800 dark:text-slate-200 tabular-nums">{{ item.line_total|floatformat:2 }}</td>
-              </tr>
-              {% empty %}
-              <tr><td colspan="4" class="py-8 text-center text-slate-400 dark:text-slate-500 text-sm">No line items</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <!-- Dates -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:16px 20px;background:var(--bg-subtle);border-radius:10px;margin-bottom:32px">
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:4px">Issue Date</p>
+            <p style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ invoice.issue_date|date:"M d, Y" }}</p>
+          </div>
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:4px">Due Date</p>
+            <p style="font-size:13.5px;font-weight:600;color:{% if invoice.is_overdue %}#dc2626{% else %}var(--text-primary){% endif %}">{{ invoice.due_date|date:"M d, Y" }}</p>
+          </div>
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);margin-bottom:4px">Currency</p>
+            <p style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ invoice.currency }}</p>
+          </div>
         </div>
+
+        <!-- Line items -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+          <thead>
+            <tr style="background:var(--bg-subtle)">
+              <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border)">Item</th>
+              <th style="padding:10px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);width:80px">Qty</th>
+              <th style="padding:10px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);width:120px">Price</th>
+              <th style="padding:10px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);width:80px">Tax</th>
+              <th style="padding:10px 14px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);width:120px">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+              <td style="padding:12px 14px;border-bottom:1px solid var(--border)">
+                <p style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ item.description }}</p>
+                {% if item.long_description %}<p style="font-size:12px;color:var(--text-muted);margin-top:3px">{{ item.long_description }}</p>{% endif %}
+              </td>
+              <td style="padding:12px 14px;text-align:right;border-bottom:1px solid var(--border)"><span class="tabular" style="font-size:13px;color:var(--text-secondary)">{{ item.quantity }}</span></td>
+              <td style="padding:12px 14px;text-align:right;border-bottom:1px solid var(--border)"><span class="tabular" style="font-size:13px;color:var(--text-secondary)">{{ invoice.currency_symbol }}{{ item.unit_price|floatformat:2 }}</span></td>
+              <td style="padding:12px 14px;text-align:right;border-bottom:1px solid var(--border)"><span class="tabular" style="font-size:13px;color:var(--text-secondary)">{{ item.tax_rate }}%</span></td>
+              <td style="padding:12px 14px;text-align:right;border-bottom:1px solid var(--border)"><span class="tabular" style="font-size:13.5px;font-weight:700;color:var(--text-primary)">{{ invoice.currency_symbol }}{{ item.total|floatformat:2 }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
 
         <!-- Totals -->
-        <div class="mt-6 flex justify-end">
-          <div class="w-64 space-y-2">
-            <div class="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-              <span>Subtotal</span><span class="tabular-nums">{{ invoice.currency }} {{ invoice.subtotal|floatformat:2 }}</span>
+        <div style="display:flex;justify-content:flex-end">
+          <div style="width:280px">
+            <div style="display:flex;justify-content:space-between;padding:8px 0">
+              <span style="font-size:13px;color:var(--text-muted)">Subtotal</span>
+              <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ invoice.currency_symbol }}{{ invoice.subtotal|floatformat:2 }}</span>
             </div>
-            {% if invoice.global_discount_value > 0 %}
-            <div class="flex justify-between text-sm text-rose-600 dark:text-rose-400">
-              <span>Discount</span><span class="tabular-nums">-{{ invoice.currency }} {{ invoice.discount_amount|floatformat:2 }}</span>
-            </div>
-            {% endif %}
-            {% if invoice.tax_amount > 0 %}
-            <div class="flex justify-between text-sm text-slate-600 dark:text-slate-400">
-              <span>Tax ({{ invoice.default_tax_rate }}%)</span><span class="tabular-nums">{{ invoice.currency }} {{ invoice.tax_amount|floatformat:2 }}</span>
+            {% if invoice.discount_total > 0 %}
+            <div style="display:flex;justify-content:space-between;padding:8px 0">
+              <span style="font-size:13px;color:var(--text-muted)">Discount</span>
+              <span class="tabular" style="font-size:13.5px;color:#dc2626">-{{ invoice.currency_symbol }}{{ invoice.discount_total|floatformat:2 }}</span>
             </div>
             {% endif %}
-            <div class="flex justify-between font-bold text-base text-slate-900 dark:text-white pt-2 border-t border-slate-200 dark:border-slate-700">
-              <span>Total</span><span class="tabular-nums">{{ invoice.currency }} {{ invoice.total_amount|floatformat:2 }}</span>
+            {% if invoice.tax_total > 0 %}
+            <div style="display:flex;justify-content:space-between;padding:8px 0">
+              <span style="font-size:13px;color:var(--text-muted)">Tax</span>
+              <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ invoice.currency_symbol }}{{ invoice.tax_total|floatformat:2 }}</span>
+            </div>
+            {% endif %}
+            <div class="divider" style="margin:8px 0"></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0">
+              <span style="font-size:15px;font-weight:800;color:var(--text-primary)">Total</span>
+              <span class="tabular" style="font-size:22px;font-weight:900;color:var(--text-primary)">{{ invoice.currency_symbol }}{{ invoice.total_amount|floatformat:2 }}</span>
             </div>
             {% if invoice.amount_paid > 0 %}
-            <div class="flex justify-between text-sm text-emerald-600 dark:text-emerald-400">
-              <span>Amount Paid</span><span class="tabular-nums">-{{ invoice.currency }} {{ invoice.amount_paid|floatformat:2 }}</span>
+            <div style="display:flex;justify-content:space-between;padding:8px 0">
+              <span style="font-size:13px;color:var(--text-muted)">Paid</span>
+              <span class="tabular" style="font-size:13.5px;color:#10b981;font-weight:600">-{{ invoice.currency_symbol }}{{ invoice.amount_paid|floatformat:2 }}</span>
             </div>
-            <div class="flex justify-between font-bold text-sm pt-1 border-t border-slate-200 dark:border-slate-700 {% if invoice.amount_due > 0 %}text-rose-600 dark:text-rose-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %}">
-              <span>Balance Due</span><span class="tabular-nums">{{ invoice.currency }} {{ invoice.amount_due|floatformat:2 }}</span>
+            <div style="display:flex;justify-content:space-between;padding:10px 16px;background:#fff7ed;border-radius:10px;margin-top:4px">
+              <span style="font-size:14px;font-weight:700;color:#c2410c">Balance Due</span>
+              <span class="tabular" style="font-size:18px;font-weight:900;color:#c2410c">{{ invoice.currency_symbol }}{{ invoice.amount_due|floatformat:2 }}</span>
             </div>
             {% endif %}
           </div>
         </div>
 
-        <!-- Notes -->
         {% if invoice.client_memo %}
-        <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
-          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1.5">Note to Client</p>
-          <p class="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-line">{{ invoice.client_memo }}</p>
+        <div style="margin-top:32px;padding:16px 20px;background:var(--bg-subtle);border-radius:10px">
+          <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">Notes</p>
+          <p style="font-size:13px;color:var(--text-secondary);white-space:pre-line">{{ invoice.client_memo }}</p>
         </div>
         {% endif %}
-        {% if invoice.payment_instructions %}
-        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-          <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1.5">Payment Instructions</p>
-          <p class="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-line">{{ invoice.payment_instructions }}</p>
+
+        {% if invoice.terms_conditions %}
+        <div style="margin-top:16px;padding:16px 20px;background:var(--bg-subtle);border-radius:10px">
+          <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">Terms & Conditions</p>
+          <p style="font-size:13px;color:var(--text-secondary);white-space:pre-line">{{ invoice.terms_conditions }}</p>
         </div>
         {% endif %}
       </div>
 
-      <!-- Payments received -->
-      {% if invoice.payments.all %}
-      <div class="card p-5">
-        <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Payments Received</h2>
-        <div class="space-y-2">
-          {% for pmt in invoice.payments.all %}
-          <div class="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-100 dark:border-emerald-800/30">
-            <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
-              <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <!-- Payments -->
+      {% if payments %}
+      <div class="card">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border)">
+          <p style="font-size:14px;font-weight:700;color:var(--text-primary)">Payment History</p>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th style="text-align:right">Amount</th></tr></thead>
+          <tbody>
+            {% for pmt in payments %}
+            <tr>
+              <td><span style="font-size:13px">{{ pmt.payment_date|date:"M d, Y" }}</span></td>
+              <td><span class="badge b-info">{{ pmt.get_payment_method_display }}</span></td>
+              <td><span style="font-size:12.5px;color:var(--text-muted)">{{ pmt.transaction_id|default:"—" }}</span></td>
+              <td style="text-align:right"><span class="tabular" style="font-size:13.5px;font-weight:700;color:#10b981">{{ invoice.currency_symbol }}{{ pmt.amount|floatformat:2 }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- Activity -->
+      {% if activities %}
+      <div class="card" style="padding:24px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Activity</p>
+        <div>
+          {% for act in activities %}
+          <div class="activity-item">
+            <div class="activity-dot">
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-emerald-800 dark:text-emerald-300">{{ invoice.currency }} {{ pmt.amount|floatformat:2 }}</p>
-              <p class="text-xs text-emerald-600 dark:text-emerald-400">{{ pmt.payment_date|date:"M j, Y" }} · {{ pmt.get_payment_method_display }}</p>
+            <div style="min-width:0;flex:1">
+              <p style="font-size:13px;color:var(--text-primary);font-weight:500">{{ act.action }}</p>
+              {% if act.details %}<p style="font-size:12px;color:var(--text-muted);margin-top:2px">{{ act.details }}</p>{% endif %}
+              <p style="font-size:11px;color:var(--text-muted);margin-top:3px">{{ act.created_at|date:"M d, Y H:i" }} {% if act.user %}by {{ act.user.get_full_name|default:act.user.username }}{% endif %}</p>
             </div>
-            {% if pmt.notes %}<p class="text-xs text-slate-500 dark:text-slate-400 truncate max-w-xs">{{ pmt.notes }}</p>{% endif %}
           </div>
           {% endfor %}
         </div>
       </div>
       {% endif %}
+    </div>
 
-    </div><!-- end main col -->
+    <!-- Sidebar panel -->
+    <div style="display:flex;flex-direction:column;gap:16px">
 
-    <!-- RIGHT SIDEBAR -->
-    <div class="space-y-4">
+      <!-- Payment progress -->
+      <div class="card" style="padding:20px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:16px">Payment Status</p>
+        <div style="text-align:center;margin-bottom:16px">
+          <p class="tabular" style="font-size:28px;font-weight:900;color:var(--text-primary)">{{ invoice.currency_symbol }}{{ invoice.total_amount|floatformat:2 }}</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:4px">Total Invoice</p>
+        </div>
+        {% if invoice.total_amount > 0 %}
+        <div class="progress" style="margin-bottom:10px">
+          <div class="progress-bar {% if invoice.payment_progress >= 100 %}green{% elif invoice.payment_progress > 0 %}amber{% endif %}" style="width:{{ invoice.payment_progress }}%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+          <span>{{ invoice.payment_progress }}% paid</span>
+          <span>{{ invoice.currency_symbol }}{{ invoice.amount_due|floatformat:2 }} due</span>
+        </div>
+        {% endif %}
+        {% if can_record_payment %}
+        <button @click="payModal=true" class="btn btn-success" style="width:100%;justify-content:center;margin-top:16px">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Record Payment
+        </button>
+        {% endif %}
+      </div>
 
-      <!-- Status card -->
-      <div class="card p-5">
-        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-4">Financial Summary</h3>
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-slate-500 dark:text-slate-400">Total Amount</span>
-            <span class="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ invoice.currency }} {{ invoice.total_amount|floatformat:2 }}</span>
+      <!-- Details -->
+      <div class="card" style="padding:20px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:14px">Details</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Client</p>
+            <a href="{% url 'invoices:client_detail' invoice.client.id %}" style="font-size:13px;font-weight:600;color:var(--brand-600)">{{ invoice.client.name }}</a>
           </div>
-          {% if invoice.amount_paid > 0 %}
-          <div class="flex justify-between items-center">
-            <span class="text-sm text-slate-500 dark:text-slate-400">Paid</span>
-            <span class="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ invoice.currency }} {{ invoice.amount_paid|floatformat:2 }}</span>
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Source</p>
+            <p style="font-size:13px;color:var(--text-secondary)">{{ invoice.get_source_type_display }}</p>
+          </div>
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Created</p>
+            <p style="font-size:13px;color:var(--text-secondary)">{{ invoice.created_at|date:"M d, Y" }}</p>
+          </div>
+          {% if invoice.sent_at %}
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">Sent</p>
+            <p style="font-size:13px;color:var(--text-secondary)">{{ invoice.sent_at|date:"M d, Y H:i" }}</p>
           </div>
           {% endif %}
-          <div class="flex justify-between items-center pt-2 border-t border-[var(--card-b)]">
-            <span class="text-sm font-bold text-slate-700 dark:text-slate-300">Balance Due</span>
-            <span class="text-base font-black {% if invoice.amount_due > 0 %}text-rose-600 dark:text-rose-400{% else %}text-emerald-600 dark:text-emerald-400{% endif %} tabular-nums">{{ invoice.currency }} {{ invoice.amount_due|floatformat:2 }}</span>
+          {% if invoice.first_viewed_at %}
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:3px">First Viewed</p>
+            <p style="font-size:13px;color:var(--text-secondary)">{{ invoice.first_viewed_at|date:"M d, Y H:i" }}</p>
           </div>
-        </div>
-        {% if invoice.amount_due > 0 %}
-        <div class="mt-3">
-          <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-            <div class="h-full bg-indigo-500 rounded-full" style="width:{% widthratio invoice.amount_paid invoice.total_amount 100 %}%"></div>
-          </div>
-          <p class="text-[10.5px] text-slate-400 dark:text-slate-500 mt-1.5">{% widthratio invoice.amount_paid invoice.total_amount 100 %}% collected</p>
-        </div>
-        {% endif %}
-      </div>
-
-      <!-- Client card -->
-      <div class="card p-5">
-        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-4">Client</h3>
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-white text-sm font-black flex-shrink-0">{{ invoice.client.name|slice:":1"|upper }}</div>
-          <div class="min-w-0">
-            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ invoice.client.name }}</p>
-            {% if invoice.client.email %}<p class="text-xs text-slate-400 dark:text-slate-500 truncate">{{ invoice.client.email }}</p>{% endif %}
-          </div>
-        </div>
-        <a href="{% url 'invoices:client_detail' invoice.client.id %}" class="mt-3 w-full flex items-center justify-center px-3 py-1.5 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-          View Profile →
-        </a>
-      </div>
-
-      <!-- Activity timeline -->
-      {% if activities %}
-      <div class="card p-5">
-        <h3 class="text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-4">Activity</h3>
-        <div class="space-y-3">
-          {% for act in activities %}
-          <div class="flex items-start gap-3">
-            <div class="tl-dot bg-indigo-400 dark:bg-indigo-500 mt-1.5"></div>
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-medium text-slate-700 dark:text-slate-300">{{ act.action }}</p>
-              <p class="text-[10.5px] text-slate-400 dark:text-slate-500 mt-0.5">{{ act.created_at|date:"M j, Y g:i A" }}{% if act.user %} · {{ act.user.get_full_name|default:act.user.username }}{% endif %}</p>
-            </div>
-          </div>
-          {% endfor %}
+          {% endif %}
         </div>
       </div>
-      {% endif %}
 
-    </div><!-- end sidebar -->
-  </div><!-- end grid -->
+      <!-- Actions -->
+      <div class="card" style="padding:20px">
+        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:14px">Actions</p>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <a href="{% url 'invoices:invoice_preview' invoice.id %}" target="_blank" class="btn btn-secondary btn-sm" style="justify-content:flex-start">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            Preview Invoice
+          </a>
+          <a href="{% url 'invoices:invoice_download_pdf' invoice.id %}" class="btn btn-secondary btn-sm" style="justify-content:flex-start">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Download PDF
+          </a>
+          <a href="{% url 'invoices:invoice_duplicate' invoice.id %}" class="btn btn-secondary btn-sm" style="justify-content:flex-start">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Duplicate
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Record payment modal -->
+  <div x-show="payModal" x-cloak class="modal-shell"
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       x-transition:leave="transition duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="modal-bd" @click="payModal=false"></div>
+    <div class="modal-box"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+      <div class="modal-hdr">
+        <p class="modal-title">Record Payment</p>
+        <button @click="payModal=false" class="btn btn-ghost btn-icon btn-sm"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <form method="post" action="{% url 'invoices:record_payment' invoice.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Payment Amount *</label>
+            <input type="number" name="amount" class="form-input tabular" value="{{ invoice.amount_due }}" min="0.01" step="0.01" max="{{ invoice.amount_due }}" required>
+            <p class="form-hint">Outstanding: {{ invoice.currency_symbol }}{{ invoice.amount_due|floatformat:2 }}</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Date *</label>
+            <input type="date" name="payment_date" class="form-input" value="{{ today|date:'Y-m-d' }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <select name="payment_method" class="form-select">
+              {% for val, label in payment_methods %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Reference / Transaction ID</label>
+            <input type="text" name="transaction_id" class="form-input" placeholder="Bank ref, check no., etc.">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" @click="payModal=false" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-success">Record Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Void modal -->
+  {% if can_void %}
+  <div x-show="voidModal" x-cloak class="modal-shell"
+       x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+       x-transition:leave="transition duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="modal-bd" @click="voidModal=false"></div>
+    <div class="modal-box"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+      <div class="modal-hdr">
+        <p class="modal-title">Void Invoice</p>
+        <button @click="voidModal=false" class="btn btn-ghost btn-icon btn-sm"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <form method="post" action="{% url 'invoices:invoice_void' invoice.id %}">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p style="font-size:13.5px;color:var(--text-secondary);margin-bottom:16px">This action cannot be undone. The invoice will be marked as void.</p>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Reason for voiding (optional)</label>
+            <textarea name="void_reason" class="form-textarea" rows="3" placeholder="Duplicate invoice, client cancelled, etc."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" @click="voidModal=false" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-danger">Void Invoice</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}
