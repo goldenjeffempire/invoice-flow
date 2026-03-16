@@ -570,6 +570,13 @@ class InvoiceService:
     def get_invoice_stats(workspace) -> Dict[str, Any]:
         invoices = Invoice.objects.filter(workspace=workspace)
 
+        total_invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+        outstanding = invoices.filter(
+            status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID, Invoice.Status.OVERDUE]
+        ).aggregate(total=Sum('amount_due'))['total'] or Decimal('0.00')
+        collected = invoices.filter(status=Invoice.Status.PAID).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
+        overdue_amount = invoices.filter(status=Invoice.Status.OVERDUE).aggregate(total=Sum('amount_due'))['total'] or Decimal('0.00')
+
         stats = {
             'total_count': invoices.count(),
             'draft_count': invoices.filter(status=Invoice.Status.DRAFT).count(),
@@ -578,10 +585,12 @@ class InvoiceService:
             'paid_count': invoices.filter(status=Invoice.Status.PAID).count(),
             'overdue_count': invoices.filter(status=Invoice.Status.OVERDUE).count(),
             'part_paid_count': invoices.filter(status=Invoice.Status.PART_PAID).count(),
-            'total_outstanding': invoices.filter(
-                status__in=[Invoice.Status.SENT, Invoice.Status.VIEWED, Invoice.Status.PART_PAID, Invoice.Status.OVERDUE]
-            ).aggregate(total=Sum('amount_due'))['total'] or Decimal('0.00'),
-            'total_paid': invoices.filter(status=Invoice.Status.PAID).aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00'),
+            'total_outstanding': outstanding,
+            'total_paid': collected,
+            'total_invoiced': total_invoiced,
+            'outstanding': outstanding,
+            'collected': collected,
+            'overdue_amount': overdue_amount,
         }
 
         return stats

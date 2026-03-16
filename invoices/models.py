@@ -1058,8 +1058,15 @@ class Workspace(models.Model):
     vat_number = models.CharField(max_length=50, blank=True)
     vat_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
 
+    # Currency
+    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default='NGN')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def currency_symbol(self):
+        return Invoice.CURRENCY_SYMBOLS.get(self.currency, self.currency)
 
     def __str__(self):
         return self.name
