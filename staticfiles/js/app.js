@@ -1,480 +1,202 @@
-const InvoiceFlow = {
-  init() {
-    this.initScrollReveal();
-    this.initScrollProgress();
-    this.initScrollToTop();
-    this.initLazyLoading();
-    this.initToasts();
-    this.initModals();
-    this.initDropdowns();
-    this.initTabs();
-    this.initMobileMenu();
-    this.initFormValidation();
-    this.initSmoothScroll();
-    this.initImageLoading();
-  },
+/* InvoiceFlow App Shell v3.0 */
+'use strict';
 
-  initScrollReveal() {
-    const reveals = document.querySelectorAll('.reveal');
-    if (!reveals.length) return;
+/* ── Alpine app shell component ── */
+function appShell() {
+  return {
+    dark: false,
+    col: false,
+    mob: false,
+    srch: false,
+    notifOpen: false,
+    userOpen: false,
+    wsOpen: false,
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
+    boot() {
+      // Theme
+      const saved = localStorage.getItem('theme');
+      this.dark = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.classList.toggle('dark', this.dark);
+
+      // Sidebar collapsed state
+      this.col = localStorage.getItem('sb_col') === '1';
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', e => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); this.srch = true }
+        if (e.key === 'Escape') { this.srch = false; this.mob = false; this.notifOpen = false; this.userOpen = false; this.wsOpen = false }
       });
-    }, {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    });
+    },
 
-    reveals.forEach(el => observer.observe(el));
+    toggleTheme() {
+      this.dark = !this.dark;
+      localStorage.setItem('theme', this.dark ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', this.dark);
+    },
 
-    const staggerContainers = document.querySelectorAll('.stagger-children');
-    const staggerObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
-    }, { threshold: 0.1 });
+    toggleCol() {
+      this.col = !this.col;
+      localStorage.setItem('sb_col', this.col ? '1' : '0');
+    },
 
-    staggerContainers.forEach(el => staggerObserver.observe(el));
-  },
-
-  initScrollProgress() {
-    const progressBar = document.querySelector('.scroll-progress');
-    if (!progressBar) return;
-
-    window.addEventListener('scroll', () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = docHeight > 0 ? scrollTop / docHeight : 0;
-      progressBar.style.transform = `scaleX(${progress})`;
-    }, { passive: true });
-  },
-
-  initScrollToTop() {
-    const button = document.querySelector('.scroll-to-top');
-    if (!button) return;
-
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 500) {
-        button.classList.add('visible');
-      } else {
-        button.classList.remove('visible');
-      }
-    }, { passive: true });
-
-    button.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  },
-
-  initLazyLoading() {
-    const lazyImages = document.querySelectorAll('img[loading="lazy"]');
-    
-    lazyImages.forEach(img => {
-      if (img.complete) {
-        img.classList.add('loaded');
-      } else {
-        img.addEventListener('load', () => {
-          img.classList.add('loaded');
-        });
-      }
-    });
-
-    if ('IntersectionObserver' in window) {
-      const lazyBgs = document.querySelectorAll('[data-bg]');
-      const bgObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const el = entry.target;
-            el.style.backgroundImage = `url(${el.dataset.bg})`;
-            el.classList.add('loaded');
-            bgObserver.unobserve(el);
-          }
-        });
-      }, { rootMargin: '100px' });
-
-      lazyBgs.forEach(el => bgObserver.observe(el));
+    get sbClass() {
+      return { 'collapsed': this.col, 'open': this.mob }
+    },
+    get mainClass() {
+      return { 'collapsed': this.col }
     }
-  },
+  }
+}
 
-  toastContainer: null,
-  toasts: [],
+/* ── Global search ── */
+function searchPalette() {
+  return {
+    q: '',
+    results: [],
+    loading: false,
+    selected: -1,
+    timer: null,
 
-  initToasts() {
-    if (!document.querySelector('.toast-container')) {
-      const container = document.createElement('div');
-      container.className = 'toast-container';
-      container.setAttribute('role', 'alert');
-      container.setAttribute('aria-live', 'polite');
-      document.body.appendChild(container);
-      this.toastContainer = container;
-    } else {
-      this.toastContainer = document.querySelector('.toast-container');
-    }
-  },
+    async search() {
+      if (!this.q.trim() || this.q.length < 2) { this.results = []; return }
+      this.loading = true;
+      clearTimeout(this.timer);
+      this.timer = setTimeout(async () => {
+        try {
+          const r = await fetch(`/api/search/?q=${encodeURIComponent(this.q)}`);
+          const d = await r.json();
+          this.results = d.results || [];
+        } catch { this.results = [] }
+        this.loading = false;
+      }, 220);
+    },
 
-  showToast(message, type = 'info', duration = 5000) {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-      <div class="toast-icon">
-        ${this.getToastIcon(type)}
-      </div>
-      <div class="toast-content">
-        <p>${message}</p>
-      </div>
-      <button class="toast-dismiss" aria-label="Dismiss">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 6L6 18M6 6l12 12"/>
-        </svg>
-      </button>
-    `;
+    navigate(dir) {
+      const max = this.results.length - 1;
+      if (dir === 'up') this.selected = Math.max(0, this.selected - 1);
+      else this.selected = Math.min(max, this.selected + 1);
+    },
 
-    const dismissBtn = toast.querySelector('.toast-dismiss');
-    dismissBtn.addEventListener('click', () => this.dismissToast(toast));
-
-    this.toastContainer.appendChild(toast);
-
-    if (duration > 0) {
-      setTimeout(() => this.dismissToast(toast), duration);
-    }
-
-    return toast;
-  },
-
-  dismissToast(toast) {
-    if (!toast.parentNode) return;
-    toast.classList.add('exiting');
-    setTimeout(() => toast.remove(), 300);
-  },
-
-  getToastIcon(type) {
-    const icons = {
-      success: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-      error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-      warning: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-      info: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
-    };
-    return icons[type] || icons.info;
-  },
-
-  initModals() {
-    document.querySelectorAll('[data-modal-trigger]').forEach(trigger => {
-      trigger.addEventListener('click', (e) => {
-        e.preventDefault();
-        const modalId = trigger.dataset.modalTrigger;
-        this.openModal(modalId);
-      });
-    });
-
-    document.querySelectorAll('[data-modal-close]').forEach(closeBtn => {
-      closeBtn.addEventListener('click', () => {
-        const modal = closeBtn.closest('.modal');
-        if (modal) this.closeModal(modal.id);
-      });
-    });
-
-    document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
-      backdrop.addEventListener('click', () => {
-        const modal = document.querySelector('.modal.active');
-        if (modal) this.closeModal(modal.id);
-      });
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        const modal = document.querySelector('.modal.active');
-        if (modal) this.closeModal(modal.id);
-      }
-    });
-  },
-
-  openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (!modal) return;
-
-    document.body.style.overflow = 'hidden';
-    if (backdrop) backdrop.classList.add('active');
-    modal.classList.add('active');
-    
-    const focusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-    if (focusable) focusable.focus();
-  },
-
-  closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (!modal) return;
-
-    modal.classList.remove('active');
-    if (backdrop) backdrop.classList.remove('active');
-    document.body.style.overflow = '';
-  },
-
-  initDropdowns() {
-    document.querySelectorAll('.dropdown').forEach(dropdown => {
-      const trigger = dropdown.querySelector('.dropdown-trigger, button');
-      const menu = dropdown.querySelector('.dropdown-menu');
-      
-      if (!trigger || !menu) return;
-
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = dropdown.classList.contains('open');
-        
-        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-        
-        if (!isOpen) {
-          dropdown.classList.add('open');
-        }
-      });
-    });
-
-    document.addEventListener('click', () => {
-      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-    });
-  },
-
-  initTabs() {
-    document.querySelectorAll('.tabs').forEach(tabContainer => {
-      const tabs = tabContainer.querySelectorAll('.tab');
-      const parent = tabContainer.parentElement;
-      
-      tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-          const targetId = tab.dataset.tab;
-          
-          tabs.forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          
-          if (targetId && parent) {
-            parent.querySelectorAll('.tab-content').forEach(content => {
-              content.classList.remove('active');
-            });
-            const target = parent.querySelector(`#${targetId}`);
-            if (target) target.classList.add('active');
-          }
-        });
-      });
-    });
-  },
-
-  initMobileMenu() {
-    const toggle = document.querySelector('.mobile-menu-toggle');
-    const menu = document.querySelector('.mobile-menu');
-    const backdrop = document.querySelector('.mobile-menu-backdrop');
-    
-    if (!toggle || !menu) return;
-
-    toggle.addEventListener('click', () => {
-      const isOpen = menu.classList.contains('open');
-      menu.classList.toggle('open');
-      if (backdrop) backdrop.classList.toggle('open');
-      document.body.style.overflow = isOpen ? '' : 'hidden';
-      toggle.setAttribute('aria-expanded', !isOpen);
-    });
-
-    if (backdrop) {
-      backdrop.addEventListener('click', () => {
-        menu.classList.remove('open');
-        backdrop.classList.remove('open');
-        document.body.style.overflow = '';
-        toggle.setAttribute('aria-expanded', 'false');
-      });
-    }
-
-    menu.querySelectorAll('a').forEach(link => {
-      link.addEventListener('click', () => {
-        menu.classList.remove('open');
-        if (backdrop) backdrop.classList.remove('open');
-        document.body.style.overflow = '';
-        toggle.setAttribute('aria-expanded', 'false');
-      });
-    });
-  },
-
-  initFormValidation() {
-    document.querySelectorAll('form[data-validate]').forEach(form => {
-      form.addEventListener('submit', (e) => {
-        let isValid = true;
-        
-        form.querySelectorAll('[required]').forEach(input => {
-          if (!input.value.trim()) {
-            isValid = false;
-            this.showFieldError(input, 'This field is required');
-          } else {
-            this.clearFieldError(input);
-          }
-        });
-
-        form.querySelectorAll('[type="email"]').forEach(input => {
-          if (input.value && !this.isValidEmail(input.value)) {
-            isValid = false;
-            this.showFieldError(input, 'Please enter a valid email address');
-          }
-        });
-
-        if (!isValid) {
-          e.preventDefault();
-          const firstError = form.querySelector('.is-invalid');
-          if (firstError) firstError.focus();
-        }
-      });
-
-      form.querySelectorAll('input, select, textarea').forEach(input => {
-        input.addEventListener('blur', () => {
-          if (input.hasAttribute('required') && !input.value.trim()) {
-            this.showFieldError(input, 'This field is required');
-          } else if (input.type === 'email' && input.value && !this.isValidEmail(input.value)) {
-            this.showFieldError(input, 'Please enter a valid email address');
-          } else {
-            this.clearFieldError(input);
-          }
-        });
-
-        input.addEventListener('input', () => {
-          if (input.classList.contains('is-invalid')) {
-            this.clearFieldError(input);
-          }
-        });
-      });
-    });
-  },
-
-  showFieldError(input, message) {
-    input.classList.add('is-invalid');
-    input.classList.remove('is-valid');
-    
-    let errorEl = input.parentNode.querySelector('.form-error');
-    if (!errorEl) {
-      errorEl = document.createElement('div');
-      errorEl.className = 'form-error';
-      input.parentNode.appendChild(errorEl);
-    }
-    errorEl.textContent = message;
-  },
-
-  clearFieldError(input) {
-    input.classList.remove('is-invalid');
-    const errorEl = input.parentNode.querySelector('.form-error');
-    if (errorEl) errorEl.remove();
-  },
-
-  isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  },
-
-  initSmoothScroll() {
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', (e) => {
-        const href = anchor.getAttribute('href');
-        if (href === '#') return;
-
-        const target = document.querySelector(href);
-        if (target) {
-          e.preventDefault();
-          target.scrollIntoView({ behavior: 'smooth' });
-        }
-      });
-    });
-  },
-
-  initImageLoading() {
-    document.querySelectorAll('img').forEach(img => {
-      if (img.complete) {
-        img.classList.add('loaded');
-      } else {
-        img.addEventListener('load', () => img.classList.add('loaded'));
-        img.addEventListener('error', () => {
-          img.style.display = 'none';
-          console.warn('Failed to load image:', img.src);
-        });
-      }
-    });
-  },
-
-  formatCurrency(amount, currency = 'USD') {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
-  },
-
-  formatDate(date, options = {}) {
-    const defaultOptions = {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    };
-    return new Intl.DateTimeFormat('en-US', { ...defaultOptions, ...options }).format(new Date(date));
-  },
-
-  formatNumber(num) {
-    return new Intl.NumberFormat('en-US').format(num);
-  },
-
-  debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  },
-
-  throttle(func, limit) {
-    let inThrottle;
-    return function(...args) {
-      if (!inThrottle) {
-        func.apply(this, args);
-        inThrottle = true;
-        setTimeout(() => inThrottle = false, limit);
-      }
-    };
-  },
-
-  showSkeleton(container, count = 3) {
-    container.innerHTML = Array(count).fill(`
-      <div class="skeleton-row">
-        <div class="skeleton skeleton-avatar"></div>
-        <div class="flex-1">
-          <div class="skeleton skeleton-title"></div>
-          <div class="skeleton skeleton-text"></div>
-        </div>
-      </div>
-    `).join('');
-  },
-
-  hideSkeleton(container) {
-    container.querySelectorAll('.skeleton-row').forEach(el => el.remove());
-  },
-
-  setButtonLoading(button, loading = true) {
-    if (loading) {
-      button.classList.add('btn-loading');
-      button.disabled = true;
-      button.dataset.originalText = button.innerHTML;
-    } else {
-      button.classList.remove('btn-loading');
-      button.disabled = false;
-      if (button.dataset.originalText) {
-        button.innerHTML = button.dataset.originalText;
+    select() {
+      if (this.selected >= 0 && this.results[this.selected]) {
+        window.location = this.results[this.selected].url;
       }
     }
   }
+}
+
+/* ── Toast system ── */
+const Toast = {
+  container: null,
+
+  show(msg, type = 'info', duration = 4000) {
+    if (!this.container) {
+      this.container = document.createElement('div');
+      this.container.className = 'toast-wrap';
+      document.body.appendChild(this.container);
+    }
+    const t = document.createElement('div');
+    const icons = {
+      success: `<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`,
+      error:   `<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>`,
+      info:    `<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01"/></svg>`,
+    };
+    t.className = `toast toast-${type}`;
+    t.innerHTML = `${icons[type] || icons.info}<span style="flex:1">${msg}</span>`;
+    this.container.appendChild(t);
+    setTimeout(() => {
+      t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; t.style.transition = 'all .2s';
+      setTimeout(() => t.remove(), 220);
+    }, duration);
+  }
 };
 
+/* ── Auto-dismiss Django messages ── */
 document.addEventListener('DOMContentLoaded', () => {
-  InvoiceFlow.init();
+  document.querySelectorAll('[data-msg]').forEach(el => {
+    const type = el.dataset.msg;
+    const text = el.textContent.trim();
+    if (text) Toast.show(text, type === 'error' ? 'error' : type === 'success' ? 'success' : 'info');
+    el.remove();
+  });
+
+  /* Confirm-delete forms */
+  document.querySelectorAll('[data-confirm]').forEach(el => {
+    el.addEventListener('click', e => {
+      if (!confirm(el.dataset.confirm || 'Are you sure?')) e.preventDefault();
+    });
+  });
+
+  /* Auto-resize textareas */
+  document.querySelectorAll('textarea[data-auto]').forEach(el => {
+    const resize = () => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px' };
+    el.addEventListener('input', resize);
+    resize();
+  });
 });
 
-window.InvoiceFlow = InvoiceFlow;
+/* ── Currency formatter ── */
+function fmt(amount, currency = 'NGN') {
+  const symbols = { NGN:'₦', USD:'$', EUR:'€', GBP:'£', GHS:'₵', ZAR:'R', KES:'KSh' };
+  const sym = symbols[currency] || currency + ' ';
+  const n = parseFloat(amount) || 0;
+  return sym + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/* ── Invoice builder ── */
+function invoiceBuilder(opts = {}) {
+  return {
+    items: opts.items || [],
+    currency: opts.currency || 'NGN',
+    taxMode: opts.taxMode || 'exclusive',
+    defaultTaxRate: parseFloat(opts.defaultTaxRate || 0),
+    discountType: opts.discountType || 'flat',
+    globalDiscount: parseFloat(opts.globalDiscount || 0),
+
+    addItem() {
+      this.items.push({ id: Date.now(), description: '', quantity: 1, unit_price: 0, tax_rate: this.defaultTaxRate, discount_type: 'flat', discount_value: 0 });
+    },
+
+    removeItem(idx) {
+      this.items.splice(idx, 1);
+    },
+
+    itemSubtotal(item) {
+      const qty = parseFloat(item.quantity) || 0;
+      const price = parseFloat(item.unit_price) || 0;
+      const dv = parseFloat(item.discount_value) || 0;
+      const gross = qty * price;
+      const disc = item.discount_type === 'percentage' ? gross * dv / 100 : dv;
+      return Math.max(0, gross - disc);
+    },
+
+    get subtotal() { return this.items.reduce((s, i) => s + this.itemSubtotal(i), 0) },
+
+    get discountAmount() {
+      if (this.discountType === 'percentage') return this.subtotal * this.globalDiscount / 100;
+      return Math.min(this.globalDiscount, this.subtotal);
+    },
+
+    get taxBase() { return this.subtotal - this.discountAmount },
+
+    get taxTotal() {
+      return this.items.reduce((s, i) => {
+        const base = this.itemSubtotal(i);
+        const rate = parseFloat(i.tax_rate) || 0;
+        return s + (base * rate / 100);
+      }, 0);
+    },
+
+    get total() {
+      const base = this.taxBase;
+      return this.taxMode === 'exclusive' ? base + this.taxTotal : base;
+    },
+
+    fmt(n) { return fmt(n, this.currency) },
+
+    get itemsJson() { return JSON.stringify(this.items) }
+  }
+}
+
+/* ── Estimate builder (same as invoice builder) ── */
+const estimateBuilder = invoiceBuilder;
