@@ -69,10 +69,10 @@ class PDFService:
 
         try:
             pdf_bytes = html.write_pdf(font_config=font_config)
-            logger.info(f"Generated PDF for invoice {invoice.invoice_id}")
+            logger.info(f"Generated PDF for invoice {invoice.invoice_number}")
             return pdf_bytes
         except Exception as e:
-            logger.error(f"PDF generation failed for invoice {invoice.invoice_id}: {e}")
+            logger.error(f"PDF generation failed for invoice {invoice.invoice_number}: {e}")
             raise ValueError("PDF generation failed. Please contact support.")
 
     @staticmethod
@@ -86,4 +86,4 @@ class PDFService:
         Returns:
             Filename string
         """
-        return f"Invoice-{invoice.invoice_id}.pdf"
+        return f"Invoice-{invoice.invoice_number}.pdf"

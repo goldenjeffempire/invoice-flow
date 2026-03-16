@@ -716,6 +716,7 @@ def resend_verification(request):
     return redirect("invoices:login")
 
 
+@login_required
 def security_activity(request):
     from ..models import SecurityEvent
     events = SecurityEvent.objects.filter(user=request.user).order_by("-created_at")[:50]

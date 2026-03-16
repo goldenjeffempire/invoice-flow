@@ -88,12 +88,12 @@ class PaymentService:
             workspace=invoice.workspace,
             invoice=invoice,
             amount=amount,
-            tip_amount=tip_amount,
             currency=invoice.currency,
             status=Payment.Status.COMPLETED,
             payment_method=method,
             notes=notes,
-            completed_at=timezone.now()
+            completed_at=timezone.now(),
+            metadata={"tip_amount": str(tip_amount)} if tip_amount else {},
         )
 
         invoice.amount_paid += amount

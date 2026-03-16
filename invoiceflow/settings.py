@@ -28,6 +28,7 @@ validate_env()
 # SECURITY
 # =============================================================================
 SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-dev-only-change-in-production")
+ENCRYPTION_SALT = os.getenv("ENCRYPTION_SALT", "invoiceflow-dev-salt-change-in-production-32c")
 
 # Build ALLOWED_HOSTS based on environment
 if IS_PRODUCTION:

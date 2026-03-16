@@ -8,7 +8,7 @@ import hashlib
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from django.conf import settings
 
 
@@ -24,11 +24,10 @@ class FieldEncryption:
         Derive encryption key from Django SECRET_KEY using PBKDF2.
         This ensures the encryption key is derived securely.
         """
-        # Get encryption salt from settings (enforced in production)
         salt_str = settings.ENCRYPTION_SALT
         salt = salt_str.encode() if isinstance(salt_str, str) else salt_str
 
-        kdf = PBKDF2(
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,

@@ -82,6 +82,13 @@ Migration 0006 had a bug where it tried to modify the `invoices_payment` table a
 - `security_update_ajax` — Was a stub; now `@login_required` + `@require_POST`, updates security notification preferences.
 - `reminder_dashboard` — Added `@login_required` decorator.
 - `faq_api` — Now returns real FAQ data with optional search filtering via `?q=` query param.
+- `security_activity` — Added missing `@login_required` decorator (was accessible to anonymous users, causing a crash on `request.user`).
+
+### Critical Bug Fixes (2026-03-16)
+- **`invoices/encryption.py`** — Fixed broken import: `PBKDF2` was removed from the `cryptography` library; replaced with `PBKDF2HMAC`. Full encrypt/decrypt round-trip now verified working.
+- **`invoiceflow/settings.py`** — Added `ENCRYPTION_SALT = os.getenv("ENCRYPTION_SALT", ...)` so `settings.ENCRYPTION_SALT` resolves correctly (previously caused `AttributeError` at runtime).
+- **`invoices/services/pdf_service.py`** — Replaced all uses of `invoice.invoice_id` (non-existent attribute) with `invoice.invoice_number` (lines 72, 75, 89). Affects PDF generation log messages and the generated filename.
+- **`invoices/services/payment_service.py`** — Removed `tip_amount=tip_amount` from `Payment.objects.create()` call; `tip_amount` is not a model field. The value is now stored in the `metadata` JSON field instead.
 
 ## Deployment
 
