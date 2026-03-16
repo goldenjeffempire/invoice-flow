@@ -1,0 +1,100 @@
+{% extends "base/layout_app.html" %}
+{% block title %}Invoice Templates — InvoiceFlow{% endblock %}
+{% block page_title %}Invoice Templates{% endblock %}
+
+{% block content %}
+<div class="page-in">
+
+  <!-- Page Header -->
+  <div class="page-hdr">
+    <div>
+      <h1 class="page-title">Invoice Templates</h1>
+      <p class="page-sub">Choose the style used when generating PDF invoices for clients.</p>
+    </div>
+  </div>
+
+  {% if saved %}
+  <div style="padding:14px 18px;background:#dcfce7;border:1px solid #86efac;border-radius:var(--radius-lg);margin-bottom:24px;display:flex;align-items:center;gap:10px">
+    <svg width="16" height="16" fill="none" stroke="#16a34a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+    <p style="font-size:13.5px;font-weight:600;color:#15803d">Template style saved successfully.</p>
+  </div>
+  {% endif %}
+
+  <form method="post" action="">
+    {% csrf_token %}
+    <div class="g3" style="margin-bottom:28px">
+      {% for style in styles %}
+      <label style="cursor:pointer;display:block" for="style_{{ style.key }}">
+        <div class="card card-hover" style="padding:0;overflow:hidden;transition:box-shadow 200ms,border-color 200ms;
+             {% if current_style == style.key %}border-color:var(--brand-500);box-shadow:0 0 0 3px rgba(99,102,241,.15){% endif %}">
+          <!-- Preview area -->
+          <div style="height:160px;background:{{ style.preview_bg }};border-bottom:1px solid var(--border);padding:16px;position:relative;overflow:hidden">
+            <!-- Mock invoice preview -->
+            <div style="background:white;border-radius:6px;padding:14px;box-shadow:0 2px 12px rgba(0,0,0,.08);height:100%;overflow:hidden;font-family:sans-serif">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+                <div>
+                  <div style="width:60px;height:8px;background:{{ style.accent }};border-radius:99px;margin-bottom:5px"></div>
+                  <div style="width:40px;height:5px;background:#e2e8f0;border-radius:99px"></div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:10px;font-weight:700;color:{{ style.accent }};letter-spacing:.05em">INVOICE</div>
+                  <div style="font-size:8px;color:#94a3b8;margin-top:2px">#INV-0042</div>
+                </div>
+              </div>
+              <div style="height:1px;background:{{ style.accent }};opacity:.2;margin-bottom:10px"></div>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+                <div style="width:100%;height:4px;background:#f1f5f9;border-radius:99px"></div>
+                <div style="width:85%;height:4px;background:#f1f5f9;border-radius:99px"></div>
+                <div style="width:70%;height:4px;background:#f1f5f9;border-radius:99px"></div>
+              </div>
+              <div style="display:flex;justify-content:flex-end">
+                <div style="background:{{ style.accent }};color:white;font-size:8px;font-weight:700;padding:4px 10px;border-radius:4px">TOTAL ₦0.00</div>
+              </div>
+            </div>
+            <!-- Selected check -->
+            {% if current_style == style.key %}
+            <div style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:var(--brand-600);display:flex;align-items:center;justify-content:center">
+              <svg width="12" height="12" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            {% endif %}
+          </div>
+          <!-- Info -->
+          <div style="padding:16px 18px;display:flex;align-items:flex-start;gap:10px">
+            <input type="radio" name="invoice_style" id="style_{{ style.key }}" value="{{ style.key }}"
+                   {% if current_style == style.key %}checked{% endif %}
+                   style="margin-top:3px;accent-color:var(--brand-600);flex-shrink:0">
+            <div>
+              <p style="font-size:14px;font-weight:700;color:var(--text-primary)">{{ style.name }}</p>
+              <p style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5">{{ style.desc }}</p>
+            </div>
+          </div>
+        </div>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px">
+      <button type="submit" class="btn btn-primary">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+        Save Template Style
+      </button>
+      <p style="font-size:12.5px;color:var(--text-muted)">This style will be used on all new invoice PDFs.</p>
+    </div>
+  </form>
+
+  <!-- Current Style Info -->
+  {% if workspace %}
+  <div style="margin-top:32px;padding:16px 20px;background:var(--bg-subtle);border-radius:var(--radius-lg);border:1px solid var(--border)">
+    <p style="font-size:12.5px;font-weight:600;color:var(--text-secondary)">
+      Currently applied to workspace <strong style="color:var(--text-primary)">{{ workspace.name }}</strong>:
+      <span style="color:var(--brand-600);font-weight:700">{{ current_style|capfirst }}</span> style
+    </p>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:4px">
+      Template colors also inherit your workspace branding: primary {{ workspace.primary_color }}, secondary {{ workspace.secondary_color }}.
+      Update branding in <a href="{% url 'invoices:workspace_settings' %}" style="color:var(--brand-600);font-weight:600">Workspace Settings</a>.
+    </p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

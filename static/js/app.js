@@ -166,3 +166,49 @@ function invoiceBuilder(opts = {}) {
 
 /* ── Estimate builder (same as invoice builder) ── */
 const estimateBuilder = invoiceBuilder;
+
+/* ── Global Search ── */
+function globalSearch() {
+  return {
+    open: false,
+    query: '',
+    results: [],
+    loading: false,
+
+    async doSearch() {
+      if (this.query.length < 2) { this.results = []; return; }
+      this.loading = true;
+      try {
+        const resp = await fetch(`/api/search/?q=${encodeURIComponent(this.query)}`);
+        const data = await resp.json();
+        this.results = data.results || [];
+      } catch(e) { this.results = []; }
+      this.loading = false;
+    },
+
+    iconClass(type) {
+      const map = { invoice: 'si-indigo', client: 'si-green', expense: 'si-amber', estimate: 'si-violet' };
+      return `stat-icon ${map[type] || 'si-blue'}`;
+    }
+  }
+}
+
+/* ── Global keyboard shortcut: Cmd/Ctrl+K opens search ── */
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    const searchEl = document.querySelector('[x-data*="globalSearch"]');
+    if (searchEl && searchEl._x_dataStack) {
+      const comp = searchEl._x_dataStack[0];
+      if (comp) { comp.open = true; setTimeout(() => { const inp = searchEl.querySelector('input'); if (inp) inp.focus(); }, 50); }
+    }
+  }
+});
+
+/* ── Spin animation (used by search loader) ── */
+if (!document.querySelector('#spin-keyframes')) {
+  const s = document.createElement('style');
+  s.id = 'spin-keyframes';
+  s.textContent = '@keyframes spin { to { transform: rotate(360deg) } }';
+  document.head.appendChild(s);
+}

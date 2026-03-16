@@ -50,3 +50,37 @@ def validate_env():
             raise ImproperlyConfigured(error_msg)
 
     logger.info("Environment validation passed successfully")
+
+
+def get_env_status() -> dict:
+    """
+    Return a structured dict describing environment variable configuration status.
+    Used by the detailed health endpoint.
+    """
+    required = {}
+    for var in REQUIRED_PRODUCTION_ENV_VARS:
+        val = os.getenv(var)
+        required[var] = {"configured": bool(val), "value": "***" if val else None}
+
+    optional_vars = [
+        "PAYSTACK_SECRET_KEY",
+        "PAYSTACK_PUBLIC_KEY",
+        "EMAIL_HOST",
+        "EMAIL_HOST_USER",
+        "SENTRY_DSN",
+        "REDIS_URL",
+        "CELERY_BROKER_URL",
+    ]
+    optional = {}
+    for var in optional_vars:
+        val = os.getenv(var)
+        optional[var] = {"configured": bool(val)}
+
+    return {
+        "required": required,
+        "optional": optional,
+        "is_production": os.getenv("PRODUCTION", "false").lower() == "true",
+        "is_replit": bool(
+            os.getenv("REPLIT_DOMAINS") or os.getenv("REPL_ID") or os.getenv("REPLIT_DEV_DOMAIN")
+        ),
+    }

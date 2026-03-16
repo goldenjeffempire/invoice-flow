@@ -74,10 +74,19 @@ urlpatterns = [
     path("onboarding/back/", onboarding_views.onboarding_go_back, name="onboarding_go_back"),
     path("onboarding/complete/", onboarding_views.onboarding_complete, name="onboarding_complete"),
 
-    # ── Activity ──────────────────────────────────────────────────────────────
+    # ── Activity / UX ─────────────────────────────────────────────────────────
     path("api/search/", ux_views.global_search, name="global_search"),
     path("notifications/mark-read/<int:pk>/", ux_views.mark_notification_read, name="mark_notification_read"),
     path("api/appearance/", ux_views.set_appearance_preference, name="set_appearance"),
+
+    # ── Wallet ────────────────────────────────────────────────────────────────
+    path("wallet/", ux_views.wallet_view, name="wallet"),
+
+    # ── System Monitoring ─────────────────────────────────────────────────────
+    path("monitoring/", ux_views.monitoring_view, name="monitoring"),
+
+    # ── Invoice Templates ─────────────────────────────────────────────────────
+    path("invoice-templates/", ux_views.invoice_templates_view, name="invoice_templates"),
 
     # ── User Settings ─────────────────────────────────────────────────────────
     path("settings/", views.settings_page, name="settings"),
