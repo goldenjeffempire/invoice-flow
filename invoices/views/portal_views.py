@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum
 from django.http import HttpResponse
-from ..models import Client, ClientPortalToken, ClientPortalSession, Invoice, InvoicePayment
+from ..models import Client, ClientPortalToken, ClientPortalSession, Invoice, Payment
 from ..services.portal_service import ClientPortalService
 from ..services import PDFService
 
@@ -78,7 +78,7 @@ def portal_invoice_detail(request, invoice_id):
         return redirect('invoices:portal_login')
 
     invoice = get_object_or_404(Invoice, id=invoice_id, client=session.client)
-    payments = invoice.payments.filter(status=InvoicePayment.PaymentStatus.COMPLETED)
+    payments = invoice.payments.filter(status=Payment.Status.COMPLETED)
 
     return render(request, 'invoices/portal/invoice_detail.html', {
         'invoice': invoice,

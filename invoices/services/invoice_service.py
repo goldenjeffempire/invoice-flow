@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 
-from ..models import Invoice, LineItem, InvoiceActivity, InvoicePayment, Client
+from ..models import Invoice, LineItem, InvoiceActivity, Payment, Client
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,9 @@ class InvoiceService:
     @staticmethod
     def generate_invoice_number(workspace, prefix: str = "INV", format_str: str = "{prefix}-{year}-{number:04d}") -> str:
         from django.db.models import Max
+        import datetime as dt_module
         year = timezone.now().year
-        year_start = timezone.datetime(year, 1, 1, tzinfo=timezone.get_current_timezone())
+        year_start = dt_module.datetime(year, 1, 1, tzinfo=timezone.get_current_timezone())
 
         last_invoice = Invoice.objects.filter(
             workspace=workspace,
@@ -408,21 +409,29 @@ class InvoiceService:
         if amount > invoice.amount_due:
             raise ValidationError(f"Payment amount {amount} exceeds amount due {invoice.amount_due}")
 
+        import datetime as dt_module
         reference = reference or f"PAY-{secrets.token_hex(8).upper()}"
 
-        payment = InvoicePayment.objects.create(
+        raw_date = payment_date or timezone.now().date()
+        if isinstance(raw_date, dt_module.datetime):
+            payment_datetime = raw_date if timezone.is_aware(raw_date) else timezone.make_aware(raw_date)
+        else:
+            payment_datetime = timezone.make_aware(dt_module.datetime.combine(raw_date, dt_module.time.min))
+
+        payment = Payment.objects.create(
+            workspace=invoice.workspace,
             invoice=invoice,
-            recorded_by=user,
-            reference=reference,
-            external_reference=external_reference,
             amount=amount,
             currency=invoice.currency,
+            status=Payment.Status.COMPLETED,
             payment_method=payment_method,
-            status=InvoicePayment.PaymentStatus.COMPLETED,
-            payment_date=payment_date or timezone.now().date(),
+            transaction_id=reference,
+            provider_reference=external_reference,
+            net_amount=amount,
+            payment_date=payment_datetime,
+            completed_at=timezone.now(),
             notes=notes,
-            metadata=metadata or {},
-            is_partial=amount < invoice.amount_due,
+            metadata={**(metadata or {}), 'recorded_by': user.id if user else None, 'is_partial': str(amount < invoice.amount_due)},
         )
 
         invoice.amount_paid += amount
@@ -475,7 +484,7 @@ class InvoiceService:
         for item in invoice.items.all():
             items_data.append({
                 'item_type': item.item_type,
-                'product_id': item.product_id,
+                'product_id': item.product_id_ref,
                 'description': item.description,
                 'long_description': item.long_description,
                 'unit': item.unit,

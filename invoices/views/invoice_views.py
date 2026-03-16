@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.urls import reverse
 
-from ..models import Invoice, InvoiceActivity, InvoicePayment, Client
+from ..models import Invoice, InvoiceActivity, Payment, Client
 from ..services.invoice_service import InvoiceService, InvoiceValidationError, InvoiceStateError
 from ..services.pdf_service import PDFService
 
@@ -266,7 +266,7 @@ def invoice_detail(request, invoice_id):
     )
 
     activities = invoice.activities.all()[:20]
-    payments = invoice.payments.filter(status=InvoicePayment.PaymentStatus.COMPLETED)
+    payments = invoice.payments.filter(status=Payment.Status.COMPLETED)
     attachments = invoice.attachments.all()
 
     context = {
@@ -278,7 +278,7 @@ def invoice_detail(request, invoice_id):
         'can_send': invoice.can_send,
         'can_void': invoice.can_void,
         'can_record_payment': invoice.can_record_payment,
-        'payment_methods': InvoicePayment.PaymentMethod.choices,
+        'payment_methods': Payment.Method.choices,
         'today': timezone.now().date(),
         'page_title': f'Invoice {invoice.invoice_number}',
     }

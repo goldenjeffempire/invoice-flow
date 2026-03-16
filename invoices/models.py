@@ -472,13 +472,6 @@ class Invoice(models.Model):
     last_reminder_sent_at = models.DateTimeField(null=True, blank=True)
     reminder_count = models.IntegerField(default=0)
 
-    def attachments(self):
-        """
-        Placeholder for attachments relationship. 
-        In a real scenario, this would be a GenericRelation or a ForeignKey from an Attachment model.
-        """
-        return []
-
     delivery_email_sent = models.BooleanField(default=False)
     delivery_email_opened = models.BooleanField(default=False)
     delivery_whatsapp_sent = models.BooleanField(default=False)
@@ -816,6 +809,7 @@ class InvoiceActivity(models.Model):
         COMMENT_ADDED = "comment_added", "Comment Added"
         DOWNLOADED = "downloaded", "PDF Downloaded"
         SHARED = "shared", "Link Shared"
+        OTHER = "other", "Other Activity"
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="activities")
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
