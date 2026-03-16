@@ -33,6 +33,14 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
+def require_verified_email(user):
+    """Raise PermissionError if the user's email address is not verified."""
+    if not getattr(user, 'email_verified', True):
+        raise PermissionError(
+            "Your email address is not verified. Please verify your email before making payments."
+        )
+
+
 # ---------------------------------------------------------------------------
 # Security Event Constants
 # ---------------------------------------------------------------------------

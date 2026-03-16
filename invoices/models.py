@@ -1909,6 +1909,103 @@ class AuditLog(TimeStampedModel):
 
 
 # =========================================================
+# PAYSTACK: PROCESSED WEBHOOKS
+# =========================================================
+
+class ProcessedWebhook(models.Model):
+    event_id = models.CharField(max_length=255, unique=True, db_index=True)
+    provider = models.CharField(max_length=50, default="paystack")
+    event_type = models.CharField(max_length=100, blank=True)
+    reference = models.CharField(max_length=255, blank=True)
+    payload_hash = models.CharField(max_length=64, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["event_id"])]
+
+    def __str__(self):
+        return f"{self.provider}:{self.event_type} ({self.event_id[:12]}…)"
+
+
+# =========================================================
+# PAYSTACK: IDEMPOTENCY KEYS
+# =========================================================
+
+class IdempotencyKey(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="idempotency_keys",
+        db_column="user_id",
+    )
+    key = models.CharField(max_length=255, db_index=True)
+    request_hash = models.CharField(max_length=64)
+    response_data = models.JSONField(default=dict)
+    http_status = models.PositiveSmallIntegerField(default=200)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("user", "key")]
+        ordering = ["-created_at"]
+
+    def is_valid(self) -> bool:
+        from django.utils import timezone
+        return self.expires_at > timezone.now()
+
+    def __str__(self):
+        return f"Idempotency({self.key[:16]}…)"
+
+
+# =========================================================
+# PAYSTACK: PAYMENT RECONCILIATION
+# =========================================================
+
+class PaymentReconciliation(models.Model):
+    class ReconciliationStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        VERIFIED = "verified", "Verified"
+        FAILED = "failed", "Failed"
+        MISMATCH = "mismatch", "Mismatch"
+
+    payment = models.OneToOneField(
+        "Payment",
+        on_delete=models.CASCADE,
+        related_name="reconciliation",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="payment_reconciliations",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=ReconciliationStatus.choices,
+        default=ReconciliationStatus.PENDING,
+    )
+    paystack_status = models.CharField(max_length=50, blank=True)
+    local_status = models.CharField(max_length=50, blank=True)
+    amount_match = models.BooleanField(default=False)
+    currency_match = models.BooleanField(default=False)
+    status_match = models.BooleanField(default=False)
+    last_error = models.TextField(blank=True)
+    last_attempt = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["status", "-created_at"])]
+
+    def __str__(self):
+        return f"Reconciliation({self.payment_id}) → {self.status}"
+
+
+# =========================================================
 # MERGED: SIGNALS
 # =========================================================
 

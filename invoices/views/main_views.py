@@ -313,7 +313,18 @@ def mfa_setup(request):
         request.session["mfa_setup_secret"] = secret
         request.session["mfa_setup_qr_code"] = qr_code
 
-    return render(request, "pages/auth/mfa_setup.html", {"form": form, "qr_code": qr_code, "secret": secret})
+    return render(request, "pages/auth/mfa_setup.html", {
+        "form": form,
+        "qr_code": qr_code,
+        "secret": secret,
+        "authenticator_apps": [
+            "Google Authenticator",
+            "Authy",
+            "1Password",
+            "Microsoft Authenticator",
+            "Bitwarden",
+        ],
+    })
 
 
 @login_required
