@@ -1,103 +1,92 @@
 {% extends "base/layout_app.html" %}
 {% block title %}Cash Flow — InvoiceFlow{% endblock %}
-
 {% block content %}
-<div class="max-w-[1440px] mx-auto">
-  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-    <div class="flex items-center gap-3">
-      <a href="{% url 'invoices:reports_home' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      </a>
-      <div>
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Cash Flow Report</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ date_range.label|default:"Last 12 months" }}</p>
-      </div>
-    </div>
-    <div class="flex items-center gap-2">
-      <form method="get" class="flex items-center gap-2">
-        <select name="preset" onchange="this.form.submit()" class="fi h-9 text-sm w-36">
-          <option value="this_month" {% if current_preset == 'this_month' %}selected{% endif %}>This Month</option>
-          <option value="this_quarter" {% if current_preset == 'this_quarter' %}selected{% endif %}>This Quarter</option>
-          <option value="this_year" {% if current_preset == 'this_year' %}selected{% endif %}>This Year</option>
-          <option value="last_year" {% if current_preset == 'last_year' %}selected{% endif %}>Last Year</option>
-        </select>
-      </form>
-      <a href="{% url 'invoices:export_report_csv' 'cashflow' %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">Export CSV</a>
-    </div>
-  </div>
 
-  <!-- Summary cards -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="card p-5"><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Total Inflow</p><p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ summary.total_inflow|floatformat:2 }}</p></div>
-    <div class="card p-5"><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Total Outflow</p><p class="text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">{{ summary.total_outflow|floatformat:2 }}</p></div>
-    <div class="card p-5"><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Net Cash Flow</p><p class="text-2xl font-bold {% if summary.net_cashflow >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %} tabular-nums">{{ summary.net_cashflow|floatformat:2 }}</p></div>
-    <div class="card p-5"><p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Best Month</p><p class="text-sm font-bold text-slate-900 dark:text-white">{{ summary.best_month|default:"—" }}</p></div>
-  </div>
-
-  <!-- Chart -->
-  <div class="card p-5 mb-5">
-    <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Monthly Cash Flow</h2>
-    <div class="h-64"><canvas id="cashflowChart"></canvas></div>
-  </div>
-
-  <!-- Monthly breakdown table -->
-  <div class="card overflow-hidden">
-    <div class="px-5 py-4 border-b border-[var(--card-b)]">
-      <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Monthly Breakdown</h2>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-50/60 dark:bg-slate-900/30">
-          <tr class="border-b border-[var(--card-b)]">
-            <th class="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Month</th>
-            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Inflow</th>
-            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Outflow</th>
-            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Net</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-[var(--card-b)]">
-          {% for row in monthly_data %}
-          <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30 transition-colors">
-            <td class="px-5 py-3.5 text-sm font-medium text-slate-800 dark:text-slate-200">{{ row.month }}</td>
-            <td class="px-4 py-3.5 text-right text-sm font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ row.inflow|floatformat:2 }}</td>
-            <td class="px-4 py-3.5 text-right text-sm font-semibold text-rose-600 dark:text-rose-400 tabular-nums">{{ row.outflow|floatformat:2 }}</td>
-            <td class="px-4 py-3.5 text-right text-sm font-bold tabular-nums {% if row.net >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">{{ row.net|floatformat:2 }}</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="4" class="py-10 text-center text-sm text-slate-400 dark:text-slate-500">No data available for this period</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+  <a href="{% url 'invoices:reports_home' %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
+  <div>
+    <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0">Cash Flow Report</h1>
+    <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">{{ date_from|date:"d M Y" }} — {{ date_to|date:"d M Y" }}</p>
   </div>
 </div>
 
+<!-- Date Filter -->
+<div class="card" style="padding:16px 20px;margin-bottom:20px">
+  <form method="get" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-input" style="width:160px">
+    <span style="color:var(--text-muted)">to</span>
+    <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-input" style="width:160px">
+    <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+  </form>
+</div>
+
+<!-- Summary -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px">
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Total Inflows</p>
+    <p class="kpi-value" style="font-size:20px;color:#16a34a">{{ workspace.currency_symbol }}{{ totals.inflows|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Total Outflows</p>
+    <p class="kpi-value" style="font-size:20px;color:#dc2626">{{ workspace.currency_symbol }}{{ totals.outflows|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Net Cash Flow</p>
+    <p class="kpi-value" style="font-size:20px;color:{% if totals.net >= 0 %}#16a34a{% else %}#dc2626{% endif %}">{{ workspace.currency_symbol }}{{ totals.net|floatformat:2 }}</p>
+  </div>
+</div>
+
+<!-- Chart -->
+<div class="card" style="padding:24px;margin-bottom:20px">
+  <h3 style="font-size:14px;font-weight:700;margin:0 0 20px">Cash Flow Trend</h3>
+  <div style="height:250px"><canvas id="cashflowChart"></canvas></div>
+</div>
+
+<!-- Monthly Breakdown -->
+<div class="card">
+  <div style="padding:18px 20px;border-bottom:1px solid var(--border)"><h3 style="font-size:14px;font-weight:700;margin:0">Monthly Breakdown</h3></div>
+  {% if monthly_rows %}
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>Month</th><th>Inflows</th><th>Outflows</th><th>Net</th><th>Running Balance</th></tr></thead>
+      <tbody>
+        {% for row in monthly_rows %}
+        <tr>
+          <td style="font-weight:600">{{ row.month }}</td>
+          <td style="color:#16a34a;font-weight:600">{{ workspace.currency_symbol }}{{ row.inflows|floatformat:2 }}</td>
+          <td style="color:#dc2626;font-weight:600">{{ workspace.currency_symbol }}{{ row.outflows|floatformat:2 }}</td>
+          <td style="font-weight:700;color:{% if row.net >= 0 %}#16a34a{% else %}#dc2626{% endif %}">{% if row.net < 0 %}-{% endif %}{{ workspace.currency_symbol }}{{ row.net|floatformat:2 }}</td>
+          <td style="font-weight:600">{{ workspace.currency_symbol }}{{ row.running_balance|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:40px 24px;text-align:center"><p style="color:var(--text-muted);font-size:13px;margin:0">No data for the selected period.</p></div>
+  {% endif %}
+</div>
+
 <script>
-const cfCtx = document.getElementById('cashflowChart');
-if (cfCtx) {
-  const labels = {{ chart_labels|safe }};
-  const inflow = {{ chart_inflow|safe }};
-  const outflow = {{ chart_outflow|safe }};
-  const net = {{ chart_net|safe }};
-  new Chart(cfCtx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Inflow', data: inflow, backgroundColor: 'rgba(74,222,128,0.7)', borderRadius: 4 },
-        { label: 'Outflow', data: outflow, backgroundColor: 'rgba(248,113,113,0.7)', borderRadius: 4 },
-        { label: 'Net', data: net, type: 'line', borderColor: '#6366f1', borderWidth: 2.5, fill: false, tension: 0.3, pointRadius: 3 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 }, usePointStyle: true } } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+window.addEventListener('DOMContentLoaded', () => {
+  const c = document.getElementById('cashflowChart');
+  if (c && typeof Chart !== 'undefined') {
+    new Chart(c, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [
+          { label: 'Inflows', data: {{ chart_inflows|safe }}, backgroundColor: 'rgba(74,222,128,.8)', borderRadius: 5 },
+          { label: 'Outflows', data: {{ chart_outflows|safe }}, backgroundColor: 'rgba(248,113,113,.8)', borderRadius: 5 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'top' } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { callback: v => '{{ workspace.currency_symbol }}'+v.toLocaleString() } } }
       }
-    }
-  });
-}
+    });
+  }
+});
 </script>
 {% endblock %}

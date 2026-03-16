@@ -1,110 +1,116 @@
 {% extends "base/layout_app.html" %}
 {% block title %}Clients — InvoiceFlow{% endblock %}
-{% block page_title %}Clients{% endblock %}
-
 {% block content %}
-<div style="max-width:1400px">
-  <div class="page-hdr">
-    <div>
-      <h1 class="page-title">Clients</h1>
-      <p class="page-sub">{{ total_count|default:0 }} client{{ total_count|pluralize }}</p>
-    </div>
-    <div class="page-hdr-actions">
-      <a href="{% url 'invoices:client_create' %}" class="btn btn-primary">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-        New Client
-      </a>
-    </div>
+
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+  <div>
+    <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0 0 3px">Clients</h1>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Manage your client relationships.</p>
   </div>
+  <a href="{% url 'invoices:client_create' %}" class="btn btn-primary btn-sm">
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+    Add Client
+  </a>
+</div>
 
-  <div class="card">
-    <!-- Search -->
-    <div class="filter-bar">
-      <form method="get" style="display:contents">
-        <div class="search-wrap">
-          <svg class="icon" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          <input type="text" name="q" value="{{ query }}" class="search-field" placeholder="Search by name, email, phone…">
-        </div>
-        <button type="submit" class="btn btn-secondary btn-sm">Search</button>
-        {% if query %}<a href="{% url 'invoices:client_list' %}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
-      </form>
-    </div>
+<!-- KPI Row -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px">
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Total Clients</p>
+    <p class="kpi-value" style="font-size:20px">{{ stats.total }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Active Clients</p>
+    <p class="kpi-value" style="font-size:20px">{{ stats.active }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Total Billed</p>
+    <p class="kpi-value" style="font-size:20px">{{ workspace.currency_symbol }}{{ stats.total_billed|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Outstanding</p>
+    <p class="kpi-value" style="font-size:20px;color:#d97706">{{ workspace.currency_symbol }}{{ stats.total_outstanding|floatformat:2 }}</p>
+  </div>
+</div>
 
-    {% if clients %}
-    <div style="overflow-x:auto">
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th>Client</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th style="text-align:right">Total Invoiced</th>
-            <th style="text-align:right">Outstanding</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for client in clients %}
-          <tr onclick="window.location='{% url 'invoices:client_detail' client.id %}'" style="cursor:pointer">
-            <td>
-              <div style="display:flex;align-items:center;gap:10px">
-                <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ client.name|slice:":1"|upper }}</div>
-                <div>
-                  <p style="font-size:13.5px;font-weight:700;color:var(--text-primary)">{{ client.name }}</p>
-                  {% if client.company_name %}<p style="font-size:11px;color:var(--text-muted)">{{ client.company_name }}</p>{% endif %}
-                </div>
-              </div>
-            </td>
-            <td><span style="font-size:13px;color:var(--text-secondary)">{{ client.email|default:"—" }}</span></td>
-            <td><span style="font-size:13px;color:var(--text-secondary)">{{ client.phone|default:"—" }}</span></td>
-            <td style="text-align:right">
-              <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)">{{ client.total_invoiced|default:"—" }}</span>
-            </td>
-            <td style="text-align:right">
-              {% if client.outstanding_amount %}
-              <span class="tabular" style="font-size:13px;font-weight:600;color:#dc2626">{{ client.outstanding_amount }}</span>
-              {% else %}<span style="font-size:13px;color:var(--text-muted)">—</span>{% endif %}
-            </td>
-            <td onclick="event.stopPropagation()">
-              <div x-data="{open:false}" class="relative" style="display:flex;justify-content:flex-end">
-                <button @click="open=!open" class="btn btn-ghost btn-icon btn-sm">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm0 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></svg>
-                </button>
-                <div x-show="open" x-cloak @click.outside="open=false" class="dropdown" style="right:0;min-width:160px"
-                     x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
-                  <div style="padding:6px">
-                    <a href="{% url 'invoices:client_detail' client.id %}" class="dd-item">View Profile</a>
-                    <a href="{% url 'invoices:client_edit' client.id %}" class="dd-item">Edit</a>
-                    <a href="{% url 'invoices:invoice_create' %}?client={{ client.id }}" class="dd-item">New Invoice</a>
-                    <a href="{% url 'invoices:estimate_create' %}?client={{ client.id }}" class="dd-item">New Estimate</a>
-                  </div>
-                </div>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-
-    {% if clients.has_other_pages %}
-    <div class="pagination">
-      <span style="font-size:12.5px;color:var(--text-muted)">Page {{ clients.number }} of {{ clients.paginator.num_pages }}</span>
-      <div class="page-links">
-        {% if clients.has_previous %}<a href="?page={{ clients.previous_page_number }}&q={{ query|urlencode }}" class="pg-btn"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg></a>{% endif %}
-        {% if clients.has_next %}<a href="?page={{ clients.next_page_number }}&q={{ query|urlencode }}" class="pg-btn"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></a>{% endif %}
+<div class="card">
+  <!-- Search & Sort -->
+  <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+    <form method="get" style="flex:1;min-width:200px;display:flex;gap:8px">
+      <div style="position:relative;flex:1">
+        <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search clients…" class="form-input" style="padding-left:34px">
       </div>
-    </div>
-    {% endif %}
+      <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+      {% if search_query %}<a href="{% url 'invoices:client_list' %}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+    </form>
+    <select onchange="window.location='?q={{ search_query }}&ordering='+this.value" class="form-select" style="width:auto;padding:8px 28px 8px 10px;font-size:12.5px">
+      <option value="name" {% if ordering == 'name' %}selected{% endif %}>Name A→Z</option>
+      <option value="-name" {% if ordering == '-name' %}selected{% endif %}>Name Z→A</option>
+      <option value="-invoice_count" {% if ordering == '-invoice_count' %}selected{% endif %}>Most Invoices</option>
+      <option value="-paid_total" {% if ordering == '-paid_total' %}selected{% endif %}>Highest Revenue</option>
+      <option value="-created_at" {% if ordering == '-created_at' %}selected{% endif %}>Newest First</option>
+    </select>
+  </div>
 
-    {% else %}
-    <div class="empty-state">
-      <div class="empty-icon"><svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-      <p class="empty-title">{% if query %}No clients found{% else %}No clients yet{% endif %}</p>
-      <p class="empty-desc">{% if query %}Try a different search.{% else %}Add your first client to start invoicing.{% endif %}</p>
-      {% if not query %}<a href="{% url 'invoices:client_create' %}" class="btn btn-primary">Add Client</a>{% endif %}
+  {% if clients %}
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>Client</th><th>Email</th><th>Phone</th><th>Invoices</th><th>Total Billed</th><th>Outstanding</th><th style="text-align:right">Actions</th></tr></thead>
+      <tbody>
+        {% for cl in clients %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ cl.name|slice:":1"|upper }}</div>
+              <div>
+                <a href="{% url 'invoices:client_detail' cl.id %}" style="font-weight:700;font-size:13.5px;color:var(--text-primary)">{{ cl.name }}</a>
+                {% if cl.tags %}<p style="font-size:11px;color:var(--text-muted);margin:1px 0 0">{{ cl.tags }}</p>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td style="color:var(--text-secondary)"><a href="mailto:{{ cl.email }}" style="color:var(--text-secondary)">{{ cl.email }}</a></td>
+          <td style="color:var(--text-muted)">{{ cl.phone|default:"—" }}</td>
+          <td>
+            <span class="badge b-info">{{ cl.invoice_count }}</span>
+          </td>
+          <td style="font-weight:600;font-variant-numeric:tabular-nums">{% if cl.paid_total %}{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td style="font-variant-numeric:tabular-nums;color:{% if cl.outstanding %}#d97706{% else %}var(--text-muted){% endif %}">{% if cl.outstanding %}{{ workspace.currency_symbol }}{{ cl.outstanding|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td>
+            <div style="display:flex;gap:4px;justify-content:flex-end">
+              <a href="{% url 'invoices:client_detail' cl.id %}" class="btn btn-xs btn-ghost">View</a>
+              <a href="{% url 'invoices:client_edit' cl.id %}" class="btn btn-xs btn-ghost">Edit</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if clients.has_other_pages %}
+  <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+    <p style="font-size:12.5px;color:var(--text-muted);margin:0">Page {{ clients.number }} of {{ clients.paginator.num_pages }} — {{ clients.paginator.count }} client{% if clients.paginator.count != 1 %}s{% endif %}</p>
+    <div style="display:flex;gap:4px">
+      {% if clients.has_previous %}<a href="?q={{ search_query }}&ordering={{ ordering }}&page={{ clients.previous_page_number }}" class="btn btn-xs btn-secondary">← Prev</a>{% endif %}
+      {% if clients.has_next %}<a href="?q={{ search_query }}&ordering={{ ordering }}&page={{ clients.next_page_number }}" class="btn btn-xs btn-secondary">Next →</a>{% endif %}
     </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="padding:64px 24px;text-align:center">
+    <div class="stat-icon si-teal" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+    {% if search_query %}
+    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No clients found</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Try a different search term.</p>
+    <a href="{% url 'invoices:client_list' %}" class="btn btn-secondary btn-sm">Clear Search</a>
+    {% else %}
+    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No clients yet</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Add your first client to start creating invoices.</p>
+    <a href="{% url 'invoices:client_create' %}" class="btn btn-primary btn-sm">Add Client</a>
     {% endif %}
   </div>
+  {% endif %}
 </div>
 {% endblock %}

@@ -1,97 +1,142 @@
 {% extends "base/layout_app.html" %}
 {% block title %}New Recurring Schedule — InvoiceFlow{% endblock %}
-
 {% block content %}
-<div class="max-w-2xl mx-auto">
-  <div class="flex items-center gap-3 mb-6">
-    <a href="{% url 'invoices:schedule_list' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-    </a>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">New Recurring Schedule</h1>
+
+<div style="max-width:760px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+    <a href="{% url 'invoices:recurring_list' %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
+    <div>
+      <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0">New Recurring Schedule</h1>
+      <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">Automate invoice generation on a recurring basis.</p>
+    </div>
   </div>
 
-  <form method="post" action="{% url 'invoices:schedule_create' %}">
+  <form method="post" action="{% url 'invoices:recurring_create' %}" x-data="{ hasEnd: false }">
     {% csrf_token %}
-    <div class="card p-6 mb-4 space-y-4">
-      <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Schedule Configuration</h2>
-      <div>
-        <label class="lbl">Description <span class="text-rose-500">*</span></label>
-        <input type="text" name="description" required placeholder="Monthly retainer, Weekly consulting, etc." class="fi text-sm">
+
+    <div class="card" style="padding:24px;margin-bottom:16px">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 18px">Schedule Details</h2>
+      <div class="form-group">
+        <label class="form-label">Schedule Name *</label>
+        <input type="text" name="name" class="form-input" placeholder="e.g. Monthly Retainer — Acme Corp" required>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div class="col-span-2">
-          <label class="lbl">Client <span class="text-rose-500">*</span></label>
-          <select name="client_id" required class="fi text-sm">
-            <option value="">Select client…</option>
-            {% for client in clients %}<option value="{{ client.id }}">{{ client.name }}</option>{% endfor %}
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Client *</label>
+          <select name="client_id" class="form-select" required>
+            <option value="">— Select client —</option>
+            {% for cl in clients %}
+            <option value="{{ cl.id }}">{{ cl.name }}</option>
+            {% endfor %}
           </select>
         </div>
-        <div>
-          <label class="lbl">Amount <span class="text-rose-500">*</span></label>
-          <input type="number" name="amount" required min="0.01" step="any" placeholder="0.00" class="fi text-sm">
-        </div>
-        <div>
-          <label class="lbl">Currency</label>
-          <select name="currency" class="fi text-sm">
-            <option value="NGN">₦ NGN</option>
-            <option value="USD">$ USD</option>
-            <option value="EUR">€ EUR</option>
-            <option value="GBP">£ GBP</option>
+        <div class="form-group">
+          <label class="form-label">Currency</label>
+          <select name="currency" class="form-select">
+            {% for code, name in currencies %}
+            <option value="{{ code }}" {% if code == 'NGN' %}selected{% endif %}>{{ code }}</option>
+            {% endfor %}
           </select>
         </div>
-        <div>
-          <label class="lbl">Interval Value <span class="text-rose-500">*</span></label>
-          <input type="number" name="interval_value" required min="1" value="1" class="fi text-sm">
-        </div>
-        <div>
-          <label class="lbl">Interval Type <span class="text-rose-500">*</span></label>
-          <select name="interval_type" required class="fi text-sm">
-            {% if interval_choices %}
-              {% for value, label in interval_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
-            {% else %}
-              <option value="monthly">Monthly</option>
-              <option value="weekly">Weekly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="annually">Annually</option>
-              <option value="daily">Daily</option>
-            {% endif %}
+        <div class="form-group">
+          <label class="form-label">Frequency *</label>
+          <select name="frequency" class="form-select" required>
+            <option value="weekly">Weekly</option>
+            <option value="biweekly">Every 2 Weeks</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="biannually">Every 6 Months</option>
+            <option value="annually">Annually</option>
           </select>
         </div>
-        <div>
-          <label class="lbl">Start Date <span class="text-rose-500">*</span></label>
-          <input type="date" name="start_date" required value="{{ today|date:'Y-m-d' }}" class="fi text-sm">
-        </div>
-        <div>
-          <label class="lbl">End Date (optional)</label>
-          <input type="date" name="end_date" class="fi text-sm">
-        </div>
-        <div>
-          <label class="lbl">Due Days After Issue</label>
-          <input type="number" name="due_days" min="0" max="365" value="30" class="fi text-sm">
-        </div>
-        <div>
-          <label class="lbl">Tax Rate (%)</label>
-          <input type="number" name="tax_rate" min="0" max="100" step="any" value="0" class="fi text-sm">
+        <div class="form-group">
+          <label class="form-label">Start Date *</label>
+          <input type="date" name="start_date" class="form-input" value="{{ today }}" required>
         </div>
       </div>
-      <div>
-        <label class="lbl">Notes</label>
-        <textarea name="notes" rows="3" placeholder="Any notes for the recurring invoice…" class="fi text-sm"></textarea>
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" name="auto_send" value="true" checked class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-          <span class="text-sm text-slate-600 dark:text-slate-400">Automatically send invoice to client when generated</span>
+      <div style="margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+          <input type="checkbox" x-model="hasEnd" style="width:16px;height:16px;accent-color:var(--brand-600)">
+          <span style="font-size:13.5px;font-weight:600">Set an end date</span>
         </label>
+      </div>
+      <div x-show="hasEnd" class="form-group">
+        <label class="form-label">End Date</label>
+        <input type="date" name="end_date" class="form-input">
+      </div>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Payment Terms (days)</label>
+          <input type="number" name="payment_terms_days" class="form-input" value="30" min="0" placeholder="30">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Auto-send Invoice</label>
+          <select name="auto_send" class="form-select">
+            <option value="false">No — Save as Draft</option>
+            <option value="true">Yes — Send Automatically</option>
+          </select>
+        </div>
       </div>
     </div>
 
-    <div class="flex items-center justify-end gap-3">
-      <a href="{% url 'invoices:schedule_list' %}" class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">Cancel</a>
-      <button type="submit" class="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-violet-600/20">
-        Create Schedule
-      </button>
+    <div class="card" style="padding:24px;margin-bottom:16px" x-data="recurringItems()">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 16px">Invoice Line Items</h2>
+      <div style="overflow-x:auto;margin-bottom:12px">
+        <table style="width:100%;border-collapse:collapse;min-width:400px">
+          <thead>
+            <tr style="background:var(--bg-subtle)">
+              <th style="padding:8px 10px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)">Description</th>
+              <th style="padding:8px 10px;text-align:right;width:80px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)">Qty</th>
+              <th style="padding:8px 10px;text-align:right;width:110px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)">Rate</th>
+              <th style="padding:8px 10px;text-align:right;width:110px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)">Amount</th>
+              <th style="width:32px"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(item,idx) in items" :key="item.id">
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:7px 6px"><input type="text" :name="'items['+idx+'][description]'" x-model="item.description" @input="calc()" class="form-input" placeholder="Service description…" required></td>
+                <td style="padding:7px 6px"><input type="number" :name="'items['+idx+'][quantity]'" x-model.number="item.qty" @input="calc()" class="form-input" style="text-align:right" min="0.001" step="0.001" required></td>
+                <td style="padding:7px 6px"><input type="number" :name="'items['+idx+'][unit_price]'" x-model.number="item.rate" @input="calc()" class="form-input" style="text-align:right" min="0" step="0.01" required></td>
+                <td style="padding:7px 10px;text-align:right;font-size:13px;font-weight:600" x-text="fmt(item.qty*item.rate)"></td>
+                <td style="padding:7px 4px;text-align:center"><button type="button" @click="removeItem(idx)" class="btn btn-ghost btn-xs btn-icon" style="width:26px;height:26px;color:var(--text-muted)"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <button type="button" @click="addItem()" class="btn btn-ghost btn-sm" style="color:var(--brand-600);gap:7px"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>Add Item</button>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="width:200px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;font-size:12.5px"><span style="color:var(--text-secondary)">Subtotal</span><span style="font-weight:600" x-text="fmt(subtotal)"></span></div>
+          <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:800;padding-top:8px;border-top:2px solid var(--border)"><span>Total</span><span x-text="fmt(subtotal)"></span></div>
+        </div>
+      </div>
+      <input type="hidden" name="item_count" :value="items.length">
+    </div>
+
+    <div class="card" style="padding:24px;margin-bottom:24px">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 16px">Notes</h2>
+      <textarea name="client_notes" class="form-textarea" rows="3" placeholder="Client note for the generated invoices…"></textarea>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button type="submit" class="btn btn-primary">Create Schedule</button>
+      <a href="{% url 'invoices:recurring_list' %}" class="btn btn-secondary">Cancel</a>
     </div>
   </form>
 </div>
+
+<script>
+function recurringItems() {
+  return {
+    items: [{ id: 0, description: '', qty: 1, rate: 0 }],
+    subtotal: 0, _uid: 1,
+    addItem() { this.items.push({ id: this._uid++, description: '', qty: 1, rate: 0 }); },
+    removeItem(i) { if(this.items.length > 1) this.items.splice(i, 1); this.calc(); },
+    calc() { this.subtotal = this.items.reduce((s, i) => s + parseFloat(i.qty||0)*parseFloat(i.rate||0), 0); },
+    fmt(v) { return (v||0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  }
+}
+</script>
 {% endblock %}

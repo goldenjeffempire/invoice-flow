@@ -1,58 +1,42 @@
 {% extends "base/layout_app.html" %}
 {% block title %}Transactions — InvoiceFlow{% endblock %}
-
 {% block content %}
-<div class="max-w-[1440px] mx-auto">
-  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-    <div>
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Transactions</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">All payment transactions</p>
-    </div>
-    <a href="{% url 'invoices:payment_overview' %}" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">← Payment Overview</a>
-  </div>
 
-  <div class="card overflow-hidden">
-    {% if transactions %}
-    <div class="overflow-x-auto">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-50/60 dark:bg-slate-900/30">
-          <tr class="border-b border-[var(--card-b)]">
-            <th class="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Date</th>
-            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Reference</th>
-            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Type</th>
-            <th class="text-left px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Status</th>
-            <th class="text-right px-4 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500">Amount</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-[var(--card-b)]">
-          {% for txn in transactions %}
-          <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-900/30 transition-colors">
-            <td class="px-5 py-3.5 text-xs text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap">{{ txn.created_at|date:"M j, Y g:i A" }}</td>
-            <td class="px-4 py-3.5">
-              <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 font-mono">{{ txn.reference|default:txn.id }}</p>
-              {% if txn.description %}<p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ txn.description|truncatechars:50 }}</p>{% endif %}
-            </td>
-            <td class="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400 capitalize">{{ txn.transaction_type|default:"payment" }}</td>
-            <td class="px-4 py-3.5">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10.5px] font-bold
-                {% if txn.status == 'success' or txn.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400
-                {% elif txn.status == 'pending' %}bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400
-                {% elif txn.status == 'failed' %}bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400
-                {% else %}bg-slate-100 text-slate-600 dark:bg-slate-800{% endif %}">
-                {{ txn.status|default:"—"|title }}
-              </span>
-            </td>
-            <td class="px-4 py-3.5 text-right">
-              <span class="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ txn.currency|default:"" }} {{ txn.amount|floatformat:2 }}</span>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="py-16 text-center text-sm text-slate-400 dark:text-slate-500">No transactions found</div>
-    {% endif %}
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+  <div>
+    <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0 0 3px">Transactions</h1>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">All payment transactions in your workspace.</p>
   </div>
+  <a href="{% url 'invoices:payment_overview' %}" class="btn btn-secondary btn-sm">← Payment Overview</a>
+</div>
+
+<div class="card">
+  {% if transactions %}
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>Status</th><th>Reference</th></tr></thead>
+      <tbody>
+        {% for txn in transactions %}
+        <tr>
+          <td style="color:var(--text-secondary)">{{ txn.created_at|date:"d M Y H:i" }}</td>
+          <td><span class="badge b-info">{{ txn.get_transaction_type_display }}</span></td>
+          <td style="color:var(--text-primary)">{{ txn.description|truncatechars:60|default:"—" }}</td>
+          <td style="font-weight:700;font-variant-numeric:tabular-nums;color:{% if txn.transaction_type == 'payment' %}#16a34a{% elif txn.transaction_type == 'refund' %}#dc2626{% else %}var(--text-primary){% endif %}">
+            {% if txn.transaction_type != 'payment' %}-{% endif %}{{ txn.currency }}{{ txn.amount|floatformat:2 }}
+          </td>
+          <td><span class="badge b-{{ txn.status|lower }}">{{ txn.status }}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);font-family:monospace">{{ txn.external_id|truncatechars:20|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:64px 24px;text-align:center">
+    <div class="stat-icon si-indigo" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg></div>
+    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No transactions yet</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Transactions will appear here once payments are processed.</p>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

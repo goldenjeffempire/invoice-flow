@@ -1,60 +1,42 @@
 {% extends "base/layout_app.html" %}
-{% block title %}Payment #{{ payment.id }} — InvoiceFlow{% endblock %}
-
+{% block title %}Payment — InvoiceFlow{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto">
-  <div class="flex items-center gap-3 mb-6">
-    <a href="{% url 'invoices:payment_overview' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-    </a>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Payment Details</h1>
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+  <a href="{% url 'invoices:payment_overview' %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
+  <div>
+    <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0">Payment Details</h1>
+    <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">{{ payment.payment_date|date:"d F Y H:i" }}</p>
   </div>
+</div>
 
-  <div class="card p-6">
-    <!-- Amount hero -->
-    <div class="flex items-center gap-4 mb-6 pb-6 border-b border-[var(--card-b)]">
-      <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
-        <svg class="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 13l4 4L19 7"/></svg>
-      </div>
-      <div>
-        <p class="text-3xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{{ payment.amount|floatformat:2 }}</p>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ payment.payment_date|date:"M j, Y" }}</p>
-      </div>
-      <div class="ml-auto">
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold
-          {% if payment.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400
-          {% elif payment.status == 'pending' %}bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400
-          {% elif payment.status == 'failed' %}bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400
-          {% else %}bg-slate-100 text-slate-600 dark:bg-slate-800{% endif %}">
-          {{ payment.get_status_display|default:"Completed" }}
-        </span>
-      </div>
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;max-width:900px">
+  <div class="card" style="padding:28px">
+    <div style="text-align:center;padding:24px 0;margin-bottom:24px;border-bottom:1px solid var(--border)">
+      <div class="stat-icon si-green" style="margin:0 auto 12px;width:56px;height:56px;border-radius:16px"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>
+      <p style="font-size:32px;font-weight:900;margin:0;color:#16a34a">{{ payment.currency }}{{ payment.amount|floatformat:2 }}</p>
+      <p style="font-size:13px;color:var(--text-muted);margin:6px 0 0">{{ payment.get_status_display }}</p>
     </div>
-
-    <!-- Details grid -->
-    <div class="grid grid-cols-2 gap-x-8 gap-y-4">
-      <div>
-        <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Invoice</p>
-        <a href="{% url 'invoices:invoice_detail' payment.invoice.id %}" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">{{ payment.invoice.invoice_number }}</a>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px"><span style="color:var(--text-secondary)">Invoice</span><a href="{% url 'invoices:invoice_detail' payment.invoice.id %}" style="font-weight:700;color:var(--brand-600)">{{ payment.invoice.invoice_number }}</a></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px"><span style="color:var(--text-secondary)">Client</span><span style="font-weight:600">{{ payment.invoice.client.name }}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px"><span style="color:var(--text-secondary)">Payment Date</span><span>{{ payment.payment_date|date:"d M Y" }}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px"><span style="color:var(--text-secondary)">Method</span><span class="badge b-info">{{ payment.get_payment_method_display }}</span></div>
+      {% if payment.transaction_id %}<div style="display:flex;justify-content:space-between;align-items:center;font-size:13.5px"><span style="color:var(--text-secondary)">Reference</span><span style="font-family:monospace;font-size:12px">{{ payment.transaction_id }}</span></div>{% endif %}
+      {% if payment.notes %}<div style="padding:12px 14px;background:var(--bg-subtle);border-radius:8px;font-size:13px;color:var(--text-secondary)">{{ payment.notes }}</div>{% endif %}
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card" style="padding:20px">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 12px">Related Invoice</p>
+      <p style="font-size:14px;font-weight:700;margin:0 0 4px"><a href="{% url 'invoices:invoice_detail' payment.invoice.id %}" style="color:var(--brand-600)">{{ payment.invoice.invoice_number }}</a></p>
+      <p style="font-size:13px;margin:0 0 12px;color:var(--text-secondary)">{{ payment.invoice.client.name }}</p>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Invoice Total</span><span style="font-weight:600">{{ payment.invoice.currency }}{{ payment.invoice.total_amount|floatformat:2 }}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">This Payment</span><span style="font-weight:600;color:#16a34a">{{ payment.currency }}{{ payment.amount|floatformat:2 }}</span></div>
+        {% if payment.invoice.amount_due > 0 %}<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Balance Due</span><span style="font-weight:600;color:#d97706">{{ payment.invoice.currency }}{{ payment.invoice.amount_due|floatformat:2 }}</span></div>{% endif %}
       </div>
-      <div>
-        <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Client</p>
-        <a href="{% url 'invoices:client_detail' payment.invoice.client.id %}" class="text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">{{ payment.invoice.client.name }}</a>
-      </div>
-      <div>
-        <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Payment Method</p>
-        <p class="text-sm text-slate-700 dark:text-slate-300">{{ payment.get_payment_method_display }}</p>
-      </div>
-      <div>
-        <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-0.5">Reference</p>
-        <p class="text-sm text-slate-700 dark:text-slate-300 font-mono">{{ payment.reference|default:"—" }}</p>
-      </div>
-      {% if payment.notes %}
-      <div class="col-span-2">
-        <p class="text-[10.5px] font-bold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Notes</p>
-        <p class="text-sm text-slate-600 dark:text-slate-400">{{ payment.notes }}</p>
-      </div>
-      {% endif %}
+      <a href="{% url 'invoices:invoice_detail' payment.invoice.id %}" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;margin-top:14px">View Invoice →</a>
     </div>
   </div>
 </div>

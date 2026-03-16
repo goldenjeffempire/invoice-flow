@@ -1,88 +1,82 @@
 {% extends "base/layout_app.html" %}
 {% block title %}Record Payment — InvoiceFlow{% endblock %}
-
 {% block content %}
-<div class="max-w-xl mx-auto">
-  <div class="flex items-center gap-3 mb-6">
-    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-    </a>
+
+<div style="max-width:640px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+    <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
     <div>
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Record Payment</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">For {{ invoice.invoice_number }} · {{ invoice.client.name }}</p>
+      <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0">Record Payment</h1>
+      <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">{{ invoice.invoice_number }} · {{ invoice.client.name }}</p>
     </div>
   </div>
 
-  <!-- Invoice summary -->
-  <div class="card p-4 mb-5 flex items-center gap-4">
-    <div class="flex-1">
-      <div class="flex items-center gap-2 mb-1">
-        <span class="text-sm font-bold text-slate-800 dark:text-slate-200">{{ invoice.invoice_number }}</span>
-        <span class="text-xs text-slate-500 dark:text-slate-400">·</span>
-        <span class="text-sm text-slate-600 dark:text-slate-400">{{ invoice.client.name }}</span>
+  <!-- Invoice Summary -->
+  <div class="card" style="padding:20px;margin-bottom:20px;border-color:var(--brand-600)">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 4px">Invoice Total</p>
+        <p style="font-size:20px;font-weight:800;margin:0">{{ invoice.currency }}{{ invoice.total_amount|floatformat:2 }}</p>
       </div>
-      <div class="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-        <span>Total: <strong class="text-slate-700 dark:text-slate-300">{{ invoice.currency }} {{ invoice.total_amount|floatformat:2 }}</strong></span>
-        <span>Paid: <strong class="text-emerald-600 dark:text-emerald-400">{{ invoice.currency }} {{ invoice.amount_paid|floatformat:2 }}</strong></span>
-        <span>Due: <strong class="text-rose-600 dark:text-rose-400">{{ invoice.currency }} {{ invoice.amount_due|floatformat:2 }}</strong></span>
+      <div>
+        <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 4px">Amount Paid</p>
+        <p style="font-size:20px;font-weight:800;margin:0;color:#16a34a">{{ invoice.currency }}{{ invoice.amount_paid|floatformat:2 }}</p>
+      </div>
+      <div>
+        <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 4px">Balance Due</p>
+        <p style="font-size:20px;font-weight:800;margin:0;color:#d97706">{{ invoice.currency }}{{ invoice.amount_due|floatformat:2 }}</p>
       </div>
     </div>
   </div>
 
   <form method="post" action="{% url 'invoices:record_offline_payment' invoice.id %}">
     {% csrf_token %}
-    <div class="card p-6 space-y-4">
-      <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Payment Details</h2>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="lbl">Amount <span class="text-rose-500">*</span></label>
-          <input type="number" name="amount" required min="0.01" step="any" max="{{ invoice.amount_due }}"
-                 value="{{ invoice.amount_due }}" placeholder="{{ invoice.amount_due|floatformat:2 }}"
-                 class="fi text-sm">
+    <div class="card" style="padding:24px;margin-bottom:20px">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 18px">Payment Details</h2>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Amount Received *</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:var(--text-muted)">{{ invoice.currency }}</span>
+            <input type="number" name="amount" class="form-input" style="padding-left:48px" value="{{ invoice.amount_due|floatformat:2 }}" min="0.01" step="0.01" max="{{ invoice.amount_due }}" required placeholder="0.00">
+          </div>
         </div>
-        <div>
-          <label class="lbl">Payment Date <span class="text-rose-500">*</span></label>
-          <input type="date" name="payment_date" required value="{{ today|date:'Y-m-d' }}" class="fi text-sm">
+        <div class="form-group">
+          <label class="form-label">Payment Date *</label>
+          <input type="date" name="payment_date" class="form-input" value="{{ today }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method *</label>
+          <select name="payment_method" class="form-select" required>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="cash">Cash</option>
+            <option value="card">Card / POS</option>
+            <option value="mobile_money">Mobile Money</option>
+            <option value="cheque">Cheque</option>
+            <option value="paypal">PayPal</option>
+            <option value="stripe">Stripe</option>
+            <option value="flutterwave">Flutterwave</option>
+            <option value="paystack">Paystack</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transaction Reference</label>
+          <input type="text" name="transaction_id" class="form-input" placeholder="Bank reference, receipt #, etc.">
         </div>
       </div>
-
-      <div>
-        <label class="lbl">Payment Method <span class="text-rose-500">*</span></label>
-        <select name="payment_method" required class="fi text-sm">
-          <option value="bank_transfer">Bank Transfer</option>
-          <option value="cash">Cash</option>
-          <option value="cheque">Cheque</option>
-          <option value="card">Card</option>
-          <option value="mobile_money">Mobile Money</option>
-          <option value="crypto">Crypto</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-
-      <div>
-        <label class="lbl">Reference / Transaction ID</label>
-        <input type="text" name="reference" placeholder="e.g. TRX123456789" class="fi text-sm">
-      </div>
-
-      <div>
-        <label class="lbl">Notes</label>
-        <textarea name="notes" rows="3" placeholder="Any additional payment notes…" class="fi text-sm"></textarea>
-      </div>
-
-      <div class="flex items-center gap-2 pt-1">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" name="send_receipt" value="true" checked class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-          <span class="text-sm text-slate-600 dark:text-slate-400">Send payment receipt to client</span>
-        </label>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Notes</label>
+        <textarea name="notes" class="form-textarea" rows="3" placeholder="Any notes about this payment…"></textarea>
       </div>
     </div>
 
-    <div class="flex items-center justify-end gap-3 mt-5">
-      <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">Cancel</a>
-      <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl transition-colors shadow-sm shadow-emerald-600/20">
+    <div style="display:flex;gap:8px">
+      <button type="submit" class="btn btn-success">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
         Record Payment
       </button>
+      <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn btn-secondary">Cancel</a>
     </div>
   </form>
 </div>

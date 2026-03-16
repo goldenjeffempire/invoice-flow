@@ -1,132 +1,125 @@
 {% extends "base/layout_app.html" %}
 {% block title %}Revenue Report — InvoiceFlow{% endblock %}
-
 {% block content %}
-<div class="max-w-[1440px] mx-auto">
 
-  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-    <div class="flex items-center gap-3">
-      <a href="{% url 'invoices:reports_home' %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-      </a>
-      <div>
-        <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Revenue Report</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{{ date_range.label|default:"This month" }}</p>
-      </div>
-    </div>
-    <div class="flex items-center gap-2">
-      <form method="get" class="flex items-center gap-2">
-        <select name="preset" onchange="this.form.submit()" class="fi h-9 text-sm w-36">
-          <option value="this_month" {% if current_preset == 'this_month' %}selected{% endif %}>This Month</option>
-          <option value="last_month" {% if current_preset == 'last_month' %}selected{% endif %}>Last Month</option>
-          <option value="this_quarter" {% if current_preset == 'this_quarter' %}selected{% endif %}>This Quarter</option>
-          <option value="this_year" {% if current_preset == 'this_year' %}selected{% endif %}>This Year</option>
-        </select>
-      </form>
-      <a href="{% url 'invoices:export_report_csv' 'revenue' %}?preset={{ current_preset|default:'this_month' }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Export CSV
-      </a>
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="{% url 'invoices:reports_home' %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
+    <div>
+      <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0">Revenue Report</h1>
+      <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">{{ date_from|date:"d M Y" }} — {{ date_to|date:"d M Y" }}</p>
     </div>
   </div>
+  <a href="?export=csv&date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}" class="btn btn-secondary btn-sm">Export CSV</a>
+</div>
 
-  <!-- KPIs -->
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="card p-5">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Total Revenue</p>
-      <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{{ summary.total_revenue|floatformat:2 }}</p>
-    </div>
-    <div class="card p-5">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Invoiced</p>
-      <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ summary.total_invoiced|floatformat:2 }}</p>
-    </div>
-    <div class="card p-5">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Collection Rate</p>
-      <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ summary.collection_rate|floatformat:1 }}%</p>
-    </div>
-    <div class="card p-5">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-1">Avg Invoice</p>
-      <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ summary.avg_invoice|floatformat:2 }}</p>
-    </div>
+<!-- Date Filter -->
+<div class="card" style="padding:16px 20px;margin-bottom:20px">
+  <form method="get" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-input" style="width:160px">
+    <span style="color:var(--text-muted)">to</span>
+    <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-input" style="width:160px">
+    <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+  </form>
+</div>
+
+<!-- KPI Summary -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:20px">
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Total Revenue</p>
+    <p class="kpi-value" style="font-size:20px;color:#16a34a">{{ workspace.currency_symbol }}{{ totals.revenue|floatformat:2 }}</p>
   </div>
-
-  <!-- Revenue by month chart -->
-  <div class="card p-5 mb-5">
-    <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Revenue by Month</h2>
-    <div class="h-56"><canvas id="revByMonthChart"></canvas></div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Invoices Paid</p>
+    <p class="kpi-value" style="font-size:20px">{{ totals.paid_count }}</p>
   </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-
-    <!-- Revenue by client -->
-    <div class="card">
-      <div class="px-5 py-4 border-b border-[var(--card-b)]">
-        <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Revenue by Client</h2>
-      </div>
-      <div class="divide-y divide-[var(--card-b)]">
-        {% for row in revenue_by_client %}
-        <div class="flex items-center gap-3 px-5 py-3.5">
-          <div class="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-white text-[10px] font-black flex-shrink-0">{{ row.client__name|slice:":1"|upper }}</div>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{{ row.client__name }}</p>
-            <div class="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-1.5 overflow-hidden">
-              <div class="h-full bg-indigo-500 rounded-full" style="width:{{ row.pct|floatformat:0 }}%"></div>
-            </div>
-          </div>
-          <div class="text-right flex-shrink-0">
-            <p class="text-sm font-bold text-slate-800 dark:text-slate-200 tabular-nums">{{ row.total|floatformat:2 }}</p>
-            <p class="text-[10.5px] text-slate-400 dark:text-slate-500">{{ row.pct|floatformat:0 }}%</p>
-          </div>
-        </div>
-        {% empty %}
-        <div class="py-10 text-center text-sm text-slate-400 dark:text-slate-500">No revenue data</div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <!-- Revenue by category / recent payments -->
-    <div class="card">
-      <div class="px-5 py-4 border-b border-[var(--card-b)]">
-        <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200">Recent Payments</h2>
-      </div>
-      <div class="divide-y divide-[var(--card-b)]">
-        {% for pmt in recent_payments %}
-        <div class="flex items-center gap-3 px-5 py-3.5">
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ pmt.invoice.client.name }}</p>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{{ pmt.payment_date|date:"M j, Y" }} · {{ pmt.invoice.invoice_number }}</p>
-          </div>
-          <p class="text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">+{{ pmt.amount|floatformat:2 }}</p>
-        </div>
-        {% empty %}
-        <div class="py-10 text-center text-sm text-slate-400 dark:text-slate-500">No payments in this period</div>
-        {% endfor %}
-      </div>
-    </div>
-
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Outstanding</p>
+    <p class="kpi-value" style="font-size:20px;color:#d97706">{{ workspace.currency_symbol }}{{ totals.outstanding|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Avg Invoice Value</p>
+    <p class="kpi-value" style="font-size:20px">{{ workspace.currency_symbol }}{{ totals.avg_invoice|floatformat:2 }}</p>
   </div>
 </div>
 
+<!-- Revenue Chart -->
+<div class="card" style="padding:24px;margin-bottom:20px">
+  <h3 style="font-size:14px;font-weight:700;margin:0 0 20px">Monthly Revenue Trend</h3>
+  <div style="height:240px"><canvas id="revenueChart"></canvas></div>
+</div>
+
+<!-- By Client -->
+{% if by_client %}
+<div class="card" style="margin-bottom:20px">
+  <div style="padding:18px 20px;border-bottom:1px solid var(--border)"><h3 style="font-size:14px;font-weight:700;margin:0">Revenue by Client</h3></div>
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>Client</th><th>Invoices</th><th>Revenue</th><th>Outstanding</th><th>% of Total</th></tr></thead>
+      <tbody>
+        {% for row in by_client %}
+        <tr>
+          <td style="font-weight:600"><a href="{% url 'invoices:client_detail' row.client__id %}" style="color:var(--text-primary)">{{ row.client__name }}</a></td>
+          <td>{{ row.invoice_count }}</td>
+          <td style="font-weight:700;color:#16a34a">{{ workspace.currency_symbol }}{{ row.total_revenue|floatformat:2 }}</td>
+          <td style="color:{% if row.outstanding > 0 %}#d97706{% else %}var(--text-muted){% endif %}">{% if row.outstanding > 0 %}{{ workspace.currency_symbol }}{{ row.outstanding|floatformat:2 }}{% else %}—{% endif %}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;height:6px;background:var(--bg-subtle);border-radius:99px;overflow:hidden"><div style="height:100%;background:var(--brand-600);border-radius:99px;width:{{ row.pct|floatformat:0 }}%"></div></div>
+              <span style="font-size:12px;font-weight:600;min-width:36px;text-align:right">{{ row.pct|floatformat:1 }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Invoice List -->
+<div class="card">
+  <div style="padding:18px 20px;border-bottom:1px solid var(--border)"><h3 style="font-size:14px;font-weight:700;margin:0">Invoice Details</h3></div>
+  {% if invoices %}
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>Invoice #</th><th>Client</th><th>Issue Date</th><th>Amount</th><th>Paid</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td><a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:700;color:var(--brand-600)">{{ inv.invoice_number }}</a></td>
+          <td style="font-weight:500">{{ inv.client.name }}</td>
+          <td style="color:var(--text-secondary)">{{ inv.issue_date|date:"d M Y" }}</td>
+          <td style="font-variant-numeric:tabular-nums;font-weight:600">{{ inv.currency }}{{ inv.total_amount|floatformat:2 }}</td>
+          <td style="font-weight:600;color:#16a34a">{{ inv.currency }}{{ inv.amount_paid|floatformat:2 }}</td>
+          <td><span class="badge b-{{ inv.status }}"><span class="badge-dot"></span>{{ inv.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="padding:40px 24px;text-align:center"><p style="color:var(--text-muted);font-size:13px;margin:0">No invoices in the selected period.</p></div>
+  {% endif %}
+</div>
+
 <script>
-const revCtx = document.getElementById('revByMonthChart');
-if (revCtx) {
-  const labels = {{ chart_labels|safe }};
-  const values = {{ chart_values|safe }};
-  new Chart(revCtx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ label: 'Revenue', data: values, backgroundColor: 'rgba(99,102,241,0.7)', borderColor: '#6366f1', borderWidth: 0, borderRadius: 6 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+window.addEventListener('DOMContentLoaded', () => {
+  const c = document.getElementById('revenueChart');
+  if (c && typeof Chart !== 'undefined') {
+    new Chart(c, {
+      type: 'bar',
+      data: {
+        labels: {{ chart_labels|safe }},
+        datasets: [{ label: 'Revenue', data: {{ chart_data|safe }}, backgroundColor: 'rgba(99,102,241,.85)', borderRadius: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` {{ workspace.currency_symbol }}${c.parsed.y.toLocaleString()}` } } },
+        scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { callback: v => '{{ workspace.currency_symbol }}'+v.toLocaleString() } } }
       }
-    }
-  });
-}
+    });
+  }
+});
 </script>
 {% endblock %}

@@ -1,76 +1,78 @@
 {% extends "base/layout_app.html" %}
-{% block title %}Edit Schedule — InvoiceFlow{% endblock %}
-
+{% block title %}Edit {{ schedule.name }} — InvoiceFlow{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto">
-  <div class="flex items-center gap-3 mb-6">
-    <a href="{% url 'invoices:schedule_detail' schedule.id %}" class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-    </a>
-    <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Edit Schedule</h1>
+
+<div style="max-width:760px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+    <a href="{% url 'invoices:recurring_detail' schedule.id %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
+    <div>
+      <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0">Edit Schedule</h1>
+      <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">{{ schedule.name }}</p>
+    </div>
   </div>
 
-  <form method="post" action="{% url 'invoices:schedule_edit' schedule.id %}">
+  <form method="post" action="{% url 'invoices:recurring_edit' schedule.id %}">
     {% csrf_token %}
-    <div class="card p-6 mb-4 space-y-4">
-      <div>
-        <label class="lbl">Description <span class="text-rose-500">*</span></label>
-        <input type="text" name="description" required value="{{ schedule.description }}" class="fi text-sm">
+    <div class="card" style="padding:24px;margin-bottom:16px">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 18px">Schedule Details</h2>
+      <div class="form-group">
+        <label class="form-label">Schedule Name *</label>
+        <input type="text" name="name" class="form-input" value="{{ schedule.name }}" required>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="lbl">Amount <span class="text-rose-500">*</span></label>
-          <input type="number" name="amount" required min="0.01" step="any" value="{{ schedule.amount }}" class="fi text-sm">
-        </div>
-        <div>
-          <label class="lbl">Currency</label>
-          <select name="currency" class="fi text-sm">
-            <option value="NGN" {% if schedule.currency == 'NGN' %}selected{% endif %}>₦ NGN</option>
-            <option value="USD" {% if schedule.currency == 'USD' %}selected{% endif %}>$ USD</option>
-            <option value="EUR" {% if schedule.currency == 'EUR' %}selected{% endif %}>€ EUR</option>
-            <option value="GBP" {% if schedule.currency == 'GBP' %}selected{% endif %}>£ GBP</option>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Client *</label>
+          <select name="client_id" class="form-select" required>
+            {% for cl in clients %}
+            <option value="{{ cl.id }}" {% if schedule.client_id == cl.id %}selected{% endif %}>{{ cl.name }}</option>
+            {% endfor %}
           </select>
         </div>
-        <div>
-          <label class="lbl">Interval Value</label>
-          <input type="number" name="interval_value" min="1" value="{{ schedule.interval_value }}" class="fi text-sm">
-        </div>
-        <div>
-          <label class="lbl">Interval Type</label>
-          <select name="interval_type" class="fi text-sm">
-            {% if interval_choices %}
-              {% for value, label in interval_choices %}<option value="{{ value }}" {% if schedule.interval_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
-            {% else %}
-              <option value="monthly" {% if schedule.interval_type == 'monthly' %}selected{% endif %}>Monthly</option>
-              <option value="weekly" {% if schedule.interval_type == 'weekly' %}selected{% endif %}>Weekly</option>
-              <option value="quarterly" {% if schedule.interval_type == 'quarterly' %}selected{% endif %}>Quarterly</option>
-              <option value="annually" {% if schedule.interval_type == 'annually' %}selected{% endif %}>Annually</option>
-            {% endif %}
+        <div class="form-group">
+          <label class="form-label">Frequency *</label>
+          <select name="frequency" class="form-select" required>
+            <option value="weekly" {% if schedule.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+            <option value="biweekly" {% if schedule.frequency == 'biweekly' %}selected{% endif %}>Every 2 Weeks</option>
+            <option value="monthly" {% if schedule.frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+            <option value="quarterly" {% if schedule.frequency == 'quarterly' %}selected{% endif %}>Quarterly</option>
+            <option value="biannually" {% if schedule.frequency == 'biannually' %}selected{% endif %}>Every 6 Months</option>
+            <option value="annually" {% if schedule.frequency == 'annually' %}selected{% endif %}>Annually</option>
           </select>
         </div>
-        <div>
-          <label class="lbl">Due Days After Issue</label>
-          <input type="number" name="due_days" min="0" value="{{ schedule.due_days|default:30 }}" class="fi text-sm">
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-select">
+            <option value="active" {% if schedule.status == 'active' %}selected{% endif %}>Active</option>
+            <option value="paused" {% if schedule.status == 'paused' %}selected{% endif %}>Paused</option>
+            <option value="cancelled" {% if schedule.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
         </div>
-        <div>
-          <label class="lbl">End Date (optional)</label>
-          <input type="date" name="end_date" value="{{ schedule.end_date|date:'Y-m-d'|default:'' }}" class="fi text-sm">
+        <div class="form-group">
+          <label class="form-label">Auto-send</label>
+          <select name="auto_send" class="form-select">
+            <option value="false" {% if not schedule.auto_send %}selected{% endif %}>No — Save as Draft</option>
+            <option value="true" {% if schedule.auto_send %}selected{% endif %}>Yes — Send Automatically</option>
+          </select>
         </div>
-      </div>
-      <div>
-        <label class="lbl">Notes</label>
-        <textarea name="notes" rows="3" class="fi text-sm">{{ schedule.notes|default:'' }}</textarea>
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" name="auto_send" value="true" {% if schedule.auto_send %}checked{% endif %} class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
-          <span class="text-sm text-slate-600 dark:text-slate-400">Auto-send invoices to client</span>
-        </label>
+        <div class="form-group">
+          <label class="form-label">Next Invoice Date</label>
+          <input type="date" name="next_invoice_date" class="form-input" value="{{ schedule.next_invoice_date|date:'Y-m-d'|default:'' }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">End Date (optional)</label>
+          <input type="date" name="end_date" class="form-input" value="{{ schedule.end_date|date:'Y-m-d'|default:'' }}">
+        </div>
       </div>
     </div>
-    <div class="flex items-center justify-end gap-3">
-      <a href="{% url 'invoices:schedule_detail' schedule.id %}" class="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">Cancel</a>
-      <button type="submit" class="px-6 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl transition-colors">Save Changes</button>
+
+    <div class="card" style="padding:24px;margin-bottom:24px">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 16px">Notes</h2>
+      <textarea name="client_notes" class="form-textarea" rows="3">{{ schedule.client_notes|default:'' }}</textarea>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{% url 'invoices:recurring_detail' schedule.id %}" class="btn btn-secondary">Cancel</a>
     </div>
   </form>
 </div>

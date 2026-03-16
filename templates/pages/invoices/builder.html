@@ -1,132 +1,132 @@
 {% extends "base/layout_app.html" %}
-{% block title %}{% if is_edit %}Edit Invoice {{ invoice.invoice_number }}{% else %}New Invoice{% endif %} — InvoiceFlow{% endblock %}
-{% block page_title %}{% if is_edit %}Edit Invoice{% else %}New Invoice{% endif %}{% endblock %}
-
+{% block title %}{% if invoice %}Edit {{ invoice.invoice_number }}{% else %}New Invoice{% endif %} — InvoiceFlow{% endblock %}
 {% block content %}
-<div style="max-width:1200px"
-     x-data="invoiceBuilder({
-       items: {{ items_json|default:'[]'|safe }},
-       currency: '{{ invoice.currency|default:'NGN' }}',
-       taxMode: '{{ invoice.tax_mode|default:'exclusive' }}',
-       defaultTaxRate: {{ invoice.default_tax_rate|default:0 }},
-       discountType: '{{ invoice.discount_type|default:'flat' }}',
-       globalDiscount: {{ invoice.global_discount_value|default:0 }}
-     })">
+
+<div x-data="invoiceBuilder()" x-init="init()" @keydown.escape.window="closeModal()">
 
   <!-- Header -->
-  <div class="page-hdr">
-    <div>
-      <h1 class="page-title">{% if is_edit %}Edit {{ invoice.invoice_number }}{% else %}New Invoice{% endif %}</h1>
-      <p class="page-sub">{% if is_edit %}Update invoice details and line items{% else %}Fill in the details to create a professional invoice{% endif %}</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <a href="{% if invoice %}{% url 'invoices:invoice_detail' invoice.id %}{% else %}{% url 'invoices:invoice_list' %}{% endif %}" class="btn btn-ghost btn-sm btn-icon">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      </a>
+      <div>
+        <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0">
+          {% if invoice %}Edit Invoice{% else %}Create Invoice{% endif %}
+        </h1>
+        {% if invoice %}<p style="font-size:12.5px;color:var(--text-muted);margin:2px 0 0">{{ invoice.invoice_number }}</p>{% endif %}
+      </div>
     </div>
-    <div class="page-hdr-actions">
-      <a href="{% if is_edit %}{% url 'invoices:invoice_detail' invoice.id %}{% else %}{% url 'invoices:invoice_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
-      <button type="submit" form="invoiceForm" class="btn btn-primary">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-        {% if is_edit %}Update Invoice{% else %}Create Invoice{% endif %}
+    <div style="display:flex;gap:8px">
+      <button type="button" @click="saveDraft()" class="btn btn-secondary btn-sm" :disabled="saving">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        Save Draft
+      </button>
+      <button type="button" @click="saveAndSend()" class="btn btn-primary btn-sm" :disabled="saving">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+        <span x-text="saving ? 'Saving…' : 'Save & Send'"></span>
       </button>
     </div>
   </div>
 
-  <form id="invoiceForm" method="post">
+  <form id="invoiceForm" method="post" action="{% if invoice %}{% url 'invoices:invoice_edit' invoice.id %}{% else %}{% url 'invoices:invoice_create' %}{% endif %}">
     {% csrf_token %}
-    <input type="hidden" name="items" :value="itemsJson">
+    <input type="hidden" name="action" x-model="formAction">
 
-    <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start">
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
 
-      <!-- Left: Main form -->
+      <!-- MAIN PANEL -->
       <div style="display:flex;flex-direction:column;gap:20px">
 
-        <!-- Client + dates -->
+        <!-- Client + Dates -->
         <div class="card" style="padding:24px">
-          <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Invoice Details</p>
-          <div class="form-row cols-2" style="margin-bottom:16px">
+          <h2 style="font-size:13.5px;font-weight:700;margin:0 0 18px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Invoice Details</h2>
+          <div class="form-row cols-2">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Client *</label>
               <select name="client_id" class="form-select" required>
-                <option value="">Select a client…</option>
-                {% for c in clients %}
-                <option value="{{ c.id }}" {% if invoice.client_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                <option value="">— Select client —</option>
+                {% for cl in clients %}
+                <option value="{{ cl.id }}" {% if invoice and invoice.client_id == cl.id %}selected{% endif %}>{{ cl.name }}</option>
                 {% endfor %}
               </select>
+              <p class="form-hint">Don't see a client? <a href="{% url 'invoices:client_create' %}?next={{ request.path }}" style="color:var(--brand-600);font-weight:600">Add one</a></p>
             </div>
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Currency</label>
-              <select name="currency" x-model="currency" class="form-select">
-                {% for code, label in currencies %}
-                <option value="{{ code }}" {% if invoice.currency == code or not invoice and code == 'NGN' %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
+              <label class="form-label">Invoice Number</label>
+              <input type="text" name="invoice_number" class="form-input" value="{{ invoice.invoice_number|default:next_number }}" placeholder="INV-2024-0001">
             </div>
           </div>
-          <div class="form-row cols-2" style="margin-bottom:16px">
+          <div class="form-row cols-3" style="margin-top:16px">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Issue Date *</label>
-              <input type="date" name="issue_date" class="form-input" required
-                     value="{{ invoice.issue_date|date:'Y-m-d'|default:default_issue_date }}">
+              <input type="date" name="issue_date" class="form-input" value="{{ invoice.issue_date|date:'Y-m-d'|default:today }}" required>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Due Date *</label>
-              <input type="date" name="due_date" class="form-input" required
-                     value="{{ invoice.due_date|date:'Y-m-d'|default:default_due_date }}">
+              <input type="date" name="due_date" class="form-input" value="{{ invoice.due_date|date:'Y-m-d'|default:due_date_default }}" required>
             </div>
-          </div>
-          <div class="form-row cols-2">
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Tax Mode</label>
-              <select name="tax_mode" x-model="taxMode" class="form-select">
-                <option value="exclusive">Tax Exclusive (added on top)</option>
-                <option value="inclusive">Tax Inclusive (included)</option>
+              <label class="form-label">Currency</label>
+              <select name="currency" class="form-select">
+                {% for code, name in currencies %}
+                <option value="{{ code }}" {% if invoice and invoice.currency == code %}selected{% elif not invoice and code == 'NGN' %}selected{% endif %}>{{ code }} — {{ name }}</option>
+                {% endfor %}
               </select>
             </div>
+          </div>
+          <div class="form-row cols-2" style="margin-top:16px">
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Default Tax Rate (%)</label>
-              <input type="number" name="default_tax_rate" x-model.number="defaultTaxRate" min="0" max="100" step="0.01" class="form-input" value="{{ invoice.default_tax_rate|default:0 }}">
+              <label class="form-label">PO Number</label>
+              <input type="text" name="purchase_order_number" class="form-input" value="{{ invoice.purchase_order_number|default:'' }}" placeholder="Optional">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Tax Mode</label>
+              <select name="tax_mode" class="form-select">
+                <option value="exclusive" {% if not invoice or invoice.tax_mode == 'exclusive' %}selected{% endif %}>Tax Exclusive</option>
+                <option value="inclusive" {% if invoice and invoice.tax_mode == 'inclusive' %}selected{% endif %}>Tax Inclusive</option>
+              </select>
             </div>
           </div>
         </div>
 
-        <!-- Line items -->
+        <!-- Line Items -->
         <div class="card" style="padding:24px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-            <p style="font-size:14px;font-weight:700;color:var(--text-primary)">Line Items</p>
+            <h2 style="font-size:13.5px;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Line Items</h2>
           </div>
 
-          <!-- Items table -->
-          <div style="overflow-x:auto;margin-bottom:12px">
-            <table style="width:100%;border-collapse:collapse">
+          <div style="overflow-x:auto;margin:-4px -4px 0">
+            <table style="width:100%;border-collapse:collapse;min-width:600px">
               <thead>
-                <tr>
-                  <th style="padding:8px 10px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);min-width:240px">Description</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);width:80px">Qty</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);width:120px">Price</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);width:80px">Tax %</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);border-bottom:1px solid var(--border);background:var(--bg-subtle);width:120px">Total</th>
-                  <th style="padding:8px 10px;border-bottom:1px solid var(--border);background:var(--bg-subtle);width:36px"></th>
+                <tr style="background:var(--bg-subtle)">
+                  <th style="padding:8px 10px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)">Description</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);width:90px">Qty</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);width:120px">Rate</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);width:80px">Tax %</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);width:110px">Amount</th>
+                  <th style="width:36px"></th>
                 </tr>
               </thead>
               <tbody>
                 <template x-for="(item, idx) in items" :key="item.id">
-                  <tr>
-                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)">
-                      <input type="text" x-model="item.description" placeholder="Item description" class="form-input" style="margin-bottom:4px">
-                      <input type="text" x-model="item.long_description" placeholder="Additional notes (optional)" class="form-input" style="font-size:12px;color:var(--text-muted)">
+                  <tr style="border-bottom:1px solid var(--border)">
+                    <td style="padding:8px 6px">
+                      <input type="text" :name="'items['+idx+'][description]'" x-model="item.description" @input="calcTotals()" placeholder="Item description…" class="form-input" style="min-width:180px" required>
                     </td>
-                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)">
-                      <input type="number" x-model.number="item.quantity" min="0" step="0.001" class="form-input tabular" style="text-align:right">
+                    <td style="padding:8px 6px">
+                      <input type="number" :name="'items['+idx+'][quantity]'" x-model.number="item.quantity" @input="calcTotals()" class="form-input" style="text-align:right;padding-right:8px" min="0.0001" step="0.0001" required>
                     </td>
-                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)">
-                      <input type="number" x-model.number="item.unit_price" min="0" step="0.01" class="form-input tabular" style="text-align:right">
+                    <td style="padding:8px 6px">
+                      <input type="number" :name="'items['+idx+'][unit_price]'" x-model.number="item.unit_price" @input="calcTotals()" class="form-input" style="text-align:right;padding-right:8px" min="0" step="0.01" required>
                     </td>
-                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)">
-                      <input type="number" x-model.number="item.tax_rate" min="0" max="100" step="0.01" class="form-input tabular" style="text-align:right">
+                    <td style="padding:8px 6px">
+                      <input type="number" :name="'items['+idx+'][tax_rate]'" x-model.number="item.tax_rate" @input="calcTotals()" class="form-input" style="text-align:right;padding-right:8px" min="0" max="100" step="0.01">
                     </td>
-                    <td style="padding:8px 10px;border-bottom:1px solid var(--border);text-align:right">
-                      <span class="tabular" style="font-size:13.5px;font-weight:700;color:var(--text-primary)" x-text="fmt(itemSubtotal(item))"></span>
-                    </td>
-                    <td style="padding:8px 10px;border-bottom:1px solid var(--border)">
-                      <button type="button" @click="removeItem(idx)" class="btn btn-ghost btn-icon btn-sm" style="color:#ef4444" title="Remove">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <td style="padding:8px 10px;text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-primary)" x-text="fmtAmt(item.total)"></td>
+                    <td style="padding:8px 4px;text-align:center">
+                      <button type="button" @click="removeItem(idx)" class="btn btn-ghost btn-xs btn-icon" style="color:var(--text-muted);width:28px;height:28px">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                       </button>
                     </td>
                   </tr>
@@ -135,79 +135,210 @@
             </table>
           </div>
 
-          <button type="button" @click="addItem()" class="btn btn-outline btn-sm">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          <button type="button" @click="addItem()" class="btn btn-ghost btn-sm" style="margin-top:12px;gap:7px;color:var(--brand-600)">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
             Add Line Item
           </button>
+
+          <!-- Totals -->
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+            <div style="width:260px;display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;justify-content:space-between;font-size:12.5px">
+                <span style="color:var(--text-secondary)">Subtotal</span>
+                <span style="font-weight:600" x-text="fmtAmt(subtotal)"></span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px" x-show="discount > 0">
+                <span style="color:var(--text-secondary)">Discount</span>
+                <span style="color:#dc2626;font-weight:600" x-text="'- ' + fmtAmt(discount)"></span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12.5px" x-show="taxTotal > 0">
+                <span style="color:var(--text-secondary)">Tax</span>
+                <span style="font-weight:600" x-text="fmtAmt(taxTotal)"></span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:2px solid var(--border);font-size:15px;font-weight:800">
+                <span>Total</span>
+                <span x-text="fmtAmt(grandTotal)"></span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Notes & Terms -->
+        <!-- Notes -->
         <div class="card" style="padding:24px">
-          <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Notes & Terms</p>
+          <h2 style="font-size:13.5px;font-weight:700;margin:0 0 16px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Notes & Terms</h2>
           <div class="form-row cols-2">
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Client Note <span style="font-weight:400;text-transform:none;letter-spacing:0">(visible to client)</span></label>
-              <textarea name="client_memo" class="form-textarea" placeholder="Thank you for your business…" rows="3">{{ invoice.client_memo|default:'' }}</textarea>
+              <label class="form-label">Client Note</label>
+              <textarea name="client_notes" class="form-textarea" rows="4" placeholder="Add a note visible to your client…">{{ invoice.client_notes|default:'' }}</textarea>
             </div>
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Internal Notes <span style="font-weight:400;text-transform:none;letter-spacing:0">(private)</span></label>
-              <textarea name="internal_notes" class="form-textarea" placeholder="Private notes…" rows="3">{{ invoice.internal_notes|default:'' }}</textarea>
+              <label class="form-label">Terms & Conditions</label>
+              <textarea name="terms_conditions" class="form-textarea" rows="4" placeholder="Payment terms, conditions…">{{ invoice.terms_conditions|default:default_terms }}</textarea>
             </div>
           </div>
-          <div class="form-group" style="margin-top:16px;margin-bottom:0">
-            <label class="form-label">Terms & Conditions</label>
-            <textarea name="terms_conditions" class="form-textarea" rows="3">{{ invoice.terms_conditions|default:profile.terms_conditions|default:'' }}</textarea>
-          </div>
-          <div class="form-group" style="margin-top:16px;margin-bottom:0">
-            <label class="form-label">Payment Instructions</label>
-            <textarea name="payment_instructions" class="form-textarea" rows="3" placeholder="Bank details, payment methods…">{{ invoice.payment_instructions|default:'' }}</textarea>
+          <div class="form-group" style="margin-top:14px;margin-bottom:0">
+            <label class="form-label">Internal Notes</label>
+            <textarea name="internal_notes" class="form-textarea" rows="3" placeholder="Internal notes (not visible to client)…">{{ invoice.internal_notes|default:'' }}</textarea>
           </div>
         </div>
+
       </div>
 
-      <!-- Right: Summary -->
-      <div style="position:sticky;top:80px;display:flex;flex-direction:column;gap:16px">
-        <div class="card" style="padding:24px">
-          <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Summary</p>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:13px;color:var(--text-muted)">Subtotal</span>
-              <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)" x-text="fmt(subtotal)"></span>
-            </div>
+      <!-- SIDE PANEL -->
+      <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:80px">
 
-            <!-- Global discount -->
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:13px;color:var(--text-muted)">Discount</span>
-                <select name="discount_type" x-model="discountType" class="form-select" style="padding:3px 24px 3px 7px;font-size:11px;width:auto;height:24px">
-                  <option value="flat">Fixed</option>
-                  <option value="percentage">%</option>
-                </select>
-                <input type="number" name="global_discount_value" x-model.number="globalDiscount" min="0" step="0.01" class="form-input tabular" style="width:80px;padding:4px 8px;text-align:right;font-size:12px">
-              </div>
-              <span class="tabular" style="font-size:13px;color:#dc2626" x-text="'-' + fmt(discountAmount)"></span>
+        <div class="card" style="padding:20px">
+          <h3 style="font-size:13px;font-weight:700;margin:0 0 14px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Discount</h3>
+          <div class="form-row cols-2">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Type</label>
+              <select name="discount_type" x-model="discountType" @change="calcTotals()" class="form-select">
+                <option value="none">None</option>
+                <option value="percentage">Percentage (%)</option>
+                <option value="fixed">Fixed Amount</option>
+              </select>
             </div>
-
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:13px;color:var(--text-muted)">Tax</span>
-              <span class="tabular" style="font-size:13.5px;font-weight:600;color:var(--text-primary)" x-text="fmt(taxTotal)"></span>
-            </div>
-            <div class="divider" style="margin:8px 0"></div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:14px;font-weight:700;color:var(--text-primary)">Total</span>
-              <span class="tabular" style="font-size:20px;font-weight:800;color:var(--text-primary)" x-text="fmt(total)"></span>
+            <div class="form-group" style="margin-bottom:0" x-show="discountType !== 'none'">
+              <label class="form-label" x-text="discountType === 'percentage' ? 'Rate (%)' : 'Amount'"></label>
+              <input type="number" name="discount_value" x-model.number="discountValue" @input="calcTotals()" class="form-input" min="0" step="0.01" placeholder="0">
             </div>
           </div>
         </div>
 
-        <!-- Actions -->
-        <button type="submit" form="invoiceForm" class="btn btn-primary btn-lg" style="width:100%;justify-content:center">
-          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-          {% if is_edit %}Update Invoice{% else %}Create Invoice{% endif %}
-        </button>
-        <a href="{% if is_edit %}{% url 'invoices:invoice_detail' invoice.id %}{% else %}{% url 'invoices:invoice_list' %}{% endif %}" class="btn btn-secondary" style="width:100%;justify-content:center">Cancel</a>
+        <div class="card" style="padding:20px">
+          <h3 style="font-size:13px;font-weight:700;margin:0 0 14px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Amount Summary</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:var(--text-secondary)">Items Subtotal</span>
+              <span style="font-weight:600" x-text="fmtAmt(subtotal)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px" x-show="discount > 0">
+              <span style="color:var(--text-secondary)">Discount</span>
+              <span style="font-weight:600;color:#dc2626" x-text="'- '+fmtAmt(discount)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px" x-show="taxTotal > 0">
+              <span style="color:var(--text-secondary)">Total Tax</span>
+              <span style="font-weight:600" x-text="fmtAmt(taxTotal)"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding-top:12px;border-top:2px solid var(--border);font-size:16px;font-weight:800">
+              <span>Invoice Total</span>
+              <span x-text="fmtAmt(grandTotal)"></span>
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+            <button type="button" @click="saveDraft()" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center" :disabled="saving">Save Draft</button>
+            <button type="button" @click="saveAndSend()" class="btn btn-primary btn-sm" style="width:100%;justify-content:center" :disabled="saving">
+              <span x-text="saving ? 'Saving…' : '{% if invoice %}Update Invoice{% else %}Create Invoice{% endif %}'"></span>
+            </button>
+          </div>
+        </div>
+
+        {% if invoice %}
+        <div class="card" style="padding:18px">
+          <p style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 10px">Invoice Info</p>
+          <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px">
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Status</span><span class="badge b-{{ invoice.status }} badge-sm">{{ invoice.get_status_display }}</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Created</span><span>{{ invoice.created_at|date:"d M Y" }}</span></div>
+            {% if invoice.sent_at %}<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Sent</span><span>{{ invoice.sent_at|date:"d M Y" }}</span></div>{% endif %}
+            {% if invoice.amount_paid > 0 %}<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Paid</span><span style="color:#16a34a;font-weight:700">{{ invoice.currency }}{{ invoice.amount_paid|floatformat:2 }}</span></div>{% endif %}
+          </div>
+        </div>
+        {% endif %}
+
       </div>
     </div>
+
+    <!-- Hidden item fields for existing items -->
+    <template x-for="(item, idx) in items" :key="'hidden-'+item.id">
+      <div>
+        <input type="hidden" :name="'items['+idx+'][id]'" :value="item.itemId">
+        <input type="hidden" :name="'items['+idx+'][total]'" :value="item.total">
+      </div>
+    </template>
+    <input type="hidden" name="item_count" :value="items.length">
+    <input type="hidden" name="discount_type" x-model="discountType">
+    <input type="hidden" name="discount_value" x-model="discountValue">
+
   </form>
 </div>
+
+<script>
+function invoiceBuilder() {
+  return {
+    saving: false,
+    formAction: 'save_draft',
+    discountType: '{{ invoice.discount_type|default:"none" }}',
+    discountValue: {{ invoice.discount_value|default:0 }},
+    items: [],
+    subtotal: 0,
+    taxTotal: 0,
+    discount: 0,
+    grandTotal: 0,
+    _uid: 0,
+
+    init() {
+      const existing = [
+        {% if invoice %}
+        {% for item in invoice.items.all %}
+        { id: this._uid++, itemId: {{ item.id }}, description: {{ item.description|escapejs|json_script:""|safe }}, quantity: {{ item.quantity }}, unit_price: {{ item.unit_price }}, tax_rate: {{ item.tax_rate }}, total: {{ item.total }} },
+        {% endfor %}
+        {% endif %}
+      ];
+      if (existing.length > 0) {
+        this.items = existing;
+      } else {
+        this.addItem();
+      }
+      this.calcTotals();
+    },
+
+    addItem() {
+      this.items.push({ id: this._uid++, itemId: null, description: '', quantity: 1, unit_price: 0, tax_rate: 0, total: 0 });
+    },
+
+    removeItem(idx) {
+      if (this.items.length > 1) this.items.splice(idx, 1);
+      this.calcTotals();
+    },
+
+    calcTotals() {
+      let sub = 0, tax = 0;
+      this.items.forEach(item => {
+        const lineAmt = parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0);
+        const lineTax = lineAmt * parseFloat(item.tax_rate || 0) / 100;
+        item.total = lineAmt + lineTax;
+        sub += lineAmt;
+        tax += lineTax;
+      });
+      this.subtotal = sub;
+      this.taxTotal = tax;
+      if (this.discountType === 'percentage') {
+        this.discount = sub * parseFloat(this.discountValue || 0) / 100;
+      } else if (this.discountType === 'fixed') {
+        this.discount = parseFloat(this.discountValue || 0);
+      } else {
+        this.discount = 0;
+      }
+      this.grandTotal = sub + tax - this.discount;
+    },
+
+    fmtAmt(v) {
+      return (v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+
+    saveDraft() {
+      this.formAction = 'save_draft';
+      this.$nextTick(() => document.getElementById('invoiceForm').submit());
+    },
+
+    saveAndSend() {
+      this.formAction = 'save';
+      this.saving = true;
+      this.$nextTick(() => document.getElementById('invoiceForm').submit());
+    },
+
+    closeModal() {}
+  }
+}
+</script>
 {% endblock %}

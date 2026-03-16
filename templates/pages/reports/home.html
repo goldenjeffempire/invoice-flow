@@ -1,146 +1,99 @@
 {% extends "base/layout_app.html" %}
-{% block title %}Reports & Analytics — InvoiceFlow{% endblock %}
-
+{% block title %}Reports — InvoiceFlow{% endblock %}
 {% block content %}
-<div class="max-w-[1440px] mx-auto">
 
-  <!-- Header -->
-  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-    <div>
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Reports & Analytics</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Gain deep financial insights into your business</p>
-    </div>
-    <!-- Date range picker -->
-    <form method="get" class="flex items-center gap-2 flex-wrap">
-      <select name="preset" onchange="this.form.submit()" class="fi h-9 text-sm w-40">
-        <option value="this_month" {% if current_preset == 'this_month' %}selected{% endif %}>This Month</option>
-        <option value="last_month" {% if current_preset == 'last_month' %}selected{% endif %}>Last Month</option>
-        <option value="this_quarter" {% if current_preset == 'this_quarter' %}selected{% endif %}>This Quarter</option>
-        <option value="last_quarter" {% if current_preset == 'last_quarter' %}selected{% endif %}>Last Quarter</option>
-        <option value="this_year" {% if current_preset == 'this_year' %}selected{% endif %}>This Year</option>
-        <option value="last_year" {% if current_preset == 'last_year' %}selected{% endif %}>Last Year</option>
-        <option value="custom" {% if current_preset == 'custom' %}selected{% endif %}>Custom</option>
-      </select>
-      {% if current_preset == 'custom' %}
-      <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="fi h-9 text-sm w-32">
-      <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="fi h-9 text-sm w-32">
-      <button type="submit" class="px-3 h-9 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors">Apply</button>
-      {% endif %}
-    </form>
-  </div>
-
-  <!-- KPI Cards -->
-  {% if kpis %}
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="card p-5">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">Revenue</p>
-      <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ kpis.total_revenue|floatformat:2 }}</p>
-      {% if kpis.revenue_change %}<p class="text-xs mt-1 {% if kpis.revenue_change >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %} font-semibold">{% if kpis.revenue_change >= 0 %}▲{% else %}▼{% endif %} {{ kpis.revenue_change|floatformat:1 }}% vs prev</p>{% endif %}
-    </div>
-    <div class="card p-5">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">Expenses</p>
-      <p class="text-2xl font-bold text-slate-900 dark:text-white tabular-nums">{{ kpis.total_expenses|floatformat:2 }}</p>
-    </div>
-    <div class="card p-5">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">Net Profit</p>
-      <p class="text-2xl font-bold {% if kpis.net_profit >= 0 %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %} tabular-nums">{{ kpis.net_profit|floatformat:2 }}</p>
-    </div>
-    <div class="card p-5">
-      <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 mb-2">Collection Rate</p>
-      <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ kpis.collection_rate|floatformat:0 }}%</p>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Report Cards Grid -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-
-    <a href="{% url 'invoices:revenue_report' %}" class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all group">
-      <div class="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-        <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      </div>
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1">Revenue Report</h3>
-      <p class="text-xs text-slate-500 dark:text-slate-400">Revenue trends, payment analysis, and collection performance</p>
-    </a>
-
-    <a href="{% url 'invoices:aging_report' %}" class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all group">
-      <div class="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center mb-4">
-        <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-      </div>
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors mb-1">Aging Report</h3>
-      <p class="text-xs text-slate-500 dark:text-slate-400">Outstanding invoice aging buckets and overdue analysis</p>
-    </a>
-
-    <a href="{% url 'invoices:cashflow_report' %}" class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all group">
-      <div class="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
-        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
-      </div>
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors mb-1">Cash Flow</h3>
-      <p class="text-xs text-slate-500 dark:text-slate-400">Monthly inflows, outflows, and net cash position</p>
-    </a>
-
-    <a href="{% url 'invoices:tax_report' %}" class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all group">
-      <div class="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
-        <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
-      </div>
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors mb-1">Tax Report</h3>
-      <p class="text-xs text-slate-500 dark:text-slate-400">VAT/GST summary, taxable income and deductions</p>
-    </a>
-
-    <a href="{% url 'invoices:expense_analysis' %}" class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all group">
-      <div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4">
-        <svg class="w-5 h-5 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-      </div>
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors mb-1">Expense Analysis</h3>
-      <p class="text-xs text-slate-500 dark:text-slate-400">Expense breakdown by category, vendor, and period</p>
-    </a>
-
-    <a href="{% url 'invoices:exports_hub' %}" class="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all group">
-      <div class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
-        <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      </div>
-      <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors mb-1">Export Hub</h3>
-      <p class="text-xs text-slate-500 dark:text-slate-400">Download CSV/PDF exports of all your financial data</p>
-    </a>
-
-  </div>
-
-  <!-- Revenue Trend Chart -->
-  {% if revenue_trend %}
-  <div class="card p-5">
-    <h2 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Revenue Trend</h2>
-    <div class="h-56">
-      <canvas id="revTrendChart"></canvas>
-    </div>
-  </div>
-  {% endif %}
-
+<div style="margin-bottom:28px">
+  <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0 0 4px">Reports</h1>
+  <p style="font-size:13px;color:var(--text-muted);margin:0">Gain insights into your business performance.</p>
 </div>
 
-<script>
-{% if revenue_trend %}
-const revData = {{ revenue_trend|safe }};
-const revCtx = document.getElementById('revTrendChart');
-if (revCtx && revData) {
-  new Chart(revCtx, {
-    type: 'line',
-    data: {
-      labels: revData.labels || [],
-      datasets: [
-        { label: 'Revenue', data: revData.revenue || [], borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.08)', borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 3 },
-        { label: 'Expenses', data: revData.expenses || [], borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,0.06)', borderWidth: 2, fill: true, tension: 0.4, pointRadius: 3 }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { padding: 16, font: { size: 11 }, usePointStyle: true, pointStyleWidth: 10 } } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-        y: { grid: { color: document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }, ticks: { color: '#94a3b8', font: { size: 11 } } }
-      }
-    }
-  });
-}
-{% endif %}
-</script>
+<!-- Date Range Picker -->
+<div class="card" style="padding:18px 20px;margin-bottom:24px">
+  <form method="get" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <p style="font-size:13px;font-weight:600;margin:0;color:var(--text-secondary);flex-shrink:0">Filter period:</p>
+    <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-input" style="width:160px">
+    <span style="color:var(--text-muted);font-size:13px">to</span>
+    <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-input" style="width:160px">
+    <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+    <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">
+      <a href="?period=this_month" class="btn btn-ghost btn-sm {% if period == 'this_month' %}active{% endif %}">This Month</a>
+      <a href="?period=last_month" class="btn btn-ghost btn-sm {% if period == 'last_month' %}active{% endif %}">Last Month</a>
+      <a href="?period=this_year" class="btn btn-ghost btn-sm {% if period == 'this_year' %}active{% endif %}">This Year</a>
+      <a href="?period=last_year" class="btn btn-ghost btn-sm {% if period == 'last_year' %}active{% endif %}">Last Year</a>
+    </div>
+  </form>
+</div>
+
+<!-- Summary KPIs -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Revenue</p>
+    <p class="kpi-value" style="font-size:20px">{{ workspace.currency_symbol }}{{ summary.revenue|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Expenses</p>
+    <p class="kpi-value" style="font-size:20px;color:#dc2626">{{ workspace.currency_symbol }}{{ summary.expenses|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Net Profit</p>
+    <p class="kpi-value" style="font-size:20px;color:{% if summary.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}">{{ workspace.currency_symbol }}{{ summary.net_profit|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:16px 18px">
+    <p class="kpi-label" style="margin-bottom:4px">Invoices Paid</p>
+    <p class="kpi-value" style="font-size:20px">{{ summary.paid_count }}</p>
+  </div>
+</div>
+
+<!-- Report Cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+
+  <a href="{% url 'invoices:report_revenue' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card" style="padding:24px;text-decoration:none;transition:box-shadow var(--anim-fast)">
+    <div class="stat-icon si-indigo" style="margin-bottom:16px"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg></div>
+    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Revenue Report</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Breakdown of revenue by client, period, and invoice.</p>
+  </a>
+
+  <a href="{% url 'invoices:report_cashflow' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card" style="padding:24px;text-decoration:none">
+    <div class="stat-icon si-green" style="margin-bottom:16px"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg></div>
+    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Cash Flow</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Income vs expenses over time, net cash position.</p>
+  </a>
+
+  <a href="{% url 'invoices:report_aging' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card" style="padding:24px;text-decoration:none">
+    <div class="stat-icon si-amber" style="margin-bottom:16px"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Accounts Receivable Aging</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Outstanding invoices grouped by how long they've been unpaid.</p>
+  </a>
+
+  <a href="{% url 'invoices:report_expense' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card" style="padding:24px;text-decoration:none">
+    <div class="stat-icon si-red" style="margin-bottom:16px"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
+    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Expense Report</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Expenses by category, vendor, and time period.</p>
+  </a>
+
+  <a href="{% url 'invoices:report_profitability' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card" style="padding:24px;text-decoration:none">
+    <div class="stat-icon si-violet" style="margin-bottom:16px"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Profitability</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Profit and loss by client and project.</p>
+  </a>
+
+  <a href="{% url 'invoices:report_tax' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card" style="padding:24px;text-decoration:none">
+    <div class="stat-icon si-teal" style="margin-bottom:16px"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></div>
+    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Tax Report</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Tax collected, owed, and breakdown by tax rate.</p>
+  </a>
+
+  <a href="{% url 'invoices:report_forecast' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card" style="padding:24px;text-decoration:none">
+    <div class="stat-icon si-indigo" style="margin-bottom:16px;background:rgba(99,102,241,.12)"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Revenue Forecast</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Projected revenue based on recurring and outstanding invoices.</p>
+  </a>
+
+  <a href="{% url 'invoices:report_exports' %}" class="card" style="padding:24px;text-decoration:none">
+    <div class="stat-icon si-green" style="margin-bottom:16px"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></div>
+    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Export Data</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0">Export invoices, payments, and expenses as CSV or PDF.</p>
+  </a>
+
+</div>
 {% endblock %}

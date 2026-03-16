@@ -1,10 +1,9 @@
 """
 InvoiceFlow – Dashboard View (production rebuild)
-Provides rich KPIs, trend charts, activity feeds, and quick actions.
 """
 from __future__ import annotations
-
 import calendar
+import json
 import logging
 from datetime import timedelta
 from decimal import Decimal
@@ -14,22 +13,23 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
-from ..models import Client, Expense, Invoice, Payment
+from ..models import Client, Expense, Invoice, Payment, RecurringSchedule, Estimate
 
 logger = logging.getLogger(__name__)
 
 
-# ─── Helpers ──────────────────────────────────────────────────────────────────
+def _pct_change(current, previous):
+    try:
+        if previous and previous > 0:
+            return round(float((current - previous) / previous * 100), 1)
+        if current and current > 0:
+            return 100.0
+        return None
+    except Exception:
+        return None
 
-def _pct_change(current: Decimal, previous: Decimal):
-    if previous and previous > 0:
-        return round(float((current - previous) / previous * 100), 1)
-    if current and current > 0:
-        return 100.0
-    return None
 
-
-def _monthly_trend(workspace, months: int = 6):
+def _monthly_trend(workspace, months=6):
     today = timezone.now().date()
     labels, revenue, expenses = [], [], []
     for i in range(months - 1, -1, -1):
@@ -41,42 +41,34 @@ def _monthly_trend(workspace, months: int = 6):
         last_day = calendar.monthrange(year, month)[1]
         m_start = today.replace(year=year, month=month, day=1)
         m_end = today.replace(year=year, month=month, day=last_day)
-        rev = (
-            Payment.objects.filter(
-                invoice__workspace=workspace,
-                payment_date__gte=m_start,
-                payment_date__lte=m_end,
-            ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
-        )
-        exp = (
-            Expense.objects.filter(
-                workspace=workspace,
-                expense_date__gte=m_start,
-                expense_date__lte=m_end,
-            ).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
-        )
+        rev = Payment.objects.filter(
+            invoice__workspace=workspace,
+            payment_date__date__gte=m_start,
+            payment_date__date__lte=m_end,
+            status=Payment.Status.COMPLETED,
+        ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        exp = Expense.objects.filter(
+            workspace=workspace,
+            expense_date__gte=m_start,
+            expense_date__lte=m_end,
+        ).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
         labels.append(m_start.strftime("%b '%y"))
         revenue.append(float(rev))
         expenses.append(float(exp))
     return labels, revenue, expenses
 
 
-def _daily_sparkline(workspace, days: int = 30):
-    today = timezone.now().date()
-    result = []
-    for i in range(days - 1, -1, -1):
-        d = today - timedelta(days=i)
-        total = (
-            Payment.objects.filter(
-                invoice__workspace=workspace,
-                payment_date=d,
-            ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
-        )
-        result.append(float(total))
-    return result
+def _invoice_status_breakdown(workspace):
+    qs = Invoice.objects.filter(workspace=workspace)
+    return {
+        "draft":     qs.filter(status="draft").count(),
+        "sent":      qs.filter(status="sent").count(),
+        "viewed":    qs.filter(status="viewed").count(),
+        "part_paid": qs.filter(status="part_paid").count(),
+        "paid":      qs.filter(status="paid").count(),
+        "overdue":   qs.filter(status="overdue").count(),
+    }
 
-
-# ─── View ─────────────────────────────────────────────────────────────────────
 
 @login_required
 def dashboard(request):
@@ -92,117 +84,106 @@ def dashboard(request):
     last_month_start = last_month_end.replace(day=1)
 
     invoices_qs = Invoice.objects.filter(workspace=workspace)
-    payments_qs = Payment.objects.filter(invoice__workspace=workspace)
+    payments_qs = Payment.objects.filter(invoice__workspace=workspace, status=Payment.Status.COMPLETED)
     expenses_qs = Expense.objects.filter(workspace=workspace)
     clients_qs = Client.objects.filter(workspace=workspace)
 
-    # ── Revenue KPIs ─────────────────────────────────────────────────────────
-    this_month_revenue = (
-        payments_qs.filter(payment_date__gte=month_start, payment_date__lte=today)
-        .aggregate(t=Sum("amount"))["t"] or Decimal("0")
-    )
-    last_month_revenue = (
-        payments_qs.filter(payment_date__gte=last_month_start, payment_date__lte=last_month_end)
-        .aggregate(t=Sum("amount"))["t"] or Decimal("0")
-    )
+    # ── Revenue KPIs ─────────────────────────────────────────────────────
+    this_month_revenue = payments_qs.filter(
+        payment_date__date__gte=month_start, payment_date__date__lte=today
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+
+    last_month_revenue = payments_qs.filter(
+        payment_date__date__gte=last_month_start, payment_date__date__lte=last_month_end
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+
     revenue_change_pct = _pct_change(this_month_revenue, last_month_revenue)
 
-    total_outstanding = (
-        invoices_qs.filter(status__in=["sent", "viewed", "part_paid", "overdue"])
-        .aggregate(t=Sum("amount_due"))["t"] or Decimal("0")
-    )
-    total_overdue = (
-        invoices_qs.filter(status="overdue").aggregate(t=Sum("amount_due"))["t"] or Decimal("0")
-    )
+    total_outstanding = invoices_qs.filter(
+        status__in=["sent", "viewed", "part_paid", "overdue"]
+    ).aggregate(t=Sum("amount_due"))["t"] or Decimal("0")
+
+    total_overdue = invoices_qs.filter(status="overdue").aggregate(t=Sum("amount_due"))["t"] or Decimal("0")
     overdue_count = invoices_qs.filter(status="overdue").count()
     draft_count = invoices_qs.filter(status="draft").count()
 
-    this_month_expenses = (
-        expenses_qs.filter(expense_date__gte=month_start, expense_date__lte=today)
-        .aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
-    )
-    last_month_expenses = (
-        expenses_qs.filter(expense_date__gte=last_month_start, expense_date__lte=last_month_end)
-        .aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
-    )
-    expenses_change_pct = _pct_change(this_month_expenses, last_month_expenses)
+    this_month_expenses = expenses_qs.filter(
+        expense_date__gte=month_start, expense_date__lte=today
+    ).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
 
+    last_month_expenses = expenses_qs.filter(
+        expense_date__gte=last_month_start, expense_date__lte=last_month_end
+    ).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+
+    expenses_change_pct = _pct_change(this_month_expenses, last_month_expenses)
     net_profit = this_month_revenue - this_month_expenses
 
     total_clients = clients_qs.count()
     new_clients_this_month = clients_qs.filter(created_at__date__gte=month_start).count()
-    all_time_paid = payments_qs.aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    all_time_paid = Payment.objects.filter(
+        invoice__workspace=workspace, status=Payment.Status.COMPLETED
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
 
-    total_invoiced_mtd = (
-        invoices_qs.filter(issue_date__gte=month_start)
-        .aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
-    )
-    collection_rate = (
-        round(float(this_month_revenue / total_invoiced_mtd * 100), 1)
-        if total_invoiced_mtd > 0 else None
-    )
+    total_invoiced_mtd = invoices_qs.filter(
+        issue_date__gte=month_start
+    ).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
 
-    # ── Invoice status breakdown ───────────────────────────────────────────────
-    invoice_status_counts = {
-        "draft": invoices_qs.filter(status="draft").count(),
-        "sent": invoices_qs.filter(status="sent").count(),
-        "viewed": invoices_qs.filter(status="viewed").count(),
-        "paid": invoices_qs.filter(status="paid").count(),
-        "overdue": invoices_qs.filter(status="overdue").count(),
-        "part_paid": invoices_qs.filter(status="part_paid").count(),
-    }
+    collection_rate = None
+    if total_invoiced_mtd > 0:
+        collection_rate = round(float(this_month_revenue / total_invoiced_mtd * 100), 1)
+
+    # ── Estimate Stats ────────────────────────────────────────────────────
+    estimate_conversion = 0
+    try:
+        from ..models import Estimate
+        est_total = Estimate.objects.filter(workspace=workspace).exclude(status='draft').count()
+        est_accepted = Estimate.objects.filter(workspace=workspace, status='approved').count()
+        if est_total > 0:
+            estimate_conversion = round(est_accepted / est_total * 100, 1)
+    except Exception:
+        pass
+
+    # ── Invoice status breakdown ──────────────────────────────────────────
+    invoice_status_counts = _invoice_status_breakdown(workspace)
     total_invoice_count = sum(invoice_status_counts.values())
 
-    # ── Recent data ───────────────────────────────────────────────────────────
-    recent_invoices = (
-        invoices_qs.select_related("client").order_by("-created_at")[:8]
-    )
-    recent_payments = (
-        payments_qs.select_related("invoice", "invoice__client").order_by("-created_at")[:6]
-    )
-    invoices_due_soon = (
-        invoices_qs.filter(
-            status__in=["sent", "viewed", "part_paid"],
-            due_date__gte=today,
-            due_date__lte=today + timedelta(days=7),
-        ).select_related("client").order_by("due_date")[:5]
-    )
-    recent_expenses = (
-        expenses_qs.select_related("client").order_by("-expense_date")[:5]
-    )
-    top_clients = (
-        clients_qs
-        .annotate(
-            paid_total=Sum(
-                "invoices__amount_paid",
-                filter=Q(invoices__status__in=["paid", "part_paid"]),
-            ),
-            invoice_count=Count("invoices"),
-        )
-        .filter(paid_total__gt=0)
-        .order_by("-paid_total")[:5]
-    )
+    # ── Recent data ───────────────────────────────────────────────────────
+    recent_invoices = invoices_qs.select_related("client").order_by("-created_at")[:8]
+    recent_payments = Payment.objects.filter(
+        invoice__workspace=workspace
+    ).select_related("invoice", "invoice__client").order_by("-created_at")[:6]
+    invoices_due_soon = invoices_qs.filter(
+        status__in=["sent", "viewed", "part_paid"],
+        due_date__gte=today,
+        due_date__lte=today + timedelta(days=7),
+    ).select_related("client").order_by("due_date")[:5]
+    overdue_invoices = invoices_qs.filter(
+        status="overdue"
+    ).select_related("client").order_by("due_date")[:5]
+    recent_expenses = expenses_qs.select_related("category").order_by("-expense_date")[:5]
+    top_clients = clients_qs.annotate(
+        paid_total=Sum(
+            "invoices__amount_paid",
+            filter=Q(invoices__status__in=["paid", "part_paid"]),
+        ),
+        invoice_count=Count("invoices"),
+    ).filter(paid_total__gt=0).order_by("-paid_total")[:5]
 
-    # ── Overdue aging ─────────────────────────────────────────────────────────
+    # ── Overdue aging ─────────────────────────────────────────────────────
     overdue_qs = invoices_qs.filter(status="overdue")
     aging = {
-        "0_30": (overdue_qs.filter(due_date__gte=today - timedelta(days=30))
-                 .aggregate(t=Sum("amount_due"))["t"] or Decimal("0")),
-        "31_60": (overdue_qs.filter(due_date__gte=today - timedelta(days=60),
-                                    due_date__lt=today - timedelta(days=30))
-                  .aggregate(t=Sum("amount_due"))["t"] or Decimal("0")),
-        "61_90": (overdue_qs.filter(due_date__gte=today - timedelta(days=90),
-                                    due_date__lt=today - timedelta(days=60))
-                  .aggregate(t=Sum("amount_due"))["t"] or Decimal("0")),
-        "90_plus": (overdue_qs.filter(due_date__lt=today - timedelta(days=90))
-                    .aggregate(t=Sum("amount_due"))["t"] or Decimal("0")),
+        "0_30": overdue_qs.filter(due_date__gte=today - timedelta(days=30)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
+        "31_60": overdue_qs.filter(due_date__gte=today - timedelta(days=60), due_date__lt=today - timedelta(days=30)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
+        "61_90": overdue_qs.filter(due_date__gte=today - timedelta(days=90), due_date__lt=today - timedelta(days=60)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
+        "90_plus": overdue_qs.filter(due_date__lt=today - timedelta(days=90)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
     }
 
-    # ── Charts ────────────────────────────────────────────────────────────────
-    chart_labels, chart_revenue, chart_expenses = _monthly_trend(workspace, months=6)
-    sparkline = _daily_sparkline(workspace, days=30)
+    # ── Recurring ─────────────────────────────────────────────────────────
+    active_schedules = RecurringSchedule.objects.filter(workspace=workspace, status="active").count()
 
-    import json as _json
+    # ── Charts ────────────────────────────────────────────────────────────
+    chart_labels, chart_revenue, chart_expenses = _monthly_trend(workspace, months=6)
+
     invoice_status_items = [
         ("draft",     "Draft",     "#94a3b8"),
         ("sent",      "Sent",      "#a78bfa"),
@@ -211,6 +192,7 @@ def dashboard(request):
         ("paid",      "Paid",      "#4ade80"),
         ("overdue",   "Overdue",   "#f87171"),
     ]
+
     ctx = {
         "workspace": workspace,
         "today": today,
@@ -230,20 +212,21 @@ def dashboard(request):
             "net_profit": net_profit,
             "collection_rate": collection_rate,
             "total_invoice_count": total_invoice_count,
+            "active_schedules": active_schedules,
+            "estimate_conversion": estimate_conversion,
         },
         "recent_invoices": recent_invoices,
         "recent_payments": recent_payments,
         "invoices_due_soon": invoices_due_soon,
+        "overdue_invoices": overdue_invoices,
         "recent_expenses": recent_expenses,
         "invoice_status_counts": invoice_status_counts,
-        "invoice_status_counts_json": _json.dumps(invoice_status_counts),
+        "invoice_status_counts_json": json.dumps(invoice_status_counts),
         "invoice_status_items": invoice_status_items,
         "top_clients": top_clients,
         "aging": aging,
-        "chart_labels": _json.dumps(chart_labels),
-        "chart_revenue": _json.dumps(chart_revenue),
-        "chart_expenses": _json.dumps(chart_expenses),
-        "sparkline": sparkline,
-        "quick_actions": [],
+        "chart_labels": json.dumps(chart_labels),
+        "chart_revenue": json.dumps(chart_revenue),
+        "chart_expenses": json.dumps(chart_expenses),
     }
     return render(request, "pages/dashboard.html", ctx)

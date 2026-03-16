@@ -1,96 +1,96 @@
 {% extends "base/layout_app.html" %}
 {% block title %}{% if client %}Edit {{ client.name }}{% else %}New Client{% endif %} — InvoiceFlow{% endblock %}
-{% block page_title %}{% if client %}Edit Client{% else %}New Client{% endif %}{% endblock %}
-
 {% block content %}
-<div style="max-width:720px">
-  <div class="page-hdr">
+
+<div style="max-width:800px">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+    <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
     <div>
-      <h1 class="page-title">{% if client %}Edit {{ client.name }}{% else %}New Client{% endif %}</h1>
-      <p class="page-sub">{% if client %}Update client details{% else %}Add a new client to your workspace{% endif %}</p>
-    </div>
-    <div class="page-hdr-actions">
-      <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+      <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0">{{ page_title }}</h1>
+      <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">{% if is_create %}Add a new client to your workspace.{% else %}Update client information.{% endif %}</p>
     </div>
   </div>
 
-  <form method="post">
+  <form method="post" action="{% if client %}{% url 'invoices:client_edit' client.id %}{% else %}{% url 'invoices:client_create' %}{% endif %}">
     {% csrf_token %}
-    <div style="display:flex;flex-direction:column;gap:20px">
+    {% if messages %}
+    {% for msg in messages %}
+    <div style="padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:500;background:{% if 'error' in msg.tags %}#fee2e2;color:#dc2626{% elif 'success' in msg.tags %}#dcfce7;color:#16a34a{% else %}#dbeafe;color:#2563eb{% endif %}">{{ msg }}</div>
+    {% endfor %}
+    {% endif %}
 
-      <!-- Basic info -->
-      <div class="card" style="padding:24px">
-        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Basic Information</p>
-        <div class="form-row cols-2" style="margin-bottom:0">
-          <div class="form-group">
-            <label class="form-label">Full Name *</label>
-            <input type="text" name="name" class="form-input" value="{{ client.name|default:'' }}" placeholder="John Smith" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Company Name</label>
-            <input type="text" name="company_name" class="form-input" value="{{ client.company_name|default:'' }}" placeholder="Acme Corporation">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Email *</label>
-            <input type="email" name="email" class="form-input" value="{{ client.email|default:'' }}" placeholder="client@company.com" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Phone</label>
-            <input type="tel" name="phone" class="form-input" value="{{ client.phone|default:'' }}" placeholder="+234 xxx xxx xxxx">
-          </div>
+    <!-- Basic Info -->
+    <div class="card" style="padding:24px;margin-bottom:16px">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 18px">Basic Information</h2>
+      <div class="form-row cols-2">
+        <div class="form-group">
+          <label class="form-label">Full Name / Company Name *</label>
+          <input type="text" name="name" class="form-input" value="{{ client.name|default:'' }}" placeholder="Acme Corporation" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address *</label>
+          <input type="email" name="email" class="form-input" value="{{ client.email|default:'' }}" placeholder="billing@acme.com" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input type="tel" name="phone" class="form-input" value="{{ client.phone|default:'' }}" placeholder="+234 800 000 0000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tax ID / VAT Number</label>
+          <input type="text" name="tax_id" class="form-input" value="{{ client.tax_id|default:'' }}" placeholder="Optional">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Default Currency</label>
+          <select name="currency" class="form-select">
+            {% for code, name in currencies %}
+            <option value="{{ code }}" {% if client and client.currency == code %}selected{% elif not client and code == 'USD' %}selected{% endif %}>{{ code }} — {{ name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Default Discount (%)</label>
+          <input type="number" name="discount_rate" class="form-input" value="{{ client.discount_rate|default:'0' }}" min="0" max="100" step="0.01" placeholder="0">
+          <p class="form-hint">Applied automatically to new invoices for this client.</p>
         </div>
       </div>
-
-      <!-- Billing -->
-      <div class="card" style="padding:24px">
-        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Billing & Tax</p>
-        <div class="form-row cols-2" style="margin-bottom:0">
-          <div class="form-group">
-            <label class="form-label">Tax ID / VAT Number</label>
-            <input type="text" name="tax_id" class="form-input" value="{{ client.tax_id|default:'' }}" placeholder="RC-000000">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Default Currency</label>
-            <select name="currency" class="form-select">
-              {% for code, label in currencies %}
-              <option value="{{ code }}" {% if client.currency == code %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="form-group" style="grid-column:1/-1">
-            <label class="form-label">Billing Address</label>
-            <textarea name="address" class="form-textarea" rows="3" placeholder="123 Business St, Lagos, Nigeria">{{ client.address|default:'' }}</textarea>
-          </div>
-        </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Tags</label>
+        <input type="text" name="tags" class="form-input" value="{{ client.tags|default:'' }}" placeholder="vip, enterprise, recurring (comma-separated)">
       </div>
+    </div>
 
-      <!-- Contact -->
-      <div class="card" style="padding:24px">
-        <p style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:18px">Additional Info</p>
-        <div class="form-row cols-2" style="margin-bottom:0">
-          <div class="form-group">
-            <label class="form-label">Website</label>
-            <input type="url" name="website" class="form-input" value="{{ client.website|default:'' }}" placeholder="https://company.com">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Payment Terms (days)</label>
-            <input type="number" name="payment_terms" class="form-input" value="{{ client.payment_terms|default:30 }}" min="0" max="365">
-          </div>
-          <div class="form-group" style="grid-column:1/-1">
-            <label class="form-label">Notes</label>
-            <textarea name="notes" class="form-textarea" rows="3" placeholder="Internal notes about this client…">{{ client.notes|default:'' }}</textarea>
-          </div>
-        </div>
+    <!-- Billing Address -->
+    <div class="card" style="padding:24px;margin-bottom:16px">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 18px">Billing Address</h2>
+      <div class="form-group">
+        <label class="form-label">Street Address</label>
+        <textarea name="billing_address" class="form-textarea" rows="2" placeholder="123 Business St…">{{ client.billing_address|default:'' }}</textarea>
       </div>
+      <div class="form-row cols-2">
+        <div class="form-group"><label class="form-label">City</label><input type="text" name="billing_city" class="form-input" value="{{ client.billing_city|default:'' }}" placeholder="Lagos"></div>
+        <div class="form-group"><label class="form-label">State / Province</label><input type="text" name="billing_state" class="form-input" value="{{ client.billing_state|default:'' }}" placeholder="Lagos State"></div>
+        <div class="form-group"><label class="form-label">Country</label><input type="text" name="billing_country" class="form-input" value="{{ client.billing_country|default:'' }}" placeholder="Nigeria"></div>
+        <div class="form-group"><label class="form-label">ZIP / Postal Code</label><input type="text" name="billing_zip" class="form-input" value="{{ client.billing_zip|default:'' }}" placeholder="100001"></div>
+      </div>
+    </div>
 
-      <!-- Actions -->
-      <div style="display:flex;gap:12px;justify-content:flex-end">
-        <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}" class="btn btn-secondary btn-lg">Cancel</a>
-        <button type="submit" class="btn btn-primary btn-lg">
-          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-          {% if client %}Update Client{% else %}Add Client{% endif %}
-        </button>
+    <!-- Notes -->
+    <div class="card" style="padding:24px;margin-bottom:24px">
+      <h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 16px">Internal Notes</h2>
+      <textarea name="notes" class="form-textarea" rows="4" placeholder="Any internal notes about this client…">{{ client.notes|default:'' }}</textarea>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button type="submit" class="btn btn-primary">{% if is_create %}Create Client{% else %}Save Changes{% endif %}</button>
+      <a href="{% if client %}{% url 'invoices:client_detail' client.id %}{% else %}{% url 'invoices:client_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+      {% if client %}
+      <div style="margin-left:auto">
+        <form method="post" action="{% url 'invoices:client_delete' client.id %}" onsubmit="return confirm('Delete client {{ client.name|escapejs }}? This cannot be undone.')">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-ghost" style="color:#dc2626">Delete Client</button>
+        </form>
       </div>
+      {% endif %}
     </div>
   </form>
 </div>

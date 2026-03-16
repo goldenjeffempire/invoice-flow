@@ -1,164 +1,239 @@
-import json
-from datetime import date, timedelta
-from dateutil.relativedelta import relativedelta
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+"""
+InvoiceFlow – Client Views (production rebuild)
+"""
+from __future__ import annotations
+
+import logging
+
 from django.contrib import messages
-from django.db.models import Sum, Q
-from ..models import Client, ClientNote, ActivityLog
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
+from django.db.models import Count, Q, Sum
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from ..models import Client, ClientNote, Estimate, Invoice
+
+logger = logging.getLogger(__name__)
+
+
+def _get_workspace(request):
+    profile = getattr(request.user, "profile", None)
+    return getattr(profile, "current_workspace", None) if profile else None
+
 
 @login_required
 def client_list(request):
-    workspace = request.user.profile.current_workspace
-    query = request.GET.get('q', '')
-    status_filter = request.GET.get('status', 'active')
+    workspace = _get_workspace(request)
+    if not workspace:
+        return redirect("invoices:onboarding_router")
 
-    clients = Client.objects.filter(workspace=workspace)
+    search = request.GET.get("q", "").strip()
+    ordering = request.GET.get("ordering", "name")
+    page_num = request.GET.get("page", 1)
 
-    if query:
-        clients = clients.filter(
-            Q(name__icontains=query) |
-            Q(email__icontains=query) |
-            Q(phone__icontains=query)
+    qs = Client.objects.filter(workspace=workspace).annotate(
+        invoice_count=Count("invoices", distinct=True),
+        paid_total=Sum(
+            "invoices__amount_paid",
+            filter=Q(invoices__status__in=["paid", "part_paid"]),
+            distinct=False,
+        ),
+        outstanding=Sum(
+            "invoices__amount_due",
+            filter=Q(invoices__status__in=["sent", "viewed", "part_paid", "overdue"]),
+            distinct=False,
+        ),
+    )
+
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search) | Q(email__icontains=search) | Q(phone__icontains=search)
         )
 
-    # We don't have a formal "is_active" field yet in the model based on initial read,
-    # but the task mentions a status badge. Let's assume they are all active for now
-    # or check if we should add a field.
-    # Looking at the existing template, it just hardcodes "Active".
+    valid_orderings = ["name", "-name", "created_at", "-created_at", "-invoice_count", "-paid_total"]
+    if ordering in valid_orderings:
+        qs = qs.order_by(ordering)
+    else:
+        qs = qs.order_by("name")
 
-    clients = clients.order_by('name')
+    paginator = Paginator(qs, 25)
+    clients_page = paginator.get_page(page_num)
 
-    for client in clients:
-        invoices = client.invoices.all()
-        client.total_invoiced = invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0
-        client.total_paid = invoices.aggregate(Sum('amount_paid'))['amount_paid__sum'] or 0
-        client.outstanding_amount = invoices.exclude(status='paid').aggregate(Sum('amount_due'))['amount_due__sum'] or 0
-        last_invoice = invoices.order_by('-issue_date').first()
-        client.last_invoice_date = last_invoice.issue_date if last_invoice else None
-        client.invoice_count = invoices.count()
-        client.is_active = True # Placeholder until field is added if necessary
+    total_clients = Client.objects.filter(workspace=workspace).count()
+    active_clients = Client.objects.filter(workspace=workspace).annotate(
+        ic=Count("invoices")
+    ).filter(ic__gt=0).count()
 
-    return render(request, 'pages/clients/list.html', {
-        'clients': clients,
-        'query': query,
-        'status_filter': status_filter
-    })
-
-@login_required
-def client_detail(request, client_id):
-    workspace = request.user.profile.current_workspace
-    client = get_object_or_404(Client, id=client_id, workspace=workspace)
-
-    if request.method == 'POST' and request.POST.get('action') == 'add_note':
-        content = request.POST.get('content')
-        if content:
-            ClientNote.objects.create(
-                client=client,
-                user=request.user,
-                content=content
-            )
-            messages.success(request, "Note added.")
-            return redirect('invoices:client_detail', client_id=client.id)
-
-    invoices = client.invoices.all().order_by('-issue_date')
-    estimates = client.estimates.all().order_by('-created_at')
-    # Assuming payments are linked to invoices
-    from ..models import Payment
-    payments = Payment.objects.filter(invoice__client=client).order_by('-payment_date')
-
-    notes = client.client_notes.all().order_by('-created_at')
-    comms = client.comms_logs.all().order_by('-sent_at')
-
-    # Stats
     stats = {
-        'total_invoiced': invoices.aggregate(Sum('total_amount'))['total_amount__sum'] or 0,
-        'total_paid': invoices.aggregate(Sum('amount_paid'))['amount_paid__sum'] or 0,
-        'outstanding': invoices.aggregate(Sum('amount_due'))['amount_due__sum'] or 0,
-        'invoice_count': invoices.count(),
+        "total": total_clients,
+        "active": active_clients,
+        "total_billed": Invoice.objects.filter(workspace=workspace).aggregate(t=Sum("total_amount"))["t"] or 0,
+        "total_outstanding": Invoice.objects.filter(
+            workspace=workspace, status__in=["sent", "viewed", "part_paid", "overdue"]
+        ).aggregate(t=Sum("amount_due"))["t"] or 0,
     }
 
-    activities = ActivityLog.objects.filter(
-        workspace=workspace,
-        resource_type='client',
-        resource_id=str(client.id)
-    ).order_by('-created_at')[:20]
-
-    today = date.today()
-    months_labels = []
-    months_revenue = []
-    for i in range(11, -1, -1):
-        mo_start = (today.replace(day=1) - relativedelta(months=i))
-        mo_end = (mo_start + relativedelta(months=1)) - timedelta(days=1)
-        rev = invoices.filter(
-            status='paid',
-            issue_date__gte=mo_start,
-            issue_date__lte=mo_end
-        ).aggregate(s=Sum('amount_paid'))['s'] or 0
-        months_labels.append(mo_start.strftime('%b'))
-        months_revenue.append(float(rev))
-
-    revenue_chart_json = json.dumps({'labels': months_labels, 'values': months_revenue})
-
-    return render(request, 'pages/clients/detail.html', {
-        'client': client,
-        'notes': notes,
-        'comms': comms,
-        'invoices': invoices,
-        'estimates': estimates,
-        'payments': payments,
-        'activities': activities,
-        'stats': stats,
-        'revenue_chart_json': revenue_chart_json,
+    return render(request, "pages/clients/list.html", {
+        "clients": clients_page,
+        "search_query": search,
+        "ordering": ordering,
+        "stats": stats,
+        "page_title": "Clients",
     })
 
-@login_required
-def client_delete(request, client_id):
-    workspace = request.user.profile.current_workspace
-    client = get_object_or_404(Client, id=client_id, workspace=workspace)
-    if request.method == 'POST':
-        name = client.name
-        client.delete()
-        messages.success(request, f"Client {name} deleted successfully.")
-        return redirect('invoices:client_list')
-    return redirect('invoices:client_detail', client_id=client.id)
 
 @login_required
 def client_create(request):
-    workspace = request.user.profile.current_workspace
-    if request.method == 'POST':
-        client = Client.objects.create(
-            workspace=workspace,
-            name=request.POST.get('name'),
-            email=request.POST.get('email'),
-            phone=request.POST.get('phone', ''),
-            billing_address=request.POST.get('billing_address', ''),
-            currency=request.POST.get('currency', 'USD'),
-            tax_id=request.POST.get('tax_id', '')
-        )
-        ActivityLog.objects.create(
-            workspace=workspace,
-            user=request.user,
-            action="Created client",
-            resource_type="client",
-            resource_id=str(client.id)
-        )
-        messages.success(request, f"Client {client.name} created successfully.")
-        return redirect('invoices:client_detail', client_id=client.id)
-    return render(request, 'pages/clients/form.html')
+    workspace = _get_workspace(request)
+    if not workspace:
+        return redirect("invoices:onboarding_router")
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        email = request.POST.get("email", "").strip()
+
+        if not name:
+            messages.error(request, "Client name is required.")
+        elif not email:
+            messages.error(request, "Email address is required.")
+        elif Client.objects.filter(workspace=workspace, email__iexact=email).exists():
+            messages.error(request, "A client with this email already exists.")
+        else:
+            client = Client.objects.create(
+                workspace=workspace,
+                name=name,
+                email=email,
+                phone=request.POST.get("phone", ""),
+                billing_address=request.POST.get("billing_address", ""),
+                billing_city=request.POST.get("billing_city", ""),
+                billing_state=request.POST.get("billing_state", ""),
+                billing_country=request.POST.get("billing_country", ""),
+                billing_zip=request.POST.get("billing_zip", ""),
+                currency=request.POST.get("currency", "USD"),
+                tax_id=request.POST.get("tax_id", ""),
+                discount_rate=request.POST.get("discount_rate") or 0,
+                notes=request.POST.get("notes", ""),
+                tags=request.POST.get("tags", ""),
+            )
+            messages.success(request, f"Client '{client.name}' created successfully.")
+            next_url = request.GET.get("next")
+            if next_url:
+                return redirect(next_url)
+            return redirect("invoices:client_detail", client_id=client.id)
+
+    return render(request, "pages/clients/form.html", {
+        "client": None,
+        "currencies": Invoice.CURRENCY_CHOICES,
+        "page_title": "New Client",
+        "is_create": True,
+    })
+
 
 @login_required
 def client_edit(request, client_id):
-    workspace = request.user.profile.current_workspace
+    workspace = _get_workspace(request)
+    if not workspace:
+        return redirect("invoices:onboarding_router")
+
     client = get_object_or_404(Client, id=client_id, workspace=workspace)
-    if request.method == 'POST':
-        client.name = request.POST.get('name')
-        client.email = request.POST.get('email')
-        client.phone = request.POST.get('phone', '')
-        client.billing_address = request.POST.get('billing_address', '')
-        client.currency = request.POST.get('currency', 'USD')
-        client.tax_id = request.POST.get('tax_id', '')
-        client.save()
-        messages.success(request, "Client updated successfully.")
-        return redirect('invoices:client_detail', client_id=client.id)
-    return render(request, 'pages/clients/form.html', {'client': client})
+
+    if request.method == "POST":
+        name = request.POST.get("name", "").strip()
+        email = request.POST.get("email", "").strip()
+
+        if not name:
+            messages.error(request, "Client name is required.")
+        elif not email:
+            messages.error(request, "Email address is required.")
+        elif Client.objects.filter(workspace=workspace, email__iexact=email).exclude(id=client.id).exists():
+            messages.error(request, "Another client with this email already exists.")
+        else:
+            client.name = name
+            client.email = email
+            client.phone = request.POST.get("phone", "")
+            client.billing_address = request.POST.get("billing_address", "")
+            client.billing_city = request.POST.get("billing_city", "")
+            client.billing_state = request.POST.get("billing_state", "")
+            client.billing_country = request.POST.get("billing_country", "")
+            client.billing_zip = request.POST.get("billing_zip", "")
+            client.currency = request.POST.get("currency", "USD")
+            client.tax_id = request.POST.get("tax_id", "")
+            client.discount_rate = request.POST.get("discount_rate") or 0
+            client.notes = request.POST.get("notes", "")
+            client.tags = request.POST.get("tags", "")
+            client.save()
+            messages.success(request, f"Client '{client.name}' updated successfully.")
+            return redirect("invoices:client_detail", client_id=client.id)
+
+    return render(request, "pages/clients/form.html", {
+        "client": client,
+        "currencies": Invoice.CURRENCY_CHOICES,
+        "page_title": f"Edit — {client.name}",
+        "is_create": False,
+    })
+
+
+@login_required
+def client_detail(request, client_id):
+    workspace = _get_workspace(request)
+    if not workspace:
+        return redirect("invoices:onboarding_router")
+
+    client = get_object_or_404(Client, id=client_id, workspace=workspace)
+
+    invoices = Invoice.objects.filter(client=client, workspace=workspace).order_by("-created_at")
+    estimates = Estimate.objects.filter(client=client, workspace=workspace).order_by("-created_at")
+    notes = ClientNote.objects.filter(client=client).select_related("user").order_by("-created_at")
+
+    stats = invoices.aggregate(
+        total_billed=Sum("total_amount"),
+        total_paid=Sum("amount_paid"),
+        total_due=Sum("amount_due", filter=Q(status__in=["sent", "viewed", "part_paid", "overdue"])),
+    )
+
+    if request.method == "POST" and request.POST.get("action") == "add_note":
+        content = request.POST.get("note_content", "").strip()
+        if content:
+            ClientNote.objects.create(client=client, user=request.user, content=content)
+            messages.success(request, "Note added.")
+        return redirect("invoices:client_detail", client_id=client.id)
+
+    tags_list = [t.strip() for t in client.tags.split(",") if t.strip()] if client.tags else []
+
+    return render(request, "pages/clients/detail.html", {
+        "client": client,
+        "invoices": invoices[:10],
+        "estimates": estimates[:10],
+        "notes": notes,
+        "stats": stats,
+        "tags_list": tags_list,
+        "invoice_count": invoices.count(),
+        "estimate_count": estimates.count(),
+        "page_title": client.name,
+    })
+
+
+@login_required
+@require_POST
+def client_delete(request, client_id):
+    workspace = _get_workspace(request)
+    client = get_object_or_404(Client, id=client_id, workspace=workspace)
+    if Invoice.objects.filter(client=client).exists():
+        messages.error(request, "Cannot delete a client with existing invoices.")
+        return redirect("invoices:client_detail", client_id=client.id)
+    name = client.name
+    client.delete()
+    messages.success(request, f"Client '{name}' deleted.")
+    return redirect("invoices:client_list")
+
+
+@login_required
+def client_autocomplete(request):
+    workspace = _get_workspace(request)
+    if not workspace:
+        return JsonResponse({"results": []})
+    q = request.GET.get("q", "")
+    clients = Client.objects.filter(workspace=workspace, name__icontains=q).values("id", "name", "email")[:10]
+    return JsonResponse({"results": list(clients)})
