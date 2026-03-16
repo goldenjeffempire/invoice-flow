@@ -175,13 +175,13 @@ urlpatterns = [
     path("export/transactions/csv/", export_views.export_transactions_csv, name="export_transactions_csv"),
 
     # ── Recurring Schedules ───────────────────────────────────────────────────
-    path("recurring/", recurring_views.schedule_list, name="schedule_list"),
-    path("recurring/create/", recurring_views.schedule_create, name="schedule_create"),
-    path("recurring/<int:schedule_id>/", recurring_views.schedule_detail, name="schedule_detail"),
-    path("recurring/<int:schedule_id>/edit/", recurring_views.schedule_edit, name="schedule_edit"),
-    path("recurring/<int:schedule_id>/pause/", recurring_views.schedule_pause, name="schedule_pause"),
-    path("recurring/<int:schedule_id>/resume/", recurring_views.schedule_resume, name="schedule_resume"),
-    path("recurring/<int:schedule_id>/cancel/", recurring_views.schedule_cancel, name="schedule_cancel"),
+    path("recurring/", recurring_views.schedule_list, name="recurring_list"),
+    path("recurring/create/", recurring_views.schedule_create, name="recurring_create"),
+    path("recurring/<int:schedule_id>/", recurring_views.schedule_detail, name="recurring_detail"),
+    path("recurring/<int:schedule_id>/edit/", recurring_views.schedule_edit, name="recurring_edit"),
+    path("recurring/<int:schedule_id>/pause/", recurring_views.schedule_pause, name="recurring_pause"),
+    path("recurring/<int:schedule_id>/resume/", recurring_views.schedule_resume, name="recurring_resume"),
+    path("recurring/<int:schedule_id>/cancel/", recurring_views.schedule_cancel, name="recurring_delete"),
 
     # ── Expenses ──────────────────────────────────────────────────────────────
     path("expenses/", expense_views.expense_list, name="expense_list"),

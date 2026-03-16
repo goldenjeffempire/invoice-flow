@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: invoiceflow
+    runtime: python
+    buildCommand: bash build.sh
+    preDeployCommand: python manage.py migrate --noinput
+    startCommand: gunicorn invoiceflow.wsgi:application -c gunicorn.conf.py
+    envVars:
+      - key: PRODUCTION
+        value: "true"
+      - key: SECRET_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: ENCRYPTION_SALT
+        sync: false
