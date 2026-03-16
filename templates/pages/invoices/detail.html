@@ -26,7 +26,7 @@
         Send Invoice
       </button>
       {% endif %}
-      {% if invoice.status in 'sent,viewed,part_paid,overdue' %}
+      {% if can_record_payment %}
       <a href="{% url 'invoices:record_offline_payment' invoice.id %}" class="btn btn-success btn-sm">
         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
         Record Payment
@@ -220,7 +220,7 @@
           {% if invoice.amount_due > 0 %}<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:9px;border-top:1px solid var(--border)"><span>Balance Due</span><span style="color:#d97706">{{ invoice.currency }}{{ invoice.amount_due|floatformat:2 }}</span></div>{% endif %}
           {% if invoice.amount_due == 0 %}<div style="text-align:center;padding:8px;background:#dcfce7;border-radius:8px;margin-top:4px"><span style="font-size:13px;font-weight:700;color:#16a34a">✓ Fully Paid</span></div>{% endif %}
         </div>
-        {% if invoice.status in 'sent,viewed,part_paid,overdue' %}
+        {% if can_record_payment %}
         <a href="{% url 'invoices:record_offline_payment' invoice.id %}" class="btn btn-success btn-sm" style="width:100%;justify-content:center;margin-top:14px">
           Record Payment
         </a>

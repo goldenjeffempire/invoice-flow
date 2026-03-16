@@ -18,6 +18,11 @@ def global_search(request):
         return JsonResponse({'results': []})
 
     workspace = getattr(request, 'workspace', None)
+    if not workspace and hasattr(request.user, 'profile'):
+        try:
+            workspace = request.user.profile.current_workspace
+        except Exception:
+            pass
     if not workspace:
         return JsonResponse({'results': []})
 

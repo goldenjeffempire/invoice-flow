@@ -38,10 +38,9 @@ logger = logging.getLogger(__name__)
 # Utility / System Views
 # ============================================================================
 
-@cache_page(60 * 15)
 def landing_view(request):
     if request.user.is_authenticated:
-        return redirect("invoices:invoice_list")
+        return redirect("invoices:dashboard")
     return render(request, "pages/landing.html")
 
 
@@ -153,7 +152,7 @@ def login_view(request):
                     next_url = request.GET.get("next", "")
                     if next_url and next_url.startswith("/") and not next_url.startswith("//"):
                         return redirect(next_url)
-                    return redirect("invoices:invoice_list")
+                    return redirect("invoices:dashboard")
                 else:
                     messages.error(request, message)
             except Exception as exc:
@@ -270,7 +269,7 @@ def mfa_verify(request):
                 else:
                     request.session.set_expiry(0)
                 messages.success(request, "Welcome back!")
-                return redirect("invoices:invoice_list")
+                return redirect("invoices:dashboard")
             else:
                 messages.error(request, message)
     else:
@@ -463,7 +462,7 @@ def accept_invitation(request, token):
         )
         if success:
             messages.success(request, message)
-            return redirect("invoices:invoice_list")
+            return redirect("invoices:dashboard")
         else:
             messages.error(request, message)
 
@@ -622,27 +621,104 @@ def payment_settings_update_ajax(request):
 
 @login_required
 def reminder_dashboard(request):
-    return render(request, "pages/reminder_settings.html")
+    workspace = None
+    if hasattr(request.user, 'profile'):
+        try:
+            workspace = request.user.profile.current_workspace
+        except Exception:
+            pass
+    context = {}
+    if workspace:
+        from ..models import Invoice
+        context['overdue_count'] = Invoice.objects.filter(
+            workspace=workspace, status='overdue'
+        ).count()
+        context['outstanding_count'] = Invoice.objects.filter(
+            workspace=workspace, status__in=['sent', 'viewed', 'part_paid', 'overdue']
+        ).count()
+    return render(request, "pages/reminder_settings.html", context)
 
 
+@login_required
 def reminder_settings(request):
     return redirect("invoices:reminder_dashboard")
 
 
+@login_required
 def track_reminder_click(request, log_id):
-    return redirect("invoices:home")
+    return redirect("invoices:dashboard")
 
 
+@login_required
 def track_reminder_open(request, log_id):
-    return HttpResponse(status=200)
+    return HttpResponse(
+        b'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x00\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;',
+        content_type='image/gif'
+    )
 
 
+@login_required
+@require_POST
+@csrf_protect
 def record_engagement(request):
     return JsonResponse({"success": True})
 
 
+@login_required
+@require_POST
+@csrf_protect
 def submit_feedback(request):
     return JsonResponse({"success": True})
+
+
+@login_required
+@require_POST
+def settings_business_update(request):
+    try:
+        profile = request.user.profile
+        profile.company_name = request.POST.get('company_name', '').strip()
+        profile.business_email = request.POST.get('business_email', '').strip()
+        profile.business_phone = request.POST.get('business_phone', '').strip()
+        profile.business_address = request.POST.get('business_address', '').strip()
+        business_type = request.POST.get('business_type', '').strip()
+        if business_type:
+            profile.business_type = business_type
+        profile.save(update_fields=[
+            'company_name', 'business_email', 'business_phone',
+            'business_address', 'business_type',
+        ])
+        messages.success(request, "Business information updated successfully.")
+    except Exception as exc:
+        logger.error("Business settings update error: %s", exc)
+        messages.error(request, "Failed to update business information.")
+    return redirect("invoices:settings")
+
+
+@login_required
+@require_POST
+def settings_branding_update(request):
+    try:
+        profile = request.user.profile
+        primary_color = request.POST.get('primary_color', '').strip()
+        secondary_color = request.POST.get('secondary_color', '').strip()
+        accent_color = request.POST.get('accent_color', '').strip()
+        invoice_style = request.POST.get('invoice_style', '').strip()
+        if primary_color:
+            profile.primary_color = primary_color
+        if secondary_color:
+            profile.secondary_color = secondary_color
+        if accent_color:
+            profile.accent_color = accent_color
+        if invoice_style:
+            profile.invoice_style = invoice_style
+        profile.save(update_fields=[
+            'primary_color', 'secondary_color', 'accent_color', 'invoice_style',
+        ])
+        messages.success(request, "Branding settings updated successfully.")
+    except Exception as exc:
+        logger.error("Branding settings update error: %s", exc)
+        messages.error(request, "Failed to update branding settings.")
+    return redirect("invoices:settings")
 
 
 def faq_api(request):
