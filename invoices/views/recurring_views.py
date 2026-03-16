@@ -78,7 +78,7 @@ def schedule_create(request):
             description = request.POST.get('description', '').strip()
             if not description:
                 messages.error(request, "Description is required.")
-                return redirect('invoices:schedule_create')
+                return redirect('invoices:recurring_create')
 
             interval_type = request.POST.get('interval_type', 'monthly')
             custom_interval_days = None
@@ -106,7 +106,7 @@ def schedule_create(request):
                 base_amount = Decimal(request.POST.get('base_amount', '0'))
             except InvalidOperation:
                 messages.error(request, "Invalid amount.")
-                return redirect('invoices:schedule_create')
+                return redirect('invoices:recurring_create')
 
             currency = request.POST.get('currency', 'USD')
 
@@ -191,7 +191,7 @@ def schedule_create(request):
 
             if success:
                 messages.success(request, message)
-                return redirect('invoices:schedule_detail', schedule_id=schedule.id)
+                return redirect('invoices:recurring_detail', schedule_id=schedule.id)
             else:
                 messages.error(request, message)
 
@@ -225,7 +225,7 @@ def schedule_detail(request, schedule_id):
     schedule = RecurringBillingService.get_schedule_by_id(schedule_id, workspace)
     if not schedule:
         messages.error(request, "Schedule not found.")
-        return redirect('invoices:schedule_list')
+        return redirect('invoices:recurring_list')
 
     executions = RecurringBillingService.get_schedule_executions(schedule, limit=20)
     audit_logs = RecurringBillingService.get_schedule_audit_logs(schedule, limit=30)
@@ -252,7 +252,7 @@ def schedule_edit(request, schedule_id):
     schedule = RecurringBillingService.get_schedule_by_id(schedule_id, workspace)
     if not schedule:
         messages.error(request, "Schedule not found.")
-        return redirect('invoices:schedule_list')
+        return redirect('invoices:recurring_list')
 
     clients = Client.objects.filter(workspace=workspace).order_by('name')
 
@@ -337,7 +337,7 @@ def schedule_edit(request, schedule_id):
 
             if success:
                 messages.success(request, message)
-                return redirect('invoices:schedule_detail', schedule_id=schedule.id)
+                return redirect('invoices:recurring_detail', schedule_id=schedule.id)
             else:
                 messages.error(request, message)
 
@@ -385,7 +385,7 @@ def schedule_pause(request, schedule_id):
         messages.success(request, message)
     else:
         messages.error(request, message)
-    return redirect('invoices:schedule_detail', schedule_id=schedule_id)
+    return redirect('invoices:recurring_detail', schedule_id=schedule_id)
 
 
 @login_required
@@ -414,7 +414,7 @@ def schedule_resume(request, schedule_id):
         messages.success(request, message)
     else:
         messages.error(request, message)
-    return redirect('invoices:schedule_detail', schedule_id=schedule_id)
+    return redirect('invoices:recurring_detail', schedule_id=schedule_id)
 
 
 @login_required
@@ -446,4 +446,4 @@ def schedule_cancel(request, schedule_id):
         messages.success(request, message)
     else:
         messages.error(request, message)
-    return redirect('invoices:schedule_detail', schedule_id=schedule_id)
+    return redirect('invoices:recurring_detail', schedule_id=schedule_id)

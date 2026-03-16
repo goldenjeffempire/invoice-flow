@@ -18,7 +18,7 @@
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       {% if estimate.status == 'draft' %}
-      <a href="{% url 'invoices:estimate_builder' estimate.id %}" class="btn btn-secondary btn-sm">Edit</a>
+      <a href="{% url 'invoices:estimate_edit' estimate.id %}" class="btn btn-secondary btn-sm">Edit</a>
       <button @click="sendModal=true" class="btn btn-primary btn-sm">
         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
         Send
@@ -38,7 +38,12 @@
         <div x-show="open" x-cloak @click.outside="open=false" class="dropdown">
           <div style="padding:6px">
             <a href="{{ estimate.get_public_url }}" class="dd-item" target="_blank"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>Public Link</a>
-            {% if estimate.status not in 'void' %}
+            <div class="dd-sep"></div>
+            <form method="post" action="{% url 'invoices:estimate_duplicate' estimate.id %}" style="display:contents">
+              {% csrf_token %}
+              <button type="submit" class="dd-item" style="width:100%;text-align:left"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Duplicate</button>
+            </form>
+            {% if estimate.status != 'void' %}
             <div class="dd-sep"></div>
             <button @click="voidModal=true;open=false" class="dd-item danger" style="width:100%;text-align:left"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>Void Estimate</button>
             {% endif %}
@@ -156,8 +161,25 @@
     </div>
   </div>
 
+  <!-- Void Modal -->
+  <div x-show="voidModal" x-cloak style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45)">
+    <div style="position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;max-width:420px;width:100%;padding:28px;box-shadow:var(--shadow-xl)"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
+      <h3 style="font-size:16px;font-weight:700;margin:0 0 6px">Void Estimate</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 18px">This will mark the estimate as void. This action cannot be undone.</p>
+      <form method="post" action="{% url 'invoices:estimate_void' estimate.id %}">
+        {% csrf_token %}
+        <div class="form-group"><label class="form-label">Reason (optional)</label><textarea name="reason" class="form-textarea" rows="2" placeholder="Why is this being voided?"></textarea></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button type="button" @click="voidModal=false" class="btn btn-secondary btn-sm">Cancel</button>
+          <button type="submit" class="btn btn-sm" style="background:#dc2626;color:#fff;border-color:#dc2626">Void Estimate</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Send Modal -->
-  <div x-show="sendModal" x-cloak style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px">
+  <div x-show="sendModal" x-cloak style="position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45)">
     <div style="position:relative;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;max-width:440px;width:100%;padding:28px;box-shadow:var(--shadow-xl)"
          x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100">
       <h3 style="font-size:16px;font-weight:700;margin:0 0 8px">Send Estimate</h3>
