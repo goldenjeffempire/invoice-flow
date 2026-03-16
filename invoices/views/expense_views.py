@@ -195,6 +195,27 @@ def expense_detail(request, expense_id):
 
 
 @login_required
+@require_POST
+def expense_delete(request, expense_id):
+    workspace = get_user_workspace(request.user)
+    if not workspace:
+        raise Http404("Workspace not found")
+
+    expense = ExpenseService.get_expense_for_user(expense_id, request.user, workspace)
+    if not expense:
+        raise Http404("Expense not found")
+
+    if expense.status in [Expense.Status.BILLED, Expense.Status.REIMBURSED]:
+        messages.error(request, "Cannot delete a billed or reimbursed expense.")
+        return redirect('invoices:expense_detail', expense_id=expense.id)
+
+    expense_number = expense.expense_number
+    expense.delete()
+    messages.success(request, f"Expense {expense_number} deleted successfully.")
+    return redirect('invoices:expense_list')
+
+
+@login_required
 def expense_edit(request, expense_id):
     workspace = get_user_workspace(request.user)
     if not workspace:

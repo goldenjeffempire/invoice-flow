@@ -212,6 +212,7 @@ urlpatterns = [
     path("expenses/<int:expense_id>/reject/", expense_views.expense_reject, name="expense_reject"),
     path("expenses/<int:expense_id>/reimburse/", expense_views.expense_reimburse, name="expense_reimburse"),
     path("expenses/<int:expense_id>/upload-receipt/", expense_views.expense_upload_receipt, name="expense_upload_receipt"),
+    path("expenses/<int:expense_id>/delete/", expense_views.expense_delete, name="expense_delete"),
     path("expenses/<int:expense_id>/attachments/<int:attachment_id>/delete/", expense_views.expense_delete_attachment, name="expense_delete_attachment"),
     path("invoices/<int:invoice_id>/add-expenses/", expense_views.billable_expenses_select, name="billable_expenses_select"),
 

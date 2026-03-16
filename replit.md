@@ -90,6 +90,14 @@ Migration 0006 had a bug where it tried to modify the `invoices_payment` table a
 - **`invoices/services/pdf_service.py`** — Replaced all uses of `invoice.invoice_id` (non-existent attribute) with `invoice.invoice_number` (lines 72, 75, 89). Affects PDF generation log messages and the generated filename.
 - **`invoices/services/payment_service.py`** — Removed `tip_amount=tip_amount` from `Payment.objects.create()` call; `tip_amount` is not a model field. The value is now stored in the `metadata` JSON field instead.
 
+### Template & URL Audit Fixes (2026-03-16 continued)
+- **`templates/pages/reports/home.html`** — Corrected 7 broken URL references: `report_cashflow/aging/expense/profitability/tax/forecast/exports` → correct names `cashflow_report`, `aging_report`, `expense_analysis`, `profitability_report`, `tax_report`, `forecast_report`, `exports_hub`. All report cards now link correctly.
+- **`invoices/views/expense_views.py`** — Added missing `expense_delete` view (`@require_POST`, workspace-scoped, protects billed/reimbursed expenses from deletion).
+- **`invoices/urls.py`** — Added `expenses/<int:expense_id>/delete/` URL pattern (`name="expense_delete"`) wiring up the new view. Resolves the broken delete action in `expense_detail.html`.
+- **`invoiceflow/settings.py`** — Added `django.contrib.humanize` to `INSTALLED_APPS` (required by expense, forecast, and profitability templates that use `{% load humanize %}`).
+- **`templates/pages/workspace/settings.html`** — Fixed double `{% endblock %}` syntax error.
+- All template URL names validated against defined patterns — zero mismatches remain.
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.
