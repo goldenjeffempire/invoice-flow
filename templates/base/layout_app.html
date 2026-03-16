@@ -233,10 +233,10 @@
     </div>
 
     <!-- Search trigger -->
-    <button class="tb-btn" @click="srch=true" title="Search (⌘K)">
+    <button class="tb-btn" @click="openSearch()" title="Search (⌘K)" aria-label="Open search">
       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
     </button>
-    <kbd style="display:none" class="hidden lg:inline-flex" @click="srch=true">⌘K</kbd>
+    <kbd style="display:none" class="hidden lg:inline-flex" @click="openSearch()">⌘K</kbd>
 
     <!-- Theme toggle -->
     <button class="tb-btn" @click="toggleTheme()" :title="dark ? 'Switch to light mode' : 'Switch to dark mode'">
@@ -327,56 +327,108 @@
 </div>
 
 <!-- ════════ SEARCH PALETTE ════════ -->
-<div x-show="srch" x-cloak class="srch-shell"
+<div x-show="srch"
+     x-cloak
+     class="srch-shell"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Search"
+     @close-search.window="closeSearch()"
      x-transition:enter="transition ease-out duration-200"
      x-transition:enter-start="opacity-0"
      x-transition:enter-end="opacity-100"
      x-transition:leave="transition duration-150"
      x-transition:leave-start="opacity-100"
      x-transition:leave-end="opacity-0">
-  <div class="srch-bd" @click="srch=false"></div>
-  <div class="srch-panel" x-data="searchPalette()"
+
+  <!-- Backdrop — click outside to close -->
+  <div class="srch-bd" @click="closeSearch()" aria-hidden="true"></div>
+
+  <!-- Panel -->
+  <div class="srch-panel"
+       x-data="searchPalette()"
+       role="combobox"
+       aria-expanded="true"
+       aria-haspopup="listbox"
        x-transition:enter="transition ease-out duration-200"
        x-transition:enter-start="opacity-0 scale-95"
-       x-transition:enter-end="opacity-100 scale-100">
+       x-transition:enter-end="opacity-100 scale-100"
+       x-transition:leave="transition ease-in duration-100"
+       x-transition:leave-start="opacity-100 scale-100"
+       x-transition:leave-end="opacity-0 scale-95">
+
+    <!-- Input row -->
     <div style="display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border)">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted);flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" placeholder="Search invoices, clients, estimates…" x-model="q" @input="search()" @keydown.escape="$dispatch('close-search')" @keydown.arrow-down.prevent="navigate('down')" @keydown.arrow-up.prevent="navigate('up')" @keydown.enter.prevent="select()"
-             style="flex:1;padding:16px 12px;background:transparent;border:none;outline:none;font-size:14px;color:var(--text-primary);font-family:inherit"
-             x-init="$nextTick(() => $el.focus())" @close-search.window="$store.search=false">
-      <kbd style="flex-shrink:0" @click="srch=false">Esc</kbd>
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted);flex-shrink:0" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input
+        type="text"
+        placeholder="Search invoices, clients, estimates…"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        aria-label="Search"
+        aria-autocomplete="list"
+        aria-controls="srch-results"
+        x-model="q"
+        @input="search()"
+        @keydown.escape.stop="$dispatch('close-search')"
+        @keydown.arrow-down.prevent="navigate('down')"
+        @keydown.arrow-up.prevent="navigate('up')"
+        @keydown.enter.prevent="select()"
+        style="flex:1;padding:16px 12px;background:transparent;border:none;outline:none;font-size:14px;color:var(--text-primary);font-family:inherit">
+      <button
+        type="button"
+        @click="$dispatch('close-search')"
+        style="flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:var(--bg-subtle);color:var(--text-muted);font-size:11px;font-family:inherit;cursor:pointer;line-height:1"
+        aria-label="Close search">
+        Esc
+      </button>
     </div>
-    <div style="max-height:400px;overflow-y:auto;padding:8px">
+
+    <!-- Results -->
+    <div id="srch-results" role="listbox" style="max-height:400px;overflow-y:auto;padding:8px">
       <template x-if="loading">
-        <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">Searching…</div>
+        <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px" aria-live="polite">Searching…</div>
       </template>
-      <template x-if="!loading && q && results.length === 0">
-        <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px">No results for "<span x-text="q"></span>"</div>
+      <template x-if="!loading && q.length >= 2 && results.length === 0">
+        <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px" aria-live="polite">
+          No results for "<span x-text="q"></span>"
+        </div>
       </template>
       <template x-if="!q">
-        <div style="padding:16px;display:flex;flex-direction:column;gap:4px">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:4px" role="group" aria-label="Quick links">
           <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">Quick links</p>
-          <a href="{% url 'invoices:invoice_create' %}" class="dd-item" style="border-radius:8px" @click="srch=false">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          <a href="{% url 'invoices:invoice_create' %}" class="dd-item" style="border-radius:8px" role="option" @click="$dispatch('close-search')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Create new invoice
           </a>
-          <a href="{% url 'invoices:invoice_list' %}" class="dd-item" style="border-radius:8px" @click="srch=false">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+          <a href="{% url 'invoices:invoice_list' %}" class="dd-item" style="border-radius:8px" role="option" @click="$dispatch('close-search')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
             All invoices
           </a>
-          <a href="{% url 'invoices:client_list' %}" class="dd-item" style="border-radius:8px" @click="srch=false">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <a href="{% url 'invoices:client_list' %}" class="dd-item" style="border-radius:8px" role="option" @click="$dispatch('close-search')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
             All clients
           </a>
-          <a href="{% url 'invoices:reports_home' %}" class="dd-item" style="border-radius:8px" @click="srch=false">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <a href="{% url 'invoices:reports_home' %}" class="dd-item" style="border-radius:8px" role="option" @click="$dispatch('close-search')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             Reports
           </a>
         </div>
       </template>
       <template x-for="(r, i) in results" :key="r.url">
-        <a :href="r.url" class="dd-item" :class="i===selected ? 'bg-[var(--bg-hover)]' : ''" style="border-radius:8px;padding:10px 12px" @click="srch=false">
-          <div style="width:28px;height:28px;border-radius:7px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--text-muted);font-weight:700" x-text="r.type?.[0]?.toUpperCase()"></div>
+        <a :href="r.url"
+           class="dd-item"
+           :class="{ 'srch-result-active': i === selected }"
+           style="border-radius:8px;padding:10px 12px"
+           role="option"
+           :aria-selected="i === selected"
+           @click="$dispatch('close-search')">
+          <div style="width:28px;height:28px;border-radius:7px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:var(--text-muted);font-weight:700"
+               x-text="r.type?.[0]?.toUpperCase()"
+               aria-hidden="true"></div>
           <div style="min-width:0">
             <p style="font-size:13px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" x-text="r.title"></p>
             <p style="font-size:11px;color:var(--text-muted)" x-text="r.subtitle"></p>

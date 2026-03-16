@@ -23,9 +23,28 @@ function appShell() {
 
       // Keyboard shortcuts
       document.addEventListener('keydown', e => {
-        if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); this.srch = true }
-        if (e.key === 'Escape') { this.srch = false; this.mob = false; this.notifOpen = false; this.userOpen = false; this.wsOpen = false }
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          this.openSearch();
+        }
+        if (e.key === 'Escape') {
+          if (this.srch) { this.closeSearch(); return; }
+          this.mob = false;
+          this.notifOpen = false;
+          this.userOpen = false;
+          this.wsOpen = false;
+        }
       });
+    },
+
+    openSearch() {
+      this.srch = true;
+      window.dispatchEvent(new CustomEvent('search-opened'));
+    },
+
+    closeSearch() {
+      this.srch = false;
+      window.dispatchEvent(new CustomEvent('search-closed'));
     },
 
     toggleTheme() {
@@ -56,25 +75,55 @@ function searchPalette() {
     loading: false,
     selected: -1,
     timer: null,
+    _prevFocus: null,
+
+    init() {
+      window.addEventListener('search-opened', () => {
+        this._prevFocus = document.activeElement;
+        this.reset();
+        this.$nextTick(() => {
+          const input = this.$el.querySelector('input[type="text"]');
+          if (input) input.focus();
+        });
+      });
+
+      window.addEventListener('search-closed', () => {
+        this.reset();
+        if (this._prevFocus && typeof this._prevFocus.focus === 'function') {
+          this._prevFocus.focus();
+          this._prevFocus = null;
+        }
+      });
+    },
+
+    reset() {
+      clearTimeout(this.timer);
+      this.q = '';
+      this.results = [];
+      this.selected = -1;
+      this.loading = false;
+    },
 
     async search() {
-      if (!this.q.trim() || this.q.length < 2) { this.results = []; return }
+      if (!this.q.trim() || this.q.length < 2) { this.results = []; this.selected = -1; return; }
       this.loading = true;
+      this.selected = -1;
       clearTimeout(this.timer);
       this.timer = setTimeout(async () => {
         try {
           const r = await fetch(`/api/search/?q=${encodeURIComponent(this.q)}`);
           const d = await r.json();
           this.results = d.results || [];
-        } catch { this.results = [] }
+        } catch { this.results = []; }
         this.loading = false;
       }, 220);
     },
 
     navigate(dir) {
       const max = this.results.length - 1;
-      if (dir === 'up') this.selected = Math.max(0, this.selected - 1);
-      else this.selected = Math.min(max, this.selected + 1);
+      if (max < 0) return;
+      if (dir === 'up') this.selected = this.selected <= 0 ? max : this.selected - 1;
+      else this.selected = this.selected >= max ? 0 : this.selected + 1;
     },
 
     select() {
