@@ -106,20 +106,67 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   const c = document.getElementById('revenueChart');
-  if (c && typeof Chart !== 'undefined') {
-    new Chart(c, {
-      type: 'bar',
-      data: {
-        labels: {{ chart_labels|safe }},
-        datasets: [{ label: 'Revenue', data: {{ chart_data|safe }}, backgroundColor: 'rgba(99,102,241,.85)', borderRadius: 6 }]
+  if (!c || typeof Chart === 'undefined') return;
+  const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  const tickColor = isDark ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.45)';
+  const sym = '{{ workspace.currency_symbol }}';
+
+  new Chart(c, {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels|safe }},
+      datasets: [{
+        label: 'Revenue',
+        data: {{ chart_data|safe }},
+        backgroundColor: (ctx) => {
+          const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 260);
+          g.addColorStop(0, 'rgba(99,102,241,.9)');
+          g.addColorStop(1, 'rgba(139,92,246,.5)');
+          return g;
+        },
+        borderRadius: 7,
+        borderSkipped: false,
+        hoverBackgroundColor: 'rgba(99,102,241,1)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: isDark ? '#1e2030' : '#fff',
+          titleColor: isDark ? '#e2e8f0' : '#1e293b',
+          bodyColor: isDark ? '#94a3b8' : '#64748b',
+          borderColor: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: ctx => ` Revenue: ${sym}${Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+          }
+        }
       },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` {{ workspace.currency_symbol }}${c.parsed.y.toLocaleString()}` } } },
-        scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { callback: v => '{{ workspace.currency_symbol }}'+v.toLocaleString() } } }
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: tickColor, font: { size: 11 } },
+          border: { display: false }
+        },
+        y: {
+          grid: { color: gridColor },
+          ticks: {
+            color: tickColor,
+            font: { size: 11 },
+            callback: v => sym + Number(v).toLocaleString()
+          },
+          border: { display: false }
+        }
       }
-    });
-  }
+    }
+  });
 });
 </script>
 {% endblock %}

@@ -191,16 +191,24 @@
         <div style="padding:18px 20px;border-bottom:1px solid var(--border)">
           <h3 style="font-size:14px;font-weight:700;margin:0">Activity Log</h3>
         </div>
-        <div style="padding:4px 0">
+        <div style="padding:8px 20px" class="timeline">
           {% for act in activities %}
-          <div style="display:flex;gap:12px;padding:12px 20px;{% if not forloop.last %}border-bottom:1px solid var(--border){% endif %}">
-            <div style="width:28px;height:28px;border-radius:50%;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
-              <svg width="12" height="12" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div class="tl-item">
+            <div class="tl-dot {% if 'paid' in act.action|lower or 'payment' in act.action|lower %}green{% elif 'sent' in act.action|lower or 'email' in act.action|lower %}blue{% elif 'void' in act.action|lower or 'cancel' in act.action|lower %}red{% elif 'viewed' in act.action|lower %}violet{% else %}gray{% endif %}">
+              {% if 'paid' in act.action|lower or 'payment' in act.action|lower %}
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              {% elif 'sent' in act.action|lower or 'email' in act.action|lower %}
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+              {% elif 'viewed' in act.action|lower %}
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              {% else %}
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              {% endif %}
             </div>
-            <div style="flex:1">
-              <p style="font-size:13px;font-weight:500;margin:0;color:var(--text-primary)">{{ act.get_action_display }}</p>
-              {% if act.description %}<p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">{{ act.description }}</p>{% endif %}
-              <p style="font-size:11px;color:var(--text-muted);margin:3px 0 0">{{ act.timestamp|date:"d M Y H:i" }}{% if act.user %} by {{ act.user.get_full_name|default:act.user.username }}{% endif %}</p>
+            <div class="tl-body">
+              <p class="tl-title">{{ act.get_action_display }}</p>
+              {% if act.description %}<p style="font-size:12px;color:var(--text-secondary);margin:2px 0 3px">{{ act.description }}</p>{% endif %}
+              <p class="tl-meta">{{ act.timestamp|date:"d M Y, H:i" }}{% if act.user %} · {{ act.user.get_full_name|default:act.user.username }}{% endif %}</p>
             </div>
           </div>
           {% endfor %}
@@ -215,15 +223,58 @@
 
       <!-- Invoice summary -->
       <div class="card" style="padding:20px">
-        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 12px">Invoice Summary</p>
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Invoice Summary</p>
+
+        <!-- Payment Progress -->
+        {% if invoice.total_amount > 0 %}
+        {% with pct=invoice.amount_paid|default:0 %}
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:11.5px;color:var(--text-muted)">Payment progress</span>
+            <span style="font-size:12px;font-weight:700;color:{% if invoice.status == 'paid' %}#16a34a{% elif invoice.amount_paid > 0 %}#d97706{% else %}var(--text-muted){% endif %}">
+              {% if invoice.status == 'paid' %}100%{% else %}{% widthratio invoice.amount_paid invoice.total_amount 100 %}%{% endif %}
+            </span>
+          </div>
+          <div class="pay-progress-wrap">
+            <div class="pay-progress-fill {% if invoice.status == 'paid' %}full{% elif invoice.amount_paid > 0 %}partial{% endif %}"
+                 style="width:{% if invoice.status == 'paid' %}100{% else %}{% widthratio invoice.amount_paid invoice.total_amount 100 %}{% endif %}%"></div>
+          </div>
+        </div>
+        {% endwith %}
+        {% endif %}
+
         <div style="display:flex;flex-direction:column;gap:9px">
-          <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-secondary)">Total Amount</span><span style="font-weight:700">{{ invoice.currency }}{{ invoice.total_amount|floatformat:2 }}</span></div>
-          {% if invoice.amount_paid > 0 %}<div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--text-secondary)">Paid</span><span style="font-weight:700;color:#16a34a">{{ invoice.currency }}{{ invoice.amount_paid|floatformat:2 }}</span></div>{% endif %}
-          {% if invoice.amount_due > 0 %}<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:9px;border-top:1px solid var(--border)"><span>Balance Due</span><span style="color:#d97706">{{ invoice.currency }}{{ invoice.amount_due|floatformat:2 }}</span></div>{% endif %}
-          {% if invoice.amount_due == 0 %}<div style="text-align:center;padding:8px;background:#dcfce7;border-radius:8px;margin-top:4px"><span style="font-size:13px;font-weight:700;color:#16a34a">✓ Fully Paid</span></div>{% endif %}
+          <div class="stat-row" style="padding:6px 0">
+            <span class="stat-row-label">Invoice Total</span>
+            <span class="stat-row-value">{{ invoice.currency }}{{ invoice.total_amount|floatformat:2 }}</span>
+          </div>
+          {% if invoice.amount_paid > 0 %}
+          <div class="stat-row" style="padding:6px 0">
+            <span class="stat-row-label">Amount Paid</span>
+            <span class="stat-row-value" style="color:#16a34a">{{ invoice.currency }}{{ invoice.amount_paid|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          {% if invoice.discount_total > 0 %}
+          <div class="stat-row" style="padding:6px 0">
+            <span class="stat-row-label">Discount</span>
+            <span class="stat-row-value" style="color:#dc2626">-{{ invoice.currency }}{{ invoice.discount_total|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          {% if invoice.amount_due > 0 %}
+          <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--bg-subtle);border-radius:8px;margin-top:4px;border:1px solid var(--border)">
+            <span style="font-size:13.5px;font-weight:700">Balance Due</span>
+            <span style="font-size:14px;font-weight:800;color:#d97706">{{ invoice.currency }}{{ invoice.amount_due|floatformat:2 }}</span>
+          </div>
+          {% endif %}
+          {% if invoice.amount_due == 0 %}
+          <div style="text-align:center;padding:10px;background:#dcfce7;border-radius:8px;margin-top:4px;border:1px solid #86efac">
+            <span style="font-size:13px;font-weight:700;color:#16a34a">✓ Fully Paid</span>
+          </div>
+          {% endif %}
         </div>
         {% if can_record_payment %}
         <a href="{% url 'invoices:record_offline_payment' invoice.id %}" class="btn btn-success btn-sm" style="width:100%;justify-content:center;margin-top:14px">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
           Record Payment
         </a>
         {% endif %}
@@ -231,18 +282,43 @@
 
       <!-- Client info -->
       <div class="card" style="padding:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
           <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0">Client</p>
-          <a href="{% url 'invoices:client_detail' invoice.client.id %}" style="font-size:12px;font-weight:600;color:var(--brand-600)">View →</a>
+          <a href="{% url 'invoices:client_detail' invoice.client.id %}" style="font-size:12px;font-weight:600;color:var(--brand-600)">View profile →</a>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ invoice.client.name|slice:":1"|upper }}</div>
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ invoice.client.name|slice:":1"|upper }}</div>
           <div>
-            <p style="font-size:13.5px;font-weight:700;margin:0">{{ invoice.client.name }}</p>
-            <p style="font-size:12px;color:var(--text-muted);margin:1px 0 0">{{ invoice.client.email }}</p>
+            <p style="font-size:14px;font-weight:700;margin:0;color:var(--text-primary)">{{ invoice.client.name }}</p>
+            {% if invoice.client.company %}<p style="font-size:11.5px;color:var(--text-muted);margin:1px 0 0">{{ invoice.client.company }}</p>{% endif %}
           </div>
         </div>
-        {% if invoice.client.phone %}<p style="font-size:12.5px;color:var(--text-secondary);margin:0">📞 {{ invoice.client.phone }}</p>{% endif %}
+        <div class="contact-card">
+          {% if invoice.client.email %}
+          <div class="contact-row">
+            <div class="contact-icon"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ invoice.client.email }}</span>
+          </div>
+          {% endif %}
+          {% if invoice.client.phone %}
+          <div class="contact-row">
+            <div class="contact-icon"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg></div>
+            <span>{{ invoice.client.phone }}</span>
+          </div>
+          {% endif %}
+          {% if invoice.client.billing_address %}
+          <div class="contact-row" style="align-items:flex-start">
+            <div class="contact-icon" style="margin-top:1px"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+            <span style="line-height:1.4">{{ invoice.client.billing_address }}</span>
+          </div>
+          {% endif %}
+        </div>
+        {% if invoice.purchase_order_number %}
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <p style="font-size:11px;color:var(--text-muted);margin:0 0 3px;font-weight:600;text-transform:uppercase;letter-spacing:.07em">PO Number</p>
+          <p style="font-size:13px;font-weight:600;margin:0;font-family:monospace">{{ invoice.purchase_order_number }}</p>
+        </div>
+        {% endif %}
       </div>
 
       <!-- Quick Actions -->

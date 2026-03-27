@@ -70,23 +70,72 @@
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   const c = document.getElementById('cashflowChart');
-  if (c && typeof Chart !== 'undefined') {
-    new Chart(c, {
-      type: 'bar',
-      data: {
-        labels: {{ chart_labels|safe }},
-        datasets: [
-          { label: 'Inflows', data: {{ chart_inflows|safe }}, backgroundColor: 'rgba(74,222,128,.8)', borderRadius: 5 },
-          { label: 'Outflows', data: {{ chart_outflows|safe }}, backgroundColor: 'rgba(248,113,113,.8)', borderRadius: 5 }
-        ]
+  if (!c || typeof Chart === 'undefined') return;
+  const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+  const gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  const tickColor = isDark ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.45)';
+  const sym = '{{ workspace.currency_symbol }}';
+
+  new Chart(c, {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels|safe }},
+      datasets: [
+        {
+          label: 'Inflows',
+          data: {{ chart_inflows|safe }},
+          backgroundColor: 'rgba(16,185,129,.8)',
+          borderRadius: 6,
+          borderSkipped: false
+        },
+        {
+          label: 'Outflows',
+          data: {{ chart_outflows|safe }},
+          backgroundColor: 'rgba(239,68,68,.7)',
+          borderRadius: 6,
+          borderSkipped: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            color: tickColor,
+            boxWidth: 12,
+            boxHeight: 12,
+            borderRadius: 4,
+            padding: 16,
+            font: { size: 12 }
+          }
+        },
+        tooltip: {
+          backgroundColor: isDark ? '#1e2030' : '#fff',
+          titleColor: isDark ? '#e2e8f0' : '#1e293b',
+          bodyColor: isDark ? '#94a3b8' : '#64748b',
+          borderColor: isDark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.1)',
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 10,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${sym}${Number(ctx.parsed.y).toLocaleString(undefined, {minimumFractionDigits: 2})}`
+          }
+        }
       },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'top' } },
-        scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { callback: v => '{{ workspace.currency_symbol }}'+v.toLocaleString() } } }
+      scales: {
+        x: { grid: { display: false }, ticks: { color: tickColor, font: { size: 11 } }, border: { display: false } },
+        y: {
+          grid: { color: gridColor },
+          ticks: { color: tickColor, font: { size: 11 }, callback: v => sym + Number(v).toLocaleString() },
+          border: { display: false }
+        }
       }
-    });
-  }
+    }
+  });
 });
 </script>
 {% endblock %}

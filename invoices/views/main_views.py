@@ -672,6 +672,12 @@ def track_reminder_open(request, log_id):
 @require_POST
 @csrf_protect
 def record_engagement(request):
+    try:
+        event = request.POST.get("event", "unknown")[:100]
+        page = request.POST.get("page", "")[:200]
+        logger.info("engagement event=%s page=%s user=%s", event, page, request.user.id)
+    except Exception:
+        pass
     return JsonResponse({"success": True})
 
 
@@ -679,7 +685,19 @@ def record_engagement(request):
 @require_POST
 @csrf_protect
 def submit_feedback(request):
-    return JsonResponse({"success": True})
+    try:
+        rating = request.POST.get("rating", "")
+        message = request.POST.get("message", "").strip()[:2000]
+        category = request.POST.get("category", "general")[:50]
+        logger.info(
+            "feedback user=%s rating=%s category=%s message_len=%d",
+            request.user.id, rating, category, len(message)
+        )
+        # Store feedback in session so user gets a confirmation
+        request.session["feedback_submitted"] = True
+    except Exception as exc:
+        logger.error("Feedback submission error: %s", exc)
+    return JsonResponse({"success": True, "message": "Thank you for your feedback!"})
 
 
 @login_required

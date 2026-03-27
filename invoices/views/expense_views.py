@@ -55,8 +55,9 @@ def expense_list(request):
             filters['date_to'] = date.fromisoformat(request.GET['date_to'])
         except ValueError:
             pass
-    if request.GET.get('search'):
-        filters['search'] = request.GET['search']
+    search_query = request.GET.get('q', request.GET.get('search', ''))
+    if search_query:
+        filters['search'] = search_query
 
     expenses = ExpenseService.get_expenses_queryset(workspace, filters)
 
@@ -64,6 +65,16 @@ def expense_list(request):
     if sort_by in ['expense_date', '-expense_date', 'total_amount', '-total_amount',
                    'description', '-description', 'status', '-status']:
         expenses = expenses.order_by(sort_by)
+
+    # Status tabs
+    all_exp = ExpenseService.get_expenses_queryset(workspace, {})
+    status_tabs = [
+        {'key': '', 'label': 'All', 'count': all_exp.count()},
+        {'key': 'pending', 'label': 'Pending', 'count': all_exp.filter(status='pending').count()},
+        {'key': 'approved', 'label': 'Approved', 'count': all_exp.filter(status='approved').count()},
+        {'key': 'reimbursed', 'label': 'Reimbursed', 'count': all_exp.filter(status='reimbursed').count()},
+        {'key': 'billed', 'label': 'Billed', 'count': all_exp.filter(status='billed').count()},
+    ]
 
     paginator = Paginator(expenses, 25)
     page = request.GET.get('page', 1)
@@ -75,6 +86,14 @@ def expense_list(request):
         date_to=filters.get('date_to')
     )
 
+    # Build summary stats using actual service keys
+    stats = {
+        'total': summary.get('total_expenses', 0),
+        'this_month': summary.get('total_expenses', 0),
+        'billable': summary.get('billable_total', 0),
+        'pending_count': Expense.objects.filter(workspace=workspace, status='pending').count(),
+    }
+
     categories = ExpenseCategoryService.get_categories(workspace)
     vendors = VendorService.get_vendors(workspace)
     clients = Client.objects.filter(workspace=workspace)
@@ -82,12 +101,19 @@ def expense_list(request):
     context = {
         'expenses': expenses_page,
         'summary': summary,
+        'stats': stats,
         'categories': categories,
         'vendors': vendors,
         'clients': clients,
         'filters': filters,
         'status_choices': Expense.Status.choices,
         'current_sort': sort_by,
+        'search_query': search_query,
+        'category_filter': request.GET.get('category', ''),
+        'current_status': request.GET.get('status', ''),
+        'status_tabs': status_tabs,
+        'date_from': request.GET.get('date_from', ''),
+        'date_to': request.GET.get('date_to', ''),
     }
     return render(request, 'pages/expenses/expense_list.html', context)
 

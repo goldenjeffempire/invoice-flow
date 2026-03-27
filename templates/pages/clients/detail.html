@@ -154,36 +154,106 @@
 
     <!-- Sidebar -->
     <div style="display:flex;flex-direction:column;gap:16px">
+
+      <!-- Actions -->
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a href="{% url 'invoices:invoice_create' %}?client={{ client.id }}" class="btn btn-primary btn-sm" style="justify-content:center;gap:8px">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          New Invoice
+        </a>
+        <a href="{% url 'invoices:estimate_create' %}?client={{ client.id }}" class="btn btn-secondary btn-sm" style="justify-content:center;gap:8px">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+          New Estimate
+        </a>
+        <a href="{% url 'invoices:client_edit' client.id %}" class="btn btn-secondary btn-sm" style="justify-content:center;gap:8px">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Edit Client
+        </a>
+      </div>
+
+      <!-- Contact Info Card -->
       <div class="card" style="padding:20px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0">Client Info</p>
-          <a href="{% url 'invoices:client_edit' client.id %}" style="font-size:12px;font-weight:600;color:var(--brand-600)">Edit</a>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
-          <div><p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Email</p><p style="margin:0;color:var(--text-primary)">{{ client.email }}</p></div>
-          {% if client.phone %}<div><p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Phone</p><p style="margin:0">{{ client.phone }}</p></div>{% endif %}
-          {% if client.tax_id %}<div><p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Tax ID</p><p style="margin:0">{{ client.tax_id }}</p></div>{% endif %}
-          <div><p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Currency</p><p style="margin:0">{{ client.currency }}</p></div>
-          {% if client.billing_address or client.billing_city %}
-          <div><p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Billing Address</p><p style="margin:0;white-space:pre-line;line-height:1.5">{{ client.billing_address }}{% if client.billing_city %}
-{{ client.billing_city }}{% if client.billing_state %}, {{ client.billing_state }}{% endif %}{% endif %}{% if client.billing_country %}
-{{ client.billing_country }}{% endif %}</p></div>
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Contact Information</p>
+        <div class="contact-card">
+          {% if client.email %}
+          <div class="contact-row">
+            <div class="contact-icon"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+            <a href="mailto:{{ client.email }}" style="color:var(--brand-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ client.email }}</a>
+          </div>
           {% endif %}
-          <div><p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Client Since</p><p style="margin:0">{{ client.created_at|date:"d M Y" }}</p></div>
+          {% if client.phone %}
+          <div class="contact-row">
+            <div class="contact-icon"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg></div>
+            <a href="tel:{{ client.phone }}" style="color:var(--text-secondary)">{{ client.phone }}</a>
+          </div>
+          {% endif %}
+          {% if client.website %}
+          <div class="contact-row">
+            <div class="contact-icon"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg></div>
+            <a href="{{ client.website }}" target="_blank" rel="noopener" style="color:var(--brand-600);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ client.website }}</a>
+          </div>
+          {% endif %}
+          {% if client.billing_address or client.billing_city %}
+          <div class="contact-row" style="align-items:flex-start">
+            <div class="contact-icon" style="margin-top:2px"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+            <span style="line-height:1.5;color:var(--text-secondary)">{{ client.billing_address }}{% if client.billing_city %}, {{ client.billing_city }}{% endif %}{% if client.billing_country %}, {{ client.billing_country }}{% endif %}</span>
+          </div>
+          {% endif %}
         </div>
+
+        {% if client.tax_id or client.currency %}
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px">
+          {% if client.tax_id %}
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Tax ID / VAT</p>
+            <p style="font-size:13px;margin:0;font-family:monospace;color:var(--text-primary)">{{ client.tax_id }}</p>
+          </div>
+          {% endif %}
+          <div>
+            <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Currency</p>
+            <p style="font-size:13px;margin:0;font-weight:600;color:var(--text-primary)">{{ client.currency }}</p>
+          </div>
+        </div>
+        {% endif %}
+
         {% if tags_list %}
         <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
           <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 8px">Tags</p>
-          <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <div style="display:flex;flex-wrap:wrap;gap:5px">
             {% for tag in tags_list %}<span style="padding:3px 9px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:99px;font-size:11.5px;color:var(--text-secondary)">{{ tag }}</span>{% endfor %}
           </div>
         </div>
         {% endif %}
+
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Client Since</p>
+          <p style="font-size:13px;margin:0;color:var(--text-primary)">{{ client.created_at|date:"d F Y" }}</p>
+        </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <a href="{% url 'invoices:invoice_create' %}?client={{ client.id }}" class="btn btn-primary btn-sm" style="justify-content:center">New Invoice</a>
-        <a href="{% url 'invoices:estimate_create' %}?client={{ client.id }}" class="btn btn-secondary btn-sm" style="justify-content:center">New Estimate</a>
+
+      <!-- Revenue Summary -->
+      <div class="card" style="padding:20px">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Revenue Summary</p>
+        <div style="display:flex;flex-direction:column;gap:0">
+          <div class="stat-row"><span class="stat-row-label">Total Invoiced</span><span class="stat-row-value">{{ workspace.currency_symbol }}{{ stats.total_billed|default:0|floatformat:2 }}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Total Paid</span><span class="stat-row-value" style="color:#16a34a">{{ workspace.currency_symbol }}{{ stats.total_paid|default:0|floatformat:2 }}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Outstanding</span><span class="stat-row-value" style="{% if stats.total_due %}color:#d97706{% endif %}">{{ workspace.currency_symbol }}{{ stats.total_due|default:0|floatformat:2 }}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Invoices</span><span class="stat-row-value">{{ invoice_count }}</span></div>
+          <div class="stat-row"><span class="stat-row-label">Estimates</span><span class="stat-row-value">{{ estimate_count }}</span></div>
+        </div>
+        {% if stats.total_billed and stats.total_billed > 0 %}
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:11px;color:var(--text-muted)">Collection rate</span>
+            <span style="font-size:11px;font-weight:700;color:#16a34a">{% widthratio stats.total_paid stats.total_billed 100 %}%</span>
+          </div>
+          <div class="collection-bar">
+            <div class="collection-fill" style="width:{% widthratio stats.total_paid stats.total_billed 100 %}%"></div>
+          </div>
+        </div>
+        {% endif %}
       </div>
+
     </div>
   </div>
 </div>

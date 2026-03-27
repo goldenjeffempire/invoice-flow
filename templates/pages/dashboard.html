@@ -301,9 +301,18 @@
 <script>
 function initDashCharts() {
   const dark = document.body.classList.contains('dark');
-  const gc = dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
-  const tc = dark ? '#8b949e' : '#94a3b8';
+  const gc = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  const tc = dark ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.45)';
   const sym = '{{ workspace.currency_symbol }}';
+  const tooltipBase = {
+    backgroundColor: dark ? '#1e2030' : '#fff',
+    titleColor: dark ? '#e2e8f0' : '#1e293b',
+    bodyColor: dark ? '#94a3b8' : '#64748b',
+    borderColor: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)',
+    borderWidth: 1,
+    padding: 12,
+    cornerRadius: 10
+  };
 
   const rc = document.getElementById('revExpChart');
   if (rc) {
@@ -312,16 +321,60 @@ function initDashCharts() {
       data: {
         labels: {{ chart_labels|safe }},
         datasets: [
-          { label: 'Revenue', data: {{ chart_revenue|safe }}, backgroundColor: 'rgba(99,102,241,.85)', borderRadius: 5, borderSkipped: false },
-          { label: 'Expenses', data: {{ chart_expenses|safe }}, backgroundColor: 'rgba(249,115,22,.7)', borderRadius: 5, borderSkipped: false }
+          {
+            label: 'Revenue',
+            data: {{ chart_revenue|safe }},
+            backgroundColor: 'rgba(99,102,241,.85)',
+            borderRadius: 6,
+            borderSkipped: false,
+            hoverBackgroundColor: 'rgba(99,102,241,1)'
+          },
+          {
+            label: 'Expenses',
+            data: {{ chart_expenses|safe }},
+            backgroundColor: 'rgba(249,115,22,.7)',
+            borderRadius: 6,
+            borderSkipped: false,
+            hoverBackgroundColor: 'rgba(249,115,22,.9)'
+          }
         ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${sym}${c.parsed.y.toLocaleString(undefined,{minimumFractionDigits:2})}` } } },
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: {
+              color: tc,
+              boxWidth: 10,
+              boxHeight: 10,
+              borderRadius: 3,
+              padding: 16,
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            ...tooltipBase,
+            callbacks: {
+              label: c => ` ${c.dataset.label}: ${sym}${Number(c.parsed.y).toLocaleString(undefined,{minimumFractionDigits:2})}`
+            }
+          }
+        },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 11 }, color: tc } },
-          y: { grid: { color: gc }, ticks: { font: { size: 11 }, color: tc, callback: v => sym + v.toLocaleString() } }
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11 }, color: tc },
+            border: { display: false }
+          },
+          y: {
+            grid: { color: gc },
+            ticks: { font: { size: 11 }, color: tc, callback: v => sym + Number(v).toLocaleString() },
+            border: { display: false }
+          }
         }
       }
     });
@@ -338,10 +391,29 @@ function initDashCharts() {
     if (vals.some(v => v > 0)) {
       new Chart(dc, {
         type: 'doughnut',
-        data: { labels: ks.map(k => labels[k]), datasets: [{ data: vals, backgroundColor: bgs, borderWidth: 0, hoverOffset: 4 }] },
+        data: {
+          labels: ks.map(k => labels[k]),
+          datasets: [{
+            data: vals,
+            backgroundColor: bgs,
+            borderWidth: 0,
+            hoverOffset: 5,
+            borderRadius: 3
+          }]
+        },
         options: {
-          responsive: true, maintainAspectRatio: false, cutout: '70%',
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: ${c.parsed}` } } }
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              ...tooltipBase,
+              callbacks: {
+                label: c => ` ${c.label}: ${c.parsed} invoice${c.parsed !== 1 ? 's' : ''}`
+              }
+            }
+          }
         }
       });
     }
