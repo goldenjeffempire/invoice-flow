@@ -1,226 +1,208 @@
 {% extends "base/layout_app.html" %}
-{% block title %}Security Settings – InvoiceFlow{% endblock %}
+{% block title %}Security Settings — InvoiceFlow{% endblock %}
+{% block page_title %}Security{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 py-8 space-y-8">
+<div style="max-width:820px">
 
-  <!-- Page header -->
-  <div>
-    <h1 class="text-2xl font-bold text-gray-900">Security Settings</h1>
-    <p class="mt-1 text-sm text-gray-500">Manage your password, active sessions, and account security.</p>
+  <!-- Page Header -->
+  <div class="page-hdr">
+    <div>
+      <h1 class="page-title">Security Settings</h1>
+      <p class="page-sub">Manage your password, active sessions, and two-factor authentication.</p>
+    </div>
+    <a href="{% url 'invoices:settings' %}" class="btn btn-ghost btn-sm">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Back to Settings
+    </a>
   </div>
 
-  <!-- Django messages -->
-  {% for message in messages %}
-  <div class="rounded-xl p-4 flex gap-3 {% if message.tags == 'error' %}bg-red-50 border border-red-200{% elif message.tags == 'success' %}bg-emerald-50 border border-emerald-200{% else %}bg-blue-50 border border-blue-200{% endif %}" role="alert">
-    <svg class="w-5 h-5 flex-shrink-0 mt-0.5 {% if message.tags == 'error' %}text-red-500{% elif message.tags == 'success' %}text-emerald-500{% else %}text-blue-500{% endif %}" fill="currentColor" viewBox="0 0 20 20">
-      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-    </svg>
-    <p class="text-sm font-medium {% if message.tags == 'error' %}text-red-700{% elif message.tags == 'success' %}text-emerald-700{% else %}text-blue-700{% endif %}">{{ message }}</p>
-  </div>
-  {% endfor %}
-
-  <!-- ── Change Password ─────────────────────────────────────── -->
-  <section class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-    <div class="px-6 py-5 border-b border-gray-100">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-          </svg>
-        </div>
-        <div>
-          <h2 class="text-base font-semibold text-gray-900">Change Password</h2>
-          <p class="text-xs text-gray-500 mt-0.5">
-            {% if request.user.profile.last_password_change %}
-              Last changed {{ request.user.profile.last_password_change|timesince }} ago
-            {% else %}
-              Keep your account secure with a strong password
-            {% endif %}
-          </p>
-        </div>
+  <!-- ── Change Password ───────────────────────────────────────── -->
+  <div class="card" style="overflow:hidden;margin-bottom:20px">
+    <div style="padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
+      <div class="stat-icon si-indigo" style="width:40px;height:40px;border-radius:11px;flex-shrink:0">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      </div>
+      <div>
+        <h2 style="font-size:15px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Change Password</h2>
+        <p style="font-size:12.5px;color:var(--text-muted);margin:0">
+          {% if request.user.profile.last_password_change %}Last changed {{ request.user.profile.last_password_change|timesince }} ago{% else %}Keep your account secure with a strong password{% endif %}
+        </p>
       </div>
     </div>
-    <div class="px-6 py-5">
-      <form method="post" action="{% url 'invoices:change_password' %}" novalidate class="space-y-4 max-w-md">
+    <div style="padding:24px 28px">
+      <form method="post" action="{% url 'invoices:change_password' %}" novalidate style="display:flex;flex-direction:column;gap:16px;max-width:460px">
         {% csrf_token %}
-        <div>
-          <label for="current_password" class="block text-sm font-medium text-gray-700 mb-1.5">Current password</label>
-          <input type="password" id="current_password" name="current_password" required autocomplete="current-password"
-            class="auth-input block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-all duration-150 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            placeholder="Your current password">
-        </div>
-        <div>
-          <label for="new_password" class="block text-sm font-medium text-gray-700 mb-1.5">New password</label>
-          <div class="relative">
-            <input type="password" id="new_password" name="new_password" required autocomplete="new-password"
-              class="auth-input block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-all duration-150 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 pr-11"
-              placeholder="New password">
-            <button type="button" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600" aria-label="Show password" onclick="togglePwd('new_password', this)">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Current Password</label>
+          <div style="position:relative">
+            <input type="password" name="current_password" required autocomplete="current-password"
+              class="form-input" placeholder="Your current password" style="padding-right:42px">
+            <button type="button" onclick="togglePwd('current_password',this)" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:3px">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </button>
           </div>
         </div>
-        <div>
-          <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-1.5">Confirm new password</label>
-          <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password"
-            class="auth-input block w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 placeholder-gray-400 shadow-sm transition-all duration-150 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-            placeholder="Confirm new password">
-          <p id="pw-match-hint" class="mt-1 text-xs hidden"></p>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">New Password</label>
+          <div style="position:relative">
+            <input type="password" id="new_password" name="new_password" required autocomplete="new-password"
+              class="form-input" placeholder="At least 8 characters" style="padding-right:42px">
+            <button type="button" onclick="togglePwd('new_password',this)" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:3px">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="pt-1">
-          <button type="submit"
-            class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            Update password
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Confirm New Password</label>
+          <div style="position:relative">
+            <input type="password" id="confirm_password" name="confirm_password" required autocomplete="new-password"
+              class="form-input" placeholder="Repeat new password" style="padding-right:42px">
+            <button type="button" onclick="togglePwd('confirm_password',this)" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:3px">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <p id="pw-match-hint" style="font-size:11.5px;margin-top:5px;display:none"></p>
+        </div>
+        <div>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Update Password
           </button>
         </div>
       </form>
     </div>
-  </section>
+  </div>
 
-  <!-- ── Active Sessions ─────────────────────────────────────── -->
-  <section class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-    <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-          </svg>
-        </div>
-        <div>
-          <h2 class="text-base font-semibold text-gray-900">Active Sessions</h2>
-          <p class="text-xs text-gray-500 mt-0.5">{{ sessions|length }} active session{{ sessions|length|pluralize }}</p>
-        </div>
+  <!-- ── Two-Factor Authentication ──────────────────────────────── -->
+  <div class="card" style="overflow:hidden;margin-bottom:20px">
+    <div style="padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
+      <div class="stat-icon {% if mfa_enabled %}si-green{% else %}si-amber{% endif %}" style="width:40px;height:40px;border-radius:11px;flex-shrink:0">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
       </div>
-      {% if sessions|length > 1 %}
-      <form method="post" action="{% url 'invoices:revoke_all_sessions' %}">
-        {% csrf_token %}
-        <button type="submit"
-          class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-red-600 border border-red-200 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-          onclick="return confirm('Sign out all other devices?')">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-          Sign out all others
-        </button>
-      </form>
-      {% endif %}
-    </div>
-
-    <div class="divide-y divide-gray-100">
-      {% for session in sessions %}
-      <div class="px-6 py-4 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-4 min-w-0">
-          <!-- Device icon -->
-          <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
-            {% if session.device_type == 'mobile' %}
-            <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-            {% else %}
-            <svg class="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-            {% endif %}
-          </div>
-          <div class="min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <p class="text-sm font-semibold text-gray-900 truncate">
-                {{ session.browser|default:"Unknown browser" }} on {{ session.os|default:"Unknown OS" }}
-              </p>
-              {% if session.is_current %}
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Current
-              </span>
-              {% endif %}
-            </div>
-            <p class="text-xs text-gray-400 mt-0.5">
-              {{ session.ip_address|default:"Unknown IP" }} · Last active {{ session.last_activity|timesince }} ago
-            </p>
-          </div>
-        </div>
-        {% if not session.is_current %}
-        <form method="post" action="{% url 'invoices:revoke_session' session.id %}" class="flex-shrink-0">
-          {% csrf_token %}
-          <button type="submit"
-            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 rounded-lg transition-colors"
-            aria-label="Revoke this session">
-            Sign out
-          </button>
-        </form>
-        {% else %}
-        <span class="text-xs text-gray-400 flex-shrink-0">This device</span>
-        {% endif %}
-      </div>
-      {% empty %}
-      <div class="px-6 py-10 text-center">
-        <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-        <p class="text-sm text-gray-400">No active sessions found.</p>
-      </div>
-      {% endfor %}
-    </div>
-  </section>
-
-  <!-- ── MFA Status ──────────────────────────────────────────── -->
-  <section class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-    <div class="px-6 py-5 border-b border-gray-100">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-          <svg class="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-          </svg>
-        </div>
-        <div>
-          <h2 class="text-base font-semibold text-gray-900">Two-Factor Authentication</h2>
-          <p class="text-xs {% if mfa_enabled %}text-emerald-600{% else %}text-gray-500{% endif %} mt-0.5 font-medium">
-            {% if mfa_enabled %}Enabled{% else %}Not enabled{% endif %}
-          </p>
-        </div>
+      <div>
+        <h2 style="font-size:15px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Two-Factor Authentication</h2>
+        <p style="font-size:12.5px;color:{% if mfa_enabled %}#16a34a{% else %}var(--text-muted){% endif %};margin:0;font-weight:{% if mfa_enabled %}700{% else %}500{% endif %}">
+          {% if mfa_enabled %}✓ Enabled and active{% else %}Not enabled{% endif %}
+        </p>
       </div>
     </div>
-    <div class="px-6 py-5 flex items-center justify-between gap-4 flex-wrap">
-      <p class="text-sm text-gray-600 max-w-md">
+    <div style="padding:20px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+      <p style="font-size:13.5px;color:var(--text-secondary);margin:0;max-width:480px">
         {% if mfa_enabled %}
-          Two-factor authentication is active. You have <strong>{{ remaining_codes }}</strong> backup code{{ remaining_codes|pluralize }} remaining.
+          Two-factor authentication is active. You have <strong style="color:var(--text-primary)">{{ remaining_codes }}</strong> backup code{{ remaining_codes|pluralize }} remaining.
+          <a href="{% url 'invoices:mfa_backup_codes' %}" style="color:var(--brand-600);font-weight:600;margin-left:6px">View codes →</a>
         {% else %}
-          Add an extra layer of security to your account with an authenticator app.
+          Add an extra layer of security to your account using an authenticator app like Google Authenticator or Authy.
         {% endif %}
       </p>
       <div>
         {% if mfa_enabled %}
-        <a href="{% url 'invoices:mfa_disable' %}" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 rounded-xl transition-colors">
-          Disable 2FA
-        </a>
+        <a href="{% url 'invoices:mfa_disable' %}" class="btn btn-danger btn-sm">Disable 2FA</a>
         {% else %}
-        <a href="{% url 'invoices:mfa_setup' %}" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors">
+        <a href="{% url 'invoices:mfa_setup' %}" class="btn btn-primary btn-sm">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
           Enable 2FA
         </a>
         {% endif %}
       </div>
     </div>
-  </section>
+  </div>
+
+  <!-- ── Active Sessions ─────────────────────────────────────────── -->
+  <div class="card" style="overflow:hidden">
+    <div style="padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="stat-icon si-blue" style="width:40px;height:40px;border-radius:11px;flex-shrink:0">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <div>
+          <h2 style="font-size:15px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Active Sessions</h2>
+          <p style="font-size:12.5px;color:var(--text-muted);margin:0">{{ sessions|length }} active session{{ sessions|length|pluralize }}</p>
+        </div>
+      </div>
+      {% if sessions|length > 1 %}
+      <form method="post" action="{% url 'invoices:revoke_all_sessions' %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Sign out from all other devices?')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Sign Out Others
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% for session in sessions %}
+    <div style="padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:14px;min-width:0">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-muted)">
+          {% if session.device_type == 'mobile' %}
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          {% else %}
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          {% endif %}
+        </div>
+        <div style="min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <p style="font-size:13.5px;font-weight:700;margin:0;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              {{ session.browser|default:"Unknown browser" }} on {{ session.os|default:"Unknown OS" }}
+            </p>
+            {% if session.is_current %}
+            <span class="badge b-paid" style="font-size:10px"><span class="badge-dot"></span>Current</span>
+            {% endif %}
+          </div>
+          <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">
+            {{ session.ip_address|default:"Unknown IP" }} · Last active {{ session.last_activity|timesince }} ago
+          </p>
+        </div>
+      </div>
+      {% if not session.is_current %}
+      <form method="post" action="{% url 'invoices:revoke_session' session.id %}" style="flex-shrink:0">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost btn-sm" style="color:#ef4444;font-size:12px">Sign out</button>
+      </form>
+      {% else %}
+      <span style="font-size:12px;color:var(--text-muted);font-weight:600;flex-shrink:0">This device</span>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="empty-state" style="padding:48px 28px">
+      <div class="empty-icon"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg></div>
+      <p class="empty-title">No active sessions</p>
+      <p class="empty-desc">No session data available.</p>
+    </div>
+    {% endfor %}
+  </div>
 
 </div>
 
-<style>
-  .auth-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); outline: none; }
-</style>
-
 <script>
-  function togglePwd(inputId, btn) {
-    var inp = document.getElementById(inputId);
-    var showing = inp.type === 'text';
-    inp.type = showing ? 'password' : 'text';
-    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
-  }
-  (function () {
-    var np = document.getElementById('new_password');
-    var cp = document.getElementById('confirm_password');
-    var hint = document.getElementById('pw-match-hint');
-    if (!np || !cp || !hint) return;
-    function check() {
-      if (!cp.value) { hint.classList.add('hidden'); return; }
-      if (np.value === cp.value) { hint.textContent = '✓ Passwords match'; hint.className = 'mt-1 text-xs text-emerald-600'; hint.classList.remove('hidden'); }
-      else { hint.textContent = '✗ Passwords do not match'; hint.className = 'mt-1 text-xs text-red-500'; hint.classList.remove('hidden'); }
+function togglePwd(id, btn) {
+  var inp = document.getElementById ? document.getElementById(id) : document.querySelector('[name="' + id + '"]');
+  if (!inp) { var el = btn.previousElementSibling; if (el && el.tagName === 'INPUT') inp = el; }
+  if (!inp) return;
+  var show = inp.type === 'text';
+  inp.type = show ? 'password' : 'text';
+}
+(function () {
+  var np = document.getElementById('new_password');
+  var cp = document.getElementById('confirm_password');
+  var hint = document.getElementById('pw-match-hint');
+  if (!np || !cp || !hint) return;
+  function check() {
+    if (!cp.value) { hint.style.display = 'none'; return; }
+    if (np.value === cp.value) {
+      hint.textContent = '✓ Passwords match';
+      hint.style.color = '#16a34a';
+      hint.style.display = 'block';
+    } else {
+      hint.textContent = '✗ Passwords do not match';
+      hint.style.color = '#dc2626';
+      hint.style.display = 'block';
     }
-    cp.addEventListener('input', check);
-    np.addEventListener('input', function () { if (cp.value) check(); });
-  })();
+  }
+  cp.addEventListener('input', check);
+  np.addEventListener('input', function () { if (cp.value) check(); });
+})();
 </script>
 {% endblock %}

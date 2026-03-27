@@ -47,8 +47,11 @@ def track_invoice_status_change(sender, instance, **kwargs):
 
 @receiver(post_save, sender='invoices.Invoice')
 def handle_invoice_save(sender, instance, created: bool, **kwargs):
-    from .reminder_service import ReminderSchedulingService
-    ReminderSchedulingService.schedule_reminders_for_invoice(instance)
+    try:
+        from .reminder_service import ReminderSchedulingService
+        ReminderSchedulingService.schedule_reminders_for_invoice(instance)
+    except Exception as exc:
+        logger.debug("Reminder scheduling skipped: %s", exc)
 
 @receiver(post_save, sender='invoices.Invoice')
 def handle_invoice_paid(sender, instance, created: bool, **kwargs):

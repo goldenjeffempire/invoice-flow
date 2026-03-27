@@ -98,6 +98,22 @@ Migration 0006 had a bug where it tried to modify the `invoices_payment` table a
 - **`templates/pages/workspace/settings.html`** — Fixed double `{% endblock %}` syntax error.
 - All template URL names validated against defined patterns — zero mismatches remain.
 
+## Template Rewrites (2026-03-27)
+
+### Settings Pages — CSS Architecture Fix
+All authenticated settings pages were rewritten to use the app's inline-style design system (no Tailwind utility classes). `layout_app.html` only loads `app.css` + `app-enhanced.css`, so all pages must use CSS variables and component classes:
+- `templates/pages/settings.html` — Tabbed sidebar (Profile, Business, Branding, Notifications) with Alpine.js toggles and color pickers
+- `templates/pages/workspace/settings.html` — Team Members, Payment Methods, General config
+- `templates/pages/auth/security_settings.html` — Change Password with show/hide toggle + match validation, 2FA card, Active Sessions table with per-session revoke and "Sign Out Others"
+
+### Signal Bug Fix
+- `invoices/signals.py` — `handle_invoice_save` was calling `reminder_service.ReminderSchedulingService` which imported the non-existent `ScheduledReminder` model, crashing every Invoice.objects.create(). Wrapped in try/except so it degrades gracefully.
+
+### Demo Data Command
+- `invoices/management/commands/create_demo_data.py` — Fully rewritten with correct model field names: `LineItem` (not `InvoiceItem`), `tax_total` (not `tax_amount`), `payment_method` (not `method`), `provider_reference`, `base_amount` + `idempotency_key` for `RecurringSchedule`, `ExpenseCategory` uses `name` not `slug`. Seeds: 8 clients, 15 invoices with line items + payments, 15 categorised expenses, 5 estimates with items, 4 recurring schedules.
+- Run with: `python manage.py create_demo_data --username demo`
+- Login: `username=demo`, `password=demo1234`
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.
