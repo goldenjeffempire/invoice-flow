@@ -47,18 +47,38 @@ def schedule_list(request):
         workspace, status=status_filter if status_filter else None
     )
 
-    status_counts = {
-        'all': RecurringSchedule.objects.filter(workspace=workspace).count(),
-        'active': RecurringSchedule.objects.filter(workspace=workspace, status='active').count(),
-        'paused': RecurringSchedule.objects.filter(workspace=workspace, status='paused').count(),
-        'cancelled': RecurringSchedule.objects.filter(workspace=workspace, status='cancelled').count(),
-        'failed': RecurringSchedule.objects.filter(workspace=workspace, status='failed').count(),
+    from django.db.models import Sum
+    all_qs = RecurringSchedule.objects.filter(workspace=workspace)
+    cnt_all = all_qs.count()
+    cnt_active = all_qs.filter(status='active').count()
+    cnt_paused = all_qs.filter(status='paused').count()
+    cnt_cancelled = all_qs.filter(status='cancelled').count()
+    cnt_failed = all_qs.filter(status='failed').count()
+
+    monthly_value = all_qs.filter(status='active', interval_type='monthly').aggregate(
+        total=Sum('base_amount')
+    )['total'] or 0
+
+    stats = {
+        'total': cnt_all,
+        'active': cnt_active,
+        'paused': cnt_paused,
+        'monthly_value': monthly_value,
     }
+
+    status_tabs = [
+        {'key': '', 'label': 'All', 'count': cnt_all},
+        {'key': 'active', 'label': 'Active', 'count': cnt_active},
+        {'key': 'paused', 'label': 'Paused', 'count': cnt_paused},
+        {'key': 'cancelled', 'label': 'Cancelled', 'count': cnt_cancelled},
+        {'key': 'failed', 'label': 'Failed', 'count': cnt_failed},
+    ]
 
     context = {
         'schedules': schedules,
-        'status_filter': status_filter,
-        'status_counts': status_counts,
+        'current_status': status_filter,
+        'status_tabs': status_tabs,
+        'stats': stats,
         'interval_choices': RecurringSchedule.IntervalType.choices,
     }
     return render(request, 'pages/recurring/schedule_list.html', context)
@@ -236,11 +256,18 @@ def schedule_detail(request, schedule_id):
     audit_logs = RecurringBillingService.get_schedule_audit_logs(schedule, limit=30)
     retry_plan = RecurringBillingService.get_retry_plan(schedule)
 
+    from invoices.models import Invoice
+    generated_invoices = Invoice.objects.filter(
+        recurring_schedule=schedule
+    ).order_by('-created_at')
+
     context = {
         'schedule': schedule,
         'executions': executions,
         'audit_logs': audit_logs,
         'retry_plan': retry_plan,
+        'generated_invoices': generated_invoices,
+        'total_generated_value': schedule.total_amount_billed,
     }
     return render(request, 'pages/recurring/schedule_detail.html', context)
 
