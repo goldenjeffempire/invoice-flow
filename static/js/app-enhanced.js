@@ -1,5 +1,5 @@
 /* ============================================================
-   InvoiceFlow — Enhanced UI Interactions v5.0
+   InvoiceFlow — Enhanced UI Interactions v6.0
    Production-grade micro-interactions and animations
    ============================================================ */
 'use strict';
@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initToastSystem();
   initScrollTop();
   initTableRowLinks();
+  initTableSearch();
   initBellAnimation();
   initQuickActionHover();
   initKeyboardShortcuts();
@@ -20,14 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
   initCopyButtons();
   initConfirmForms();
   initProgressBars();
+  initMobileSidebarAutoClose();
+  initSortableTables();
+  initAutoFormatNumbers();
 });
 
 /* ── Page header entrance ────────────────────────────────── */
 function initPageHeader() {
-  const headers = document.querySelectorAll('.page-header, [style*="justify-content:space-between"][style*="margin-bottom"]');
+  const headers = document.querySelectorAll('.page-header, .page-hdr');
   headers.forEach((el, i) => {
-    if (!el.classList.contains('page-header')) {
-      el.style.animation = `fadeInDown 460ms cubic-bezier(.4,0,.2,1) ${i * 40}ms both`;
+    if (!el.style.animation) {
+      el.style.animation = `fadeInDown 420ms cubic-bezier(.4,0,.2,1) ${i * 30}ms both`;
     }
   });
 }
@@ -216,6 +220,75 @@ function initTableRowLinks() {
   });
 }
 
+/* ── Client-side table search ────────────────────────────── */
+function initTableSearch() {
+  document.querySelectorAll('[data-table-search]').forEach(input => {
+    const targetSelector = input.dataset.tableSearch || 'tbody tr';
+    const table = document.querySelector(input.dataset.tableTarget);
+    if (!table) return;
+
+    input.addEventListener('input', () => {
+      const q = input.value.toLowerCase().trim();
+      const rows = table.querySelectorAll('tbody tr');
+      let visibleCount = 0;
+
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const match = !q || text.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+      });
+
+      // Show/hide empty state
+      let emptyEl = table.parentElement.querySelector('.table-empty-msg');
+      if (!visibleCount) {
+        if (!emptyEl) {
+          emptyEl = document.createElement('div');
+          emptyEl.className = 'table-empty-msg';
+          emptyEl.style.cssText = 'padding:32px;text-align:center;color:var(--text-muted);font-size:13px';
+          emptyEl.textContent = 'No results match your search.';
+          table.parentElement.appendChild(emptyEl);
+        }
+        emptyEl.style.display = '';
+      } else if (emptyEl) {
+        emptyEl.style.display = 'none';
+      }
+    });
+  });
+}
+
+/* ── Sortable table headers ──────────────────────────────── */
+function initSortableTables() {
+  document.querySelectorAll('.tbl th[data-sort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const table = th.closest('table');
+      const tbody = table.querySelector('tbody');
+      const colIndex = [...th.parentElement.children].indexOf(th);
+      const asc = !th.classList.contains('asc');
+
+      // Clear other headers
+      table.querySelectorAll('th[data-sort]').forEach(h => {
+        h.classList.remove('asc','desc');
+      });
+      th.classList.add(asc ? 'asc' : 'desc');
+
+      const rows = [...tbody.querySelectorAll('tr')];
+      rows.sort((a, b) => {
+        const aText = a.cells[colIndex]?.textContent.trim() || '';
+        const bText = b.cells[colIndex]?.textContent.trim() || '';
+        const aNum = parseFloat(aText.replace(/[^0-9.-]/g, ''));
+        const bNum = parseFloat(bText.replace(/[^0-9.-]/g, ''));
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return asc ? aNum - bNum : bNum - aNum;
+        }
+        return asc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+      });
+      rows.forEach(r => tbody.appendChild(r));
+    });
+  });
+}
+
 /* ── Bell animation ──────────────────────────────────────── */
 function initBellAnimation() {
   const bell = document.querySelector('[data-bell]');
@@ -241,21 +314,56 @@ function initQuickActionHover() {
   });
 }
 
+/* ── Mobile sidebar auto-close ───────────────────────────── */
+function initMobileSidebarAutoClose() {
+  if (window.innerWidth >= 1024) return;
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      // Find the Alpine root
+      const shell = document.querySelector('[x-data*="appShell"]') ||
+                    document.querySelector('body[x-data]');
+      if (shell && shell.__x) {
+        shell.__x.$data.mob = false;
+      }
+    });
+  });
+}
+
 /* ── Keyboard shortcuts ──────────────────────────────────── */
 function initKeyboardShortcuts() {
   document.addEventListener('keydown', (e) => {
+    // ⌘K / Ctrl+K — open search
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
       document.querySelector('.search-trigger')?.click();
     }
-    // Escape closes any open modal backdrop
+
+    // Skip shortcuts when typing in inputs
+    const tag = document.activeElement?.tagName;
+    if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+
+    // / — focus search trigger
+    if (e.key === '/') {
+      e.preventDefault();
+      document.querySelector('.search-trigger')?.click();
+    }
+
+    // N — new invoice (when not in input)
+    if (e.key === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      const newInvLink = document.querySelector('a[href*="/invoices/create"]');
+      if (newInvLink) newInvLink.click();
+    }
+
+    // Escape closes any open modals / dropdowns
     if (e.key === 'Escape') {
       document.querySelectorAll('[x-data]').forEach(el => {
-        if (el.__x) {
-          const data = el.__x.$data;
-          Object.keys(data).forEach(k => {
-            if (k.endsWith('Modal') || k === 'open') data[k] = false;
-          });
+        if (el._x_dataStack) {
+          const data = el._x_dataStack[0];
+          if (data) {
+            Object.keys(data).forEach(k => {
+              if (k.endsWith('Modal') || k === 'open') data[k] = false;
+            });
+          }
         }
       });
     }
@@ -264,26 +372,23 @@ function initKeyboardShortcuts() {
 
 /* ── Form enhancements ───────────────────────────────────── */
 function initFormEnhancements() {
-  // Auto-focus first input in a form card
-  const firstInput = document.querySelector('.card form input:not([type=hidden]):not([readonly]):not([disabled])');
-  // Don't auto-focus — it can be disruptive on pages with multiple inputs
-
   // Validate required fields on submit
   document.querySelectorAll('form[data-validate]').forEach(form => {
     form.addEventListener('submit', (e) => {
       let valid = true;
       form.querySelectorAll('[required]').forEach(field => {
         if (!field.value.trim()) {
-          field.style.borderColor = '#dc2626';
-          field.style.boxShadow = '0 0 0 3px rgba(220,38,38,.15)';
+          field.classList.add('is-invalid');
           valid = false;
           field.addEventListener('input', () => {
-            field.style.borderColor = '';
-            field.style.boxShadow = '';
+            field.classList.remove('is-invalid');
           }, { once: true });
         }
       });
-      if (!valid) e.preventDefault();
+      if (!valid) {
+        e.preventDefault();
+        showToast('Please fill in all required fields.', 'error');
+      }
     });
   });
 
@@ -291,14 +396,28 @@ function initFormEnhancements() {
   document.querySelectorAll('form').forEach(form => {
     form.addEventListener('submit', () => {
       const btn = form.querySelector('[type=submit]');
-      if (btn && !btn.dataset.noLoading) {
+      if (btn && !btn.dataset.noLoading && !btn.dataset.loading) {
+        btn.dataset.loading = '1';
         btn.disabled = true;
         const original = btn.innerHTML;
-        btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px"></span> Saving…`;
+        btn.innerHTML = `<span class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:6px"></span>Saving…`;
         setTimeout(() => {
           btn.disabled = false;
           btn.innerHTML = original;
-        }, 8000);
+          delete btn.dataset.loading;
+        }, 10000);
+      }
+    });
+  });
+}
+
+/* ── Auto-format number inputs ───────────────────────────── */
+function initAutoFormatNumbers() {
+  document.querySelectorAll('input[data-format="currency"]').forEach(input => {
+    input.addEventListener('blur', () => {
+      const val = parseFloat(input.value.replace(/[^0-9.-]/g, ''));
+      if (!isNaN(val)) {
+        input.value = val.toFixed(2);
       }
     });
   });
@@ -321,25 +440,6 @@ function initCopyButtons() {
       }, 2000);
     }).catch(() => {});
   });
-
-  // Also handle the inline copy pattern (input + button)
-  document.querySelectorAll('button[onclick*="clipboard"]').forEach(btn => {
-    btn.removeAttribute('onclick');
-    btn.addEventListener('click', () => {
-      const input = btn.previousElementSibling;
-      if (input) {
-        navigator.clipboard.writeText(input.value).then(() => {
-          const orig = btn.textContent;
-          btn.textContent = '✓ Copied';
-          btn.style.color = '#16a34a';
-          setTimeout(() => {
-            btn.textContent = orig;
-            btn.style.color = '';
-          }, 2000);
-        });
-      }
-    });
-  });
 }
 
 /* ── Confirm dangerous actions ───────────────────────────── */
@@ -348,6 +448,13 @@ function initConfirmForms() {
     form.addEventListener('submit', (e) => {
       if (!confirm(form.dataset.confirm || 'Are you sure?')) e.preventDefault();
     });
+  });
+
+  // Also data-confirm-click for buttons/links
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-confirm-click]');
+    if (!el) return;
+    if (!confirm(el.dataset.confirmClick || 'Are you sure?')) e.preventDefault();
   });
 }
 
@@ -372,4 +479,10 @@ function initProgressBars() {
 window.invoiceFlow = {
   toast: (msg, type) => showToast(msg, type),
   copyText: (text) => navigator.clipboard.writeText(text),
+  formatCurrency: (amount, symbol = '$', decimals = 2) => {
+    return symbol + parseFloat(amount).toLocaleString('en', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+  },
 };
