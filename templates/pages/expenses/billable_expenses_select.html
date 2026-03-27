@@ -1,0 +1,84 @@
+{% extends "base/layout_app.html" %}
+{% block title %}Add Billable Expenses — InvoiceFlow{% endblock %}
+{% block page_title %}Add Billable Expenses{% endblock %}
+
+{% block content %}
+<div class="page-in">
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+  <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn btn-ghost btn-sm btn-icon">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+  </a>
+  <div>
+    <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0">Add Billable Expenses</h1>
+    <p style="font-size:13px;color:var(--text-muted);margin:3px 0 0">Invoice {{ invoice.invoice_number }} · {{ invoice.client.name }}</p>
+  </div>
+</div>
+
+{% if messages %}
+<div style="margin-bottom:16px">
+  {% for msg in messages %}
+  <div style="padding:12px 16px;border-radius:10px;margin-bottom:8px;font-size:13.5px;font-weight:500;
+    {% if 'error' in msg.tags %}background:#fef2f2;color:#dc2626;border:1px solid #fecaca;
+    {% elif 'success' in msg.tags %}background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;
+    {% else %}background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;{% endif %}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-size:14px;font-weight:700;margin:0">Unbilled Expenses for {{ invoice.client.name }}</h3>
+    </div>
+
+    {% if expenses %}
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th style="width:40px"><input type="checkbox" id="select-all" onchange="document.querySelectorAll('[name=expense_ids]').forEach(cb => cb.checked = this.checked)"></th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Date</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for exp in expenses %}
+          <tr>
+            <td><input type="checkbox" name="expense_ids" value="{{ exp.id }}"></td>
+            <td>
+              <p style="font-weight:600;margin:0;font-size:13.5px">{{ exp.description|truncatechars:50 }}</p>
+              {% if exp.notes %}<p style="font-size:11.5px;color:var(--text-muted);margin:2px 0 0">{{ exp.notes|truncatechars:60 }}</p>{% endif %}
+            </td>
+            <td>{% if exp.category %}<span class="badge b-info">{{ exp.category.name }}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</td>
+            <td style="color:var(--text-secondary)">{{ exp.expense_date|date:"d M Y" }}</td>
+            <td style="font-weight:700">{{ workspace.currency_symbol }}{{ exp.amount|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <button type="submit" class="btn btn-primary btn-sm">Add Selected to Invoice</button>
+      <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn btn-ghost btn-sm">Cancel</a>
+    </div>
+    {% else %}
+    <div style="padding:64px 24px;text-align:center">
+      <div class="stat-icon si-violet" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      </div>
+      <p style="font-size:15px;font-weight:700;margin:0 0 8px">No billable expenses</p>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">There are no unbilled expenses for {{ invoice.client.name }}.</p>
+      <a href="{% url 'invoices:invoice_detail' invoice.id %}" class="btn btn-secondary btn-sm">Back to Invoice</a>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+</div>
+{% endblock %}

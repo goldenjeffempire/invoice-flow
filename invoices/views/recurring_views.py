@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from invoices.models import Client, RecurringSchedule
+from invoices.models import Client, RecurringSchedule, Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,13 @@ def get_client_ip(request):
 
 
 def get_user_workspace(user):
-    membership = user.workspace_memberships.select_related('workspace').first()
-    return membership.workspace if membership else None
+    if hasattr(user, 'profile') and user.profile.current_workspace:
+        return user.profile.current_workspace
+    workspace = Workspace.objects.filter(owner=user).first()
+    if not workspace:
+        membership = user.workspace_memberships.select_related('workspace').first()
+        workspace = membership.workspace if membership else None
+    return workspace
 
 
 @login_required

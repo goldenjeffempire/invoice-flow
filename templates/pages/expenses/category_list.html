@@ -1,0 +1,171 @@
+{% extends "base/layout_app.html" %}
+{% block title %}Expense Categories — InvoiceFlow{% endblock %}
+{% block page_title %}Expense Categories{% endblock %}
+
+{% block content %}
+<div class="page-in">
+
+<div class="page-hdr" style="margin-bottom:24px">
+  <div>
+    <h1 class="page-title">Expense Categories</h1>
+    <p class="page-sub">Organise your expenses with custom categories.</p>
+  </div>
+  <div class="page-hdr-actions">
+    <a href="{% url 'invoices:expense_list' %}" class="btn btn-ghost btn-sm">← Back to Expenses</a>
+  </div>
+</div>
+
+{% if messages %}
+<div style="margin-bottom:16px">
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }}" style="padding:12px 16px;border-radius:10px;margin-bottom:8px;font-size:13.5px;font-weight:500;
+    {% if 'error' in msg.tags %}background:#fef2f2;color:#dc2626;border:1px solid #fecaca;
+    {% elif 'success' in msg.tags %}background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;
+    {% else %}background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;{% endif %}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+
+  <!-- Categories List -->
+  <div class="card">
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-size:14px;font-weight:700;margin:0">All Categories</h3>
+      <span style="font-size:12px;color:var(--text-muted)">{{ categories|length }} categories</span>
+    </div>
+
+    {% if categories %}
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>GL Code</th>
+            <th>Tax Deductible</th>
+            <th>Status</th>
+            <th style="text-align:right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in categories %}
+          <tr x-data="{editOpen:false}">
+            <td>
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:28px;height:28px;border-radius:8px;background:{{ cat.color }};flex-shrink:0;opacity:{% if cat.is_active %}1{% else %}0.4{% endif %}"></div>
+                <div>
+                  <p style="font-weight:600;margin:0;font-size:13.5px;color:var(--text-primary)">{{ cat.name }}</p>
+                  {% if cat.description %}<p style="font-size:11.5px;color:var(--text-muted);margin:1px 0 0">{{ cat.description|truncatechars:40 }}</p>{% endif %}
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--text-secondary);font-family:var(--font-mono);font-size:12.5px">{{ cat.gl_account_code|default:"—" }}</td>
+            <td>
+              {% if cat.is_tax_deductible %}
+              <span class="badge b-paid"><span class="badge-dot"></span>Yes</span>
+              {% else %}
+              <span style="color:var(--text-muted);font-size:12px">No</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if cat.is_active %}
+              <span class="badge b-paid"><span class="badge-dot"></span>Active</span>
+              {% else %}
+              <span class="badge b-draft"><span class="badge-dot"></span>Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;justify-content:flex-end">
+                <button @click="editOpen=!editOpen" class="btn btn-xs btn-ghost">Edit</button>
+              </div>
+              <!-- Inline Edit Row -->
+              <div x-show="editOpen" x-cloak style="margin-top:8px">
+                <form method="post" action="{% url 'invoices:category_edit' cat.id %}">
+                  {% csrf_token %}
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                    <input type="text" name="name" value="{{ cat.name }}" class="form-input" placeholder="Name" required>
+                    <input type="text" name="gl_account_code" value="{{ cat.gl_account_code|default:'' }}" class="form-input" placeholder="GL Code">
+                    <input type="color" name="color" value="{{ cat.color }}" class="form-input" style="height:38px;padding:4px 8px">
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                      <input type="checkbox" name="is_tax_deductible" {% if cat.is_tax_deductible %}checked{% endif %}> Tax deductible
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                      <input type="checkbox" name="is_active" {% if cat.is_active %}checked{% endif %}> Active
+                    </label>
+                  </div>
+                  <div style="display:flex;gap:6px">
+                    <button type="submit" class="btn btn-primary btn-xs">Save</button>
+                    <button type="button" @click="editOpen=false" class="btn btn-ghost btn-xs">Cancel</button>
+                  </div>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:64px 24px;text-align:center">
+      <div class="stat-icon si-violet" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+      </div>
+      <p style="font-size:15px;font-weight:700;margin:0 0 8px">No categories yet</p>
+      <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Create your first category or use the defaults.</p>
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_defaults">
+        <button type="submit" class="btn btn-secondary btn-sm">Create Default Categories</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Add Category Form -->
+  <div class="card" style="padding:20px">
+    <h3 style="font-size:14px;font-weight:700;margin:0 0 18px">New Category</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label class="form-label">Name <span style="color:#dc2626">*</span></label>
+          <input type="text" name="name" class="form-input" placeholder="e.g. Office Supplies" required>
+        </div>
+        <div>
+          <label class="form-label">Description</label>
+          <input type="text" name="description" class="form-input" placeholder="Optional description">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label class="form-label">Colour</label>
+            <input type="color" name="color" value="#6366f1" class="form-input" style="height:38px;padding:4px 8px">
+          </div>
+          <div>
+            <label class="form-label">GL Code</label>
+            <input type="text" name="gl_account_code" class="form-input" placeholder="e.g. 6000">
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;color:var(--text-secondary)">
+          <input type="checkbox" name="is_tax_deductible" checked style="width:16px;height:16px"> Tax deductible
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm" style="width:100%">Create Category</button>
+      </div>
+    </form>
+
+    {% if categories %}
+    <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--border)">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create_defaults">
+        <button type="submit" class="btn btn-ghost btn-sm" style="width:100%;font-size:12.5px">Reset to Default Categories</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</div>
+{% endblock %}

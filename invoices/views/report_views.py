@@ -53,10 +53,10 @@ def workspace_required(view_func):
 
 
 def parse_date_range(request) -> DateRange:
-    """Parse date range from request parameters."""
-    preset = request.GET.get('preset', 'this_month')
-    start_str = request.GET.get('start_date')
-    end_str = request.GET.get('end_date')
+    """Parse date range from request parameters (accepts start_date/end_date or date_from/date_to)."""
+    preset = request.GET.get('preset', request.GET.get('period', 'this_month'))
+    start_str = request.GET.get('start_date') or request.GET.get('date_from')
+    end_str = request.GET.get('end_date') or request.GET.get('date_to')
 
     if start_str and end_str:
         try:
@@ -86,11 +86,23 @@ def reports_home(request):
             "error": str(e),
         }
 
+    kpis = data.get('kpis', {})
+    current_preset = request.GET.get('preset', request.GET.get('period', 'this_month'))
+
     return render(request, 'pages/reports/home.html', {
         **data,
         "page_title": "Reports & Analytics",
         "presets": get_date_presets(),
-        "current_preset": request.GET.get('preset', 'this_month'),
+        "current_preset": current_preset,
+        "period": current_preset,
+        "date_from": date_range.start_date,
+        "date_to": date_range.end_date,
+        "summary": {
+            "revenue": kpis.get('total_collected', 0),
+            "expenses": kpis.get('total_expenses', 0),
+            "net_profit": kpis.get('net_income', 0),
+            "paid_count": kpis.get('payment_count', 0),
+        },
     })
 
 

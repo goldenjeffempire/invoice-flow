@@ -1,0 +1,142 @@
+{% extends "base/layout_app.html" %}
+{% block title %}{{ vendor.name }} — InvoiceFlow{% endblock %}
+{% block page_title %}{{ vendor.name }}{% endblock %}
+
+{% block content %}
+<div class="page-in">
+
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="{% url 'invoices:vendor_list' %}" class="btn btn-ghost btn-sm btn-icon">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:18px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ vendor.name|slice:":1"|upper }}</div>
+      <div>
+        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0">{{ vendor.name }}</h1>
+        <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">
+          {% if vendor.email %}{{ vendor.email }}{% endif %}
+          {% if vendor.phone %} · {{ vendor.phone }}{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <a href="{% url 'invoices:expense_create' %}?vendor={{ vendor.id }}" class="btn btn-primary btn-sm">New Expense</a>
+    <a href="{% url 'invoices:vendor_edit' vendor.id %}" class="btn btn-secondary btn-sm">Edit</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start">
+
+  <!-- Expenses Table -->
+  <div class="card">
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <h3 style="font-size:14px;font-weight:700;margin:0">Recent Expenses</h3>
+      <span style="font-size:12px;color:var(--text-muted)">{{ vendor.expense_count|default:0 }} total</span>
+    </div>
+
+    {% if expenses %}
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead><tr><th>Description</th><th>Category</th><th>Date</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for exp in expenses %}
+          <tr>
+            <td><a href="{% url 'invoices:expense_detail' exp.id %}" style="font-weight:600;color:var(--text-primary)">{{ exp.description|truncatechars:40 }}</a></td>
+            <td>{% if exp.category %}<span class="badge b-info">{{ exp.category.name }}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</td>
+            <td style="color:var(--text-secondary)">{{ exp.expense_date|date:"d M Y" }}</td>
+            <td style="font-weight:700">{{ workspace.currency_symbol }}{{ exp.amount|floatformat:2 }}</td>
+            <td><span class="badge b-{{ exp.status }}">{{ exp.get_status_display }}</span></td>
+            <td><a href="{% url 'invoices:expense_detail' exp.id %}" class="btn btn-xs btn-ghost">View →</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div style="padding:48px 24px;text-align:center">
+      <p style="font-size:14px;font-weight:600;margin:0 0 8px;color:var(--text-secondary)">No expenses from this vendor yet</p>
+      <a href="{% url 'invoices:expense_create' %}?vendor={{ vendor.id }}" class="btn btn-secondary btn-sm" style="margin-top:12px">Log First Expense</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Vendor Details Card -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div class="card" style="padding:20px">
+      <h3 style="font-size:13.5px;font-weight:700;margin:0 0 16px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em">Details</h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        {% if vendor.contact_name %}
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Contact</p>
+          <p style="font-size:13.5px;margin:0;color:var(--text-primary)">{{ vendor.contact_name }}</p>
+        </div>
+        {% endif %}
+        {% if vendor.email %}
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Email</p>
+          <a href="mailto:{{ vendor.email }}" style="font-size:13.5px;color:var(--brand-600)">{{ vendor.email }}</a>
+        </div>
+        {% endif %}
+        {% if vendor.phone %}
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Phone</p>
+          <p style="font-size:13.5px;margin:0;color:var(--text-primary)">{{ vendor.phone }}</p>
+        </div>
+        {% endif %}
+        {% if vendor.website %}
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Website</p>
+          <a href="{{ vendor.website }}" target="_blank" style="font-size:13.5px;color:var(--brand-600)">{{ vendor.website }}</a>
+        </div>
+        {% endif %}
+        {% if vendor.tax_id %}
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Tax ID</p>
+          <p style="font-size:13.5px;margin:0;font-family:var(--font-mono)">{{ vendor.tax_id }}</p>
+        </div>
+        {% endif %}
+        {% if vendor.default_category %}
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Default Category</p>
+          <span class="badge b-info">{{ vendor.default_category.name }}</span>
+        </div>
+        {% endif %}
+        <div>
+          <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin:0 0 2px">Status</p>
+          {% if vendor.is_active %}
+          <span class="badge b-paid"><span class="badge-dot"></span>Active</span>
+          {% else %}
+          <span class="badge b-draft"><span class="badge-dot"></span>Inactive</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card" style="padding:20px">
+      <h3 style="font-size:13.5px;font-weight:700;margin:0 0 16px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em">Summary</h3>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--text-secondary)">Total Expenses</span>
+          <span style="font-weight:700;font-size:14px">{{ workspace.currency_symbol }}{{ vendor.total_expenses|default:0|floatformat:2 }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;color:var(--text-secondary)">Total Records</span>
+          <span style="font-weight:700;font-size:14px">{{ vendor.expense_count|default:0 }}</span>
+        </div>
+      </div>
+    </div>
+
+    {% if vendor.notes %}
+    <div class="card" style="padding:20px">
+      <h3 style="font-size:13.5px;font-weight:700;margin:0 0 12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em">Notes</h3>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin:0;white-space:pre-line">{{ vendor.notes }}</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</div>
+{% endblock %}

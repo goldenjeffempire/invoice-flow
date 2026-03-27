@@ -1,0 +1,101 @@
+{% extends "base/layout_app.html" %}
+{% block title %}P&L Report — InvoiceFlow{% endblock %}
+{% block page_title %}P&amp;L Report{% endblock %}
+
+{% block content %}
+<div class="page-in">
+
+<div class="page-hdr" style="margin-bottom:24px">
+  <div>
+    <h1 class="page-title">Profit & Loss Report</h1>
+    <p class="page-sub">Revenue vs expenses breakdown for your workspace.</p>
+  </div>
+  <div class="page-hdr-actions">
+    <a href="{% url 'invoices:expense_list' %}" class="btn btn-ghost btn-sm">← Expenses</a>
+  </div>
+</div>
+
+<!-- Date Filter -->
+<div class="card" style="padding:16px 20px;margin-bottom:20px">
+  <form method="get" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:13px;font-weight:600;color:var(--text-secondary)">Period:</span>
+    <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-input" style="width:150px">
+    <span style="color:var(--text-muted)">→</span>
+    <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-input" style="width:150px">
+    <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+  </form>
+</div>
+
+{% if pl_data %}
+<!-- KPI Cards -->
+<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card" style="padding:18px 20px">
+    <p class="kpi-label" style="margin-bottom:6px">Total Revenue</p>
+    <p class="kpi-value" style="color:#16a34a">{{ workspace.currency_symbol }}{{ pl_data.total_revenue|default:0|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:18px 20px">
+    <p class="kpi-label" style="margin-bottom:6px">Total Expenses</p>
+    <p class="kpi-value" style="color:#dc2626">{{ workspace.currency_symbol }}{{ pl_data.total_expenses|default:0|floatformat:2 }}</p>
+  </div>
+  <div class="kpi-card" style="padding:18px 20px">
+    <p class="kpi-label" style="margin-bottom:6px">Net Profit</p>
+    <p class="kpi-value" style="color:{% if pl_data.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}">
+      {{ workspace.currency_symbol }}{{ pl_data.net_profit|default:0|floatformat:2 }}
+    </p>
+  </div>
+  <div class="kpi-card" style="padding:18px 20px">
+    <p class="kpi-label" style="margin-bottom:6px">Profit Margin</p>
+    <p class="kpi-value" style="color:{% if pl_data.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}">
+      {% if pl_data.profit_margin %}{{ pl_data.profit_margin|floatformat:1 }}%{% else %}—{% endif %}
+    </p>
+  </div>
+</div>
+
+<!-- Breakdown Table -->
+{% if pl_data.category_breakdown %}
+<div class="card" style="margin-bottom:20px">
+  <div style="padding:18px 20px;border-bottom:1px solid var(--border)">
+    <h3 style="font-size:14px;font-weight:700;margin:0">Expense Breakdown by Category</h3>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr><th>Category</th><th>Count</th><th>Amount</th><th>% of Total</th></tr></thead>
+      <tbody>
+        {% for row in pl_data.category_breakdown %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              {% if row.color %}<div style="width:10px;height:10px;border-radius:50%;background:{{ row.color }};flex-shrink:0"></div>{% endif %}
+              <span style="font-weight:600;font-size:13.5px">{{ row.name }}</span>
+            </div>
+          </td>
+          <td style="color:var(--text-secondary)">{{ row.count }}</td>
+          <td style="font-weight:700;color:#dc2626">{{ workspace.currency_symbol }}{{ row.amount|floatformat:2 }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="flex:1;max-width:120px;height:6px;background:var(--border);border-radius:99px;overflow:hidden">
+                <div style="height:100%;background:var(--brand-500);border-radius:99px;width:{{ row.percentage|default:0|floatformat:0 }}%"></div>
+              </div>
+              <span style="font-size:12.5px;font-weight:600;color:var(--text-secondary)">{{ row.percentage|default:0|floatformat:1 }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="padding:64px 24px;text-align:center">
+  <div class="stat-icon si-indigo" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px">
+    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+  </div>
+  <p style="font-size:15px;font-weight:700;margin:0 0 8px">No data for this period</p>
+  <p style="font-size:13px;color:var(--text-muted);margin:0">No expenses found for the selected period.</p>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

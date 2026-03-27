@@ -1,0 +1,159 @@
+{% extends "base/layout_app.html" %}
+{% block title %}{% if editing %}Edit Vendor{% else %}New Vendor{% endif %} — InvoiceFlow{% endblock %}
+{% block page_title %}{% if editing %}Edit Vendor{% else %}New Vendor{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-in">
+
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+  <a href="{% url 'invoices:vendor_list' %}" class="btn btn-ghost btn-sm btn-icon">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+  </a>
+  <div>
+    <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0">{% if editing %}Edit {{ vendor.name }}{% else %}New Vendor{% endif %}</h1>
+    <p style="font-size:13px;color:var(--text-muted);margin:3px 0 0">{% if editing %}Update vendor details{% else %}Add a new vendor for expense tracking{% endif %}</p>
+  </div>
+</div>
+
+{% if messages %}
+<div style="margin-bottom:16px">
+  {% for msg in messages %}
+  <div style="padding:12px 16px;border-radius:10px;margin-bottom:8px;font-size:13.5px;font-weight:500;
+    {% if 'error' in msg.tags %}background:#fef2f2;color:#dc2626;border:1px solid #fecaca;
+    {% elif 'success' in msg.tags %}background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;
+    {% else %}background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;{% endif %}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <!-- Basic Info -->
+      <div class="card" style="padding:20px">
+        <h3 style="font-size:13.5px;font-weight:700;margin:0 0 18px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em">Basic Information</h3>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div>
+            <label class="form-label">Vendor Name <span style="color:#dc2626">*</span></label>
+            <input type="text" name="name" value="{{ vendor.name|default:'' }}" class="form-input" placeholder="e.g. Office Depot" required>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div>
+              <label class="form-label">Contact Person</label>
+              <input type="text" name="contact_name" value="{{ vendor.contact_name|default:'' }}" class="form-input" placeholder="Full name">
+            </div>
+            <div>
+              <label class="form-label">Email</label>
+              <input type="email" name="email" value="{{ vendor.email|default:'' }}" class="form-input" placeholder="vendor@example.com">
+            </div>
+            <div>
+              <label class="form-label">Phone</label>
+              <input type="text" name="phone" value="{{ vendor.phone|default:'' }}" class="form-input" placeholder="+234 800 000 0000">
+            </div>
+            <div>
+              <label class="form-label">Website</label>
+              <input type="url" name="website" value="{{ vendor.website|default:'' }}" class="form-input" placeholder="https://...">
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Tax ID / VAT Number</label>
+            <input type="text" name="tax_id" value="{{ vendor.tax_id|default:'' }}" class="form-input" placeholder="e.g. 12345678">
+          </div>
+        </div>
+      </div>
+
+      <!-- Address -->
+      <div class="card" style="padding:20px">
+        <h3 style="font-size:13.5px;font-weight:700;margin:0 0 18px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em">Address</h3>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label class="form-label">Address Line 1</label>
+            <input type="text" name="address_line1" value="{{ vendor.address_line1|default:'' }}" class="form-input" placeholder="Street address">
+          </div>
+          <div>
+            <label class="form-label">Address Line 2</label>
+            <input type="text" name="address_line2" value="{{ vendor.address_line2|default:'' }}" class="form-input" placeholder="Apartment, suite, etc.">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div>
+              <label class="form-label">City</label>
+              <input type="text" name="city" value="{{ vendor.city|default:'' }}" class="form-input">
+            </div>
+            <div>
+              <label class="form-label">State</label>
+              <input type="text" name="state" value="{{ vendor.state|default:'' }}" class="form-input">
+            </div>
+            <div>
+              <label class="form-label">Postal Code</label>
+              <input type="text" name="postal_code" value="{{ vendor.postal_code|default:'' }}" class="form-input">
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Country</label>
+            <input type="text" name="country" value="{{ vendor.country|default:'' }}" class="form-input" placeholder="e.g. Nigeria">
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card" style="padding:20px">
+        <h3 style="font-size:13.5px;font-weight:700;margin:0 0 16px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em">Notes</h3>
+        <textarea name="notes" class="form-input" rows="3" placeholder="Any additional notes about this vendor…" style="resize:vertical">{{ vendor.notes|default:'' }}</textarea>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="card" style="padding:20px">
+        <h3 style="font-size:13.5px;font-weight:700;margin:0 0 18px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em">Settings</h3>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          {% if categories %}
+          <div>
+            <label class="form-label">Default Category</label>
+            <select name="default_category" class="form-select">
+              <option value="">None</option>
+              {% for cat in categories %}
+              <option value="{{ cat.id }}" {% if vendor and vendor.default_category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div>
+            <label class="form-label">Payment Terms</label>
+            <select name="payment_terms" class="form-select">
+              <option value="" {% if not vendor or not vendor.payment_terms %}selected{% endif %}>Default</option>
+              <option value="net_7" {% if vendor and vendor.payment_terms == 'net_7' %}selected{% endif %}>Net 7</option>
+              <option value="net_14" {% if vendor and vendor.payment_terms == 'net_14' %}selected{% endif %}>Net 14</option>
+              <option value="net_30" {% if vendor and vendor.payment_terms == 'net_30' %}selected{% endif %}>Net 30</option>
+              <option value="net_60" {% if vendor and vendor.payment_terms == 'net_60' %}selected{% endif %}>Net 60</option>
+              <option value="immediate" {% if vendor and vendor.payment_terms == 'immediate' %}selected{% endif %}>Immediate</option>
+            </select>
+          </div>
+          {% if editing %}
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;color:var(--text-secondary)">
+            <input type="checkbox" name="is_active" {% if vendor.is_active %}checked{% endif %} style="width:16px;height:16px"> Active
+          </label>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="card" style="padding:16px 20px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button type="submit" class="btn btn-primary btn-sm" style="width:100%">
+            {% if editing %}Save Changes{% else %}Create Vendor{% endif %}
+          </button>
+          <a href="{% url 'invoices:vendor_list' %}" class="btn btn-ghost btn-sm" style="width:100%;text-align:center">Cancel</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+</div>
+{% endblock %}
