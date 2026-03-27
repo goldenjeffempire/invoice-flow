@@ -109,64 +109,6 @@ function fmt(amount, currency = 'NGN') {
   return sym + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-/* ── Invoice builder ── */
-function invoiceBuilder(opts = {}) {
-  return {
-    items: opts.items || [],
-    currency: opts.currency || 'NGN',
-    taxMode: opts.taxMode || 'exclusive',
-    defaultTaxRate: parseFloat(opts.defaultTaxRate || 0),
-    discountType: opts.discountType || 'flat',
-    globalDiscount: parseFloat(opts.globalDiscount || 0),
-
-    addItem() {
-      this.items.push({ id: Date.now(), description: '', quantity: 1, unit_price: 0, tax_rate: this.defaultTaxRate, discount_type: 'flat', discount_value: 0 });
-    },
-
-    removeItem(idx) {
-      this.items.splice(idx, 1);
-    },
-
-    itemSubtotal(item) {
-      const qty = parseFloat(item.quantity) || 0;
-      const price = parseFloat(item.unit_price) || 0;
-      const dv = parseFloat(item.discount_value) || 0;
-      const gross = qty * price;
-      const disc = item.discount_type === 'percentage' ? gross * dv / 100 : dv;
-      return Math.max(0, gross - disc);
-    },
-
-    get subtotal() { return this.items.reduce((s, i) => s + this.itemSubtotal(i), 0) },
-
-    get discountAmount() {
-      if (this.discountType === 'percentage') return this.subtotal * this.globalDiscount / 100;
-      return Math.min(this.globalDiscount, this.subtotal);
-    },
-
-    get taxBase() { return this.subtotal - this.discountAmount },
-
-    get taxTotal() {
-      return this.items.reduce((s, i) => {
-        const base = this.itemSubtotal(i);
-        const rate = parseFloat(i.tax_rate) || 0;
-        return s + (base * rate / 100);
-      }, 0);
-    },
-
-    get total() {
-      const base = this.taxBase;
-      return this.taxMode === 'exclusive' ? base + this.taxTotal : base;
-    },
-
-    fmt(n) { return fmt(n, this.currency) },
-
-    get itemsJson() { return JSON.stringify(this.items) }
-  }
-}
-
-/* ── Estimate builder (same as invoice builder) ── */
-const estimateBuilder = invoiceBuilder;
-
 /* ── Global Search ── */
 function globalSearch() {
   return {

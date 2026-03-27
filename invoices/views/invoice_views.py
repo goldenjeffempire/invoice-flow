@@ -104,15 +104,18 @@ def invoice_create(request):
 
     if request.method == 'POST':
         try:
+            raw_discount_type = request.POST.get('discount_type', 'none')
+            discount_type = 'flat' if raw_discount_type in ('none', 'fixed', 'flat') else raw_discount_type
             data = {
                 'client_id': request.POST.get('client_id'),
+                'invoice_number': request.POST.get('invoice_number', '').strip() or None,
                 'issue_date': request.POST.get('issue_date') or timezone.now().date(),
                 'due_date': request.POST.get('due_date'),
                 'currency': request.POST.get('currency', profile.default_currency or 'NGN'),
                 'tax_mode': request.POST.get('tax_mode', 'exclusive'),
                 'default_tax_rate': request.POST.get('default_tax_rate', 0),
-                'discount_type': request.POST.get('discount_type', 'flat'),
-                'global_discount_value': request.POST.get('global_discount_value', 0),
+                'discount_type': discount_type,
+                'global_discount_value': request.POST.get('discount_value', 0) or 0,
                 'client_memo': request.POST.get('client_memo', ''),
                 'internal_notes': request.POST.get('internal_notes', ''),
                 'terms_conditions': request.POST.get('terms_conditions', ''),
@@ -122,12 +125,12 @@ def invoice_create(request):
             if isinstance(data['issue_date'], str):
                 from datetime import datetime
                 data['issue_date'] = datetime.strptime(data['issue_date'], '%Y-%m-%d').date()
-            if isinstance(data['due_date'], str):
+            if isinstance(data['due_date'], str) and data['due_date']:
                 from datetime import datetime
                 data['due_date'] = datetime.strptime(data['due_date'], '%Y-%m-%d').date()
 
-            items_json = request.POST.get('items', '[]')
-            items = json.loads(items_json)
+            items_json = request.POST.get('items_json', '[]')
+            items = json.loads(items_json) if items_json else []
 
             invoice = InvoiceService.create_invoice(workspace, request.user, data, items)
             messages.success(request, f"Invoice {invoice.invoice_number} created successfully!")
@@ -141,12 +144,21 @@ def invoice_create(request):
                 return redirect('invoices:invoice_detail', invoice_id=invoice.id)
 
         except InvoiceValidationError as e:
+            default_due_date = timezone.now().date() + timedelta(days=30)
             context = {
                 'clients': clients,
                 'profile': profile,
                 'errors': e.errors,
                 'form_data': request.POST,
                 'currencies': Invoice.CURRENCY_CHOICES,
+                'default_due_date': default_due_date.isoformat(),
+                'default_issue_date': timezone.now().date().isoformat(),
+                'default_invoice_number': InvoiceService.generate_invoice_number(
+                    workspace,
+                    prefix=profile.invoice_prefix or 'INV',
+                    format_str=profile.invoice_numbering_format or '{prefix}-{year}-{number:04d}'
+                ),
+                'default_terms': getattr(profile, 'default_payment_terms', '') or '',
                 'page_title': 'Create Invoice',
             }
             return render(request, "pages/invoices/builder.html", context)
@@ -162,6 +174,12 @@ def invoice_create(request):
         'currencies': Invoice.CURRENCY_CHOICES,
         'default_due_date': default_due_date.isoformat(),
         'default_issue_date': timezone.now().date().isoformat(),
+        'default_invoice_number': InvoiceService.generate_invoice_number(
+            workspace,
+            prefix=profile.invoice_prefix or 'INV',
+            format_str=profile.invoice_numbering_format or '{prefix}-{year}-{number:04d}'
+        ),
+        'default_terms': getattr(profile, 'default_payment_terms', '') or '',
         'is_edit': False,
         'page_title': 'Create Invoice',
     }
@@ -183,6 +201,8 @@ def invoice_edit(request, invoice_id):
 
     if request.method == 'POST':
         try:
+            raw_discount_type = request.POST.get('discount_type', invoice.discount_type)
+            discount_type = 'flat' if raw_discount_type in ('none', 'fixed', 'flat') else raw_discount_type
             data = {
                 'client_id': request.POST.get('client_id'),
                 'issue_date': request.POST.get('issue_date'),
@@ -190,23 +210,23 @@ def invoice_edit(request, invoice_id):
                 'currency': request.POST.get('currency', invoice.currency),
                 'tax_mode': request.POST.get('tax_mode', invoice.tax_mode),
                 'default_tax_rate': request.POST.get('default_tax_rate', invoice.default_tax_rate),
-                'discount_type': request.POST.get('discount_type', invoice.discount_type),
-                'global_discount_value': request.POST.get('global_discount_value', invoice.global_discount_value),
+                'discount_type': discount_type,
+                'global_discount_value': request.POST.get('discount_value', invoice.global_discount_value) or 0,
                 'client_memo': request.POST.get('client_memo', ''),
                 'internal_notes': request.POST.get('internal_notes', ''),
                 'terms_conditions': request.POST.get('terms_conditions', ''),
                 'payment_instructions': request.POST.get('payment_instructions', ''),
             }
 
-            if isinstance(data['issue_date'], str):
+            if isinstance(data['issue_date'], str) and data['issue_date']:
                 from datetime import datetime
                 data['issue_date'] = datetime.strptime(data['issue_date'], '%Y-%m-%d').date()
-            if isinstance(data['due_date'], str):
+            if isinstance(data['due_date'], str) and data['due_date']:
                 from datetime import datetime
                 data['due_date'] = datetime.strptime(data['due_date'], '%Y-%m-%d').date()
 
-            items_json = request.POST.get('items', '[]')
-            items = json.loads(items_json)
+            items_json = request.POST.get('items_json', '[]')
+            items = json.loads(items_json) if items_json else []
 
             invoice = InvoiceService.update_invoice(invoice, request.user, data, items)
             messages.success(request, f"Invoice {invoice.invoice_number} updated successfully!")
@@ -220,6 +240,10 @@ def invoice_edit(request, invoice_id):
                 'errors': e.errors,
                 'form_data': request.POST,
                 'currencies': Invoice.CURRENCY_CHOICES,
+                'default_terms': getattr(profile, 'default_payment_terms', '') or '',
+                'default_invoice_number': invoice.invoice_number,
+                'default_issue_date': invoice.issue_date.isoformat() if invoice.issue_date else '',
+                'default_due_date': invoice.due_date.isoformat() if invoice.due_date else '',
                 'is_edit': True,
                 'page_title': f'Edit Invoice {invoice.invoice_number}',
             }
@@ -249,6 +273,10 @@ def invoice_edit(request, invoice_id):
         'profile': profile,
         'currencies': Invoice.CURRENCY_CHOICES,
         'items_json': json.dumps(items_data),
+        'default_terms': getattr(profile, 'default_payment_terms', '') or '',
+        'default_invoice_number': invoice.invoice_number,
+        'default_issue_date': invoice.issue_date.isoformat() if invoice.issue_date else '',
+        'default_due_date': invoice.due_date.isoformat() if invoice.due_date else '',
         'is_edit': True,
         'page_title': f'Edit Invoice {invoice.invoice_number}',
     }

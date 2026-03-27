@@ -56,17 +56,17 @@
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Invoice Number</label>
-              <input type="text" name="invoice_number" class="form-input" value="{{ invoice.invoice_number|default:next_number }}" placeholder="INV-2024-0001">
+              <input type="text" name="invoice_number" class="form-input" value="{{ invoice.invoice_number|default:default_invoice_number }}" placeholder="INV-2024-0001">
             </div>
           </div>
           <div class="form-row cols-3" style="margin-top:16px">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Issue Date *</label>
-              <input type="date" name="issue_date" class="form-input" value="{{ invoice.issue_date|date:'Y-m-d'|default:today }}" required>
+              <input type="date" name="issue_date" class="form-input" value="{{ invoice.issue_date|date:'Y-m-d'|default:default_issue_date }}" required>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Due Date *</label>
-              <input type="date" name="due_date" class="form-input" value="{{ invoice.due_date|date:'Y-m-d'|default:due_date_default }}" required>
+              <input type="date" name="due_date" class="form-input" value="{{ invoice.due_date|date:'Y-m-d'|default:default_due_date }}" required>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Currency</label>
@@ -171,7 +171,7 @@
           <div class="form-row cols-2">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Client Note</label>
-              <textarea name="client_notes" class="form-textarea" rows="4" placeholder="Add a note visible to your client…">{{ invoice.client_notes|default:'' }}</textarea>
+              <textarea name="client_memo" class="form-textarea" rows="4" placeholder="Add a note visible to your client…">{{ invoice.client_memo|default:'' }}</textarea>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Terms & Conditions</label>
@@ -258,8 +258,7 @@
       </div>
     </template>
     <input type="hidden" name="item_count" :value="items.length">
-    <input type="hidden" name="discount_type" x-model="discountType">
-    <input type="hidden" name="discount_value" x-model="discountValue">
+    <input type="hidden" name="items_json" id="itemsJsonField" value="[]">
 
   </form>
 </div>
@@ -270,7 +269,7 @@ function invoiceBuilder() {
     saving: false,
     formAction: 'save_draft',
     discountType: '{{ invoice.discount_type|default:"none" }}',
-    discountValue: {{ invoice.discount_value|default:0 }},
+    discountValue: {{ invoice.global_discount_value|default:0 }},
     items: [],
     subtotal: 0,
     taxTotal: 0,
@@ -282,7 +281,7 @@ function invoiceBuilder() {
       const existing = [
         {% if invoice %}
         {% for item in invoice.items.all %}
-        { id: this._uid++, itemId: {{ item.id }}, description: {{ item.description|escapejs|json_script:""|safe }}, quantity: {{ item.quantity }}, unit_price: {{ item.unit_price }}, tax_rate: {{ item.tax_rate }}, total: {{ item.total }} },
+        { id: this._uid++, itemId: {{ item.id }}, description: "{{ item.description|escapejs }}", quantity: {{ item.quantity }}, unit_price: {{ item.unit_price }}, tax_rate: {{ item.tax_rate }}, total: {{ item.total }} },
         {% endfor %}
         {% endif %}
       ];
@@ -328,14 +327,29 @@ function invoiceBuilder() {
       return (v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
 
+    serializeItems() {
+      document.getElementById('itemsJsonField').value = JSON.stringify(
+        this.items.map(item => ({
+          id: item.itemId,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          tax_rate: item.tax_rate,
+          total: item.total,
+        }))
+      );
+    },
+
     saveDraft() {
       this.formAction = 'save_draft';
+      this.serializeItems();
       this.$nextTick(() => document.getElementById('invoiceForm').submit());
     },
 
     saveAndSend() {
       this.formAction = 'save';
       this.saving = true;
+      this.serializeItems();
       this.$nextTick(() => document.getElementById('invoiceForm').submit());
     },
 
