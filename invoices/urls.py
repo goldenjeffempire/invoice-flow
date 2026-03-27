@@ -27,6 +27,12 @@ urlpatterns = [
     # ── Dashboard ─────────────────────────────────────────────────────────────
     path("dashboard/", dashboard_views.dashboard, name="dashboard"),
 
+    # ── Dashboard API ─────────────────────────────────────────────────────────
+    path("api/dashboard/summary", dashboard_views.api_dashboard_summary, name="api_dashboard_summary"),
+    path("api/invoices/recent", dashboard_views.api_recent_invoices, name="api_recent_invoices"),
+    path("api/payments/recent", dashboard_views.api_recent_payments, name="api_recent_payments"),
+    path("api/analytics/revenue-expenses", dashboard_views.api_revenue_expenses, name="api_revenue_expenses"),
+
     # ── Core Authentication ───────────────────────────────────────────────────
     path("login/", views.login_view, name="login"),
     path("signup/", views.signup_view, name="signup"),

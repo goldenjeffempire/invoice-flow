@@ -15,6 +15,9 @@ from django.utils import timezone
 
 from ..models import Client, Expense, Invoice, Payment, RecurringSchedule, Estimate
 
+from django.views.decorators.http import require_GET
+from django.http import JsonResponse
+
 logger = logging.getLogger(__name__)
 
 
@@ -193,6 +196,16 @@ def dashboard(request):
         ("overdue",   "Overdue",   "#f87171"),
     ]
 
+    # ── Activity Feed ─────────────────────────────────────────────────────
+    from ..models import ActivityLog
+    recent_activity = []
+    try:
+        recent_activity = ActivityLog.objects.filter(
+            workspace=workspace
+        ).select_related("user").order_by("-timestamp")[:12]
+    except Exception:
+        pass
+
     ctx = {
         "workspace": workspace,
         "today": today,
@@ -228,5 +241,156 @@ def dashboard(request):
         "chart_labels": json.dumps(chart_labels),
         "chart_revenue": json.dumps(chart_revenue),
         "chart_expenses": json.dumps(chart_expenses),
+        "recent_activity": recent_activity,
     }
     return render(request, "pages/dashboard.html", ctx)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Dashboard JSON API Endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _get_workspace(request):
+    profile = getattr(request.user, "profile", None)
+    return getattr(profile, "current_workspace", None) if profile else None
+
+
+@login_required
+@require_GET
+def api_dashboard_summary(request):
+    workspace = _get_workspace(request)
+    if not workspace:
+        return JsonResponse({"error": "No workspace"}, status=400)
+
+    today = timezone.now().date()
+    month_start = today.replace(day=1)
+    last_month_end = month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+
+    payments_qs = Payment.objects.filter(invoice__workspace=workspace, status=Payment.Status.COMPLETED)
+    invoices_qs = Invoice.objects.filter(workspace=workspace)
+    expenses_qs = Expense.objects.filter(workspace=workspace)
+
+    this_month_revenue = payments_qs.filter(
+        payment_date__date__gte=month_start, payment_date__date__lte=today
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+
+    last_month_revenue = payments_qs.filter(
+        payment_date__date__gte=last_month_start, payment_date__date__lte=last_month_end
+    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+
+    total_outstanding = invoices_qs.filter(
+        status__in=["sent", "viewed", "part_paid", "overdue"]
+    ).aggregate(t=Sum("amount_due"))["t"] or Decimal("0")
+
+    total_overdue = invoices_qs.filter(status="overdue").aggregate(t=Sum("amount_due"))["t"] or Decimal("0")
+    overdue_count = invoices_qs.filter(status="overdue").count()
+
+    this_month_expenses = expenses_qs.filter(
+        expense_date__gte=month_start, expense_date__lte=today
+    ).aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+
+    net_profit = this_month_revenue - this_month_expenses
+    revenue_change = _pct_change(this_month_revenue, last_month_revenue)
+
+    return JsonResponse({
+        "currency_symbol": workspace.currency_symbol,
+        "this_month_revenue": float(this_month_revenue),
+        "last_month_revenue": float(last_month_revenue),
+        "revenue_change_pct": revenue_change,
+        "total_outstanding": float(total_outstanding),
+        "total_overdue": float(total_overdue),
+        "overdue_count": overdue_count,
+        "this_month_expenses": float(this_month_expenses),
+        "net_profit": float(net_profit),
+        "total_clients": Client.objects.filter(workspace=workspace).count(),
+        "total_invoices": invoices_qs.count(),
+        "invoice_status": _invoice_status_breakdown(workspace),
+    })
+
+
+@login_required
+@require_GET
+def api_recent_invoices(request):
+    workspace = _get_workspace(request)
+    if not workspace:
+        return JsonResponse({"error": "No workspace"}, status=400)
+
+    limit = min(int(request.GET.get("limit", 10)), 50)
+    invoices = (
+        Invoice.objects.filter(workspace=workspace)
+        .select_related("client")
+        .order_by("-created_at")[:limit]
+    )
+
+    data = []
+    for inv in invoices:
+        data.append({
+            "id": inv.id,
+            "invoice_number": inv.invoice_number,
+            "client_name": inv.client.name if inv.client else "",
+            "total_amount": float(inv.total_amount),
+            "amount_due": float(inv.amount_due),
+            "currency": inv.currency,
+            "currency_symbol": inv.currency_symbol,
+            "status": inv.status,
+            "status_display": inv.get_status_display(),
+            "due_date": inv.due_date.isoformat() if inv.due_date else None,
+            "issue_date": inv.issue_date.isoformat() if inv.issue_date else None,
+            "url": f"/invoices/{inv.id}/",
+            "days_overdue": inv.days_overdue if inv.status == "overdue" else None,
+        })
+
+    return JsonResponse({"invoices": data, "count": len(data)})
+
+
+@login_required
+@require_GET
+def api_recent_payments(request):
+    workspace = _get_workspace(request)
+    if not workspace:
+        return JsonResponse({"error": "No workspace"}, status=400)
+
+    limit = min(int(request.GET.get("limit", 10)), 50)
+    payments = (
+        Payment.objects.filter(invoice__workspace=workspace)
+        .select_related("invoice", "invoice__client")
+        .order_by("-payment_date")[:limit]
+    )
+
+    data = []
+    for pmt in payments:
+        data.append({
+            "id": pmt.id,
+            "invoice_number": pmt.invoice.invoice_number,
+            "client_name": pmt.invoice.client.name if pmt.invoice.client else "",
+            "amount": float(pmt.amount),
+            "currency": pmt.currency,
+            "status": pmt.status,
+            "payment_date": pmt.payment_date.isoformat() if pmt.payment_date else None,
+            "invoice_url": f"/invoices/{pmt.invoice.id}/",
+            "payment_url": f"/payments/{pmt.id}/",
+        })
+
+    return JsonResponse({"payments": data, "count": len(data)})
+
+
+@login_required
+@require_GET
+def api_revenue_expenses(request):
+    workspace = _get_workspace(request)
+    if not workspace:
+        return JsonResponse({"error": "No workspace"}, status=400)
+
+    months = min(int(request.GET.get("months", 6)), 24)
+    labels, revenue, expenses = _monthly_trend(workspace, months=months)
+
+    net = [round(r - e, 2) for r, e in zip(revenue, expenses)]
+
+    return JsonResponse({
+        "labels": labels,
+        "revenue": revenue,
+        "expenses": expenses,
+        "net_profit": net,
+        "currency_symbol": workspace.currency_symbol,
+    })

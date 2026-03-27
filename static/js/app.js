@@ -147,6 +147,27 @@ document.addEventListener('keydown', e => {
   }
 });
 
+/* ── CSRF token helper ── */
+function getCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.content
+    || document.cookie.match(/csrftoken=([^;]+)/)?.[1]
+    || '';
+}
+
+/* ── Mark notification read ── */
+function markNotifRead(id, el) {
+  fetch(`/notifications/mark-read/${id}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrfToken() }
+  }).then(() => {
+    const dot = el.querySelector('[style*="background:#6366f1"][style*="border-radius:50%"]');
+    if (dot) dot.remove();
+    el.style.background = 'transparent';
+    const title = el.querySelector('p');
+    if (title) title.style.fontWeight = '500';
+  }).catch(() => {});
+}
+
 /* ── Spin animation (used by search loader) ── */
 if (!document.querySelector('#spin-keyframes')) {
   const s = document.createElement('style');
