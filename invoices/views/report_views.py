@@ -35,7 +35,7 @@ def get_user_workspace(user):
         return user.profile.current_workspace
     workspace = Workspace.objects.filter(owner=user).first()
     if not workspace:
-        workspace = Workspace.objects.filter(members=user).first()
+        workspace = Workspace.objects.filter(members__user=user).first()
     return workspace
 
 

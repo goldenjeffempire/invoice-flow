@@ -512,11 +512,8 @@ def public_invoice_view(request, token):
 
     invoice = InvoiceService.record_view(invoice, ip_address=ip_address, user_agent=user_agent)
 
-    profile = invoice.workspace.members.first().user.profile if invoice.workspace.members.exists() else None
-
     context = {
         'invoice': invoice,
-        'profile': profile,
         'is_public': True,
         'page_title': f'Invoice {invoice.invoice_number}',
     }

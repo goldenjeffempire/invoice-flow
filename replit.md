@@ -200,6 +200,22 @@ A comprehensive full-codebase audit was completed covering all 80+ Python files,
 **Problem:** `invoices/context_processors.py` had a workspace resolution path that checked `request.session.get('current_workspace_id')` before falling back to `request.user.profile.current_workspace`. However, no view in the codebase ever writes to `'current_workspace_id'` in the session — the `switch_workspace` view saves to `profile.current_workspace`. This session key was dead code that could theoretically serve stale workspace data if any old session had the key set.
 **Fix:** Removed the session-based workspace lookup. Context processor now uses the canonical `request.user.profile.current_workspace` (or `request.workspace` if set by a view decorator, e.g. reports views).
 
+## Bug Fixes (2026-03-28 Continued — View Audit)
+
+A further targeted audit of all view files identified and fixed 3 additional bugs:
+
+### Bug Fix 1 — Search: Wrong Currency Attribute on Workspace
+**Problem:** `invoices/views/ux_views.py` line 77 called `workspace.default_currency` in the global search handler to look up the currency symbol for expense results. `default_currency` does not exist on the `Workspace` model — that field lives on `UserProfile`. The `Workspace` model uses `currency`. This caused an `AttributeError` whenever a search query matched any expenses in the workspace.
+**Fix:** Changed to `workspace.currency`.
+
+### Bug Fix 2 — Reports: Broken ORM Lookup for Non-Owner Workspace Members
+**Problem:** `invoices/views/report_views.py` `get_user_workspace()` helper called `Workspace.objects.filter(members=user)`. The `members` field is a reverse FK to `WorkspaceMember` (not a direct M2M to `User`), so Django cannot filter by `members=<User instance>`. This raised an `FieldError` for any user who was a workspace member but not the owner, causing all report pages to break with an error for non-owner members.
+**Fix:** Changed to `Workspace.objects.filter(members__user=user)` to traverse through the `WorkspaceMember` join table.
+
+### Bug Fix 3 — Public Invoice: Dead Fragile Code Removed
+**Problem:** `invoices/views/invoice_views.py` `public_invoice_view` computed `profile = invoice.workspace.members.first().user.profile if invoice.workspace.members.exists() else None` — a fragile N+1 chain accessing the first workspace member's user profile. This variable was passed as context but never used in `templates/payments/public_invoice.html` (the template uses `invoice.workspace.*` directly). The dead code introduced both an unnecessary DB query and a potential `AttributeError` if any link in the chain was None.
+**Fix:** Removed the dead code entirely. The public invoice template now receives only the `invoice`, `is_public`, and `page_title` context variables.
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.

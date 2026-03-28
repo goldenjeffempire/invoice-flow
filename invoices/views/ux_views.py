@@ -74,7 +74,7 @@ def global_search(request):
             Q(description__icontains=query)
         ).order_by('-created_at')[:3]
 
-        currency_sym = Invoice.CURRENCY_SYMBOLS.get(workspace.default_currency, workspace.default_currency)
+        currency_sym = Invoice.CURRENCY_SYMBOLS.get(workspace.currency, workspace.currency)
         for exp in expenses:
             results.append({
                 'type': 'expense',
