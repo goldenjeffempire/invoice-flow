@@ -11,41 +11,53 @@
     <p class="page-sub">Track all incoming payments and transactions.</p>
   </div>
   <div class="page-hdr-actions">
-    <a href="{% url 'invoices:transaction_list' %}" class="btn btn-secondary btn-sm">View All Transactions</a>
+    <a href="{% url 'invoices:transaction_list' %}" class="btn btn-secondary btn-sm">All Transactions</a>
+    <a href="{% url 'invoices:invoice_list' %}" class="btn btn-primary btn-sm">View Invoices</a>
   </div>
 </div>
 
 <!-- KPI Cards -->
-<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px">
+<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px">
   <div class="kpi-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="stat-icon si-green"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>
+      {% if stats.mom_change is not None %}
+      <span class="badge {% if stats.mom_change >= 0 %}b-success{% else %}b-danger{% endif %}" style="font-size:11px">
+        {% if stats.mom_change >= 0 %}▲{% else %}▼{% endif %} {{ stats.mom_change|floatformat:1 }}%
+      </span>
+      {% endif %}
     </div>
     <p class="kpi-label">Total Collected</p>
-    <p class="kpi-value">{{ workspace.currency_symbol }}{{ total_collected|floatformat:2 }}</p>
+    <p class="kpi-value">{{ workspace.currency_symbol }}{{ stats.total_collected|floatformat:2 }}</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0">All time</p>
   </div>
   <div class="kpi-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div class="stat-icon si-indigo"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg></div>
+      <div class="stat-icon si-brand"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
     </div>
-    <p class="kpi-label">Recent Payments</p>
-    <p class="kpi-value">{{ payments|length }}</p>
+    <p class="kpi-label">This Month</p>
+    <p class="kpi-value">{{ workspace.currency_symbol }}{{ stats.this_month|floatformat:2 }}</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0">vs {{ workspace.currency_symbol }}{{ stats.last_month|floatformat:2 }} last month</p>
   </div>
   <div class="kpi-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="stat-icon si-amber"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
     </div>
-    <p class="kpi-label">Pending Payouts</p>
-    <p class="kpi-value">{{ payouts|length }}</p>
+    <p class="kpi-label">Pending</p>
+    <p class="kpi-value">{{ workspace.currency_symbol }}{{ stats.pending_amount|floatformat:2 }}</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0">{{ stats.pending_count }} payment{{ stats.pending_count|pluralize }}</p>
   </div>
   <div class="kpi-card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div class="stat-icon si-red"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
     </div>
     <p class="kpi-label">Active Disputes</p>
-    <p class="kpi-value">{{ disputes|length }}</p>
+    <p class="kpi-value">{{ stats.active_disputes }}</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0">Requires attention</p>
   </div>
 </div>
+
+<div style="display:grid;grid-template-columns:1fr 320px;gap:20px">
 
 <!-- Recent Payments -->
 <div class="card">
@@ -64,8 +76,12 @@
           <td style="color:var(--text-primary)">{{ pmt.invoice.client.name }}</td>
           <td style="color:var(--text-secondary)">{{ pmt.payment_date|date:"d M Y" }}</td>
           <td><span class="badge b-info">{{ pmt.get_payment_method_display }}</span></td>
-          <td style="font-weight:700;color:#16a34a">{{ pmt.currency }}{{ pmt.amount|floatformat:2 }}</td>
-          <td><span class="badge b-{{ pmt.status }}">{{ pmt.get_status_display }}</span></td>
+          <td style="font-weight:700;color:#16a34a;font-variant-numeric:tabular-nums">{{ pmt.currency }}{{ pmt.amount|floatformat:2 }}</td>
+          <td>
+            <span class="badge {% if pmt.status == 'completed' %}b-success{% elif pmt.status == 'pending' %}b-warning{% elif pmt.status == 'failed' %}b-danger{% else %}b-info{% endif %}">
+              {{ pmt.get_status_display }}
+            </span>
+          </td>
           <td><a href="{% url 'invoices:payment_detail' pmt.id %}" class="btn btn-xs btn-ghost">View →</a></td>
         </tr>
         {% endfor %}
@@ -80,6 +96,51 @@
     <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm">View Invoices</a>
   </div>
   {% endif %}
+</div>
+
+<!-- Sidebar: Payment Methods & Disputes -->
+<div style="display:flex;flex-direction:column;gap:16px">
+
+  {% if method_breakdown %}
+  <div class="card" style="padding:20px">
+    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Payment Methods</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      {% for m in method_breakdown %}
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+        <span style="color:var(--text-secondary)">{{ m.payment_method|default:"Other"|title }}</span>
+        <div style="text-align:right">
+          <span style="font-weight:700;font-variant-numeric:tabular-nums">{{ workspace.currency_symbol }}{{ m.total|floatformat:2 }}</span>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:6px">{{ m.count }}×</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if disputes %}
+  <div class="card" style="padding:20px">
+    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Active Disputes</p>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      {% for d in disputes %}
+      <div style="font-size:13px;padding:10px 12px;background:var(--bg-subtle);border-radius:8px">
+        <p style="font-weight:600;margin:0 0 2px">{{ d.dispute_id|default:d.id }}</p>
+        <p style="font-size:11.5px;color:var(--text-muted);margin:0">{{ d.created_at|date:"d M Y" }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card" style="padding:20px">
+    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Quick Actions</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm" style="justify-content:center">Create Invoice</a>
+      <a href="{% url 'invoices:transaction_list' %}" class="btn btn-ghost btn-sm" style="justify-content:center">Transaction History</a>
+    </div>
+  </div>
+
+</div>
 </div>
 
 </div>

@@ -11,36 +11,121 @@
     <p class="page-sub">All payment transactions in your workspace.</p>
   </div>
   <div class="page-hdr-actions">
-    <a href="{% url 'invoices:payment_overview' %}" class="btn btn-secondary btn-sm">← Payment Overview</a>
+    <a href="{% url 'invoices:payment_overview' %}" class="btn btn-secondary btn-sm">← Overview</a>
   </div>
 </div>
 
+<!-- Search & Filters -->
+<form method="get" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+  <input name="q" value="{{ search_query }}" placeholder="Search invoice, client, reference…" class="form-input" style="flex:1;min-width:200px;max-width:320px">
+  <select name="status" class="form-input" style="width:160px">
+    <option value="">All statuses</option>
+    {% for tab in status_tabs %}{% if tab.key %}<option value="{{ tab.key }}" {% if tab.key == current_status %}selected{% endif %}>{{ tab.label }} ({{ tab.count }})</option>{% endif %}{% endfor %}
+  </select>
+  <input type="date" name="date_from" value="{{ date_from }}" class="form-input" style="width:155px">
+  <input type="date" name="date_to" value="{{ date_to }}" class="form-input" style="width:155px">
+  <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+  {% if search_query or current_status or date_from or date_to %}
+  <a href="{% url 'invoices:transaction_list' %}" class="btn btn-ghost btn-sm">Clear</a>
+  {% endif %}
+</form>
+
+<!-- Status Tabs -->
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
+  {% for tab in status_tabs %}
+  <a href="?status={{ tab.key }}{% if search_query %}&q={{ search_query }}{% endif %}"
+     class="badge {% if tab.key == current_status %}b-brand{% else %}b-default{% endif %}"
+     style="padding:6px 12px;cursor:pointer;text-decoration:none;font-size:12.5px">
+    {{ tab.label }} <span style="opacity:.7;margin-left:4px">{{ tab.count }}</span>
+  </a>
+  {% endfor %}
+</div>
+
 <div class="card">
-  {% if transactions %}
+  {% if payments %}
   <div style="overflow-x:auto">
     <table class="tbl">
-      <thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>Status</th><th>Reference</th></tr></thead>
-      <tbody>
-        {% for txn in transactions %}
+      <thead>
         <tr>
-          <td style="color:var(--text-secondary)">{{ txn.created_at|date:"d M Y H:i" }}</td>
-          <td><span class="badge b-info">{{ txn.get_transaction_type_display }}</span></td>
-          <td style="color:var(--text-primary)">{{ txn.description|truncatechars:60|default:"—" }}</td>
-          <td style="font-weight:700;font-variant-numeric:tabular-nums;color:{% if txn.transaction_type == 'payment' %}#16a34a{% elif txn.transaction_type == 'refund' %}#dc2626{% else %}var(--text-primary){% endif %}">
-            {% if txn.transaction_type != 'payment' %}-{% endif %}{{ txn.currency }}{{ txn.amount|floatformat:2 }}
+          <th>
+            <a href="?ordering={% if ordering == '-payment_date' %}payment_date{% else %}-payment_date{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" style="color:inherit;text-decoration:none">
+              Date {% if ordering == '-payment_date' %}↓{% elif ordering == 'payment_date' %}↑{% endif %}
+            </a>
+          </th>
+          <th>Invoice</th>
+          <th>Client</th>
+          <th>Method</th>
+          <th>
+            <a href="?ordering={% if ordering == '-amount' %}amount{% else %}-amount{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" style="color:inherit;text-decoration:none">
+              Amount {% if ordering == '-amount' %}↓{% elif ordering == 'amount' %}↑{% endif %}
+            </a>
+          </th>
+          <th>Status</th>
+          <th>Reference</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pmt in payments %}
+        <tr>
+          <td style="color:var(--text-secondary);white-space:nowrap">{{ pmt.payment_date|date:"d M Y H:i" }}</td>
+          <td>
+            {% if pmt.invoice %}
+            <a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" style="font-weight:600;color:var(--brand-600)">{{ pmt.invoice.invoice_number }}</a>
+            {% else %}—{% endif %}
           </td>
-          <td><span class="badge b-{{ txn.status|lower }}">{{ txn.status }}</span></td>
-          <td style="font-size:12px;color:var(--text-muted);font-family:monospace">{{ txn.external_id|truncatechars:20|default:"—" }}</td>
+          <td style="color:var(--text-primary)">
+            {% if pmt.invoice and pmt.invoice.client %}{{ pmt.invoice.client.name }}{% else %}—{% endif %}
+          </td>
+          <td><span class="badge b-info" style="font-size:11px">{{ pmt.get_payment_method_display }}</span></td>
+          <td style="font-weight:700;font-variant-numeric:tabular-nums;color:{% if pmt.status == 'completed' %}#16a34a{% elif pmt.status == 'failed' %}#dc2626{% else %}var(--text-primary){% endif %}">
+            {{ pmt.currency }}{{ pmt.amount|floatformat:2 }}
+          </td>
+          <td>
+            <span class="badge {% if pmt.status == 'completed' %}b-success{% elif pmt.status == 'pending' %}b-warning{% elif pmt.status == 'failed' %}b-danger{% else %}b-info{% endif %}">
+              {{ pmt.get_status_display }}
+            </span>
+          </td>
+          <td style="font-size:11.5px;color:var(--text-muted);font-family:monospace">
+            {{ pmt.transaction_id|truncatechars:20|default:"—" }}
+          </td>
+          <td><a href="{% url 'invoices:payment_detail' pmt.id %}" class="btn btn-xs btn-ghost">View →</a></td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+  <!-- Pagination -->
+  {% if payments.has_other_pages %}
+  <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+    <p style="font-size:13px;color:var(--text-muted);margin:0">
+      Showing {{ payments.start_index }}–{{ payments.end_index }} of {{ payments.paginator.count }} payments
+      {% if total_shown %} · {{ workspace.currency_symbol }}{{ total_shown|floatformat:2 }} filtered{% endif %}
+    </p>
+    <div style="display:flex;gap:6px">
+      {% if payments.has_previous %}
+      <a href="?page={{ payments.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="btn btn-sm btn-ghost">← Prev</a>
+      {% endif %}
+      {% if payments.has_next %}
+      <a href="?page={{ payments.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="btn btn-sm btn-secondary">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
   {% else %}
   <div style="padding:64px 24px;text-align:center">
     <div class="stat-icon si-indigo" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg></div>
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No transactions yet</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0">Transactions will appear here once payments are processed.</p>
+    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No transactions found</p>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">
+      {% if search_query or current_status %}Try adjusting your filters.{% else %}Transactions will appear here once payments are processed.{% endif %}
+    </p>
+    {% if search_query or current_status %}
+    <a href="{% url 'invoices:transaction_list' %}" class="btn btn-secondary btn-sm">Clear Filters</a>
+    {% else %}
+    <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm">View Invoices</a>
+    {% endif %}
   </div>
   {% endif %}
 </div>

@@ -367,15 +367,23 @@ def invoice_send(request, invoice_id):
     message = request.POST.get('message')
 
     try:
+        from ..services.email_service import EmailService
+        email_sent = False
+
         # Mark as sent if it was draft
         if invoice.status == Invoice.Status.DRAFT:
             invoice.status = Invoice.Status.SENT
             invoice.sent_at = timezone.now()
-            invoice.save()
+            invoice.save(update_fields=['status', 'sent_at'])
 
-        from ..services.email_service import EmailService
         try:
             EmailService.send_invoice(invoice, email)
+            email_sent = True
+
+            # Track delivery
+            if hasattr(invoice, 'delivery_email_sent'):
+                invoice.delivery_email_sent = True
+                invoice.save(update_fields=['delivery_email_sent'])
 
             InvoiceService.log_activity(
                 invoice, request.user, InvoiceActivity.ActionType.SENT,

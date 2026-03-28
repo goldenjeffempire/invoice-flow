@@ -44,18 +44,23 @@ class InvoiceService:
 
     @staticmethod
     def generate_invoice_number(workspace, prefix: str = "INV", format_str: str = "{prefix}-{year}-{number:04d}") -> str:
-        from django.db.models import Max
         import datetime as dt_module
         year = timezone.now().year
-        year_start = dt_module.datetime(year, 1, 1, tzinfo=timezone.get_current_timezone())
+        year_start = dt_module.date(year, 1, 1)
 
-        last_invoice = Invoice.objects.filter(
+        count = Invoice.objects.filter(
             workspace=workspace,
-            created_at__gte=year_start
-        ).aggregate(Max('id'))
+            created_at__date__gte=year_start
+        ).count()
 
-        next_num = (last_invoice['id__max'] or 0) + 1
-        return format_str.format(prefix=prefix, year=year, number=next_num)
+        next_num = count + 1
+
+        candidate = format_str.format(prefix=prefix, year=year, number=next_num)
+        while Invoice.objects.filter(workspace=workspace, invoice_number=candidate).exists():
+            next_num += 1
+            candidate = format_str.format(prefix=prefix, year=year, number=next_num)
+
+        return candidate
 
     @staticmethod
     def validate_invoice_data(data: Dict[str, Any], items: List[Dict[str, Any]], is_update: bool = False) -> Dict[str, List[str]]:

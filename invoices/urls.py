@@ -153,6 +153,7 @@ urlpatterns = [
     path("clients/<int:client_id>/", client_views.client_detail, name="client_detail"),
     path("clients/<int:client_id>/edit/", client_views.client_edit, name="client_edit"),
     path("clients/<int:client_id>/delete/", client_views.client_delete, name="client_delete"),
+    path("clients/autocomplete/", client_views.client_autocomplete, name="client_autocomplete"),
 
     # ── Invoices ──────────────────────────────────────────────────────────────
     path("invoices/", invoice_views.invoice_list, name="invoice_list"),
