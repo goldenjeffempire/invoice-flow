@@ -31,12 +31,12 @@
       </div>
     </div>
     <div style="padding:24px 28px">
-      <form method="post" action="{% url 'invoices:change_password' %}" novalidate style="display:flex;flex-direction:column;gap:16px;max-width:460px">
+      <form id="pw-form" novalidate style="display:flex;flex-direction:column;gap:16px;max-width:460px">
         {% csrf_token %}
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label">Current Password</label>
           <div style="position:relative">
-            <input type="password" name="current_password" required autocomplete="current-password"
+            <input type="password" id="current_password" name="current_password" required autocomplete="current-password"
               class="form-input" placeholder="Your current password" style="padding-right:42px">
             <button type="button" onclick="togglePwd('current_password',this)" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:3px">
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -52,6 +52,13 @@
               <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             </button>
           </div>
+          <!-- Strength meter -->
+          <div id="pw-strength-bar" style="display:none;margin-top:8px">
+            <div style="height:4px;border-radius:99px;background:var(--border);overflow:hidden">
+              <div id="pw-strength-fill" style="height:100%;border-radius:99px;transition:width .3s,background .3s;width:0%"></div>
+            </div>
+            <p id="pw-strength-label" style="font-size:10.5px;margin-top:4px;color:var(--text-muted)"></p>
+          </div>
         </div>
         <div class="form-group" style="margin-bottom:0">
           <label class="form-label">Confirm New Password</label>
@@ -65,9 +72,10 @@
           <p id="pw-match-hint" style="font-size:11.5px;margin-top:5px;display:none"></p>
         </div>
         <div>
-          <button type="submit" class="btn btn-primary btn-sm">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            Update Password
+          <button type="submit" id="pw-submit-btn" class="btn btn-primary btn-sm">
+            <svg id="pw-submit-icon" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <svg id="pw-submit-spin" width="13" height="13" viewBox="0 0 24 24" style="display:none;animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4" stroke-dashoffset="10"/></svg>
+            <span id="pw-submit-label">Update Password</span>
           </button>
         </div>
       </form>
@@ -122,13 +130,10 @@
         </div>
       </div>
       {% if sessions|length > 1 %}
-      <form method="post" action="{% url 'invoices:revoke_all_sessions' %}" style="display:inline">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Sign out from all other devices?')">
-          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-          Sign Out Others
-        </button>
-      </form>
+      <button class="btn btn-danger btn-sm" onclick="revokeAllSessions(this)">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Sign Out Others
+      </button>
       {% endif %}
     </div>
 
@@ -157,10 +162,8 @@
         </div>
       </div>
       {% if not session.is_current %}
-      <form method="post" action="{% url 'invoices:revoke_session' session.id %}" style="flex-shrink:0">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-ghost btn-sm" style="color:#ef4444;font-size:12px">Sign out</button>
-      </form>
+      <button class="btn btn-ghost btn-sm" style="color:#ef4444;font-size:12px;flex-shrink:0"
+        onclick="revokeSession('{% url 'invoices:revoke_session' session.id %}', this)">Sign out</button>
       {% else %}
       <span style="font-size:12px;color:var(--text-muted);font-weight:600;flex-shrink:0">This device</span>
       {% endif %}
@@ -177,16 +180,45 @@
 </div>
 
 <script>
+/* ── show/hide password toggle ── */
 function togglePwd(id, btn) {
-  var inp = document.getElementById ? document.getElementById(id) : document.querySelector('[name="' + id + '"]');
+  var inp = document.getElementById(id) || document.querySelector('[name="' + id + '"]');
   if (!inp) { var el = btn.previousElementSibling; if (el && el.tagName === 'INPUT') inp = el; }
   if (!inp) return;
-  var show = inp.type === 'text';
-  inp.type = show ? 'password' : 'text';
+  inp.type = inp.type === 'text' ? 'password' : 'text';
 }
+
+/* ── password strength meter ── */
 (function () {
-  var np = document.getElementById('new_password');
-  var cp = document.getElementById('confirm_password');
+  var np   = document.getElementById('new_password');
+  var bar  = document.getElementById('pw-strength-bar');
+  var fill = document.getElementById('pw-strength-fill');
+  var lbl  = document.getElementById('pw-strength-label');
+  if (!np || !bar) return;
+  np.addEventListener('input', function () {
+    var v = np.value;
+    if (!v) { bar.style.display = 'none'; return; }
+    bar.style.display = 'block';
+    var score = 0;
+    if (v.length >= 8)  score++;
+    if (v.length >= 12) score++;
+    if (/[A-Z]/.test(v)) score++;
+    if (/[0-9]/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v)) score++;
+    var pct   = Math.max(10, (score / 5) * 100) + '%';
+    var color = score <= 1 ? '#ef4444' : score <= 3 ? '#f59e0b' : '#10b981';
+    var text  = score <= 1 ? 'Weak' : score <= 3 ? 'Moderate' : score === 4 ? 'Strong' : 'Very strong';
+    fill.style.width = pct;
+    fill.style.background = color;
+    lbl.textContent = text;
+    lbl.style.color = color;
+  });
+})();
+
+/* ── confirm password match hint ── */
+(function () {
+  var np   = document.getElementById('new_password');
+  var cp   = document.getElementById('confirm_password');
   var hint = document.getElementById('pw-match-hint');
   if (!np || !cp || !hint) return;
   function check() {
@@ -194,15 +226,114 @@ function togglePwd(id, btn) {
     if (np.value === cp.value) {
       hint.textContent = '✓ Passwords match';
       hint.style.color = '#16a34a';
-      hint.style.display = 'block';
     } else {
       hint.textContent = '✗ Passwords do not match';
       hint.style.color = '#dc2626';
-      hint.style.display = 'block';
     }
+    hint.style.display = 'block';
   }
   cp.addEventListener('input', check);
   np.addEventListener('input', function () { if (cp.value) check(); });
 })();
+
+/* ── AJAX password change ── */
+(function () {
+  var form = document.getElementById('pw-form');
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn   = document.getElementById('pw-submit-btn');
+    var icon  = document.getElementById('pw-submit-icon');
+    var spin  = document.getElementById('pw-submit-spin');
+    var label = document.getElementById('pw-submit-label');
+    btn.disabled = true;
+    icon.style.display = 'none';
+    spin.style.display = '';
+    label.textContent = 'Updating…';
+    var fd = new FormData(form);
+    fetch('{% url "invoices:change_password" %}', {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrfToken() },
+      body: fd
+    }).then(function (r) { return r.json(); }).then(function (data) {
+      if (data.ok) {
+        Toast.show(data.message || 'Password updated successfully.', 'success');
+        form.reset();
+        document.getElementById('pw-match-hint').style.display = 'none';
+        document.getElementById('pw-strength-bar').style.display = 'none';
+      } else {
+        Toast.show(data.message || 'Failed to update password.', 'error');
+      }
+    }).catch(function () {
+      Toast.show('Something went wrong. Please try again.', 'error');
+    }).finally(function () {
+      btn.disabled = false;
+      icon.style.display = '';
+      spin.style.display = 'none';
+      label.textContent = 'Update Password';
+    });
+  });
+})();
+
+/* ── AJAX session revoke (single) ── */
+function revokeSession(url, btn) {
+  if (!confirm('Sign out this device?')) return;
+  btn.disabled = true;
+  btn.textContent = '…';
+  fetch(url, {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrfToken() }
+  }).then(function (r) { return r.json(); }).then(function (data) {
+    if (data.ok) {
+      var row = btn.closest('[style*="border-bottom"]');
+      if (row) {
+        row.style.transition = 'opacity .25s,max-height .35s';
+        row.style.overflow = 'hidden';
+        row.style.maxHeight = row.offsetHeight + 'px';
+        requestAnimationFrame(function () {
+          row.style.opacity = '0';
+          row.style.maxHeight = '0';
+          row.style.paddingTop = '0';
+          row.style.paddingBottom = '0';
+        });
+        setTimeout(function () { row.remove(); }, 380);
+      }
+      Toast.show('Session signed out.', 'success');
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Sign out';
+      Toast.show(data.message || 'Could not revoke session.', 'error');
+    }
+  }).catch(function () {
+    btn.disabled = false;
+    btn.textContent = 'Sign out';
+    Toast.show('Something went wrong.', 'error');
+  });
+}
+
+/* ── AJAX revoke all other sessions ── */
+function revokeAllSessions(btn) {
+  if (!confirm('Sign out from all other devices?')) return;
+  btn.disabled = true;
+  fetch('{% url "invoices:revoke_all_sessions" %}', {
+    method: 'POST',
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrfToken() }
+  }).then(function (r) { return r.json(); }).then(function (data) {
+    if (data.ok) {
+      document.querySelectorAll('[onclick^="revokeSession"]').forEach(function (b) {
+        var row = b.closest('[style*="border-bottom"]');
+        if (row) row.remove();
+      });
+      btn.remove();
+      Toast.show('All other sessions signed out.', 'success');
+    } else {
+      btn.disabled = false;
+      Toast.show(data.message || 'Could not sign out sessions.', 'error');
+    }
+  }).catch(function () {
+    btn.disabled = false;
+    Toast.show('Something went wrong.', 'error');
+  });
+}
 </script>
 {% endblock %}

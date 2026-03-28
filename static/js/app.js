@@ -187,16 +187,33 @@ function getCsrfToken() {
 
 /* ── Mark notification read ── */
 function markNotifRead(id, el) {
+  if (el.dataset.read === '1') return;
+  el.dataset.read = '1';
   fetch(`/notifications/mark-read/${id}/`, {
     method: 'POST',
     headers: { 'X-CSRFToken': getCsrfToken() }
   }).then(() => {
-    const dot = el.querySelector('[style*="background:#6366f1"][style*="border-radius:50%"]');
-    if (dot) dot.remove();
+    // Remove blue dot on this item
+    el.querySelectorAll('[data-notif-dot]').forEach(d => d.remove());
     el.style.background = 'transparent';
     const title = el.querySelector('p');
     if (title) title.style.fontWeight = '500';
-  }).catch(() => {});
+    // Decrement badge counter
+    const badge = document.querySelector('[data-notif-badge]');
+    if (badge) {
+      const count = parseInt(badge.textContent, 10) - 1;
+      if (count <= 0) {
+        badge.remove();
+        // Remove bell dot if no more unread
+        document.querySelectorAll('.n-dot').forEach(d => d.remove());
+        // Hide "Mark all read" button
+        const markAllBtn = document.querySelector('[data-mark-all-btn]');
+        if (markAllBtn) markAllBtn.style.display = 'none';
+      } else {
+        badge.textContent = count;
+      }
+    }
+  }).catch(() => { delete el.dataset.read; });
 }
 
 /* ── Mark all notifications read ── */
@@ -206,10 +223,17 @@ function markAllNotifsRead(btn) {
     headers: { 'X-CSRFToken': getCsrfToken() }
   }).then(r => r.json()).then(() => {
     btn.style.display = 'none';
-    document.querySelectorAll('[style*="background:#6366f1"][style*="border-radius:50%"]').forEach(d => d.remove());
+    document.querySelectorAll('[data-notif-dot]').forEach(d => d.remove());
     document.querySelectorAll('.n-dot').forEach(d => d.remove());
-    const badge = document.querySelector('[style*="background:#6366f1"][style*="border-radius:99px"]');
+    const badge = document.querySelector('[data-notif-badge]');
     if (badge) badge.remove();
+    // Reset all item backgrounds
+    document.querySelectorAll('[data-notif-item]').forEach(el => {
+      el.style.background = 'transparent';
+      const title = el.querySelector('p');
+      if (title) title.style.fontWeight = '500';
+      el.dataset.read = '1';
+    });
   }).catch(() => {});
 }
 

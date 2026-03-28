@@ -344,10 +344,10 @@
         <div style="padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg-card);z-index:1">
           <div style="display:flex;align-items:center;gap:8px">
             <p style="font-size:13px;font-weight:700;color:var(--text-primary);margin:0">Notifications</p>
-            {% if unread_notifications_count %}<span style="font-size:10px;font-weight:700;background:#6366f1;color:#fff;padding:1px 7px;border-radius:99px">{{ unread_notifications_count }}</span>{% endif %}
+            {% if unread_notifications_count %}<span data-notif-badge style="font-size:10px;font-weight:700;background:#6366f1;color:#fff;padding:1px 7px;border-radius:99px">{{ unread_notifications_count }}</span>{% endif %}
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            {% if unread_notifications_count %}<button onclick="markAllNotifsRead(this)" style="font-size:11px;color:var(--brand-600);font-weight:600;background:none;border:none;cursor:pointer;padding:0">Mark all read</button>{% endif %}
+            {% if unread_notifications_count %}<button data-mark-all-btn onclick="markAllNotifsRead(this)" style="font-size:11px;color:var(--brand-600);font-weight:600;background:none;border:none;cursor:pointer;padding:0">Mark all read</button>{% endif %}
             {% if notifications %}<a href="{% url 'invoices:settings' %}" style="font-size:11.5px;color:var(--text-muted);font-weight:500;text-decoration:none">Settings</a>{% endif %}
           </div>
         </div>
@@ -367,7 +367,7 @@
           {% endif %}
           <!-- Real notifications from DB -->
           {% for notif in notifications %}
-          <div class="dd-item" style="border-radius:10px;padding:10px 12px;cursor:default;{% if not notif.is_read %}background:rgba(99,102,241,.06){% endif %};margin-bottom:2px"
+          <div data-notif-item class="dd-item" style="border-radius:10px;padding:10px 12px;cursor:default;{% if not notif.is_read %}background:rgba(99,102,241,.06){% endif %};margin-bottom:2px"
                onclick="markNotifRead({{ notif.id }}, this){% if notif.link %}; window.location='{{ notif.link }}'{% endif %}">
             <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
               {% if notif.notification_type == 'payment' %}background:#dcfce7;color:#16a34a
@@ -389,7 +389,7 @@
               <p style="font-size:11px;color:var(--text-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ notif.message|truncatechars:60 }}</p>
               <p style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ notif.created_at|timesince }} ago</p>
             </div>
-            {% if not notif.is_read %}<span style="width:7px;height:7px;border-radius:50%;background:#6366f1;flex-shrink:0;margin-top:4px"></span>{% endif %}
+            {% if not notif.is_read %}<span data-notif-dot style="width:7px;height:7px;border-radius:50%;background:#6366f1;flex-shrink:0;margin-top:4px"></span>{% endif %}
           </div>
           {% endfor %}
           <!-- Empty state -->

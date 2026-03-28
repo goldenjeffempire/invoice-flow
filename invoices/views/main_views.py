@@ -412,6 +412,8 @@ def revoke_session(request, session_id):
     success, message = SessionService.revoke_session(
         user=request.user, session_id=session_id, request=request
     )
+    if _is_ajax(request):
+        return JsonResponse({"ok": success, "message": message})
     if success:
         messages.success(request, message)
     else:
@@ -424,6 +426,8 @@ def revoke_session(request, session_id):
 @csrf_protect
 def revoke_all_sessions(request):
     success, message = SessionService.revoke_all_other_sessions(user=request.user, request=request)
+    if _is_ajax(request):
+        return JsonResponse({"ok": success, "message": message})
     if success:
         messages.success(request, message)
     else:
@@ -440,6 +444,8 @@ def change_password(request):
     confirm = request.POST.get("confirm_password", "")
 
     if new_pw != confirm:
+        if _is_ajax(request):
+            return JsonResponse({"ok": False, "message": "New passwords don't match."})
         messages.error(request, "New passwords don't match.")
         return redirect("invoices:security_settings")
 
@@ -449,6 +455,8 @@ def change_password(request):
         new_password=new_pw,
         request=request,
     )
+    if _is_ajax(request):
+        return JsonResponse({"ok": success, "message": message})
     if success:
         messages.success(request, message)
     else:

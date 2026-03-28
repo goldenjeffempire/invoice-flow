@@ -100,6 +100,43 @@
           </div>
         </div>
 
+        <!-- Profile Completeness -->
+        {% with has_name=user.get_full_name has_avatar=profile.company_logo has_phone=profile.business_phone has_biz=profile.company_name has_2fa=profile.two_factor_enabled has_verified=profile.email_verified %}
+        <div class="card" style="overflow:hidden;margin-bottom:20px;padding:18px 28px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+            <div>
+              <p style="font-size:13px;font-weight:700;margin:0 0 2px;color:var(--text-primary)">Profile Completeness</p>
+              <p style="font-size:12px;color:var(--text-muted);margin:0">Complete your profile to get the most out of InvoiceFlow.</p>
+            </div>
+            <div style="font-size:22px;font-weight:900;color:{% if has_name and has_avatar and has_phone and has_biz and has_2fa and has_verified %}#10b981{% elif has_name and has_biz %}#f59e0b{% else %}#6366f1{% endif %}">
+              {% if has_name and has_avatar and has_phone and has_biz and has_2fa and has_verified %}100%
+              {% elif has_name and has_avatar and has_phone and has_biz %}83%
+              {% elif has_name and has_avatar and has_phone %}67%
+              {% elif has_name and has_avatar %}50%
+              {% elif has_name %}33%
+              {% else %}17%{% endif %}
+            </div>
+          </div>
+          <div style="height:6px;border-radius:99px;background:var(--border);overflow:hidden;margin-bottom:14px">
+            <div style="height:100%;border-radius:99px;background:linear-gradient(90deg,#6366f1,#8b5cf6);transition:width .5s;
+              width:{% if has_name and has_avatar and has_phone and has_biz and has_2fa and has_verified %}100%
+              {% elif has_name and has_avatar and has_phone and has_biz %}83%
+              {% elif has_name and has_avatar and has_phone %}67%
+              {% elif has_name and has_avatar %}50%
+              {% elif has_name %}33%
+              {% else %}17%{% endif %}"></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_name %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_name %}✓{% else %}○{% endif %} Full name</span>
+            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_verified %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_verified %}✓{% else %}○{% endif %} Email verified</span>
+            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_avatar %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_avatar %}✓{% else %}○{% endif %} Profile photo</span>
+            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_phone %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_phone %}✓{% else %}○{% endif %} Business phone</span>
+            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_biz %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_biz %}✓{% else %}○{% endif %} Business name</span>
+            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_2fa %}background:#dcfce7;color:#16a34a{% else %}background:#fef3c7;color:#b45309{% endif %}">{% if has_2fa %}✓{% else %}!{% endif %} Two-factor auth</span>
+          </div>
+        </div>
+        {% endwith %}
+
         <!-- Profile Form -->
         <div class="card" style="overflow:hidden;margin-bottom:20px">
           <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
