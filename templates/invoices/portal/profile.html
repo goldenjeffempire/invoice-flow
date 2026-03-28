@@ -1,0 +1,88 @@
+{% extends "invoices/portal/base.html" %}
+
+{% block title %}My Account — Client Portal{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:28px">
+  <h1 style="font-size:24px;font-weight:800;letter-spacing:-.4px;color:var(--text-primary);margin:0 0 4px">My Account</h1>
+  <p style="font-size:14px;color:var(--text-secondary);margin:0">Manage your billing information and contact details.</p>
+</div>
+
+{% for message in messages %}
+<div style="background:#dcfce7;border:1px solid #bbf7d0;border-left:3px solid #22c55e;color:#15803d;padding:12px 16px;border-radius:10px;font-size:13.5px;margin-bottom:20px">{{ message }}</div>
+{% endfor %}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start" class="profile-grid">
+
+  <!-- Contact Info (readonly) -->
+  <div class="card" style="padding:28px 32px">
+    <h2 style="font-size:16px;font-weight:700;margin:0 0 20px;color:var(--text-primary)">Contact Information</h2>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div>
+        <p style="font-size:11.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">Company / Name</p>
+        <p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0">{{ client.name }}</p>
+      </div>
+      <div>
+        <p style="font-size:11.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">Email Address</p>
+        <p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0">{{ client.email }}</p>
+      </div>
+      {% if client.phone %}
+      <div>
+        <p style="font-size:11.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">Phone</p>
+        <p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0">{{ client.phone }}</p>
+      </div>
+      {% endif %}
+      {% if client.billing_city or client.billing_country %}
+      <div>
+        <p style="font-size:11.5px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px">Location</p>
+        <p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0">
+          {% if client.billing_city %}{{ client.billing_city }}{% endif %}{% if client.billing_city and client.billing_country %}, {% endif %}{% if client.billing_country %}{{ client.billing_country }}{% endif %}
+        </p>
+      </div>
+      {% endif %}
+    </div>
+    <div style="margin-top:20px;padding:12px 16px;background:#fafafa;border-radius:8px;border:1px solid var(--border)">
+      <p style="font-size:12px;color:var(--text-muted);margin:0">To update your name or email, please contact your service provider.</p>
+    </div>
+  </div>
+
+  <!-- Update Billing Address -->
+  <div class="card" style="padding:28px 32px">
+    <h2 style="font-size:16px;font-weight:700;margin:0 0 20px;color:var(--text-primary)">Billing Information</h2>
+    <form method="post" action="{% url 'invoices:portal_profile' %}">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Phone Number</label>
+          <input type="tel" name="phone" value="{{ client.phone }}"
+            placeholder="+1 234 567 8900"
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;color:var(--text-primary);background:var(--bg);outline:none"
+            onfocus="this.style.borderColor='var(--brand)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div>
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px">Billing Address</label>
+          <textarea name="billing_address" rows="4" placeholder="Enter your full billing address..."
+            style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;color:var(--text-primary);background:var(--bg);outline:none;resize:vertical"
+            onfocus="this.style.borderColor='var(--brand)'" onblur="this.style.borderColor='var(--border)'">{{ client.billing_address }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="justify-content:center;padding:11px 24px">
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<!-- Security Notice -->
+<div style="margin-top:20px;display:flex;align-items:center;gap:12px;padding:14px 18px;background:#fff;border:1px solid var(--border);border-radius:10px">
+  <svg width="18" height="18" fill="none" stroke="#6366f1" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+  <p style="font-size:13px;color:var(--text-secondary);margin:0">Your portal access is passwordless and secured with one-time login links. Each session is encrypted and expires after 24 hours.</p>
+</div>
+
+<style>
+@media (max-width: 640px) {
+  .profile-grid { grid-template-columns: 1fr !important; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Client Portal — InvoiceFlow{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand: #6366f1;
+      --brand-dark: #4f46e5;
+      --brand-light: #e0e7ff;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --bg: #f8fafc;
+      --bg-card: #ffffff;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+    }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text-primary); min-height: 100vh; }
+    a { color: var(--brand); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .portal-header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .portal-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 17px;
+      color: var(--text-primary);
+      text-decoration: none;
+    }
+    .portal-logo svg { color: var(--brand); }
+    .portal-logo:hover { text-decoration: none; }
+    .portal-nav { display: flex; align-items: center; gap: 8px; }
+    .portal-nav a {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .portal-nav a:hover { background: var(--bg); color: var(--text-primary); text-decoration: none; }
+    .portal-nav a.active { background: var(--brand-light); color: var(--brand-dark); }
+    .portal-main { max-width: 960px; margin: 0 auto; padding: 32px 20px 60px; }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: opacity .15s, box-shadow .15s;
+    }
+    .btn:hover { opacity: .9; text-decoration: none; }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-secondary { background: #f1f5f9; color: var(--text-secondary); }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+    .badge-paid { background: #dcfce7; color: #15803d; }
+    .badge-sent { background: #e0e7ff; color: #4338ca; }
+    .badge-viewed { background: #dbeafe; color: #1d4ed8; }
+    .badge-overdue { background: #fee2e2; color: #dc2626; }
+    .badge-draft { background: #f1f5f9; color: #64748b; }
+    .badge-part_paid { background: #ccfbf1; color: #0f766e; }
+    .toast-area { position: fixed; top: 72px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 13.5px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.12);
+      max-width: 360px;
+    }
+    .toast.success { border-left: 3px solid #22c55e; }
+    .toast.error { border-left: 3px solid #ef4444; }
+    .toast.info { border-left: 3px solid var(--brand); }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<header class="portal-header">
+  <a href="{% url 'invoices:portal_dashboard' %}" class="portal-logo">
+    <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v4h4"/>
+    </svg>
+    InvoiceFlow
+    <span style="font-size:10px;font-weight:600;background:var(--brand-light);color:var(--brand-dark);padding:2px 8px;border-radius:100px;margin-left:4px">Client Portal</span>
+  </a>
+  {% block header_nav %}
+  <nav class="portal-nav">
+    <a href="{% url 'invoices:portal_dashboard' %}" class="{% if request.resolver_match.url_name == 'portal_dashboard' %}active{% endif %}">Invoices</a>
+    <a href="{% url 'invoices:portal_profile' %}" class="{% if request.resolver_match.url_name == 'portal_profile' %}active{% endif %}">My Account</a>
+    <a href="{% url 'invoices:portal_logout' %}" style="color:#dc2626">Logout</a>
+  </nav>
+  {% endblock %}
+</header>
+
+<div class="toast-area">
+  {% for message in messages %}
+  <div class="toast {% if 'error' in message.tags %}error{% elif 'success' in message.tags %}success{% else %}info{% endif %}">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+
+<main class="portal-main">
+  {% block content %}{% endblock %}
+</main>
+
+<footer style="text-align:center;padding:24px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border)">
+  Secured by <strong style="color:var(--text-secondary)">InvoiceFlow</strong> · Your data is encrypted and protected.
+</footer>
+
+</body>
+</html>
