@@ -72,8 +72,12 @@ def workspace_settings(request):
             workspace.save()
 
             profile = request.user.profile
-            profile.invoice_prefix = request.POST.get('invoice_prefix')
-            profile.invoice_start_number = request.POST.get('invoice_start_number')
+            raw_prefix = (request.POST.get('invoice_prefix') or '').strip()
+            raw_start = request.POST.get('invoice_start_number', '').strip()
+            if raw_prefix:
+                profile.invoice_prefix = raw_prefix
+            if raw_start.isdigit():
+                profile.invoice_start_number = int(raw_start)
             profile.payment_instructions = request.POST.get('default_terms', '')
             profile.save(update_fields=['invoice_prefix', 'invoice_start_number', 'payment_instructions'])
 

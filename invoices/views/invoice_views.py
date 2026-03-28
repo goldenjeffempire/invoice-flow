@@ -137,7 +137,9 @@ def invoice_create(request):
 
             action = request.POST.get('action', 'save')
             if action == 'save_and_send':
-                return redirect('invoices:invoice_send', invoice_id=invoice.id)
+                from django.urls import reverse as _rev
+                from django.http import HttpResponseRedirect as _HRR
+                return _HRR(_rev('invoices:invoice_detail', kwargs={'invoice_id': invoice.id}) + '?send=1')
             elif action == 'save_and_preview':
                 return redirect('invoices:invoice_preview', invoice_id=invoice.id)
             else:
@@ -760,9 +762,26 @@ def send_manual_reminder(request, invoice_id):
     try:
         workspace = request.user.profile.current_workspace
         invoice = get_object_or_404(Invoice, id=invoice_id, workspace=workspace)
+
+        recipient = invoice.client.email if invoice.client else None
+        if not recipient:
+            return JsonResponse({'status': 'error', 'message': 'Client has no email address.'}, status=400)
+
         invoice.last_reminder_sent_at = timezone.now()
         invoice.reminder_count = (invoice.reminder_count or 0) + 1
         invoice.save(update_fields=['last_reminder_sent_at', 'reminder_count'])
+
+        try:
+            from ..services.email_service import EmailService
+            EmailService.send_reminder(invoice, recipient)
+        except Exception as email_err:
+            logger.warning("send_manual_reminder email delivery failed: %s", email_err)
+
+        InvoiceService.log_activity(
+            invoice, request.user, InvoiceActivity.ActionType.OTHER,
+            f"Payment reminder sent to {recipient}"
+        )
+
         try:
             from ..models import ActivityLog
             ActivityLog.objects.create(
@@ -774,7 +793,8 @@ def send_manual_reminder(request, invoice_id):
             )
         except Exception:
             pass
-        return JsonResponse({'status': 'ok', 'message': 'Reminder recorded successfully.'})
+
+        return JsonResponse({'status': 'ok', 'message': f'Reminder sent to {recipient}.'})
     except Exception as e:
         logger.error("send_manual_reminder error: %s", e)
         return JsonResponse({'status': 'error', 'message': 'Failed to send reminder.'}, status=500)
