@@ -111,6 +111,7 @@ urlpatterns = [
     path("settings/reminders/pixel/<int:log_id>/", views.track_reminder_open, name="track_reminder_open"),
 
     # ── Marketing / Static Pages ──────────────────────────────────────────────
+    path("pricing/", views.pricing_view, name="pricing"),
     path("about/", views.about_view, name="about"),
     path("features/", views.features_view, name="features"),
     path("contact/", views.contact_view, name="contact"),

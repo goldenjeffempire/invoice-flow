@@ -49,7 +49,16 @@ def landing_view(request):
 
 
 def favicon_view(request):
-    return HttpResponse(status=204)
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+        '<rect width="32" height="32" rx="8" fill="#6366f1"/>'
+        '<path d="M9 8h9l5 5v11a2 2 0 01-2 2H9a2 2 0 01-2-2V10a2 2 0 012-2z" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>'
+        '<path d="M18 8v5h5" fill="none" stroke="white" stroke-width="2" stroke-linejoin="round"/>'
+        '<line x1="11" y1="17" x2="21" y2="17" stroke="white" stroke-width="2" stroke-linecap="round"/>'
+        '<line x1="11" y1="21" x2="17" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/>'
+        '</svg>'
+    )
+    return HttpResponse(svg, content_type="image/svg+xml")
 
 
 def robots_txt_view(request):
@@ -495,6 +504,76 @@ def accept_invitation(request, token):
 # ============================================================================
 # Static / Marketing Pages
 # ============================================================================
+
+def pricing_view(request):
+    starter_features = [
+        "5 invoices per month",
+        "2 clients",
+        "Basic PDF templates",
+        "Email invoicing",
+        "Payment tracking",
+        "Expense tracking (10/mo)",
+    ]
+    pro_features = [
+        "Unlimited invoices",
+        "Unlimited clients",
+        "Premium PDF templates",
+        "Automated reminders",
+        "Recurring billing",
+        "Estimates & quotes",
+        "Client portal",
+        "Expense management",
+        "Analytics & reports",
+        "Multi-currency",
+        "Paystack & Stripe payments",
+        "Priority email support",
+    ]
+    business_features = [
+        "Everything in Pro",
+        "Multiple workspaces",
+        "Team members (5 seats)",
+        "Advanced reporting",
+        "Custom branding & logo",
+        "API access",
+        "Role-based permissions",
+        "Bulk invoice actions",
+        "CSV/PDF exports",
+        "Dedicated support",
+    ]
+    comparison_rows = [
+        {"feature": "Invoices per month", "starter": "5", "pro": "Unlimited", "business": "Unlimited"},
+        {"feature": "Clients", "starter": "2", "pro": "Unlimited", "business": "Unlimited"},
+        {"feature": "PDF invoice generation", "starter": True, "pro": True, "business": True},
+        {"feature": "Automated payment reminders", "starter": False, "pro": True, "business": True},
+        {"feature": "Recurring billing", "starter": False, "pro": True, "business": True},
+        {"feature": "Estimates & quotes", "starter": False, "pro": True, "business": True},
+        {"feature": "Client portal", "starter": False, "pro": True, "business": True},
+        {"feature": "Expense management", "starter": "Basic", "pro": True, "business": True},
+        {"feature": "Analytics & reports", "starter": False, "pro": True, "business": True},
+        {"feature": "Multi-currency support", "starter": False, "pro": True, "business": True},
+        {"feature": "Online payments (Stripe/Paystack)", "starter": False, "pro": True, "business": True},
+        {"feature": "Multiple workspaces", "starter": False, "pro": False, "business": True},
+        {"feature": "Team members", "starter": "1 user", "pro": "2 users", "business": "5 users"},
+        {"feature": "Custom branding", "starter": False, "pro": True, "business": True},
+        {"feature": "API access", "starter": False, "pro": False, "business": True},
+        {"feature": "Priority support", "starter": False, "pro": True, "business": True},
+    ]
+    faqs = [
+        {"question": "Is there a free trial?", "answer": "Yes! The Starter plan is free forever. Pro and Business plans include a 14-day free trial — no credit card required."},
+        {"question": "Can I change plans later?", "answer": "Absolutely. You can upgrade, downgrade, or cancel at any time. When you upgrade, you're charged on a prorated basis for the remainder of your billing period."},
+        {"question": "What payment methods do you accept?", "answer": "We accept all major credit and debit cards (Visa, Mastercard, Amex), and bank transfers via Paystack for Nigerian customers."},
+        {"question": "Is my data secure?", "answer": "Yes. All data is encrypted in transit and at rest. We use bank-grade security, MFA authentication, and maintain strict data isolation between workspaces."},
+        {"question": "Can I export my data?", "answer": "Yes, you can export your invoices, clients, and expense data as PDF or CSV at any time on all plans."},
+        {"question": "Do you offer discounts for nonprofits or students?", "answer": "Yes — contact our support team with proof of eligibility and we'll apply a 30% discount to your Pro or Business plan."},
+    ]
+    return render(request, "pages/pricing.html", {
+        "starter_features": starter_features,
+        "pro_features": pro_features,
+        "business_features": business_features,
+        "comparison_rows": comparison_rows,
+        "faqs": faqs,
+    })
+
 
 def about_view(request):
     return render(request, "pages/about.html")
