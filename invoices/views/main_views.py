@@ -584,6 +584,48 @@ def features_view(request):
 
 
 def contact_view(request):
+    if request.method == "POST":
+        first_name = request.POST.get("first_name", "").strip()
+        last_name = request.POST.get("last_name", "").strip()
+        email = request.POST.get("email", "").strip()
+        subject = request.POST.get("subject", "").strip()
+        message = request.POST.get("message", "").strip()
+
+        errors = {}
+        if not first_name:
+            errors["first_name"] = "First name is required."
+        if not last_name:
+            errors["last_name"] = "Last name is required."
+        if not email:
+            errors["email"] = "Email address is required."
+        else:
+            try:
+                validate_email(email)
+            except ValidationError:
+                errors["email"] = "Enter a valid email address."
+        if not subject:
+            errors["subject"] = "Please select a subject."
+        if not message:
+            errors["message"] = "Message cannot be empty."
+
+        if errors:
+            messages.error(request, "Please correct the errors below.")
+            return render(request, "pages/contact.html", {
+                "form_errors": errors,
+                "form_data": request.POST,
+            })
+
+        logger.info(
+            "Contact form submission from %s %s <%s> re: %s",
+            first_name, last_name, email, subject,
+        )
+        messages.success(
+            request,
+            f"Thank you, {first_name}! Your message has been received. "
+            "We'll get back to you within 24 hours.",
+        )
+        return redirect("invoices:contact")
+
     return render(request, "pages/contact.html")
 
 

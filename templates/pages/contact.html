@@ -18,41 +18,46 @@
 <section class="section">
   <div class="container">
     <div class="contact-form" data-animate>
-      <form action="" method="POST">
+      <form action="{% url 'invoices:contact' %}" method="POST" novalidate>
         {% csrf_token %}
-        
+
         <div class="form-row">
           <div class="form-group">
             <label for="first_name" class="form-label">First Name</label>
-            <input type="text" id="first_name" name="first_name" class="form-input" required placeholder="John">
+            <input type="text" id="first_name" name="first_name" class="form-input{% if form_errors.first_name %} is-error{% endif %}" placeholder="John" value="{{ form_data.first_name|default:'' }}">
+            {% if form_errors.first_name %}<p class="form-error" style="color:var(--color-danger-600,#dc2626);font-size:0.8125rem;margin-top:0.25rem;">{{ form_errors.first_name }}</p>{% endif %}
           </div>
           <div class="form-group">
             <label for="last_name" class="form-label">Last Name</label>
-            <input type="text" id="last_name" name="last_name" class="form-input" required placeholder="Doe">
+            <input type="text" id="last_name" name="last_name" class="form-input{% if form_errors.last_name %} is-error{% endif %}" placeholder="Doe" value="{{ form_data.last_name|default:'' }}">
+            {% if form_errors.last_name %}<p class="form-error" style="color:var(--color-danger-600,#dc2626);font-size:0.8125rem;margin-top:0.25rem;">{{ form_errors.last_name }}</p>{% endif %}
           </div>
         </div>
-        
+
         <div class="form-group">
           <label for="email" class="form-label">Email</label>
-          <input type="email" id="email" name="email" class="form-input" required placeholder="john@example.com">
+          <input type="email" id="email" name="email" class="form-input{% if form_errors.email %} is-error{% endif %}" placeholder="john@example.com" value="{{ form_data.email|default:'' }}">
+          {% if form_errors.email %}<p class="form-error" style="color:var(--color-danger-600,#dc2626);font-size:0.8125rem;margin-top:0.25rem;">{{ form_errors.email }}</p>{% endif %}
         </div>
-        
+
         <div class="form-group">
           <label for="subject" class="form-label">Subject</label>
-          <select id="subject" name="subject" class="form-input" required>
+          <select id="subject" name="subject" class="form-input{% if form_errors.subject %} is-error{% endif %}">
             <option value="">Select a subject</option>
-            <option value="general">General Inquiry</option>
-            <option value="technical">Technical Support</option>
-            <option value="sales">Sales</option>
-            <option value="feedback">Feedback</option>
+            <option value="general" {% if form_data.subject == 'general' %}selected{% endif %}>General Inquiry</option>
+            <option value="technical" {% if form_data.subject == 'technical' %}selected{% endif %}>Technical Support</option>
+            <option value="sales" {% if form_data.subject == 'sales' %}selected{% endif %}>Sales</option>
+            <option value="feedback" {% if form_data.subject == 'feedback' %}selected{% endif %}>Feedback</option>
           </select>
+          {% if form_errors.subject %}<p class="form-error" style="color:var(--color-danger-600,#dc2626);font-size:0.8125rem;margin-top:0.25rem;">{{ form_errors.subject }}</p>{% endif %}
         </div>
-        
+
         <div class="form-group">
           <label for="message" class="form-label">Message</label>
-          <textarea id="message" name="message" class="form-input" required placeholder="How can we help you?"></textarea>
+          <textarea id="message" name="message" class="form-input{% if form_errors.message %} is-error{% endif %}" placeholder="How can we help you?" rows="5">{{ form_data.message|default:'' }}</textarea>
+          {% if form_errors.message %}<p class="form-error" style="color:var(--color-danger-600,#dc2626);font-size:0.8125rem;margin-top:0.25rem;">{{ form_errors.message }}</p>{% endif %}
         </div>
-        
+
         <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;">Send Message</button>
       </form>
     </div>

@@ -341,7 +341,11 @@
   </button>
   
   <div class="toast-container" id="toast-container" role="alert" aria-live="polite"></div>
-  
+
+  {% for message in messages %}
+  <span class="django-message" data-msg="{{ message.tags }}" style="display:none">{{ message }}</span>
+  {% endfor %}
+
   <script>
     (function() {
       const header   = document.getElementById('header');
@@ -413,8 +417,52 @@
         animEls.forEach(el => obs.observe(el));
       }
     })();
+
+    /* ── Django messages as toasts ────────────────── */
+    (function() {
+      function showPublicToast(msg, type) {
+        var container = document.getElementById('toast-container');
+        if (!container) return;
+        var colors = {
+          success: { bg: '#ecfdf5', color: '#065f46', border: '#10b981' },
+          error:   { bg: '#fef2f2', color: '#991b1b', border: '#ef4444' },
+          warning: { bg: '#fffbeb', color: '#92400e', border: '#f59e0b' },
+          info:    { bg: '#eff6ff', color: '#1e40af', border: '#3b82f6' },
+        };
+        var c = colors[type] || colors.info;
+        var toast = document.createElement('div');
+        toast.style.cssText = [
+          'display:flex','align-items:center','gap:.75rem','padding:.875rem 1.25rem',
+          'border-radius:.75rem','font-size:.875rem','font-weight:500',
+          'box-shadow:0 8px 24px rgba(0,0,0,.12)','max-width:22rem',
+          'pointer-events:auto','background:' + c.bg,
+          'color:' + c.color,'border-left:4px solid ' + c.border,
+          'animation:slide-in-bottom .35s ease both'
+        ].join(';');
+        toast.innerHTML = '<span style="flex:1">' + msg + '</span>' +
+          '<button onclick="this.parentNode.remove()" aria-label="Close" style="background:none;border:none;cursor:pointer;padding:0;color:inherit;font-size:1.1rem;line-height:1;">×</button>';
+        container.appendChild(toast);
+        setTimeout(function() {
+          toast.style.transition = 'opacity .3s';
+          toast.style.opacity = '0';
+          setTimeout(function() { toast.remove(); }, 320);
+        }, 5000);
+      }
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.django-message[data-msg]').forEach(function(el) {
+          var tags = el.dataset.msg || '';
+          var text = el.textContent.trim();
+          if (!text) return;
+          var type = 'info';
+          if (tags.indexOf('success') !== -1) type = 'success';
+          else if (tags.indexOf('error') !== -1 || tags.indexOf('danger') !== -1) type = 'error';
+          else if (tags.indexOf('warning') !== -1) type = 'warning';
+          setTimeout(function() { showPublicToast(text, type); }, 200);
+        });
+      });
+    })();
   </script>
-  
+
   {% block scripts %}{% endblock %}
 </body>
 </html>
