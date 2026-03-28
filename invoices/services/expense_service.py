@@ -6,6 +6,7 @@ from datetime import date
 from typing import Optional, List, Dict, Any, Tuple
 from django.db import transaction
 from django.db.models import Sum, Count, Q
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.conf import settings
@@ -538,33 +539,53 @@ class ExpenseService:
             status__in=['sent', 'viewed', 'part_paid', 'paid']
         )
 
-        total_revenue = invoices.aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+        total_revenue = invoices.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
         total_expenses = expenses.aggregate(total=Sum('total_amount'))['total'] or Decimal('0.00')
-        gross_profit = total_revenue - total_expenses
+        net_profit = total_revenue - total_expenses
 
-        expense_by_category = expenses.values('category__name').annotate(
-            total=Sum('total_amount')
-        ).order_by('-total')
+        raw_by_cat = list(
+            expenses.values('category__name', 'category__color')
+            .annotate(total=Sum('total_amount'), count=Count('id'))
+            .order_by('-total')
+        )
 
-        revenue_by_month = invoices.extra(
-            select={'month': "TO_CHAR(issue_date, 'YYYY-MM')"}
-        ).values('month').annotate(
-            total=Sum('total')
-        ).order_by('month')
+        category_breakdown = []
+        for row in raw_by_cat:
+            cat_total = row['total'] or Decimal('0')
+            pct = float(cat_total / total_expenses * 100) if total_expenses > 0 else 0
+            category_breakdown.append({
+                'name': row.get('category__name') or 'Uncategorised',
+                'amount': cat_total,
+                'count': row.get('count', 0),
+                'percentage': pct,
+                'color': row.get('category__color'),
+            })
 
-        expense_by_month = expenses.extra(
-            select={'month': "TO_CHAR(expense_date, 'YYYY-MM')"}
-        ).values('month').annotate(
-            total=Sum('total_amount')
-        ).order_by('month')
+        revenue_by_month = (
+            invoices
+            .annotate(month=TruncMonth('issue_date'))
+            .values('month')
+            .annotate(total=Sum('total_amount'))
+            .order_by('month')
+        )
+
+        expense_by_month = (
+            expenses
+            .annotate(month=TruncMonth('expense_date'))
+            .values('month')
+            .annotate(total=Sum('total_amount'))
+            .order_by('month')
+        )
 
         return {
             'period': {'from': date_from, 'to': date_to},
             'total_revenue': total_revenue,
             'total_expenses': total_expenses,
-            'gross_profit': gross_profit,
-            'profit_margin': (gross_profit / total_revenue * 100) if total_revenue > 0 else Decimal('0.00'),
-            'expense_by_category': list(expense_by_category),
+            'net_profit': net_profit,
+            'gross_profit': net_profit,
+            'profit_margin': (net_profit / total_revenue * 100) if total_revenue > 0 else Decimal('0.00'),
+            'category_breakdown': category_breakdown,
+            'expense_by_category': category_breakdown,
             'revenue_by_month': list(revenue_by_month),
             'expense_by_month': list(expense_by_month),
         }
