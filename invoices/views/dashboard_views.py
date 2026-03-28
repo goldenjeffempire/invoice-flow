@@ -153,8 +153,9 @@ def dashboard(request):
     # ── Recent data ───────────────────────────────────────────────────────
     recent_invoices = invoices_qs.select_related("client").order_by("-created_at")[:8]
     recent_payments = Payment.objects.filter(
-        invoice__workspace=workspace
-    ).select_related("invoice", "invoice__client").order_by("-created_at")[:6]
+        invoice__workspace=workspace,
+        status=Payment.Status.COMPLETED,
+    ).select_related("invoice", "invoice__client").order_by("-payment_date")[:6]
     invoices_due_soon = invoices_qs.filter(
         status__in=["sent", "viewed", "part_paid"],
         due_date__gte=today,

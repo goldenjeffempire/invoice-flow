@@ -127,7 +127,8 @@
         </div>
       </div>
       {% if chart_revenue %}
-      <div style="height:210px"><canvas id="revExpChart"></canvas></div>
+      <div x-show="!chartsReady" class="skel" style="height:210px;border-radius:10px"></div>
+      <div x-show="chartsReady" x-cloak style="height:210px"><canvas id="revExpChart"></canvas></div>
       {% else %}
       <div style="height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted)">
         <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom:12px;opacity:.3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -196,8 +197,11 @@
                 <td><a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:600;color:var(--brand-600)">{{ inv.invoice_number }}</a></td>
                 <td style="font-weight:500;color:var(--text-primary)">{{ inv.client.name }}</td>
                 <td style="font-weight:700;color:#dc2626">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</td>
-                <td>{% if inv.days_overdue is not None %}<span class="badge b-overdue">{{ inv.days_overdue }}d overdue</span>{% endif %}</td>
-                <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">View →</a></td>
+                <td>{% if inv.days_overdue > 0 %}<span class="badge b-overdue">{{ inv.days_overdue }}d overdue</span>{% else %}<span class="badge b-overdue">Due today</span>{% endif %}</td>
+                <td style="display:flex;gap:6px;align-items:center">
+                  <button onclick="sendReminder({{ inv.id }}, this)" class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none">Remind</button>
+                  <a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">View →</a>
+                </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -262,12 +266,12 @@
       {% endif %}
 
       <!-- Activity Feed -->
-      {% if recent_activity %}
       <div class="card">
         <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
           <h3 style="font-size:14px;font-weight:700;margin:0">Activity Feed</h3>
           <span style="font-size:11px;color:var(--text-muted)">Recent actions</span>
         </div>
+        {% if recent_activity %}
         <div style="padding:8px 0">
           {% for activity in recent_activity %}
           <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 20px;{% if not forloop.last %}border-bottom:1px solid var(--border){% endif %}">
@@ -286,8 +290,14 @@
           </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div style="padding:32px 20px;text-align:center">
+          <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 10px;opacity:.3;color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <p style="font-size:13px;font-weight:500;color:var(--text-secondary);margin:0 0 4px">No activity yet</p>
+          <p style="font-size:12px;color:var(--text-muted);margin:0">Actions like creating invoices and recording payments will appear here.</p>
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
 
     </div>
 
@@ -384,6 +394,25 @@
 </div>
 
 <script>
+function sendReminder(invoiceId, btn) {
+  const orig = btn.textContent;
+  btn.textContent = '…';
+  btn.disabled = true;
+  fetch(`/invoices/${invoiceId}/reminders/send/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' },
+    redirect: 'manual'
+  }).then(() => {
+    btn.textContent = 'Sent ✓';
+    btn.style.background = '#dcfce7';
+    btn.style.color = '#16a34a';
+    if (window.showToast) showToast('Reminder recorded for invoice.', 'success');
+  }).catch(() => {
+    btn.textContent = orig;
+    btn.disabled = false;
+  });
+}
+
 function initDashCharts() {
   const dark = document.body.classList.contains('dark');
   const gc = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';

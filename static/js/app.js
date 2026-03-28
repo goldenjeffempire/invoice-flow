@@ -199,6 +199,20 @@ function markNotifRead(id, el) {
   }).catch(() => {});
 }
 
+/* ── Mark all notifications read ── */
+function markAllNotifsRead(btn) {
+  fetch('/notifications/mark-all-read/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCsrfToken() }
+  }).then(r => r.json()).then(() => {
+    btn.style.display = 'none';
+    document.querySelectorAll('[style*="background:#6366f1"][style*="border-radius:50%"]').forEach(d => d.remove());
+    document.querySelectorAll('.n-dot').forEach(d => d.remove());
+    const badge = document.querySelector('[style*="background:#6366f1"][style*="border-radius:99px"]');
+    if (badge) badge.remove();
+  }).catch(() => {});
+}
+
 /* ── Spin animation (used by search loader) ── */
 if (!document.querySelector('#spin-keyframes')) {
   const s = document.createElement('style');

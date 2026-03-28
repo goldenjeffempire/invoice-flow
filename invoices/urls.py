@@ -83,6 +83,7 @@ urlpatterns = [
     # ── Activity / UX ─────────────────────────────────────────────────────────
     path("api/search/", ux_views.global_search, name="global_search"),
     path("notifications/mark-read/<int:pk>/", ux_views.mark_notification_read, name="mark_notification_read"),
+    path("notifications/mark-all-read/", ux_views.mark_all_notifications_read, name="mark_all_notifications_read"),
     path("api/appearance/", ux_views.set_appearance_preference, name="set_appearance"),
 
     # ── Wallet ────────────────────────────────────────────────────────────────

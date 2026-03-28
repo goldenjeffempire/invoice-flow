@@ -116,6 +116,14 @@ def mark_notification_read(request, pk):
 
 
 @login_required
+def mark_all_notifications_read(request):
+    if request.method == 'POST':
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'error'}, status=405)
+
+
+@login_required
 def set_appearance_preference(request):
     if request.method == 'POST':
         mode = request.POST.get('mode', 'light')
