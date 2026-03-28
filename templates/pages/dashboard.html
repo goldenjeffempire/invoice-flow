@@ -126,7 +126,7 @@
           <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#f97316;display:inline-block"></span>Expenses</span>
         </div>
       </div>
-      {% if chart_revenue %}
+      {% if chart_has_data %}
       <div x-show="!chartsReady" class="skel" style="height:210px;border-radius:10px"></div>
       <div x-show="chartsReady" x-cloak style="height:210px"><canvas id="revExpChart"></canvas></div>
       {% else %}
@@ -400,16 +400,22 @@ function sendReminder(invoiceId, btn) {
   btn.disabled = true;
   fetch(`/invoices/${invoiceId}/reminders/send/`, {
     method: 'POST',
-    headers: { 'X-CSRFToken': document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '' },
-    redirect: 'manual'
-  }).then(() => {
-    btn.textContent = 'Sent ✓';
-    btn.style.background = '#dcfce7';
-    btn.style.color = '#16a34a';
-    if (window.showToast) showToast('Reminder recorded for invoice.', 'success');
+    headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' }
+  }).then(res => res.json()).then(data => {
+    if (data.status === 'ok') {
+      btn.textContent = 'Sent ✓';
+      btn.style.background = '#dcfce7';
+      btn.style.color = '#16a34a';
+      if (window.showToast) showToast('Reminder recorded successfully.', 'success');
+    } else {
+      btn.textContent = orig;
+      btn.disabled = false;
+      if (window.showToast) showToast(data.message || 'Failed to send reminder.', 'error');
+    }
   }).catch(() => {
     btn.textContent = orig;
     btn.disabled = false;
+    if (window.showToast) showToast('Network error. Please try again.', 'error');
   });
 }
 

@@ -156,6 +156,30 @@ Complete audit, repair, and upgrade of the Settings module:
 - Avatar upload validates file type via `imghdr` (magic bytes, not just extension).
 - Business/profile updates logged to `SecurityEvent` model.
 
+## Dashboard Production Bug Fixes (2026-03-28)
+
+A comprehensive audit of the dashboard and app shell identified and fixed 5 production-impacting bugs:
+
+### Bug 1 — CSRF Token Mismatch in `sendReminder()`
+**Problem:** The dashboard's reminder button used `document.cookie.match(/csrftoken=/)` to get the CSRF token, but `CSRF_USE_SESSIONS = True` means there is no csrftoken cookie — the token lives in the session and is exposed via `<meta name="csrf-token">`. Every reminder POST silently sent an empty CSRF token, resulting in a 403 from Django.
+**Fix:** Changed `sendReminder()` in `templates/pages/dashboard.html` to call `getCsrfToken()` (reads from the meta tag, defined in `app.js`).
+
+### Bug 2 — Reminder Fetch Used Opaque Redirect Response
+**Problem:** `send_manual_reminder` view returned an HTTP redirect, and the JS used `redirect: 'manual'`. This made the fetch resolve with an opaque response regardless of whether the server returned 403 or 200, so the UI always showed "Sent ✓" even on failure.
+**Fix:** `send_manual_reminder` in `invoices/views/invoice_views.py` now returns `JsonResponse({'status': 'ok'})`. The JS checks `data.status === 'ok'` and shows proper error messages on failure. Also logs an `ActivityLog` entry so the reminder appears in the dashboard activity feed.
+
+### Bug 3 — Chart Empty State Never Rendered
+**Problem:** The template checked `{% if chart_revenue %}` to decide whether to show the chart or the "No revenue data yet" empty state. But `chart_revenue` is always a JSON string (`"[0.0, 0.0, ...]"`) — a non-empty string is always truthy in Django templates, so the empty state was never shown. Users would see a loading skeleton that disappeared, leaving a blank canvas.
+**Fix:** Added `chart_has_data = any(v > 0 for v in chart_revenue)` to `dashboard_views.py` context. Template now uses `{% if chart_has_data %}`.
+
+### Bug 4 — `mark_notification_read` Accepted GET Requests
+**Problem:** The `mark_notification_read` view lacked a method check — any GET request to `/notifications/mark-read/<pk>/` would mark a notification as read without user intent, making it exploitable via link prefetching or crawlers.
+**Fix:** Added `if request.method != 'POST': return JsonResponse({'status': 'error'}, status=405)`.
+
+### Bug 5 — Duplicate Django Message Toast Handling
+**Problem:** Both `app.js` and `app-enhanced.js` had `DOMContentLoaded` handlers that processed `[data-msg]` elements to show toast notifications. Since `app.js` ran first and removed the DOM elements, `app-enhanced.js`'s nicer toast system (with icons, close button, progress bar) was never triggered — Django messages appeared in the simpler legacy `Toast` UI.
+**Fix:** Removed the `[data-msg]` processing from `app.js`'s DOMContentLoaded. Django messages are now exclusively handled by `app-enhanced.js`'s `initToastSystem()` which exposes `window.showToast` and uses the `#toast-container` div.
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.

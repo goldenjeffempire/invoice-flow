@@ -706,10 +706,24 @@ def toggle_invoice_reminders(request, invoice_id):
 @login_required
 @require_POST
 def send_manual_reminder(request, invoice_id):
-    workspace = request.user.profile.current_workspace
-    invoice = get_object_or_404(Invoice, id=invoice_id, workspace=workspace)
-    invoice.last_reminder_sent_at = timezone.now()
-    invoice.reminder_count = (invoice.reminder_count or 0) + 1
-    invoice.save(update_fields=['last_reminder_sent_at', 'reminder_count'])
-    messages.success(request, 'Manual reminder recorded. Connect your email provider to send the actual message automatically.')
-    return redirect('invoices:invoice_detail', invoice_id=invoice.id)
+    try:
+        workspace = request.user.profile.current_workspace
+        invoice = get_object_or_404(Invoice, id=invoice_id, workspace=workspace)
+        invoice.last_reminder_sent_at = timezone.now()
+        invoice.reminder_count = (invoice.reminder_count or 0) + 1
+        invoice.save(update_fields=['last_reminder_sent_at', 'reminder_count'])
+        try:
+            from ..models import ActivityLog
+            ActivityLog.objects.create(
+                workspace=workspace,
+                user=request.user,
+                action=f"Reminder sent for invoice {invoice.invoice_number}",
+                resource_type='invoice',
+                resource_id=str(invoice.id),
+            )
+        except Exception:
+            pass
+        return JsonResponse({'status': 'ok', 'message': 'Reminder recorded successfully.'})
+    except Exception as e:
+        logger.error("send_manual_reminder error: %s", e)
+        return JsonResponse({'status': 'error', 'message': 'Failed to send reminder.'}, status=500)

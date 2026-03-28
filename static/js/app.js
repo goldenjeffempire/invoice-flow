@@ -77,17 +77,10 @@ const Toast = {
   }
 };
 
-/* ── Auto-dismiss Django messages ── */
+/* ── DOMContentLoaded helpers ── */
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('[data-msg]').forEach(el => {
-    const type = el.dataset.msg;
-    const text = el.textContent.trim();
-    if (text) Toast.show(text, type === 'error' ? 'error' : type === 'success' ? 'success' : 'info');
-    el.remove();
-  });
-
-  /* Confirm-delete forms */
-  document.querySelectorAll('[data-confirm]').forEach(el => {
+  /* Confirm-delete on links/buttons (not forms — those are handled by app-enhanced.js) */
+  document.querySelectorAll('a[data-confirm], button[data-confirm]:not(form button)').forEach(el => {
     el.addEventListener('click', e => {
       if (!confirm(el.dataset.confirm || 'Are you sure?')) e.preventDefault();
     });

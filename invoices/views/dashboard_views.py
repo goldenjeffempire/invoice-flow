@@ -187,6 +187,7 @@ def dashboard(request):
 
     # ── Charts ────────────────────────────────────────────────────────────
     chart_labels, chart_revenue, chart_expenses = _monthly_trend(workspace, months=6)
+    chart_has_data = any(v > 0 for v in chart_revenue) or any(v > 0 for v in chart_expenses)
 
     invoice_status_items = [
         ("draft",     "Draft",     "#94a3b8"),
@@ -240,6 +241,7 @@ def dashboard(request):
         "invoice_status_items": invoice_status_items,
         "top_clients": top_clients,
         "aging": aging,
+        "chart_has_data": chart_has_data,
         "chart_labels": json.dumps(chart_labels),
         "chart_revenue": json.dumps(chart_revenue),
         "chart_expenses": json.dumps(chart_expenses),

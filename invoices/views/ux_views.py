@@ -109,6 +109,8 @@ def global_search(request):
 
 @login_required
 def mark_notification_read(request, pk):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error'}, status=405)
     notification = get_object_or_404(Notification, pk=pk, user=request.user)
     notification.is_read = True
     notification.save()
