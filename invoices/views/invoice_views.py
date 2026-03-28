@@ -653,7 +653,7 @@ def invoice_export_csv(request):
     for inv in invoices:
         writer.writerow([
             inv.invoice_number,
-            inv.client.name,
+            inv.client.name if inv.client else '',
             inv.get_status_display(),
             inv.issue_date.isoformat(),
             inv.due_date.isoformat(),

@@ -163,8 +163,10 @@ def login_view(request):
                     messages.success(request, f"Welcome back, {user.first_name or user.username}!")
 
                     next_url = request.GET.get("next", "")
-                    if next_url and next_url.startswith("/") and not next_url.startswith("//"):
-                        return redirect(next_url)
+                    if next_url:
+                        from django.utils.http import url_has_allowed_host_and_scheme
+                        if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+                            return redirect(next_url)
                     return redirect("invoices:dashboard")
                 else:
                     messages.error(request, message)

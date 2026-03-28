@@ -120,7 +120,9 @@ def client_create(request):
             messages.success(request, f"Client '{client.name}' created successfully.")
             next_url = request.GET.get("next")
             if next_url:
-                return redirect(next_url)
+                from django.utils.http import url_has_allowed_host_and_scheme
+                if url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+                    return redirect(next_url)
             return redirect("invoices:client_detail", client_id=client.id)
 
     return render(request, "pages/clients/form.html", {

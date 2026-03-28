@@ -44,21 +44,23 @@ class InvoiceService:
 
     @staticmethod
     def generate_invoice_number(workspace, prefix: str = "INV", format_str: str = "{prefix}-{year}-{number:04d}") -> str:
-        import datetime as dt_module
         year = timezone.now().year
-        year_start = dt_module.date(year, 1, 1)
+        from django.db import connection
 
-        count = Invoice.objects.filter(
-            workspace=workspace,
-            created_at__date__gte=year_start
-        ).count()
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT COUNT(*) FROM invoices_invoice WHERE workspace_id = %s",
+                    [workspace.id]
+                )
+                count = cursor.fetchone()[0]
 
-        next_num = count + 1
-
-        candidate = format_str.format(prefix=prefix, year=year, number=next_num)
-        while Invoice.objects.filter(workspace=workspace, invoice_number=candidate).exists():
-            next_num += 1
+            next_num = count + 1
             candidate = format_str.format(prefix=prefix, year=year, number=next_num)
+
+            while Invoice.objects.filter(workspace=workspace, invoice_number=candidate).exists():
+                next_num += 1
+                candidate = format_str.format(prefix=prefix, year=year, number=next_num)
 
         return candidate
 

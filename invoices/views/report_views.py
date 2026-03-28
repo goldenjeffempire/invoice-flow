@@ -322,7 +322,7 @@ def _export_revenue_csv(workspace, date_range):
     for inv in invoices:
         writer.writerow([
             inv.invoice_number,
-            inv.client.name,
+            inv.client.name if inv.client else '',
             inv.issue_date,
             inv.due_date,
             inv.get_status_display(),
@@ -367,7 +367,7 @@ def _export_aging_csv(workspace, date_range):
 
         writer.writerow([
             inv.invoice_number,
-            inv.client.name,
+            inv.client.name if inv.client else '',
             inv.issue_date,
             inv.due_date,
             max(0, days_overdue),
@@ -502,10 +502,13 @@ def _export_payments_csv(workspace, date_range):
     writer.writerow(['Payment ID', 'Invoice #', 'Client', 'Date', 'Amount', 'Fee', 'Net Amount', 'Status', 'Method', 'Transaction ID', 'Currency'])
 
     for pmt in payments:
+        client_name = ''
+        if pmt.invoice and pmt.invoice.client:
+            client_name = pmt.invoice.client.name
         writer.writerow([
             pmt.id,
-            pmt.invoice.invoice_number,
-            pmt.invoice.client.name,
+            pmt.invoice.invoice_number if pmt.invoice else '',
+            client_name,
             pmt.payment_date,
             pmt.amount,
             pmt.fee_amount,
