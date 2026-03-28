@@ -40,19 +40,11 @@ def workspace_context(request):
         workspace = None
         if hasattr(request, 'workspace') and request.workspace:
             workspace = request.workspace
-        else:
-            workspace_id = request.session.get('current_workspace_id')
-            if workspace_id:
-                from .models import Workspace
-                try:
-                    workspace = Workspace.objects.get(id=workspace_id)
-                except Workspace.DoesNotExist:
-                    pass
-            if not workspace and hasattr(request.user, 'profile'):
-                try:
-                    workspace = request.user.profile.current_workspace
-                except Exception:
-                    pass
+        elif hasattr(request.user, 'profile'):
+            try:
+                workspace = request.user.profile.current_workspace
+            except Exception:
+                pass
 
         if workspace:
             context['workspace'] = workspace

@@ -180,6 +180,26 @@ A comprehensive audit of the dashboard and app shell identified and fixed 5 prod
 **Problem:** Both `app.js` and `app-enhanced.js` had `DOMContentLoaded` handlers that processed `[data-msg]` elements to show toast notifications. Since `app.js` ran first and removed the DOM elements, `app-enhanced.js`'s nicer toast system (with icons, close button, progress bar) was never triggered — Django messages appeared in the simpler legacy `Toast` UI.
 **Fix:** Removed the `[data-msg]` processing from `app.js`'s DOMContentLoaded. Django messages are now exclusively handled by `app-enhanced.js`'s `initToastSystem()` which exposes `window.showToast` and uses the `#toast-container` div.
 
+## Codebase Audit & Stabilization (2026-03-28)
+
+A comprehensive full-codebase audit was completed covering all 80+ Python files, 130+ templates, all views, models, services, and URLs. Django system check passes with **0 issues (0 silenced)**.
+
+### Bug Fix 1 — Invoice Detail Template: Fragile Status Check
+**Problem:** `templates/pages/invoices/detail.html` line 56 used `{% if invoice.status not in 'paid,void,write_off' %}` — a substring check (Python `in` operator on strings) rather than list membership. While it happened to work by coincidence for the current status values, it was fragile and misleading. Additionally, the Invoice detail view already passes `can_void` as an explicit context variable for this exact purpose.
+**Fix:** Replaced with `{% if can_void %}` which uses the proper `Invoice.can_void` model property via the view's context dictionary.
+
+### Bug Fix 2 — Expense Views: Wrong Workspace Selected
+**Problem:** `invoices/views/expense_views.py` had a `get_user_workspace()` helper that used `WorkspaceMember.objects.filter(user=user).first()` — returning the **first workspace by creation time** regardless of which workspace the user had switched to. All other views in the app correctly use `request.user.profile.current_workspace`. This caused users in multiple workspaces to always see expenses from their oldest workspace when visiting the expenses section.
+**Fix:** Updated `get_user_workspace()` to check `profile.current_workspace_id` first (consistent with all other views), falling back to membership lookup only if no profile workspace is set.
+
+### Bug Fix 3 — Missing UserProfile Auto-Creation Signal
+**Problem:** No `post_save` signal existed to auto-create a `UserProfile` when a Django `User` was created. Only users who went through the full signup flow (via `AuthService.register_user`) got profiles. Admin-created users, management-command-created users, or any user created outside the auth flow would have no profile, causing `User.profile.RelatedObjectDoesNotExist` exceptions on nearly every authenticated view.
+**Fix:** Added `@receiver(post_save, sender=settings.AUTH_USER_MODEL)` signal in `invoices/models.py` that calls `UserProfile.objects.get_or_create(user=instance)` on every new User creation. Verified working.
+
+### Bug Fix 4 — Context Processor: Stale Session Workspace Key
+**Problem:** `invoices/context_processors.py` had a workspace resolution path that checked `request.session.get('current_workspace_id')` before falling back to `request.user.profile.current_workspace`. However, no view in the codebase ever writes to `'current_workspace_id'` in the session — the `switch_workspace` view saves to `profile.current_workspace`. This session key was dead code that could theoretically serve stale workspace data if any old session had the key set.
+**Fix:** Removed the session-based workspace lookup. Context processor now uses the canonical `request.user.profile.current_workspace` (or `request.workspace` if set by a view decorator, e.g. reports views).
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.

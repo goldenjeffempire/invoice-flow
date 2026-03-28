@@ -2009,6 +2009,13 @@ class PaymentReconciliation(models.Model):
 # MERGED: SIGNALS
 # =========================================================
 
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Auto-create a UserProfile whenever a new User is created."""
+    if created:
+        UserProfile.objects.get_or_create(user=instance)
+
+
 @receiver(post_save, sender=Payment)
 def create_platform_commission(sender, instance, created, **kwargs):
     """Auto-create platform commission row on Payment creation."""

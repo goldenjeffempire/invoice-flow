@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 
 def get_user_workspace(user):
+    profile = getattr(user, 'profile', None)
+    if profile and profile.current_workspace_id:
+        return profile.current_workspace
     from invoices.models import WorkspaceMember
     membership = WorkspaceMember.objects.filter(user=user).select_related('workspace').first()
     return membership.workspace if membership else None
