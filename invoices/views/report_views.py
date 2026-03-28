@@ -617,8 +617,8 @@ def shared_report_view(request, token: str):
     if link.password_hash:
         if request.method == 'POST':
             password = request.POST.get('password', '')
-            password_hash = hashlib.sha256(password.encode()).hexdigest()
-            if password_hash != link.password_hash:
+            from django.contrib.auth.hashers import check_password as _check_password
+            if not _check_password(password, link.password_hash):
                 return render(request, 'pages/reports/shared_password.html', {
                     "page_title": "Password Required",
                     "error": "Incorrect password",

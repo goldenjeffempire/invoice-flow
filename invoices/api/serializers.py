@@ -91,9 +91,25 @@ class InvoiceCreateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one line item is required.")
+        for i, item in enumerate(value):
+            description = item.get('description', '').strip() if isinstance(item, dict) else getattr(item, 'description', '')
+            if not description:
+                raise serializers.ValidationError(f"Item {i + 1}: description cannot be blank.")
+            qty = item.get('quantity', 0) if isinstance(item, dict) else getattr(item, 'quantity', 0)
+            try:
+                if float(qty) <= 0:
+                    raise serializers.ValidationError(f"Item {i + 1}: quantity must be greater than zero.")
+            except (TypeError, ValueError):
+                raise serializers.ValidationError(f"Item {i + 1}: quantity must be a valid number.")
         return value
 
     def validate(self, attrs):
+        issue_date = attrs.get('issue_date')
+        due_date = attrs.get('due_date')
+        if issue_date and due_date and due_date < issue_date:
+            raise serializers.ValidationError({"due_date": "Due date cannot be before the issue date."})
         return attrs
 
     def create(self, validated_data):

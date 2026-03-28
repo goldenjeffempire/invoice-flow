@@ -1636,7 +1636,7 @@ class SharedReportLink(models.Model):
 
     is_active = models.BooleanField(default=True)
     expires_at = models.DateTimeField()
-    password_hash = models.CharField(max_length=64, blank=True, null=True, help_text="SHA256 hash of password if protected")
+    password_hash = models.CharField(max_length=255, blank=True, null=True, help_text="PBKDF2 hash of password if protected")
 
     view_count = models.PositiveIntegerField(default=0)
     last_viewed_at = models.DateTimeField(null=True, blank=True)

@@ -140,8 +140,7 @@ class PaystackService:
 
         try:
             response = requests.get(
-                f"{PAYSTACK_BASE_URL}/bank/resolve",
-                params={"account_number": bvn},
+                f"{PAYSTACK_BASE_URL}/bank/resolve_bvn/{bvn}",
                 headers=self.headers,
                 timeout=30,
             )

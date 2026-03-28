@@ -524,30 +524,84 @@ def public_invoice_view(request, token):
 @require_POST
 def public_initiate_payment(request, token):
     """
-    Initiates a payment process. In production, this would integrate with a gateway.
+    Initiates a Paystack payment for a public invoice link.
+    On success, redirects to Paystack's hosted checkout page.
+    Falls back gracefully if Paystack is not configured.
     """
     invoice = get_object_or_404(Invoice, public_token=token)
-    email = request.POST.get('email', invoice.client.email)
-    
-    logger.info(f"Payment initiation requested for Invoice {invoice.invoice_number} by {email}")
+
+    if invoice.status == Invoice.Status.VOID:
+        messages.error(request, "This invoice is no longer available.")
+        return redirect('invoices:public_invoice', token=token)
+
+    if invoice.amount_due <= 0:
+        messages.info(request, "This invoice has already been fully paid.")
+        return redirect('invoices:public_invoice', token=token)
+
+    email = request.POST.get('email', '').strip() or (invoice.client.email if invoice.client else '')
+
+    if not email:
+        messages.error(request, "A valid email address is required to proceed with payment.")
+        return redirect('invoices:public_invoice', token=token)
 
     try:
-        # Simulated gateway redirection logic
-        # In production, you would call a PaymentService here
-        messages.success(request, "Payment process initiated. Please follow the instructions on the gateway.")
-        
-        # Log the initiation attempt
-        InvoiceActivity.objects.create(
-            invoice=invoice,
-            action=InvoiceActivity.ActionType.OTHER,
-            description=f"Payment process started by {email}",
-            ip_address=get_client_ip(request),
-            is_system=True
+        from ..paystack_service import PaystackService
+        import uuid
+
+        paystack = PaystackService()
+
+        if not paystack.is_configured:
+            # Paystack not set up — record intent and show bank details if available
+            InvoiceActivity.objects.create(
+                invoice=invoice,
+                action=InvoiceActivity.ActionType.OTHER,
+                description=f"Payment intent recorded for {email} (online gateway not configured)",
+                ip_address=get_client_ip(request),
+                is_system=True,
+            )
+            messages.info(
+                request,
+                "Online payment is not available for this invoice. "
+                "Please use the bank transfer details below or contact the sender."
+            )
+            return redirect('invoices:public_invoice', token=token)
+
+        reference = f"INV-{invoice.invoice_number}-{uuid.uuid4().hex[:8].upper()}"
+        callback_url = request.build_absolute_uri(
+            reverse('invoices:public_invoice', kwargs={'token': token})
         )
-        
-        return redirect('invoices:public_invoice', token=token)
+
+        result = paystack.initialize_payment(
+            email=email,
+            amount=invoice.amount_due,
+            reference=reference,
+            currency=invoice.currency,
+            callback_url=callback_url,
+            metadata={
+                "invoice_id": invoice.id,
+                "invoice_number": invoice.invoice_number,
+                "token": token,
+                "customer_email": email,
+            },
+        )
+
+        if result.get('status') == 'success':
+            InvoiceActivity.objects.create(
+                invoice=invoice,
+                action=InvoiceActivity.ActionType.OTHER,
+                description=f"Paystack payment initiated by {email} (ref: {reference})",
+                ip_address=get_client_ip(request),
+                is_system=True,
+            )
+            return redirect(result['authorization_url'])
+        else:
+            error_msg = result.get('message', 'Payment gateway returned an error.')
+            logger.error(f"Paystack init failed for invoice {invoice.invoice_number}: {error_msg}")
+            messages.error(request, f"Could not connect to payment gateway: {error_msg}")
+            return redirect('invoices:public_invoice', token=token)
+
     except Exception as e:
-        logger.error(f"Payment initiation failed for {token}: {str(e)}")
+        logger.exception(f"Payment initiation error for token {token}: {e}")
         messages.error(request, "Payment gateway is currently unreachable. Please try again later.")
         return redirect('invoices:public_invoice', token=token)
 

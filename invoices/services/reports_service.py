@@ -803,7 +803,8 @@ class ReportsService:
 
         password_hash = None
         if password:
-            password_hash = hashlib.sha256(password.encode()).hexdigest()
+            from django.contrib.auth.hashers import make_password as _make_password
+            password_hash = _make_password(password)
 
         shared_link = SharedReportLink.objects.create(
             workspace=workspace,

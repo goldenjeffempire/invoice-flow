@@ -110,17 +110,21 @@ function globalSearch() {
     results: [],
     loading: false,
     selectedIndex: -1,
+    _debounceTimer: null,
 
-    async doSearch() {
+    doSearch() {
       this.selectedIndex = -1;
-      if (this.query.length < 2) { this.results = []; return; }
+      if (this._debounceTimer) clearTimeout(this._debounceTimer);
+      if (this.query.length < 2) { this.results = []; this.loading = false; return; }
       this.loading = true;
-      try {
-        const resp = await fetch(`/api/search/?q=${encodeURIComponent(this.query)}`);
-        const data = await resp.json();
-        this.results = data.results || [];
-      } catch(e) { this.results = []; }
-      this.loading = false;
+      this._debounceTimer = setTimeout(async () => {
+        try {
+          const resp = await fetch(`/api/search/?q=${encodeURIComponent(this.query)}`);
+          const data = await resp.json();
+          this.results = data.results || [];
+        } catch(e) { this.results = []; }
+        this.loading = false;
+      }, 300);
     },
 
     handleKey(e) {
