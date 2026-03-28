@@ -118,6 +118,44 @@ All authenticated settings pages were rewritten to use the app's inline-style de
 - Run with: `python manage.py create_demo_data --username demo`
 - Login: `username=demo`, `password=demo1234`
 
+## Settings System Overhaul (2026-03-28)
+
+Complete audit, repair, and upgrade of the Settings module:
+
+### New Backend Endpoints
+- `POST /settings/avatar/` (`avatar_upload`) — Validates file type (imghdr), enforces 5 MB limit, stores to `media/avatars/`, returns JSON `{avatar_url}`.
+- `POST /settings/email-change/` (`email_change_request`) — Requires `new_email` + `current_password`, authenticates via `authenticate()`, checks email uniqueness, writes `SecurityEvent`, returns JSON.
+
+### Upgraded Existing Views (all now return JSON for AJAX and log SecurityEvents)
+- `profile_update_ajax` — Validates full_name required, max 150 chars, updates first/last name, timezone, locale, logs `profile_updated` SecurityEvent.
+- `settings_business_update` — Now saves `default_currency` and `tax_id_number` (previously ignored), validates business email format, logs `business_info_updated` SecurityEvent.
+- `settings_branding_update` — Now saves `invoice_prefix` and `invoice_start_number` (previously ignored), validates hex color format with regex.
+- `notifications_update_ajax` — Added `notify_invoice_created` toggle (was missing), all 6 notification preferences saved atomically.
+- `security_update_ajax`, `payment_settings_update_ajax` — Now return JSON.
+
+### settings.html Template Rewrite
+- All 4 forms (Profile, Business, Branding, Notifications) use `fetch()` AJAX — zero page reloads on save.
+- `Toast.show()` for every success and error response.
+- Loading spinner states on all submit buttons.
+- **Avatar upload** — `<input type="file">` with FileReader preview before upload, size/type client-side validation, uploads via AJAX to `/settings/avatar/`.
+- **Email change modal** — Full modal with new email field + password confirmation field with show/hide toggle, client-side format validation, inline error display per field, updates displayed email without page reload.
+- Notifications tab auto-saves on toggle click (600ms debounce) + manual Save button.
+- Profile form shows "Change email →" link that opens the modal instead of disabled field with unhelpful message.
+- Expanded timezone list (14 options covering major regions), currency selector (9 currencies).
+- Color picker inputs now sync bidirectionally: hex text input updates picker and vice versa.
+- Notification row "Invoice Created" added (was missing from UI despite model support).
+- All forms prevented from native submit — fully JS-controlled.
+
+### URL Changes
+- `invoiceflow/urls.py` — Added `+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)` for serving uploaded avatars in development.
+- `invoices/urls.py` — Added `settings/avatar/` and `settings/email-change/` URL patterns.
+
+### Security & Audit
+- All new endpoints: `@login_required`, `@require_POST`, `@csrf_protect`.
+- Email change authenticates password before updating, logs `email_changed` SecurityEvent with old/new email.
+- Avatar upload validates file type via `imghdr` (magic bytes, not just extension).
+- Business/profile updates logged to `SecurityEvent` model.
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.

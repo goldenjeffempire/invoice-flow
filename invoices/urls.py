@@ -98,6 +98,8 @@ urlpatterns = [
     # ── User Settings ─────────────────────────────────────────────────────────
     path("settings/", views.settings_page, name="settings"),
     path("settings/profile/", views.profile_update_ajax, name="settings_profile_update"),
+    path("settings/avatar/", views.avatar_upload, name="settings_avatar_upload"),
+    path("settings/email-change/", views.email_change_request, name="settings_email_change"),
     path("settings/security/update/", views.security_update_ajax, name="settings_security_update"),
     path("settings/notifications/", views.notifications_update_ajax, name="settings_notifications_update"),
     path("settings/payments/", views.payment_settings_update_ajax, name="settings_payments_update"),

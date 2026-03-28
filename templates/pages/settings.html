@@ -3,7 +3,7 @@
 {% block page_title %}Settings{% endblock %}
 
 {% block content %}
-<div x-data="{ tab: (new URLSearchParams(location.search).get('tab')) || 'profile' }">
+<div x-data="settingsPage()" x-init="init()">
 
   <!-- Page Header -->
   <div class="page-hdr" style="margin-bottom:28px">
@@ -56,77 +56,135 @@
     <div style="flex:1;min-width:0">
 
       <!-- ─ PROFILE TAB ─ -->
-      <div x-show="tab==='profile'" x-cloak class="card" style="overflow:hidden">
+      <div x-show="tab==='profile'" x-cloak>
 
-        <!-- Avatar / Header -->
-        <div style="padding:28px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:20px;background:linear-gradient(to right,var(--bg-subtle),var(--bg-card))">
-          <div style="position:relative;flex-shrink:0">
-            <div style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;font-weight:800;letter-spacing:-.5px;box-shadow:0 4px 16px rgba(99,102,241,.4)">
-              {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+        <!-- Avatar Section -->
+        <div class="card" style="overflow:hidden;margin-bottom:20px">
+          <div style="padding:24px 32px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;background:linear-gradient(to right,var(--bg-subtle),var(--bg-card));border-bottom:1px solid var(--border)">
+
+            <!-- Avatar display -->
+            <div style="position:relative;flex-shrink:0">
+              <div id="avatar-wrap" style="width:80px;height:80px;border-radius:20px;overflow:hidden;box-shadow:0 4px 16px rgba(99,102,241,.3);flex-shrink:0">
+                {% if profile.company_logo %}
+                  <img id="avatar-img" src="{{ profile.company_logo.url }}" alt="Avatar"
+                    style="width:100%;height:100%;object-fit:cover">
+                {% else %}
+                  <div id="avatar-initials" style="width:100%;height:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:800;letter-spacing:-.5px">
+                    {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+                  </div>
+                {% endif %}
+              </div>
+              <span style="position:absolute;bottom:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:#10b981;border:2px solid var(--bg-card)"></span>
             </div>
-            <span style="position:absolute;bottom:-3px;right:-3px;width:16px;height:16px;border-radius:50%;background:#10b981;border:2px solid var(--bg-card)"></span>
-          </div>
-          <div>
-            <h2 style="font-size:18px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">{{ user.get_full_name|default:user.username }}</h2>
-            <p style="font-size:13px;color:var(--text-muted);margin:0">{{ user.email }}</p>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-              {% if profile.email_verified %}<span class="badge b-paid" style="font-size:10px">✓ Email Verified</span>{% else %}<span class="badge b-pending" style="font-size:10px">Email Not Verified</span>{% endif %}
-              {% if profile.two_factor_enabled %}<span class="badge b-approved" style="font-size:10px">✓ 2FA Enabled</span>{% else %}<span class="badge b-draft" style="font-size:10px">2FA Disabled</span>{% endif %}
+
+            <div style="flex:1;min-width:0">
+              <h2 id="display-name" style="font-size:18px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">{{ user.get_full_name|default:user.username }}</h2>
+              <p id="display-email" style="font-size:13px;color:var(--text-muted);margin:0 0 10px">{{ user.email }}</p>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                {% if profile.email_verified %}<span class="badge b-paid" style="font-size:10px">✓ Email Verified</span>{% else %}<span class="badge b-pending" style="font-size:10px">Email Not Verified</span>{% endif %}
+                {% if profile.two_factor_enabled %}<span class="badge b-approved" style="font-size:10px">✓ 2FA Enabled</span>{% else %}<span class="badge b-draft" style="font-size:10px">2FA Disabled</span>{% endif %}
+              </div>
             </div>
+
+            <!-- Avatar upload -->
+            <div>
+              <label for="avatar-file-input" class="btn btn-secondary btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Change Photo
+              </label>
+              <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp,image/gif"
+                style="display:none" @change="handleAvatarChange($event)">
+              <p style="font-size:11px;color:var(--text-muted);margin:6px 0 0;text-align:center">JPG, PNG, WebP (max 5 MB)</p>
+            </div>
+
           </div>
         </div>
 
         <!-- Profile Form -->
-        <form action="{% url 'invoices:settings_profile_update' %}" method="POST" style="padding:28px 32px">
-          {% csrf_token %}
-          <h3 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 20px">Personal Information</h3>
-          <div class="form-row cols-2">
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Full Name</label>
-              <input type="text" name="full_name" value="{{ user.get_full_name }}" class="form-input" placeholder="Your full name">
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Email Address</label>
-              <input type="email" value="{{ user.email }}" class="form-input" disabled style="opacity:.6;cursor:not-allowed">
-              <p class="form-hint">Email changes are not supported.</p>
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Timezone</label>
-              <select name="timezone" class="form-select">
-                <option value="Africa/Lagos" {% if profile.timezone == 'Africa/Lagos' %}selected{% endif %}>Africa/Lagos (GMT+1)</option>
-                <option value="UTC" {% if profile.timezone == 'UTC' %}selected{% endif %}>UTC (GMT+0)</option>
-                <option value="America/New_York" {% if profile.timezone == 'America/New_York' %}selected{% endif %}>New York (EST)</option>
-                <option value="America/Los_Angeles" {% if profile.timezone == 'America/Los_Angeles' %}selected{% endif %}>Los Angeles (PST)</option>
-                <option value="Europe/London" {% if profile.timezone == 'Europe/London' %}selected{% endif %}>London (GMT)</option>
-                <option value="Europe/Paris" {% if profile.timezone == 'Europe/Paris' %}selected{% endif %}>Paris (CET)</option>
-                <option value="Asia/Dubai" {% if profile.timezone == 'Asia/Dubai' %}selected{% endif %}>Dubai (GST)</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Language & Locale</label>
-              <select name="locale" class="form-select">
-                <option value="en-NG" {% if profile.locale == 'en-NG' %}selected{% endif %}>English (Nigeria)</option>
-                <option value="en-US" {% if profile.locale == 'en-US' %}selected{% endif %}>English (US)</option>
-                <option value="en-GB" {% if profile.locale == 'en-GB' %}selected{% endif %}>English (UK)</option>
-              </select>
-            </div>
+        <div class="card" style="overflow:hidden;margin-bottom:20px">
+          <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
+            <h3 style="font-size:15px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Personal Information</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin:0">Update your name, timezone, and language preferences.</p>
           </div>
-          <div style="margin-top:24px;display:flex;justify-content:flex-end">
-            <button type="submit" class="btn btn-primary">Save Profile</button>
-          </div>
-        </form>
+          <form id="profile-form" style="padding:28px 32px">
+            {% csrf_token %}
+            <div class="form-row cols-2">
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Full Name <span style="color:#ef4444">*</span></label>
+                <input type="text" name="full_name" id="profile-fullname"
+                  value="{{ user.get_full_name }}" class="form-input"
+                  placeholder="Your full name" maxlength="150" required>
+                <p class="form-hint" id="name-error" style="color:#ef4444;display:none">Full name is required.</p>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+                  Email Address
+                  <button type="button" @click="emailModal=true"
+                    style="font-size:11.5px;color:var(--brand-600);font-weight:600;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px">
+                    Change email →
+                  </button>
+                </label>
+                <input type="email" id="current-email-display" value="{{ user.email }}" class="form-input"
+                  disabled style="opacity:.65;cursor:default;background:var(--bg-subtle)">
+                <p class="form-hint">Verified address used for login and notifications.</p>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Timezone</label>
+                <select name="timezone" class="form-select">
+                  <option value="Africa/Lagos" {% if profile.timezone == 'Africa/Lagos' %}selected{% endif %}>Africa/Lagos (WAT, GMT+1)</option>
+                  <option value="Africa/Abidjan" {% if profile.timezone == 'Africa/Abidjan' %}selected{% endif %}>Africa/Abidjan (GMT+0)</option>
+                  <option value="Africa/Nairobi" {% if profile.timezone == 'Africa/Nairobi' %}selected{% endif %}>Africa/Nairobi (EAT, GMT+3)</option>
+                  <option value="Africa/Johannesburg" {% if profile.timezone == 'Africa/Johannesburg' %}selected{% endif %}>Africa/Johannesburg (SAST, GMT+2)</option>
+                  <option value="Africa/Accra" {% if profile.timezone == 'Africa/Accra' %}selected{% endif %}>Africa/Accra (GMT+0)</option>
+                  <option value="UTC" {% if profile.timezone == 'UTC' %}selected{% endif %}>UTC (GMT+0)</option>
+                  <option value="America/New_York" {% if profile.timezone == 'America/New_York' %}selected{% endif %}>New York (EST/EDT)</option>
+                  <option value="America/Chicago" {% if profile.timezone == 'America/Chicago' %}selected{% endif %}>Chicago (CST/CDT)</option>
+                  <option value="America/Los_Angeles" {% if profile.timezone == 'America/Los_Angeles' %}selected{% endif %}>Los Angeles (PST/PDT)</option>
+                  <option value="Europe/London" {% if profile.timezone == 'Europe/London' %}selected{% endif %}>London (GMT/BST)</option>
+                  <option value="Europe/Paris" {% if profile.timezone == 'Europe/Paris' %}selected{% endif %}>Paris (CET/CEST)</option>
+                  <option value="Asia/Dubai" {% if profile.timezone == 'Asia/Dubai' %}selected{% endif %}>Dubai (GST, GMT+4)</option>
+                  <option value="Asia/Kolkata" {% if profile.timezone == 'Asia/Kolkata' %}selected{% endif %}>Mumbai/Kolkata (IST, GMT+5:30)</option>
+                  <option value="Asia/Singapore" {% if profile.timezone == 'Asia/Singapore' %}selected{% endif %}>Singapore (SGT, GMT+8)</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Language & Locale</label>
+                <select name="locale" class="form-select">
+                  <option value="en-NG" {% if profile.locale == 'en-NG' %}selected{% endif %}>English (Nigeria)</option>
+                  <option value="en-US" {% if profile.locale == 'en-US' %}selected{% endif %}>English (US)</option>
+                  <option value="en-GB" {% if profile.locale == 'en-GB' %}selected{% endif %}>English (UK)</option>
+                  <option value="fr-FR" {% if profile.locale == 'fr-FR' %}selected{% endif %}>Français (France)</option>
+                  <option value="ar-SA" {% if profile.locale == 'ar-SA' %}selected{% endif %}>العربية</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:24px;display:flex;justify-content:flex-end">
+              <button type="button" @click="submitProfile()" :disabled="profileLoading"
+                class="btn btn-primary" style="min-width:130px">
+                <span x-show="!profileLoading">Save Profile</span>
+                <span x-show="profileLoading" style="display:flex;align-items:center;gap:6px">
+                  <svg style="animation:spin 1s linear infinite" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  Saving…
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
 
         <!-- Account Security -->
-        <div style="padding:20px 32px;border-top:1px solid var(--border);background:var(--bg-subtle);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-          <div>
-            <p style="font-size:13.5px;font-weight:700;margin:0 0 2px;color:var(--text-primary)">Account Security</p>
-            <p style="font-size:12.5px;color:var(--text-muted);margin:0">Manage your password, two-factor auth, and active sessions.</p>
+        <div class="card" style="overflow:hidden">
+          <div style="padding:20px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:var(--bg-subtle)">
+            <div>
+              <p style="font-size:13.5px;font-weight:700;margin:0 0 2px;color:var(--text-primary)">Account Security</p>
+              <p style="font-size:12.5px;color:var(--text-muted);margin:0">Manage your password, two-factor auth, and active sessions.</p>
+            </div>
+            <a href="{% url 'invoices:security_settings' %}" class="btn btn-secondary btn-sm">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              Manage Security
+            </a>
           </div>
-          <a href="{% url 'invoices:security_settings' %}" class="btn btn-secondary btn-sm">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-            Manage Security
-          </a>
         </div>
+
       </div>
 
       <!-- ─ BUSINESS TAB ─ -->
@@ -135,12 +193,13 @@
           <h3 style="font-size:16px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">Business Information</h3>
           <p style="font-size:13px;color:var(--text-muted);margin:0">These details appear on your invoices and estimates.</p>
         </div>
-        <form action="{% url 'invoices:settings_business_update' %}" method="POST" style="padding:28px 32px">
+        <form id="business-form" style="padding:28px 32px">
           {% csrf_token %}
           <div class="form-row cols-2">
             <div class="form-group">
               <label class="form-label">Company Name</label>
-              <input type="text" name="company_name" value="{{ profile.company_name|default:'' }}" class="form-input" placeholder="Acme Corp">
+              <input type="text" name="company_name" value="{{ profile.company_name|default:'' }}"
+                class="form-input" placeholder="Acme Corp" maxlength="255">
             </div>
             <div class="form-group">
               <label class="form-label">Business Type</label>
@@ -152,15 +211,18 @@
             </div>
             <div class="form-group">
               <label class="form-label">Business Email</label>
-              <input type="email" name="business_email" value="{{ profile.business_email|default:'' }}" class="form-input" placeholder="billing@yourcompany.com">
+              <input type="email" name="business_email" value="{{ profile.business_email|default:'' }}"
+                class="form-input" placeholder="billing@yourcompany.com" maxlength="254">
             </div>
             <div class="form-group">
               <label class="form-label">Business Phone</label>
-              <input type="text" name="business_phone" value="{{ profile.business_phone|default:'' }}" class="form-input" placeholder="+234 800 000 0000">
+              <input type="text" name="business_phone" value="{{ profile.business_phone|default:'' }}"
+                class="form-input" placeholder="+234 800 000 0000" maxlength="50">
             </div>
             <div class="form-group">
               <label class="form-label">Tax ID / CAC Number</label>
-              <input type="text" name="tax_id_number" value="{{ profile.tax_id_number|default:'' }}" class="form-input" placeholder="RC-123456">
+              <input type="text" name="tax_id_number" value="{{ profile.tax_id_number|default:'' }}"
+                class="form-input" placeholder="RC-123456" maxlength="50">
             </div>
             <div class="form-group">
               <label class="form-label">Default Currency</label>
@@ -171,15 +233,26 @@
                 <option value="EUR" {% if profile.default_currency == 'EUR' %}selected{% endif %}>EUR (€) — Euro</option>
                 <option value="GHS" {% if profile.default_currency == 'GHS' %}selected{% endif %}>GHS (₵) — Ghanaian Cedi</option>
                 <option value="KES" {% if profile.default_currency == 'KES' %}selected{% endif %}>KES (KSh) — Kenyan Shilling</option>
+                <option value="ZAR" {% if profile.default_currency == 'ZAR' %}selected{% endif %}>ZAR (R) — South African Rand</option>
+                <option value="CAD" {% if profile.default_currency == 'CAD' %}selected{% endif %}>CAD (CA$) — Canadian Dollar</option>
+                <option value="AUD" {% if profile.default_currency == 'AUD' %}selected{% endif %}>AUD (A$) — Australian Dollar</option>
               </select>
             </div>
           </div>
           <div class="form-group">
             <label class="form-label">Business Address</label>
-            <textarea name="business_address" class="form-textarea" rows="3" placeholder="123 Business Street, City, State, Country">{{ profile.business_address|default:'' }}</textarea>
+            <textarea name="business_address" class="form-textarea" rows="3"
+              placeholder="123 Business Street, City, State, Country">{{ profile.business_address|default:'' }}</textarea>
           </div>
           <div style="display:flex;justify-content:flex-end">
-            <button type="submit" class="btn btn-primary">Update Business Info</button>
+            <button type="button" @click="submitBusiness()" :disabled="businessLoading"
+              class="btn btn-primary" style="min-width:160px">
+              <span x-show="!businessLoading">Update Business Info</span>
+              <span x-show="businessLoading" style="display:flex;align-items:center;gap:6px">
+                <svg style="animation:spin 1s linear infinite" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Saving…
+              </span>
+            </button>
           </div>
         </form>
       </div>
@@ -190,56 +263,60 @@
           <h3 style="font-size:16px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">Branding & Style</h3>
           <p style="font-size:13px;color:var(--text-muted);margin:0">Customize colors and layout of your invoices and estimates.</p>
         </div>
-        <form action="{% url 'invoices:settings_branding_update' %}" method="POST" style="padding:28px 32px">
+        <form id="branding-form" style="padding:28px 32px">
           {% csrf_token %}
 
-          <!-- Colors -->
           <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 16px">Brand Colors</h4>
           <div class="form-row cols-3" style="margin-bottom:28px">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Primary Color</label>
               <div style="display:flex;align-items:center;gap:10px">
-                <input type="color" name="primary_color" value="{{ profile.primary_color|default:'#6366f1' }}"
+                <input type="color" name="primary_color" id="pc-pick" value="{{ profile.primary_color|default:'#6366f1' }}"
                   style="width:44px;height:44px;border-radius:10px;cursor:pointer;border:2px solid var(--border);padding:3px;background:var(--bg-input)"
-                  x-ref="primaryColor"
-                  oninput="this.nextElementSibling.value=this.value">
-                <input type="text" value="{{ profile.primary_color|default:'#6366f1' }}" class="form-input"
-                  style="font-family:monospace;font-size:13px;text-transform:uppercase" readonly>
+                  oninput="document.getElementById('pc-text').value=this.value">
+                <input type="text" id="pc-text" value="{{ profile.primary_color|default:'#6366f1' }}"
+                  class="form-input" style="font-family:monospace;font-size:13px;text-transform:uppercase"
+                  oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('pc-pick').value=this.value"
+                  maxlength="7">
               </div>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Secondary Color</label>
               <div style="display:flex;align-items:center;gap:10px">
-                <input type="color" name="secondary_color" value="{{ profile.secondary_color|default:'#8b5cf6' }}"
+                <input type="color" name="secondary_color" id="sc-pick" value="{{ profile.secondary_color|default:'#8b5cf6' }}"
                   style="width:44px;height:44px;border-radius:10px;cursor:pointer;border:2px solid var(--border);padding:3px;background:var(--bg-input)"
-                  oninput="this.nextElementSibling.value=this.value">
-                <input type="text" value="{{ profile.secondary_color|default:'#8b5cf6' }}" class="form-input"
-                  style="font-family:monospace;font-size:13px;text-transform:uppercase" readonly>
+                  oninput="document.getElementById('sc-text').value=this.value">
+                <input type="text" id="sc-text" value="{{ profile.secondary_color|default:'#8b5cf6' }}"
+                  class="form-input" style="font-family:monospace;font-size:13px;text-transform:uppercase"
+                  oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('sc-pick').value=this.value"
+                  maxlength="7">
               </div>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Accent Color</label>
               <div style="display:flex;align-items:center;gap:10px">
-                <input type="color" name="accent_color" value="{{ profile.accent_color|default:'#a855f7' }}"
+                <input type="color" name="accent_color" id="ac-pick" value="{{ profile.accent_color|default:'#10b981' }}"
                   style="width:44px;height:44px;border-radius:10px;cursor:pointer;border:2px solid var(--border);padding:3px;background:var(--bg-input)"
-                  oninput="this.nextElementSibling.value=this.value">
-                <input type="text" value="{{ profile.accent_color|default:'#a855f7' }}" class="form-input"
-                  style="font-family:monospace;font-size:13px;text-transform:uppercase" readonly>
+                  oninput="document.getElementById('ac-text').value=this.value">
+                <input type="text" id="ac-text" value="{{ profile.accent_color|default:'#10b981' }}"
+                  class="form-input" style="font-family:monospace;font-size:13px;text-transform:uppercase"
+                  oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('ac-pick').value=this.value"
+                  maxlength="7">
               </div>
             </div>
           </div>
 
-          <!-- Invoice Style -->
           <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 16px">Invoice Layout Style</h4>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-bottom:28px">
             {% for style, label in profile.INVOICE_STYLE_CHOICES %}
             <label style="cursor:pointer;position:relative">
-              <input type="radio" name="invoice_style" value="{{ style }}" {% if profile.invoice_style == style %}checked{% endif %} style="position:absolute;opacity:0">
-              <div style="border:2px solid var(--border);border-radius:12px;padding:14px;text-align:center;transition:border-color 150ms,background 150ms"
-                x-bind:style="true ? '' : ''"
-                onclick="this.parentElement.querySelectorAll('.style-card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')"
-                class="style-card{% if profile.invoice_style == style %} selected{% endif %}">
-                <!-- Preview mockup -->
+              <input type="radio" name="invoice_style" value="{{ style }}"
+                {% if profile.invoice_style == style %}checked{% endif %}
+                style="position:absolute;opacity:0;pointer-events:none"
+                onchange="document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('selected'));this.closest('label').querySelector('.style-card').classList.add('selected')">
+              <div class="style-card{% if profile.invoice_style == style %} selected{% endif %}"
+                onclick="this.closest('label').querySelector('input').checked=true;document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')"
+                style="border:2px solid var(--border);border-radius:12px;padding:14px;text-align:center;transition:border-color 150ms,background 150ms;cursor:pointer">
                 <div style="width:100%;aspect-ratio:3/4;background:var(--bg-subtle);border-radius:6px;margin-bottom:10px;border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;gap:4px;padding:8px">
                   <div style="height:4px;border-radius:3px;background:{{ profile.primary_color|default:'#6366f1' }};width:60%"></div>
                   <div style="height:2px;border-radius:2px;background:var(--border);width:100%"></div>
@@ -247,54 +324,81 @@
                   <div style="margin-top:4px;height:12px;border-radius:3px;background:var(--bg-hover)"></div>
                   <div style="height:2px;border-radius:2px;background:var(--border);width:100%"></div>
                   <div style="height:2px;border-radius:2px;background:var(--border);width:70%"></div>
-                  <div style="height:2px;border-radius:2px;background:var(--border);width:90%"></div>
                 </div>
                 <p style="font-size:12px;font-weight:700;color:var(--text-primary);margin:0">{{ label }}</p>
-                {% if profile.invoice_style == style %}<div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center"><svg width="10" height="10" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg></div>{% endif %}
+                {% if profile.invoice_style == style %}
+                <div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center">
+                  <svg width="10" height="10" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                {% endif %}
               </div>
             </label>
             {% endfor %}
           </div>
 
-          <!-- Invoice Prefix / Numbering -->
           <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 16px">Invoice Numbering</h4>
           <div class="form-row cols-2" style="margin-bottom:24px">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Invoice Prefix</label>
-              <input type="text" name="invoice_prefix" value="{{ profile.invoice_prefix|default:'INV' }}" class="form-input" placeholder="INV">
-              <p class="form-hint">e.g. INV-2024-0001</p>
+              <input type="text" name="invoice_prefix" value="{{ profile.invoice_prefix|default:'INV' }}"
+                class="form-input" placeholder="INV" maxlength="10">
+              <p class="form-hint">e.g. INV → INV-2024-0001</p>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Starting Number</label>
-              <input type="number" name="invoice_start_number" value="{{ profile.invoice_start_number|default:'1' }}" class="form-input" min="1" placeholder="1">
+              <input type="number" name="invoice_start_number"
+                value="{{ profile.invoice_start_number|default:'1' }}"
+                class="form-input" min="1" placeholder="1">
             </div>
           </div>
 
           <div style="display:flex;justify-content:flex-end">
-            <button type="submit" class="btn btn-primary">Apply Branding</button>
+            <button type="button" @click="submitBranding()" :disabled="brandingLoading"
+              class="btn btn-primary" style="min-width:150px">
+              <span x-show="!brandingLoading">Apply Branding</span>
+              <span x-show="brandingLoading" style="display:flex;align-items:center;gap:6px">
+                <svg style="animation:spin 1s linear infinite" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Saving…
+              </span>
+            </button>
           </div>
         </form>
       </div>
 
       <!-- ─ NOTIFICATIONS TAB ─ -->
       <div x-show="tab==='notifications'" x-cloak>
-        <form action="{% url 'invoices:settings_notifications_update' %}" method="POST">
+        <form id="notif-form">
           {% csrf_token %}
           <div class="card" style="overflow:hidden;margin-bottom:20px">
             <div style="padding:24px 32px;border-bottom:1px solid var(--border)">
               <h3 style="font-size:16px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">Email Notifications</h3>
               <p style="font-size:13px;color:var(--text-muted);margin:0">Control which events send you an email alert.</p>
             </div>
-            <div style="padding:20px 32px;display:flex;flex-direction:column;gap:4px">
-              {% with notif_items=profile %}
+            <div style="padding:16px 32px;display:flex;flex-direction:column;gap:2px">
 
-              <!-- Notification toggle row macro -->
-              {% for item in "" %}{% endfor %}
+              {% with items=profile %}
+              <!-- Invoice Created -->
+              <label class="notif-row" x-data="{on: {{ profile.notify_invoice_created|yesno:'true,false' }}}">
+                <div style="display:flex;align-items:center;gap:14px">
+                  <div class="stat-icon si-indigo" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  </div>
+                  <div>
+                    <p style="font-size:13.5px;font-weight:700;margin:0;color:var(--text-primary)">Invoice Created</p>
+                    <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">When a new invoice is generated</p>
+                  </div>
+                </div>
+                <div style="position:relative;flex-shrink:0">
+                  <input type="checkbox" name="notify_invoice_created" value="on" x-model="on"
+                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_invoice_created %}checked{% endif %}>
+                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
+                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
+                  </div>
+                </div>
+              </label>
 
-              <!-- Invoice Paid -->
-              <label style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:12px;cursor:pointer;transition:background 150ms"
-                onmouseover="this.style.background='var(--bg-subtle)'" onmouseout="this.style.background='transparent'"
-                x-data="{on: {{ profile.notify_payment_received|yesno:'true,false' }}}">
+              <!-- Payment Received -->
+              <label class="notif-row" x-data="{on: {{ profile.notify_payment_received|yesno:'true,false' }}}">
                 <div style="display:flex;align-items:center;gap:14px">
                   <div class="stat-icon si-green" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
@@ -305,19 +409,16 @@
                   </div>
                 </div>
                 <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_payment_received" value="on" x-model="on" style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_payment_received %}checked{% endif %}>
-                  <div @click="on=!on" :style="on ? 'background:#6366f1' : 'background:var(--border)'"
-                    style="width:44px;height:24px;border-radius:99px;cursor:pointer;position:relative;transition:background 200ms;flex-shrink:0">
-                    <div :style="on ? 'transform:translateX(20px)' : 'transform:translateX(2px)'"
-                      style="position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform 200ms"></div>
+                  <input type="checkbox" name="notify_payment_received" value="on" x-model="on"
+                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_payment_received %}checked{% endif %}>
+                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
+                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
                   </div>
                 </div>
               </label>
 
               <!-- Invoice Viewed -->
-              <label style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:12px;cursor:pointer;transition:background 150ms"
-                onmouseover="this.style.background='var(--bg-subtle)'" onmouseout="this.style.background='transparent'"
-                x-data="{on: {{ profile.notify_invoice_viewed|yesno:'true,false' }}}">
+              <label class="notif-row" x-data="{on: {{ profile.notify_invoice_viewed|yesno:'true,false' }}}">
                 <div style="display:flex;align-items:center;gap:14px">
                   <div class="stat-icon si-blue" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -328,19 +429,16 @@
                   </div>
                 </div>
                 <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_invoice_viewed" value="on" x-model="on" style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_invoice_viewed %}checked{% endif %}>
-                  <div @click="on=!on" :style="on ? 'background:#6366f1' : 'background:var(--border)'"
-                    style="width:44px;height:24px;border-radius:99px;cursor:pointer;position:relative;transition:background 200ms;flex-shrink:0">
-                    <div :style="on ? 'transform:translateX(20px)' : 'transform:translateX(2px)'"
-                      style="position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform 200ms"></div>
+                  <input type="checkbox" name="notify_invoice_viewed" value="on" x-model="on"
+                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_invoice_viewed %}checked{% endif %}>
+                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
+                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
                   </div>
                 </div>
               </label>
 
-              <!-- Overdue Reminders -->
-              <label style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:12px;cursor:pointer;transition:background 150ms"
-                onmouseover="this.style.background='var(--bg-subtle)'" onmouseout="this.style.background='transparent'"
-                x-data="{on: {{ profile.notify_invoice_overdue|yesno:'true,false' }}}">
+              <!-- Overdue Alerts -->
+              <label class="notif-row" x-data="{on: {{ profile.notify_invoice_overdue|yesno:'true,false' }}}">
                 <div style="display:flex;align-items:center;gap:14px">
                   <div class="stat-icon si-red" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -351,19 +449,16 @@
                   </div>
                 </div>
                 <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_invoice_overdue" value="on" x-model="on" style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_invoice_overdue %}checked{% endif %}>
-                  <div @click="on=!on" :style="on ? 'background:#6366f1' : 'background:var(--border)'"
-                    style="width:44px;height:24px;border-radius:99px;cursor:pointer;position:relative;transition:background 200ms;flex-shrink:0">
-                    <div :style="on ? 'transform:translateX(20px)' : 'transform:translateX(2px)'"
-                      style="position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform 200ms"></div>
+                  <input type="checkbox" name="notify_invoice_overdue" value="on" x-model="on"
+                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_invoice_overdue %}checked{% endif %}>
+                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
+                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
                   </div>
                 </div>
               </label>
 
               <!-- Weekly Summary -->
-              <label style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:12px;cursor:pointer;transition:background 150ms"
-                onmouseover="this.style.background='var(--bg-subtle)'" onmouseout="this.style.background='transparent'"
-                x-data="{on: {{ profile.notify_weekly_summary|yesno:'true,false' }}}">
+              <label class="notif-row" x-data="{on: {{ profile.notify_weekly_summary|yesno:'true,false' }}}">
                 <div style="display:flex;align-items:center;gap:14px">
                   <div class="stat-icon si-violet" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
@@ -374,19 +469,16 @@
                   </div>
                 </div>
                 <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_weekly_summary" value="on" x-model="on" style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_weekly_summary %}checked{% endif %}>
-                  <div @click="on=!on" :style="on ? 'background:#6366f1' : 'background:var(--border)'"
-                    style="width:44px;height:24px;border-radius:99px;cursor:pointer;position:relative;transition:background 200ms;flex-shrink:0">
-                    <div :style="on ? 'transform:translateX(20px)' : 'transform:translateX(2px)'"
-                      style="position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform 200ms"></div>
+                  <input type="checkbox" name="notify_weekly_summary" value="on" x-model="on"
+                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_weekly_summary %}checked{% endif %}>
+                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
+                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
                   </div>
                 </div>
               </label>
 
               <!-- Security Alerts -->
-              <label style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:12px;cursor:pointer;transition:background 150ms"
-                onmouseover="this.style.background='var(--bg-subtle)'" onmouseout="this.style.background='transparent'"
-                x-data="{on: {{ profile.notify_security_alerts|yesno:'true,false' }}}">
+              <label class="notif-row" x-data="{on: {{ profile.notify_security_alerts|yesno:'true,false' }}}">
                 <div style="display:flex;align-items:center;gap:14px">
                   <div class="stat-icon si-amber" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
@@ -397,19 +489,26 @@
                   </div>
                 </div>
                 <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_security_alerts" value="on" x-model="on" style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_security_alerts %}checked{% endif %}>
-                  <div @click="on=!on" :style="on ? 'background:#6366f1' : 'background:var(--border)'"
-                    style="width:44px;height:24px;border-radius:99px;cursor:pointer;position:relative;transition:background 200ms;flex-shrink:0">
-                    <div :style="on ? 'transform:translateX(20px)' : 'transform:translateX(2px)'"
-                      style="position:absolute;top:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:transform 200ms"></div>
+                  <input type="checkbox" name="notify_security_alerts" value="on" x-model="on"
+                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_security_alerts %}checked{% endif %}>
+                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
+                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
                   </div>
                 </div>
               </label>
 
               {% endwith %}
             </div>
-            <div style="padding:16px 32px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;background:var(--bg-subtle)">
-              <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+
+            <div style="padding:14px 32px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--bg-subtle)">
+              <span x-show="notifSaving" style="font-size:12.5px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
+                <svg style="animation:spin 1s linear infinite" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Saving…
+              </span>
+              <span x-show="!notifSaving" style="font-size:12.5px;color:var(--text-muted)">Changes are saved automatically.</span>
+              <button type="button" @click="submitNotifications()" :disabled="notifSaving" class="btn btn-primary btn-sm">
+                Save Settings
+              </button>
             </div>
           </div>
         </form>
@@ -417,18 +516,291 @@
 
     </div><!-- /main panel -->
   </div><!-- /flex -->
+
+  <!-- ════════ EMAIL CHANGE MODAL ════════ -->
+  <div x-show="emailModal" x-cloak
+    style="position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px"
+    @click.self="emailModal=false">
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,.5)" @click="emailModal=false"></div>
+    <div style="position:relative;background:var(--bg-card);border-radius:20px;padding:0;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
+      <div style="padding:24px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <h3 style="font-size:16px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Change Email Address</h3>
+          <p style="font-size:12.5px;color:var(--text-muted);margin:0">Password confirmation required for security.</p>
+        </div>
+        <button @click="emailModal=false" style="background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;border-radius:8px">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div style="padding:24px 28px">
+        <div class="form-group">
+          <label class="form-label">New Email Address <span style="color:#ef4444">*</span></label>
+          <input type="email" x-model="newEmail" class="form-input" placeholder="new@example.com" maxlength="254">
+          <p x-show="emailErrors.new_email" x-text="emailErrors.new_email" style="font-size:11.5px;color:#ef4444;margin-top:4px"></p>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Current Password <span style="color:#ef4444">*</span></label>
+          <div style="position:relative">
+            <input :type="showEmailPwd?'text':'password'" x-model="emailPassword" class="form-input"
+              placeholder="Confirm your password" style="padding-right:42px">
+            <button type="button" @click="showEmailPwd=!showEmailPwd"
+              style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:3px">
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <p x-show="emailErrors.password" x-text="emailErrors.password" style="font-size:11.5px;color:#ef4444;margin-top:4px"></p>
+        </div>
+      </div>
+      <div style="padding:16px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;background:var(--bg-subtle)">
+        <button @click="emailModal=false" class="btn btn-ghost btn-sm">Cancel</button>
+        <button @click="submitEmailChange()" :disabled="emailLoading" class="btn btn-primary btn-sm" style="min-width:130px">
+          <span x-show="!emailLoading">Update Email</span>
+          <span x-show="emailLoading" style="display:flex;align-items:center;gap:6px">
+            <svg style="animation:spin 1s linear infinite" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            Updating…
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <style>
   .style-card.selected {
     border-color: #6366f1 !important;
-    background: #eef2ff;
+    background: rgba(99,102,241,.08);
   }
-  .dark .style-card.selected {
-    background: rgba(99,102,241,.1);
+  .notif-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 150ms;
+    gap: 16px;
   }
+  .notif-row:hover { background: var(--bg-subtle); }
+  .toggle-track {
+    width: 44px; height: 24px; border-radius: 99px; cursor: pointer;
+    position: relative; transition: background 200ms; flex-shrink: 0;
+  }
+  .toggle-thumb {
+    position: absolute; top: 2px; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform 200ms;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
   @media (max-width: 768px) {
     aside { width: 100% !important; flex-direction: row !important; flex-wrap: wrap !important; }
   }
 </style>
+
+{% block scripts %}
+<script>
+function settingsPage() {
+  return {
+    tab: new URLSearchParams(location.search).get('tab') || 'profile',
+    profileLoading: false,
+    businessLoading: false,
+    brandingLoading: false,
+    notifSaving: false,
+    notifTimer: null,
+    emailModal: false,
+    emailLoading: false,
+    newEmail: '',
+    emailPassword: '',
+    showEmailPwd: false,
+    emailErrors: {},
+
+    init() {},
+
+    getCsrf() {
+      return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+             document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+    },
+
+    async ajaxPost(url, formData) {
+      formData.append('csrfmiddlewaretoken', this.getCsrf());
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+      });
+      return resp.json();
+    },
+
+    /* ── Profile ─────────────────────────────────── */
+    async submitProfile() {
+      const name = document.getElementById('profile-fullname')?.value?.trim();
+      if (!name) {
+        document.getElementById('name-error').style.display = 'block';
+        Toast.show('Full name is required.', 'error');
+        return;
+      }
+      document.getElementById('name-error').style.display = 'none';
+      this.profileLoading = true;
+      try {
+        const fd = new FormData(document.getElementById('profile-form'));
+        const data = await this.ajaxPost('{% url "invoices:settings_profile_update" %}', fd);
+        if (data.success) {
+          Toast.show(data.message, 'success');
+          const el = document.getElementById('display-name');
+          if (el) el.textContent = name;
+        } else {
+          Toast.show(data.message || 'Update failed.', 'error');
+        }
+      } catch(e) {
+        Toast.show('Network error. Please try again.', 'error');
+      } finally {
+        this.profileLoading = false;
+      }
+    },
+
+    /* ── Avatar ──────────────────────────────────── */
+    async handleAvatarChange(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        Toast.show('File is too large. Maximum size is 5 MB.', 'error');
+        return;
+      }
+      const allowed = ['image/jpeg','image/png','image/webp','image/gif'];
+      if (!allowed.includes(file.type)) {
+        Toast.show('Invalid file type. Use JPG, PNG, WebP, or GIF.', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = e => {
+        const wrap = document.getElementById('avatar-wrap');
+        if (wrap) {
+          wrap.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover" alt="Avatar preview">`;
+        }
+      };
+      reader.readAsDataURL(file);
+
+      const fd = new FormData();
+      fd.append('avatar', file);
+      try {
+        const data = await this.ajaxPost('{% url "invoices:settings_avatar_upload" %}', fd);
+        if (data.success) {
+          Toast.show(data.message, 'success');
+        } else {
+          Toast.show(data.message || 'Upload failed.', 'error');
+        }
+      } catch(e) {
+        Toast.show('Network error uploading avatar.', 'error');
+      }
+    },
+
+    /* ── Business ────────────────────────────────── */
+    async submitBusiness() {
+      this.businessLoading = true;
+      try {
+        const fd = new FormData(document.getElementById('business-form'));
+        const data = await this.ajaxPost('{% url "invoices:settings_business_update" %}', fd);
+        if (data.success) {
+          Toast.show(data.message, 'success');
+        } else {
+          Toast.show(data.message || 'Update failed.', 'error');
+        }
+      } catch(e) {
+        Toast.show('Network error. Please try again.', 'error');
+      } finally {
+        this.businessLoading = false;
+      }
+    },
+
+    /* ── Branding ────────────────────────────────── */
+    async submitBranding() {
+      const form = document.getElementById('branding-form');
+      const pcText = document.getElementById('pc-text');
+      const scText = document.getElementById('sc-text');
+      const acText = document.getElementById('ac-text');
+      if (pcText) form.querySelector('[name=primary_color]').value = pcText.value;
+      if (scText) form.querySelector('[name=secondary_color]').value = scText.value;
+      if (acText) form.querySelector('[name=accent_color]').value = acText.value;
+
+      this.brandingLoading = true;
+      try {
+        const fd = new FormData(form);
+        const data = await this.ajaxPost('{% url "invoices:settings_branding_update" %}', fd);
+        if (data.success) {
+          Toast.show(data.message, 'success');
+        } else {
+          Toast.show(data.message || 'Update failed.', 'error');
+        }
+      } catch(e) {
+        Toast.show('Network error. Please try again.', 'error');
+      } finally {
+        this.brandingLoading = false;
+      }
+    },
+
+    /* ── Notifications (auto-save with debounce) ── */
+    autoSaveNotif() {
+      if (this.notifTimer) clearTimeout(this.notifTimer);
+      this.notifTimer = setTimeout(() => this.submitNotifications(), 600);
+    },
+
+    async submitNotifications() {
+      if (this.notifSaving) return;
+      this.notifSaving = true;
+      try {
+        const fd = new FormData(document.getElementById('notif-form'));
+        const data = await this.ajaxPost('{% url "invoices:settings_notifications_update" %}', fd);
+        if (data.success) {
+          Toast.show(data.message, 'success');
+        } else {
+          Toast.show(data.message || 'Failed to save.', 'error');
+        }
+      } catch(e) {
+        Toast.show('Network error. Please try again.', 'error');
+      } finally {
+        this.notifSaving = false;
+      }
+    },
+
+    /* ── Email Change ────────────────────────────── */
+    async submitEmailChange() {
+      this.emailErrors = {};
+      if (!this.newEmail || !this.newEmail.includes('@')) {
+        this.emailErrors.new_email = 'Please enter a valid email address.';
+        return;
+      }
+      if (!this.emailPassword) {
+        this.emailErrors.password = 'Current password is required.';
+        return;
+      }
+      this.emailLoading = true;
+      try {
+        const fd = new FormData();
+        fd.append('new_email', this.newEmail);
+        fd.append('current_password', this.emailPassword);
+        const data = await this.ajaxPost('{% url "invoices:settings_email_change" %}', fd);
+        if (data.success) {
+          Toast.show(data.message, 'success');
+          this.emailModal = false;
+          const el = document.getElementById('display-email');
+          if (el) el.textContent = data.new_email;
+          const input = document.getElementById('current-email-display');
+          if (input) input.value = data.new_email;
+          this.newEmail = '';
+          this.emailPassword = '';
+        } else {
+          if (data.message && data.message.toLowerCase().includes('password')) {
+            this.emailErrors.password = data.message;
+          } else {
+            this.emailErrors.new_email = data.message || 'Update failed.';
+          }
+        }
+      } catch(e) {
+        this.emailErrors.new_email = 'Network error. Please try again.';
+      } finally {
+        this.emailLoading = false;
+      }
+    },
+  }
+}
+</script>
 {% endblock %}

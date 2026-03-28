@@ -5,10 +5,15 @@ All other app views (landing, pages, settings, etc.) preserved.
 """
 from __future__ import annotations
 
+import imghdr
 import logging
+import os
 
 from django.contrib import messages
+from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.cache import cache_page
@@ -547,68 +552,107 @@ def settings_page(request):
 # AJAX / API helpers (settings page)
 # ============================================================================
 
-@login_required
-def profile_update_ajax(request):
-    if request.method == "POST":
-        try:
-            profile = request.user.profile
-            full_name = request.POST.get("full_name", "").strip()
-            if full_name:
-                parts = full_name.split(" ", 1)
-                request.user.first_name = parts[0]
-                request.user.last_name = parts[1] if len(parts) > 1 else ""
-                request.user.save(update_fields=["first_name", "last_name"])
-
-            timezone_val = request.POST.get("timezone")
-            locale_val = request.POST.get("locale")
-            if timezone_val:
-                profile.timezone = timezone_val
-            if locale_val:
-                profile.locale = locale_val
-            profile.save()
-            messages.success(request, "Profile updated successfully.")
-        except Exception as exc:
-            logger.error("Profile update error: %s", exc)
-            messages.error(request, "Failed to update profile.")
-        return redirect("invoices:settings")
-    return JsonResponse({"success": True})
+def _is_ajax(request):
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
 @login_required
 @require_POST
+@csrf_protect
+def profile_update_ajax(request):
+    try:
+        profile = request.user.profile
+        user = request.user
+
+        full_name = request.POST.get("full_name", "").strip()
+        if not full_name:
+            return JsonResponse({"success": False, "message": "Full name is required."}, status=400)
+        if len(full_name) > 150:
+            return JsonResponse({"success": False, "message": "Name is too long (max 150 chars)."}, status=400)
+
+        parts = full_name.split(" ", 1)
+        user.first_name = parts[0]
+        user.last_name = parts[1] if len(parts) > 1 else ""
+        user.save(update_fields=["first_name", "last_name"])
+
+        timezone_val = request.POST.get("timezone", "").strip()
+        locale_val = request.POST.get("locale", "").strip()
+        if timezone_val:
+            profile.timezone = timezone_val
+        if locale_val:
+            profile.locale = locale_val
+        profile.save(update_fields=["timezone", "locale", "updated_at"])
+
+        from ..models import SecurityEvent
+        SecurityEvent.objects.create(
+            user=user,
+            event_type="profile_updated",
+            ip_address=request.META.get("REMOTE_ADDR"),
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+            severity="info",
+            details={"fields": ["full_name", "timezone", "locale"]},
+        )
+
+        if _is_ajax(request):
+            return JsonResponse({"success": True, "message": "Profile updated successfully."})
+        messages.success(request, "Profile updated successfully.")
+    except Exception as exc:
+        logger.error("Profile update error: %s", exc)
+        if _is_ajax(request):
+            return JsonResponse({"success": False, "message": "Failed to update profile."}, status=500)
+        messages.error(request, "Failed to update profile.")
+    return redirect("invoices:settings")
+
+
+@login_required
+@require_POST
+@csrf_protect
 def security_update_ajax(request):
     try:
         profile = request.user.profile
         profile.notify_security_alerts = request.POST.get("notify_security_alerts") == "on"
         profile.notify_password_changes = request.POST.get("notify_password_changes") == "on"
         profile.save(update_fields=["notify_security_alerts", "notify_password_changes"])
+        if _is_ajax(request):
+            return JsonResponse({"success": True, "message": "Security preferences updated."})
         messages.success(request, "Security preferences updated.")
     except Exception as exc:
         logger.error("Security update error: %s", exc)
+        if _is_ajax(request):
+            return JsonResponse({"success": False, "message": "Failed to update security preferences."}, status=500)
         messages.error(request, "Failed to update security preferences.")
     return redirect("invoices:settings")
 
 
 @login_required
+@require_POST
+@csrf_protect
 def notifications_update_ajax(request):
-    if request.method == "POST":
-        try:
-            profile = request.user.profile
-            profile.notify_payment_received = request.POST.get("notify_payment_received") == "on"
-            profile.notify_invoice_viewed = request.POST.get("notify_invoice_viewed") == "on"
-            profile.notify_invoice_overdue = request.POST.get("notify_invoice_overdue") == "on"
-            profile.notify_weekly_summary = request.POST.get("notify_weekly_summary") == "on"
-            profile.notify_security_alerts = request.POST.get("notify_security_alerts") == "on"
-            profile.save()
-            messages.success(request, "Notification preferences updated.")
-        except Exception as exc:
-            logger.error("Notifications update error: %s", exc)
-        return redirect("invoices:settings")
-    return JsonResponse({"success": True})
+    try:
+        profile = request.user.profile
+        profile.notify_invoice_created = request.POST.get("notify_invoice_created") == "on"
+        profile.notify_payment_received = request.POST.get("notify_payment_received") == "on"
+        profile.notify_invoice_viewed = request.POST.get("notify_invoice_viewed") == "on"
+        profile.notify_invoice_overdue = request.POST.get("notify_invoice_overdue") == "on"
+        profile.notify_weekly_summary = request.POST.get("notify_weekly_summary") == "on"
+        profile.notify_security_alerts = request.POST.get("notify_security_alerts") == "on"
+        profile.save(update_fields=[
+            "notify_invoice_created", "notify_payment_received", "notify_invoice_viewed",
+            "notify_invoice_overdue", "notify_weekly_summary", "notify_security_alerts",
+        ])
+        if _is_ajax(request):
+            return JsonResponse({"success": True, "message": "Notification preferences saved."})
+        messages.success(request, "Notification preferences updated.")
+    except Exception as exc:
+        logger.error("Notifications update error: %s", exc)
+        if _is_ajax(request):
+            return JsonResponse({"success": False, "message": "Failed to save notifications."}, status=500)
+    return redirect("invoices:settings")
 
 
 @login_required
 @require_POST
+@csrf_protect
 def payment_settings_update_ajax(request):
     try:
         profile = request.user.profile
@@ -623,9 +667,13 @@ def payment_settings_update_ajax(request):
             "accept_mobile_money",
             "payment_instructions",
         ])
+        if _is_ajax(request):
+            return JsonResponse({"success": True, "message": "Payment settings updated."})
         messages.success(request, "Payment settings updated.")
     except Exception as exc:
         logger.error("Payment settings update error: %s", exc)
+        if _is_ajax(request):
+            return JsonResponse({"success": False, "message": "Failed to update payment settings."}, status=500)
         messages.error(request, "Failed to update payment settings.")
     return redirect("invoices:settings")
 
@@ -702,52 +750,189 @@ def submit_feedback(request):
 
 @login_required
 @require_POST
+@csrf_protect
 def settings_business_update(request):
     try:
         profile = request.user.profile
-        profile.company_name = request.POST.get('company_name', '').strip()
-        profile.business_email = request.POST.get('business_email', '').strip()
-        profile.business_phone = request.POST.get('business_phone', '').strip()
-        profile.business_address = request.POST.get('business_address', '').strip()
+
+        company_name = request.POST.get('company_name', '').strip()[:255]
+        business_email = request.POST.get('business_email', '').strip()[:254]
+        business_phone = request.POST.get('business_phone', '').strip()[:50]
+        business_address = request.POST.get('business_address', '').strip()
         business_type = request.POST.get('business_type', '').strip()
+        default_currency = request.POST.get('default_currency', '').strip()
+        tax_id_number = request.POST.get('tax_id_number', '').strip()[:50]
+
+        if business_email:
+            try:
+                validate_email(business_email)
+            except ValidationError:
+                if _is_ajax(request):
+                    return JsonResponse({"success": False, "message": "Invalid business email address."}, status=400)
+                messages.error(request, "Invalid business email address.")
+                return redirect("invoices:settings")
+
+        profile.company_name = company_name
+        profile.business_email = business_email
+        profile.business_phone = business_phone
+        profile.business_address = business_address
         if business_type:
             profile.business_type = business_type
+        if default_currency:
+            profile.default_currency = default_currency
+        if tax_id_number is not None:
+            profile.tax_id_number = tax_id_number
         profile.save(update_fields=[
             'company_name', 'business_email', 'business_phone',
-            'business_address', 'business_type',
+            'business_address', 'business_type', 'default_currency', 'tax_id_number',
         ])
+
+        from ..models import SecurityEvent
+        SecurityEvent.objects.create(
+            user=request.user,
+            event_type="business_info_updated",
+            ip_address=request.META.get("REMOTE_ADDR"),
+            user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+            severity="info",
+            details={"company": company_name},
+        )
+
+        if _is_ajax(request):
+            return JsonResponse({"success": True, "message": "Business information updated successfully."})
         messages.success(request, "Business information updated successfully.")
     except Exception as exc:
         logger.error("Business settings update error: %s", exc)
+        if _is_ajax(request):
+            return JsonResponse({"success": False, "message": "Failed to update business information."}, status=500)
         messages.error(request, "Failed to update business information.")
     return redirect("invoices:settings")
 
 
 @login_required
 @require_POST
+@csrf_protect
 def settings_branding_update(request):
     try:
         profile = request.user.profile
+        import re
+        hex_re = re.compile(r'^#[0-9a-fA-F]{6}$')
+
         primary_color = request.POST.get('primary_color', '').strip()
         secondary_color = request.POST.get('secondary_color', '').strip()
         accent_color = request.POST.get('accent_color', '').strip()
         invoice_style = request.POST.get('invoice_style', '').strip()
-        if primary_color:
+        invoice_prefix = request.POST.get('invoice_prefix', '').strip()[:10]
+        invoice_start_number = request.POST.get('invoice_start_number', '').strip()
+
+        if primary_color and hex_re.match(primary_color):
             profile.primary_color = primary_color
-        if secondary_color:
+        if secondary_color and hex_re.match(secondary_color):
             profile.secondary_color = secondary_color
-        if accent_color:
+        if accent_color and hex_re.match(accent_color):
             profile.accent_color = accent_color
         if invoice_style:
             profile.invoice_style = invoice_style
+        if invoice_prefix:
+            profile.invoice_prefix = invoice_prefix
+        if invoice_start_number.isdigit():
+            profile.invoice_start_number = int(invoice_start_number)
+
         profile.save(update_fields=[
-            'primary_color', 'secondary_color', 'accent_color', 'invoice_style',
+            'primary_color', 'secondary_color', 'accent_color',
+            'invoice_style', 'invoice_prefix', 'invoice_start_number',
         ])
+
+        if _is_ajax(request):
+            return JsonResponse({"success": True, "message": "Branding settings updated successfully."})
         messages.success(request, "Branding settings updated successfully.")
     except Exception as exc:
         logger.error("Branding settings update error: %s", exc)
+        if _is_ajax(request):
+            return JsonResponse({"success": False, "message": "Failed to update branding settings."}, status=500)
         messages.error(request, "Failed to update branding settings.")
     return redirect("invoices:settings")
+
+
+@login_required
+@require_POST
+@csrf_protect
+def avatar_upload(request):
+    """Upload and store user profile avatar."""
+    avatar_file = request.FILES.get("avatar")
+    if not avatar_file:
+        return JsonResponse({"success": False, "message": "No file provided."}, status=400)
+
+    max_size = 5 * 1024 * 1024
+    if avatar_file.size > max_size:
+        return JsonResponse({"success": False, "message": "File too large (max 5 MB)."}, status=400)
+
+    header = avatar_file.read(512)
+    avatar_file.seek(0)
+    img_type = imghdr.what(None, h=header)
+    if img_type not in ("jpeg", "png", "webp", "gif"):
+        return JsonResponse({"success": False, "message": "Invalid image type. Use JPG, PNG, WebP, or GIF."}, status=400)
+
+    from django.core.files.storage import default_storage
+    from django.utils.crypto import get_random_string
+
+    profile = request.user.profile
+    ext = {"jpeg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}.get(img_type, "jpg")
+    filename = f"avatars/user_{request.user.pk}_{get_random_string(8)}.{ext}"
+
+    if profile.company_logo:
+        try:
+            default_storage.delete(profile.company_logo.name)
+        except Exception:
+            pass
+
+    saved_path = default_storage.save(filename, avatar_file)
+    profile.company_logo = saved_path
+    profile.save(update_fields=["company_logo"])
+
+    avatar_url = request.build_absolute_uri(profile.company_logo.url)
+    return JsonResponse({"success": True, "message": "Avatar updated.", "avatar_url": avatar_url})
+
+
+@login_required
+@require_POST
+@csrf_protect
+def email_change_request(request):
+    """Change account email after password verification."""
+    new_email = request.POST.get("new_email", "").strip().lower()
+    current_password = request.POST.get("current_password", "")
+
+    if not new_email:
+        return JsonResponse({"success": False, "message": "New email address is required."}, status=400)
+
+    try:
+        validate_email(new_email)
+    except ValidationError:
+        return JsonResponse({"success": False, "message": "Please enter a valid email address."}, status=400)
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    if User.objects.filter(email__iexact=new_email).exclude(pk=request.user.pk).exists():
+        return JsonResponse({"success": False, "message": "This email address is already in use."}, status=400)
+
+    user = authenticate(request, username=request.user.username, password=current_password)
+    if user is None:
+        return JsonResponse({"success": False, "message": "Current password is incorrect."}, status=403)
+
+    old_email = request.user.email
+    request.user.email = new_email
+    request.user.save(update_fields=["email"])
+
+    from ..models import SecurityEvent
+    SecurityEvent.objects.create(
+        user=request.user,
+        event_type="email_changed",
+        ip_address=request.META.get("REMOTE_ADDR"),
+        user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+        severity="warning",
+        details={"old_email": old_email, "new_email": new_email},
+    )
+
+    return JsonResponse({"success": True, "message": "Email address updated successfully.", "new_email": new_email})
 
 
 def faq_api(request):
