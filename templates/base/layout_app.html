@@ -265,7 +265,7 @@
           <!-- Input -->
           <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input x-ref="searchInput" type="text" x-model="query" @input.debounce.300ms="doSearch()" placeholder="Search invoices, clients, expenses…"
+            <input x-ref="searchInput" type="text" x-model="query" @input.debounce.300ms="doSearch()" @keydown="handleKey($event)" placeholder="Search invoices, clients, expenses…"
                    style="flex:1;border:none;outline:none;font-size:14.5px;font-weight:500;background:transparent;color:var(--text-primary);font-family:inherit">
             <div x-show="loading" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--brand-500);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>
             <button @click="open=false" style="flex-shrink:0;padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;cursor:pointer">Esc</button>
@@ -274,8 +274,8 @@
           <div style="max-height:400px;overflow-y:auto">
             <template x-if="results.length">
               <div style="padding:8px">
-                <template x-for="r in results" :key="r.url">
-                  <a :href="r.url" @click="open=false" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;transition:background 150ms;cursor:pointer" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+                <template x-for="(r, idx) in results" :key="r.url">
+                  <a :href="r.url" @click="open=false" :data-idx="idx" :style="`display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;transition:background 150ms;cursor:pointer;background:${selectedIndex===idx?'var(--bg-hover)':'transparent'}`" @mouseover="selectedIndex=idx" @mouseout="selectedIndex=-1">
                     <div :class="iconClass(r.type)" style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                       <svg x-show="r.type==='invoice'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
                       <svg x-show="r.type==='client'" x-cloak width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>

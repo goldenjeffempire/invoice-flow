@@ -223,6 +223,7 @@ def dashboard(request):
             "expenses_change_pct": expenses_change_pct,
             "all_time_paid": all_time_paid,
             "net_profit": net_profit,
+            "net_profit_abs": abs(net_profit),
             "collection_rate": collection_rate,
             "total_invoice_count": total_invoice_count,
             "active_schedules": active_schedules,

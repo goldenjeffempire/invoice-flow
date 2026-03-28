@@ -96,7 +96,7 @@
       </div>
       <p class="kpi-label">Net Profit MTD</p>
       <p class="kpi-value" style="color:{% if kpis.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}">
-        {% if kpis.net_profit < 0 %}-{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit|floatformat:2 }}
+        {% if kpis.net_profit < 0 %}-{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}
       </p>
     </div>
 
@@ -195,7 +195,7 @@
               <tr>
                 <td><a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:600;color:var(--brand-600)">{{ inv.invoice_number }}</a></td>
                 <td style="font-weight:500;color:var(--text-primary)">{{ inv.client.name }}</td>
-                <td style="font-weight:700;color:#dc2626">{{ inv.currency }}{{ inv.amount_due|floatformat:2 }}</td>
+                <td style="font-weight:700;color:#dc2626">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</td>
                 <td>{% if inv.days_overdue is not None %}<span class="badge b-overdue">{{ inv.days_overdue }}d overdue</span>{% endif %}</td>
                 <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">View →</a></td>
               </tr>
@@ -221,7 +221,7 @@
               <tr>
                 <td><a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:600;color:var(--brand-600)">{{ inv.invoice_number }}</a></td>
                 <td style="font-weight:500;color:var(--text-primary)">{{ inv.client.name }}</td>
-                <td style="font-variant-numeric:tabular-nums">{{ inv.currency }}{{ inv.total_amount|floatformat:2 }}</td>
+                <td style="font-variant-numeric:tabular-nums">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
                 <td><span class="badge b-{{ inv.status }}"><span class="badge-dot"></span>{{ inv.get_status_display }}</span></td>
                 <td style="color:{% if inv.status == 'overdue' %}#dc2626{% else %}var(--text-secondary){% endif %}">{{ inv.due_date|date:"d M Y" }}</td>
                 <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">↗</a></td>
@@ -253,7 +253,7 @@
             <p style="font-size:11.5px;color:var(--text-muted);margin:1px 0 0">{{ inv.client.name }}</p>
           </div>
           <div style="text-align:right">
-            <p style="font-weight:700;font-size:13px;margin:0">{{ inv.currency }}{{ inv.amount_due|floatformat:2 }}</p>
+            <p style="font-weight:700;font-size:13px;margin:0">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</p>
             <p style="font-size:11px;color:var(--text-muted);margin:1px 0 0">Due {{ inv.due_date|date:"d M" }}</p>
           </div>
         </div>
@@ -308,7 +308,7 @@
             <p style="font-size:12.5px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary)">{{ pmt.invoice.client.name }}</p>
             <p style="font-size:11px;color:var(--text-muted);margin:1px 0 0">{{ pmt.invoice.invoice_number }} · {{ pmt.payment_date|date:"d M Y" }}</p>
           </div>
-          <span style="font-size:12.5px;font-weight:700;color:#16a34a;white-space:nowrap">+{{ pmt.currency }}{{ pmt.amount|floatformat:2 }}</span>
+          <span style="font-size:12.5px;font-weight:700;color:#16a34a;white-space:nowrap">+{{ pmt.invoice.currency_symbol }}{{ pmt.amount|floatformat:2 }}</span>
         </div>
         {% endfor %}
         {% else %}

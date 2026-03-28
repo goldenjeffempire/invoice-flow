@@ -116,8 +116,10 @@ function globalSearch() {
     query: '',
     results: [],
     loading: false,
+    selectedIndex: -1,
 
     async doSearch() {
+      this.selectedIndex = -1;
       if (this.query.length < 2) { this.results = []; return; }
       this.loading = true;
       try {
@@ -126,6 +128,35 @@ function globalSearch() {
         this.results = data.results || [];
       } catch(e) { this.results = []; }
       this.loading = false;
+    },
+
+    handleKey(e) {
+      if (!this.results.length) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        this.selectedIndex = Math.min(this.selectedIndex + 1, this.results.length - 1);
+        this._scrollToSelected();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        this.selectedIndex = Math.max(this.selectedIndex - 1, -1);
+        this._scrollToSelected();
+      } else if (e.key === 'Enter' && this.selectedIndex >= 0) {
+        e.preventDefault();
+        const item = this.results[this.selectedIndex];
+        if (item && item.url) window.location.href = item.url;
+      } else if (e.key === 'Escape') {
+        this.open = false;
+        this.query = '';
+        this.results = [];
+        this.selectedIndex = -1;
+      }
+    },
+
+    _scrollToSelected() {
+      this.$nextTick(() => {
+        const el = this.$el.querySelector(`[data-idx="${this.selectedIndex}"]`);
+        if (el) el.scrollIntoView({ block: 'nearest' });
+      });
     },
 
     iconClass(type) {

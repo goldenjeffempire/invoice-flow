@@ -74,12 +74,13 @@ def global_search(request):
             Q(description__icontains=query)
         ).order_by('-created_at')[:3]
 
+        currency_sym = Invoice.CURRENCY_SYMBOLS.get(workspace.default_currency, workspace.default_currency)
         for exp in expenses:
             results.append({
                 'type': 'expense',
                 'title': exp.description or 'Expense',
                 'url': f"/expenses/{exp.id}/",
-                'meta': f"₦{exp.amount:,.2f}",
+                'meta': f"{currency_sym}{exp.total_amount:,.2f}",
             })
     except Exception as e:
         logger.debug("Search expenses error: %s", e)
