@@ -55,7 +55,7 @@ def transaction_list(request):
 def payment_detail(request, payment_id):
     workspace = request.user.profile.current_workspace
     payment = get_object_or_404(Payment, id=payment_id, workspace=workspace)
-    audit_logs = payment.audit_logs.all().order_by('-timestamp')
+    audit_logs = payment.audit_logs.all().order_by('-created_at')
     return render(request, 'pages/payments/detail.html', {
         'payment': payment,
         'audit_logs': audit_logs

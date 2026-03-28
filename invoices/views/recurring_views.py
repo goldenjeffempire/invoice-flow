@@ -256,10 +256,11 @@ def schedule_detail(request, schedule_id):
     audit_logs = RecurringBillingService.get_schedule_audit_logs(schedule, limit=30)
     retry_plan = RecurringBillingService.get_retry_plan(schedule)
 
-    from invoices.models import Invoice
-    generated_invoices = Invoice.objects.filter(
-        recurring_schedule=schedule
-    ).order_by('-created_at')
+    from invoices.models import Invoice, ScheduleExecution
+    invoice_ids = ScheduleExecution.objects.filter(
+        schedule=schedule
+    ).exclude(invoice__isnull=True).values_list('invoice_id', flat=True)
+    generated_invoices = Invoice.objects.filter(id__in=invoice_ids).order_by('-created_at')
 
     context = {
         'schedule': schedule,

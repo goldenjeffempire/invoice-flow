@@ -74,8 +74,8 @@ def workspace_settings(request):
             profile = request.user.profile
             profile.invoice_prefix = request.POST.get('invoice_prefix')
             profile.invoice_start_number = request.POST.get('invoice_start_number')
-            profile.terms_conditions = request.POST.get('default_terms')
-            profile.save()
+            profile.payment_instructions = request.POST.get('default_terms', '')
+            profile.save(update_fields=['invoice_prefix', 'invoice_start_number', 'payment_instructions'])
 
             messages.success(request, 'Workspace configuration updated.')
             return redirect('invoices:workspace_settings')
