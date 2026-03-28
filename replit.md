@@ -123,7 +123,7 @@ All authenticated settings pages were rewritten to use the app's inline-style de
 Complete audit, repair, and upgrade of the Settings module:
 
 ### New Backend Endpoints
-- `POST /settings/avatar/` (`avatar_upload`) — Validates file type (imghdr), enforces 5 MB limit, stores to `media/avatars/`, returns JSON `{avatar_url}`.
+- `POST /settings/avatar/` (`avatar_upload`) — Validates file type via magic bytes, enforces 5 MB limit, stores to `media/avatars/`, returns JSON `{avatar_url}`.
 - `POST /settings/email-change/` (`email_change_request`) — Requires `new_email` + `current_password`, authenticates via `authenticate()`, checks email uniqueness, writes `SecurityEvent`, returns JSON.
 
 ### Upgraded Existing Views (all now return JSON for AJAX and log SecurityEvents)
@@ -153,7 +153,7 @@ Complete audit, repair, and upgrade of the Settings module:
 ### Security & Audit
 - All new endpoints: `@login_required`, `@require_POST`, `@csrf_protect`.
 - Email change authenticates password before updating, logs `email_changed` SecurityEvent with old/new email.
-- Avatar upload validates file type via `imghdr` (magic bytes, not just extension).
+- Avatar upload validates file type via magic bytes (not just file extension), replacing the removed Python 3.13+ `imghdr` module with a custom `_detect_image_type()` helper.
 - Business/profile updates logged to `SecurityEvent` model.
 
 ## Dashboard Production Bug Fixes (2026-03-28)

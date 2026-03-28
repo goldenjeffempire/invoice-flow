@@ -5,7 +5,6 @@ All other app views (landing, pages, settings, etc.) preserved.
 """
 from __future__ import annotations
 
-import imghdr
 import logging
 import os
 
@@ -564,6 +563,23 @@ def _is_ajax(request):
     return request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
 
+def _detect_image_type(header: bytes) -> str | None:
+    """
+    Detect image type from magic bytes — replaces the removed imghdr stdlib
+    module (dropped in Python 3.13).  Returns 'jpeg', 'png', 'gif', 'webp',
+    or None for unrecognised data.
+    """
+    if header[:3] == b'\xff\xd8\xff':
+        return 'jpeg'
+    if header[:8] == b'\x89PNG\r\n\x1a\n':
+        return 'png'
+    if header[:6] in (b'GIF87a', b'GIF89a'):
+        return 'gif'
+    if header[:4] == b'RIFF' and header[8:12] == b'WEBP':
+        return 'webp'
+    return None
+
+
 @login_required
 @require_POST
 @csrf_protect
@@ -876,7 +892,7 @@ def avatar_upload(request):
 
     header = avatar_file.read(512)
     avatar_file.seek(0)
-    img_type = imghdr.what(None, h=header)
+    img_type = _detect_image_type(header)
     if img_type not in ("jpeg", "png", "webp", "gif"):
         return JsonResponse({"success": False, "message": "Invalid image type. Use JPG, PNG, WebP, or GIF."}, status=400)
 
