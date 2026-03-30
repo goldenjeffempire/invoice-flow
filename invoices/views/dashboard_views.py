@@ -1,5 +1,5 @@
 """
-InvoiceFlow – Dashboard View (production rebuild)
+InvoiceFlow – Dashboard View (v2 – complete rebuild)
 """
 from __future__ import annotations
 import calendar
@@ -12,14 +12,17 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
 from django.shortcuts import redirect, render
 from django.utils import timezone
-
-from ..models import Client, Expense, Invoice, Payment, RecurringSchedule, Estimate
-
 from django.views.decorators.http import require_GET
 from django.http import JsonResponse
 
+from ..models import Client, Expense, Invoice, Payment, RecurringSchedule, Estimate
+
 logger = logging.getLogger(__name__)
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Helpers
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _pct_change(current, previous):
     try:
@@ -34,7 +37,7 @@ def _pct_change(current, previous):
 
 def _monthly_trend(workspace, months=6):
     today = timezone.now().date()
-    labels, revenue, expenses = [], [], []
+    labels, revenue, expenses, net_profit = [], [], [], []
     for i in range(months - 1, -1, -1):
         month = today.month - i
         year = today.year
@@ -58,7 +61,8 @@ def _monthly_trend(workspace, months=6):
         labels.append(m_start.strftime("%b '%y"))
         revenue.append(float(rev))
         expenses.append(float(exp))
-    return labels, revenue, expenses
+        net_profit.append(round(float(rev) - float(exp), 2))
+    return labels, revenue, expenses, net_profit
 
 
 def _invoice_status_breakdown(workspace):
@@ -72,6 +76,15 @@ def _invoice_status_breakdown(workspace):
         "overdue":   qs.filter(status="overdue").count(),
     }
 
+
+def _get_workspace(request):
+    profile = getattr(request.user, "profile", None)
+    return getattr(profile, "current_workspace", None) if profile else None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Main Dashboard View
+# ─────────────────────────────────────────────────────────────────────────────
 
 @login_required
 def dashboard(request):
@@ -91,7 +104,7 @@ def dashboard(request):
     expenses_qs = Expense.objects.filter(workspace=workspace)
     clients_qs = Client.objects.filter(workspace=workspace)
 
-    # ── Revenue KPIs ─────────────────────────────────────────────────────
+    # ── Revenue KPIs ──────────────────────────────────────────────────────────
     this_month_revenue = payments_qs.filter(
         payment_date__date__gte=month_start, payment_date__date__lte=today
     ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
@@ -123,9 +136,7 @@ def dashboard(request):
 
     total_clients = clients_qs.count()
     new_clients_this_month = clients_qs.filter(created_at__date__gte=month_start).count()
-    all_time_paid = Payment.objects.filter(
-        invoice__workspace=workspace, status=Payment.Status.COMPLETED
-    ).aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    all_time_paid = payments_qs.aggregate(t=Sum("amount"))["t"] or Decimal("0")
 
     total_invoiced_mtd = invoices_qs.filter(
         issue_date__gte=month_start
@@ -135,10 +146,9 @@ def dashboard(request):
     if total_invoiced_mtd > 0:
         collection_rate = round(float(this_month_revenue / total_invoiced_mtd * 100), 1)
 
-    # ── Estimate Stats ────────────────────────────────────────────────────
+    # ── Estimate Stats ─────────────────────────────────────────────────────────
     estimate_conversion = 0
     try:
-        from ..models import Estimate
         est_total = Estimate.objects.filter(workspace=workspace).exclude(status='draft').count()
         est_accepted = Estimate.objects.filter(workspace=workspace, status='approved').count()
         if est_total > 0:
@@ -146,16 +156,16 @@ def dashboard(request):
     except Exception:
         pass
 
-    # ── Invoice status breakdown ──────────────────────────────────────────
+    # ── Invoice status breakdown ───────────────────────────────────────────────
     invoice_status_counts = _invoice_status_breakdown(workspace)
     total_invoice_count = sum(invoice_status_counts.values())
 
-    # ── Recent data ───────────────────────────────────────────────────────
-    recent_invoices = invoices_qs.select_related("client").order_by("-created_at")[:8]
+    # ── Recent data ────────────────────────────────────────────────────────────
+    recent_invoices = invoices_qs.select_related("client").order_by("-created_at")[:10]
     recent_payments = Payment.objects.filter(
         invoice__workspace=workspace,
         status=Payment.Status.COMPLETED,
-    ).select_related("invoice", "invoice__client").order_by("-payment_date")[:6]
+    ).select_related("invoice", "invoice__client").order_by("-payment_date")[:8]
     invoices_due_soon = invoices_qs.filter(
         status__in=["sent", "viewed", "part_paid"],
         due_date__gte=today,
@@ -163,8 +173,7 @@ def dashboard(request):
     ).select_related("client").order_by("due_date")[:5]
     overdue_invoices = invoices_qs.filter(
         status="overdue"
-    ).select_related("client").order_by("due_date")[:5]
-    recent_expenses = expenses_qs.select_related("category").order_by("-expense_date")[:5]
+    ).select_related("client").order_by("due_date")[:8]
     top_clients = clients_qs.annotate(
         paid_total=Sum(
             "invoices__amount_paid",
@@ -173,20 +182,20 @@ def dashboard(request):
         invoice_count=Count("invoices"),
     ).filter(paid_total__gt=0).order_by("-paid_total")[:5]
 
-    # ── Overdue aging ─────────────────────────────────────────────────────
+    # ── Overdue aging ──────────────────────────────────────────────────────────
     overdue_qs = invoices_qs.filter(status="overdue")
     aging = {
-        "0_30": overdue_qs.filter(due_date__gte=today - timedelta(days=30)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
-        "31_60": overdue_qs.filter(due_date__gte=today - timedelta(days=60), due_date__lt=today - timedelta(days=30)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
-        "61_90": overdue_qs.filter(due_date__gte=today - timedelta(days=90), due_date__lt=today - timedelta(days=60)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
+        "0_30":   overdue_qs.filter(due_date__gte=today - timedelta(days=30)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
+        "31_60":  overdue_qs.filter(due_date__gte=today - timedelta(days=60), due_date__lt=today - timedelta(days=30)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
+        "61_90":  overdue_qs.filter(due_date__gte=today - timedelta(days=90), due_date__lt=today - timedelta(days=60)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
         "90_plus": overdue_qs.filter(due_date__lt=today - timedelta(days=90)).aggregate(t=Sum("amount_due"))["t"] or Decimal("0"),
     }
 
-    # ── Recurring ─────────────────────────────────────────────────────────
+    # ── Recurring ──────────────────────────────────────────────────────────────
     active_schedules = RecurringSchedule.objects.filter(workspace=workspace, status="active").count()
 
-    # ── Charts ────────────────────────────────────────────────────────────
-    chart_labels, chart_revenue, chart_expenses = _monthly_trend(workspace, months=6)
+    # ── Charts (6-month trend) ─────────────────────────────────────────────────
+    chart_labels, chart_revenue, chart_expenses, chart_net = _monthly_trend(workspace, months=6)
     chart_has_data = any(v > 0 for v in chart_revenue) or any(v > 0 for v in chart_expenses)
 
     invoice_status_items = [
@@ -198,20 +207,56 @@ def dashboard(request):
         ("overdue",   "Overdue",   "#f87171"),
     ]
 
-    # ── Activity Feed ─────────────────────────────────────────────────────
+    # ── Activity Feed ──────────────────────────────────────────────────────────
     from ..models import ActivityLog
     recent_activity = []
     try:
         recent_activity = ActivityLog.objects.filter(
             workspace=workspace
-        ).select_related("user").order_by("-timestamp")[:12]
+        ).select_related("user").order_by("-timestamp")[:15]
     except Exception:
         pass
+
+    # ── Insights ───────────────────────────────────────────────────────────────
+    insights = []
+    if overdue_count > 0:
+        insights.append({
+            "type": "danger",
+            "icon": "alert",
+            "text": f"You have {overdue_count} overdue invoice{'s' if overdue_count != 1 else ''} totalling {workspace.currency_symbol}{float(total_overdue):,.2f}",
+            "action": "View overdue",
+            "url": "/invoices/?status=overdue",
+        })
+    if invoices_due_soon:
+        insights.append({
+            "type": "warning",
+            "icon": "clock",
+            "text": f"{len(invoices_due_soon)} invoice{'s' if len(invoices_due_soon) != 1 else ''} due in the next 7 days",
+            "action": "Review",
+            "url": "/invoices/",
+        })
+    if revenue_change_pct and revenue_change_pct > 0:
+        insights.append({
+            "type": "success",
+            "icon": "trending",
+            "text": f"Revenue is up {revenue_change_pct}% compared to last month",
+            "action": None,
+            "url": None,
+        })
+    if collection_rate and collection_rate < 70:
+        insights.append({
+            "type": "warning",
+            "icon": "info",
+            "text": f"Collection rate is {collection_rate}% — consider sending payment reminders",
+            "action": "View invoices",
+            "url": "/invoices/",
+        })
 
     ctx = {
         "workspace": workspace,
         "today": today,
         "page_title": "Dashboard",
+        "last_month_revenue": last_month_revenue,
         "kpis": {
             "this_month_revenue": this_month_revenue,
             "revenue_change_pct": revenue_change_pct,
@@ -235,17 +280,18 @@ def dashboard(request):
         "recent_payments": recent_payments,
         "invoices_due_soon": invoices_due_soon,
         "overdue_invoices": overdue_invoices,
-        "recent_expenses": recent_expenses,
+        "top_clients": top_clients,
         "invoice_status_counts": invoice_status_counts,
         "invoice_status_counts_json": json.dumps(invoice_status_counts),
         "invoice_status_items": invoice_status_items,
-        "top_clients": top_clients,
         "aging": aging,
         "chart_has_data": chart_has_data,
         "chart_labels": json.dumps(chart_labels),
         "chart_revenue": json.dumps(chart_revenue),
         "chart_expenses": json.dumps(chart_expenses),
+        "chart_net": json.dumps(chart_net),
         "recent_activity": recent_activity,
+        "insights": insights,
     }
     return render(request, "pages/dashboard.html", ctx)
 
@@ -253,11 +299,6 @@ def dashboard(request):
 # ─────────────────────────────────────────────────────────────────────────────
 # Dashboard JSON API Endpoints
 # ─────────────────────────────────────────────────────────────────────────────
-
-def _get_workspace(request):
-    profile = getattr(request.user, "profile", None)
-    return getattr(profile, "current_workspace", None) if profile else None
-
 
 @login_required
 @require_GET
@@ -387,9 +428,7 @@ def api_revenue_expenses(request):
         return JsonResponse({"error": "No workspace"}, status=400)
 
     months = min(int(request.GET.get("months", 6)), 24)
-    labels, revenue, expenses = _monthly_trend(workspace, months=months)
-
-    net = [round(r - e, 2) for r, e in zip(revenue, expenses)]
+    labels, revenue, expenses, net = _monthly_trend(workspace, months=months)
 
     return JsonResponse({
         "labels": labels,

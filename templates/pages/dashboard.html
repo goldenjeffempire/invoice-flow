@@ -1,487 +1,599 @@
 {% extends "base/layout_app.html" %}
+{% load invoice_filters %}
 {% block title %}Dashboard — InvoiceFlow{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block content %}
-<div x-data="dashLive()" @keydown.r.window="if(!$event.target.matches('input,textarea,select')) refresh()">
 
-  <!-- ── Page Header ──────────────────────────────────────────── -->
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:28px">
-    <div>
-      <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;color:var(--text-primary);margin:0 0 3px">
-        Dashboard
-      </h1>
-      <p style="font-size:13px;color:var(--text-muted);margin:0">
-        Welcome back, {{ request.user.first_name|default:request.user.username }}.
-        <span x-show="lastUpdated" x-cloak>
-          &nbsp;·&nbsp;Updated <span x-text="lastUpdated" style="font-weight:600;color:var(--text-secondary)"></span>
-        </span>
-      </p>
+<div x-data="dashController()" x-init="init()" @keydown.r.window="if(!$event.target.matches('input,textarea,select')) silentRefresh()">
+
+  <!-- ════════════════════════════════════════════════════════════
+       HEADER
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="db-header">
+    <div class="db-header-left">
+      <div class="db-greeting-wrap">
+        <div class="db-greeting-avatar">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</div>
+        <div>
+          <h1 class="db-greeting-text">Good <span id="greetingPart">day</span>, {{ request.user.first_name|default:request.user.username }}.</h1>
+          <p class="db-greeting-sub">
+            Here's what's happening with <strong>{{ workspace.name }}</strong> today
+            <span x-show="lastUpdated" x-cloak> · Updated <span x-text="lastUpdated" class="db-updated-time"></span></span>
+          </p>
+        </div>
+      </div>
     </div>
-    <div style="display:flex;gap:8px;flex-shrink:0;align-items:center">
-      <!-- Refresh button -->
-      <button @click="refresh()" :disabled="refreshing"
-              class="btn btn-ghost btn-sm"
-              title="Refresh metrics (R)"
-              style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)">
-        <svg :class="refreshing ? 'dash-refreshing' : ''" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        <span x-text="refreshing ? 'Updating…' : 'Refresh'" class="desk-only"></span>
+    <div class="db-header-actions">
+      <button @click="silentRefresh()" :disabled="refreshing" class="btn btn-ghost btn-sm db-refresh-btn" title="Refresh (R)">
+        <svg :class="refreshing ? 'spin-anim' : ''" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span x-text="refreshing ? 'Refreshing…' : 'Refresh'" class="desk-only"></span>
       </button>
+      <a href="{% url 'invoices:estimate_create' %}" class="btn btn-secondary btn-sm desk-only">New Estimate</a>
       <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm">
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
         New Invoice
       </a>
-      <a href="{% url 'invoices:estimate_create' %}" class="btn btn-secondary btn-sm desk-only">New Estimate</a>
     </div>
   </div>
 
-  <!-- ── Error banner (only shows after explicit refresh attempt) ── -->
-  <div x-show="fetchError && refreshCount > 0" x-cloak class="dash-error-banner" style="margin-bottom:20px">
-    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-    </svg>
-    <span style="flex:1">Could not refresh metrics — showing cached data.</span>
-    <button @click="refresh()" style="font-size:12px;font-weight:700;color:inherit;background:none;border:none;cursor:pointer;text-decoration:underline">Retry</button>
+  <!-- Error Banner -->
+  <div x-show="fetchError" x-cloak class="db-error-banner" x-transition>
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span>Could not refresh — showing cached data.</span>
+    <button @click="silentRefresh()" class="db-error-retry">Retry</button>
   </div>
 
-  <!-- ── Actionable Insight Banner ────────────────────────────── -->
-  {% if kpis.overdue_count > 0 %}
-  <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;background:linear-gradient(90deg,#fef2f2,#fff5f5);border:1px solid #fecaca;border-radius:var(--radius-lg);margin-bottom:20px">
-    <div style="width:34px;height:34px;border-radius:9px;background:#fee2e2;color:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-    </div>
-    <div style="flex:1">
-      <p style="font-size:13px;font-weight:700;color:#dc2626;margin:0">{{ kpis.overdue_count }} overdue invoice{{ kpis.overdue_count|pluralize }} requiring attention</p>
-      <p style="font-size:12px;color:#ef4444;margin:0">Total overdue: {{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }} — send reminders to recover revenue.</p>
-    </div>
-    <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="btn btn-sm" style="background:#dc2626;color:#fff;flex-shrink:0">View Overdue</a>
+  <!-- ════════════════════════════════════════════════════════════
+       QUICK ACTIONS ROW
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="db-quick-actions">
+    <a href="{% url 'invoices:invoice_create' %}" class="db-qa-card db-qa-primary">
+      <div class="db-qa-icon">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v4h4"/></svg>
+      </div>
+      <span class="db-qa-label">Create Invoice</span>
+      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:client_create' %}" class="db-qa-card">
+      <div class="db-qa-icon db-qa-icon-teal">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      </div>
+      <span class="db-qa-label">Add Client</span>
+      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:payment_overview' %}" class="db-qa-card">
+      <div class="db-qa-icon db-qa-icon-green">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+      </div>
+      <span class="db-qa-label">Record Payment</span>
+      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:estimate_create' %}" class="db-qa-card">
+      <div class="db-qa-icon db-qa-icon-violet">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      </div>
+      <span class="db-qa-label">New Estimate</span>
+      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:expense_create' %}" class="db-qa-card">
+      <div class="db-qa-icon db-qa-icon-amber">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </div>
+      <span class="db-qa-label">Log Expense</span>
+      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:reports_home' %}" class="db-qa-card">
+      <div class="db-qa-icon db-qa-icon-blue">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <span class="db-qa-label">View Reports</span>
+      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
   </div>
-  {% endif %}
 
-  {% if invoices_due_soon and not kpis.overdue_count %}
-  <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;background:linear-gradient(90deg,#fffbeb,#fefce8);border:1px solid #fde68a;border-radius:var(--radius-lg);margin-bottom:20px">
-    <div style="width:34px;height:34px;border-radius:9px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-    </div>
-    <p style="font-size:13px;font-weight:600;color:#92400e;margin:0;flex:1">{{ invoices_due_soon|length }} invoice{{ invoices_due_soon|length|pluralize }} due in the next 7 days</p>
-    <a href="{% url 'invoices:invoice_list' %}" class="btn btn-sm btn-ghost" style="flex-shrink:0">Review</a>
-  </div>
-  {% endif %}
+  <!-- ════════════════════════════════════════════════════════════
+       KPI METRICS
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="db-kpi-grid animate-children">
 
-  <!-- ── KPI Cards ─────────────────────────────────────────────── -->
-  <div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-bottom:24px">
-
-    <!-- Revenue -->
-    <div class="kpi-card kpi-card-revenue" :class="refreshing ? 'kpi-loading' : ''">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="stat-icon si-indigo">
+    <!-- Revenue This Month -->
+    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
+      <div class="db-kpi-top">
+        <div class="db-kpi-icon db-kpi-icon-indigo">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         <span x-show="!refreshing" class="kpi-delta {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}up{% else %}down{% endif %}{% endif %}">
-          {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.revenue_change_pct|floatformat:1 }}%{% endif %}
+          {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.revenue_change_pct|floatformat:1 }}%{% else %}—{% endif %}
         </span>
       </div>
-      <p class="kpi-label">Revenue This Month</p>
-      <p class="kpi-value" x-text="kpis.revenue !== undefined ? sym + fmt(kpis.revenue) : '{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}</p>
+      <p class="db-kpi-label">Revenue This Month</p>
+      <p class="db-kpi-value" x-text="live.revenue !== undefined ? sym + fmt(live.revenue) : '{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}</p>
+      <p class="db-kpi-sub">vs {{ workspace.currency_symbol }}{{ last_month_revenue|default:"0.00"|floatformat:2 }} last month</p>
     </div>
 
     <!-- Outstanding -->
-    <div class="kpi-card kpi-card-outstanding" :class="refreshing ? 'kpi-loading' : ''">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="stat-icon si-amber">
+    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
+      <div class="db-kpi-top">
+        <div class="db-kpi-icon db-kpi-icon-amber">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
-        {% if kpis.draft_count > 0 %}<span class="kpi-delta" style="background:#f1f5f9;color:#64748b">{{ kpis.draft_count }} draft{% if kpis.draft_count != 1 %}s{% endif %}</span>{% endif %}
+        {% if kpis.draft_count > 0 %}<span class="db-kpi-badge">{{ kpis.draft_count }} draft{% if kpis.draft_count != 1 %}s{% endif %}</span>{% endif %}
       </div>
-      <p class="kpi-label">Total Outstanding</p>
-      <p class="kpi-value" x-text="kpis.outstanding !== undefined ? sym + fmt(kpis.outstanding) : '{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}</p>
+      <p class="db-kpi-label">Outstanding</p>
+      <p class="db-kpi-value" x-text="live.outstanding !== undefined ? sym + fmt(live.outstanding) : '{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}</p>
+      <p class="db-kpi-sub">Awaiting payment</p>
     </div>
 
     <!-- Overdue -->
-    <div class="kpi-card kpi-card-overdue" :class="refreshing ? 'kpi-loading' : ''">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="stat-icon si-red">
+    <div class="db-kpi-card {% if kpis.overdue_count > 0 %}db-kpi-card-danger{% endif %}" :class="refreshing ? 'db-kpi-loading' : ''">
+      <div class="db-kpi-top">
+        <div class="db-kpi-icon db-kpi-icon-red">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         </div>
-        <span x-show="!refreshing" class="kpi-delta down" x-text="(kpis.overdue_count ?? {{ kpis.overdue_count }}) + ' inv.'"></span>
+        <span x-show="!refreshing" class="kpi-delta down" x-text="(live.overdue_count ?? {{ kpis.overdue_count }}) + ' inv.'"></span>
       </div>
-      <p class="kpi-label">Overdue</p>
-      <p class="kpi-value" style="color:{% if kpis.total_overdue > 0 %}#dc2626{% endif %}"
-         x-bind:style="(kpis.overdue ?? {{ kpis.total_overdue }}) > 0 ? 'color:#dc2626' : ''"
-         x-text="kpis.overdue !== undefined ? sym + fmt(kpis.overdue) : '{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}</p>
+      <p class="db-kpi-label">Overdue</p>
+      <p class="db-kpi-value {% if kpis.total_overdue > 0 %}db-kpi-danger-text{% endif %}"
+         :style="(live.overdue ?? {{ kpis.total_overdue }}) > 0 ? 'color:#dc2626' : ''"
+         x-text="live.overdue !== undefined ? sym + fmt(live.overdue) : '{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}</p>
+      <p class="db-kpi-sub">
+        {% if kpis.overdue_count > 0 %}<a href="{% url 'invoices:invoice_list' %}?status=overdue" class="db-kpi-link">Send reminders →</a>{% else %}No overdue invoices{% endif %}
+      </p>
     </div>
 
     <!-- Expenses -->
-    <div class="kpi-card kpi-card-expenses" :class="refreshing ? 'kpi-loading' : ''">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="stat-icon si-violet">
+    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
+      <div class="db-kpi-top">
+        <div class="db-kpi-icon db-kpi-icon-violet">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
         </div>
         {% if kpis.expenses_change_pct is not None %}<span class="kpi-delta {% if kpis.expenses_change_pct <= 0 %}up{% else %}down{% endif %}">{% if kpis.expenses_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.expenses_change_pct|floatformat:1 }}%</span>{% endif %}
       </div>
-      <p class="kpi-label">Expenses MTD</p>
-      <p class="kpi-value" x-text="kpis.expenses !== undefined ? sym + fmt(kpis.expenses) : '{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}</p>
+      <p class="db-kpi-label">Expenses MTD</p>
+      <p class="db-kpi-value" x-text="live.expenses !== undefined ? sym + fmt(live.expenses) : '{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}</p>
+      <p class="db-kpi-sub">Month to date</p>
     </div>
 
     <!-- Net Profit -->
-    <div class="kpi-card kpi-card-profit" :class="refreshing ? 'kpi-loading' : ''">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="stat-icon si-green">
+    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
+      <div class="db-kpi-top">
+        <div class="db-kpi-icon db-kpi-icon-green">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         </div>
-        {% if kpis.collection_rate is not None %}<span class="kpi-delta {% if kpis.collection_rate >= 75 %}up{% else %}down{% endif %}">{{ kpis.collection_rate }}%</span>{% endif %}
+        {% if kpis.collection_rate is not None %}<span class="kpi-delta {% if kpis.collection_rate >= 75 %}up{% else %}down{% endif %}">{{ kpis.collection_rate }}% collected</span>{% endif %}
       </div>
-      <p class="kpi-label">Net Profit MTD</p>
-      <p class="kpi-value"
-         x-bind:style="(kpis.net_profit ?? {{ kpis.net_profit }}) >= 0 ? 'color:#16a34a' : 'color:#dc2626'"
+      <p class="db-kpi-label">Net Profit MTD</p>
+      <p class="db-kpi-value"
+         :style="(live.net_profit ?? {{ kpis.net_profit }}) >= 0 ? 'color:#16a34a' : 'color:#dc2626'"
          style="color:{% if kpis.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}"
-         x-text="kpis.net_profit !== undefined ? (kpis.net_profit < 0 ? '-' : '') + sym + fmt(Math.abs(kpis.net_profit)) : '{% if kpis.net_profit < 0 %}-{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}'">
+         x-text="live.net_profit !== undefined ? (live.net_profit < 0 ? '-' : '') + sym + fmt(Math.abs(live.net_profit)) : '{% if kpis.net_profit < 0 %}-{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}'">
         {% if kpis.net_profit < 0 %}-{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}
       </p>
+      <p class="db-kpi-sub">Revenue minus expenses</p>
     </div>
 
     <!-- Clients -->
-    <div class="kpi-card kpi-card-clients" :class="refreshing ? 'kpi-loading' : ''">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="stat-icon si-teal">
+    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
+      <div class="db-kpi-top">
+        <div class="db-kpi-icon db-kpi-icon-teal">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
-        {% if kpis.new_clients_this_month > 0 %}<span style="font-size:11px;font-weight:700;color:#0d9488;background:#f0fdfa;padding:2px 7px;border-radius:20px">+{{ kpis.new_clients_this_month }} new</span>{% endif %}
+        {% if kpis.new_clients_this_month > 0 %}<span class="db-kpi-badge db-kpi-badge-green">+{{ kpis.new_clients_this_month }} new</span>{% endif %}
       </div>
-      <p class="kpi-label">Total Clients</p>
-      <p class="kpi-value" x-text="kpis.total_clients !== undefined ? kpis.total_clients : '{{ kpis.total_clients }}'">{{ kpis.total_clients }}</p>
+      <p class="db-kpi-label">Total Clients</p>
+      <p class="db-kpi-value" x-text="live.total_clients !== undefined ? live.total_clients : '{{ kpis.total_clients }}'">{{ kpis.total_clients }}</p>
+      <p class="db-kpi-sub">Active client relationships</p>
     </div>
 
   </div>
 
-  <!-- ── Charts ─────────────────────────────────────────────────── -->
-  <div class="chart-grid-2col">
+  <!-- ════════════════════════════════════════════════════════════
+       SMART INSIGHTS
+  ═══════════════════════════════════════════════════════════════ -->
+  {% if insights %}
+  <div class="db-insights">
+    {% for insight in insights %}
+    <div class="db-insight db-insight-{{ insight.type }}">
+      <div class="db-insight-icon">
+        {% if insight.icon == "alert" %}
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        {% elif insight.icon == "clock" %}
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {% elif insight.icon == "trending" %}
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        {% else %}
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        {% endif %}
+      </div>
+      <span class="db-insight-text">{{ insight.text }}</span>
+      {% if insight.url %}<a href="{{ insight.url }}" class="db-insight-action">{{ insight.action }} →</a>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
-    <div class="card reveal" style="padding:24px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <!-- ════════════════════════════════════════════════════════════
+       CHARTS
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="db-charts-grid">
+
+    <!-- Revenue vs Expenses -->
+    <div class="card db-chart-main">
+      <div class="db-chart-header">
         <div>
-          <h3 style="font-size:14px;font-weight:700;margin:0">Revenue vs Expenses</h3>
-          <p style="font-size:11.5px;color:var(--text-muted);margin:2px 0 0">Last 6 months</p>
+          <h3 class="db-chart-title">Revenue & Expenses</h3>
+          <p class="db-chart-sub">6-month trend with net profit</p>
         </div>
-        <div style="display:flex;gap:14px;font-size:11px;font-weight:600;color:var(--text-secondary)">
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#6366f1;display:inline-block"></span>Revenue</span>
-          <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:#f97316;display:inline-block"></span>Expenses</span>
+        <div class="db-chart-legend">
+          <span class="db-legend-item"><span class="db-legend-dot" style="background:#6366f1"></span>Revenue</span>
+          <span class="db-legend-item"><span class="db-legend-dot" style="background:#f97316"></span>Expenses</span>
+          <span class="db-legend-item"><span class="db-legend-dot" style="background:#22c55e"></span>Net</span>
         </div>
       </div>
       {% if chart_has_data %}
-      <div x-show="!chartsReady" class="skel" style="height:210px;border-radius:10px"></div>
-      <div x-show="chartsReady" x-cloak style="height:210px;position:relative"><canvas id="revExpChart"></canvas></div>
+      <div x-show="!chartsReady" class="db-chart-skel"></div>
+      <div x-show="chartsReady" x-cloak class="db-chart-canvas-wrap"><canvas id="revExpChart"></canvas></div>
       {% else %}
-      <div style="height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted)">
-        <svg width="40" height="40" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom:12px;opacity:.3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        <p style="font-size:13px;font-weight:500">No revenue data yet</p>
-        <p style="font-size:12px;margin-top:4px">Start creating invoices and recording payments</p>
-        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:14px">Create Invoice</a>
+      <div class="db-chart-empty">
+        <svg width="44" height="44" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <p class="db-chart-empty-title">No revenue data yet</p>
+        <p class="db-chart-empty-sub">Create invoices and record payments to see your trend</p>
+        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:14px">Create First Invoice</a>
       </div>
       {% endif %}
     </div>
 
-    <div class="card" style="padding:24px">
-      <h3 style="font-size:14px;font-weight:700;margin:0 0 4px">Invoice Status</h3>
-      <p style="font-size:11.5px;color:var(--text-muted);margin:0 0 16px">Breakdown by status</p>
-      {% if kpis.total_invoice_count > 0 %}
-      <div style="position:relative;height:150px;display:flex;align-items:center;justify-content:center">
-        <canvas id="statusDonut"></canvas>
-        <div style="position:absolute;text-align:center;pointer-events:none">
-          <p style="font-size:20px;font-weight:800;margin:0">{{ kpis.total_invoice_count }}</p>
-          <p style="font-size:10px;color:var(--text-muted);margin:0;text-transform:uppercase;letter-spacing:.06em;font-weight:700">Total</p>
+    <!-- Invoice Status Donut -->
+    <div class="card db-chart-side">
+      <div class="db-chart-header" style="border-bottom:0;padding-bottom:8px">
+        <div>
+          <h3 class="db-chart-title">Invoice Status</h3>
+          <p class="db-chart-sub">All-time breakdown</p>
         </div>
       </div>
-      <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px">
-        {% if invoice_status_counts.draft > 0 %}<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:7px;height:7px;border-radius:50%;background:#94a3b8"></span>Draft</span><span style="font-weight:700">{{ invoice_status_counts.draft }}</span></div>{% endif %}
-        {% if invoice_status_counts.sent > 0 %}<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:7px;height:7px;border-radius:50%;background:#a78bfa"></span>Sent</span><span style="font-weight:700">{{ invoice_status_counts.sent }}</span></div>{% endif %}
-        {% if invoice_status_counts.viewed > 0 %}<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:7px;height:7px;border-radius:50%;background:#60a5fa"></span>Viewed</span><span style="font-weight:700">{{ invoice_status_counts.viewed }}</span></div>{% endif %}
-        {% if invoice_status_counts.part_paid > 0 %}<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:7px;height:7px;border-radius:50%;background:#2dd4bf"></span>Part Paid</span><span style="font-weight:700">{{ invoice_status_counts.part_paid }}</span></div>{% endif %}
-        {% if invoice_status_counts.paid > 0 %}<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:7px;height:7px;border-radius:50%;background:#4ade80"></span>Paid</span><span style="font-weight:700">{{ invoice_status_counts.paid }}</span></div>{% endif %}
-        {% if invoice_status_counts.overdue > 0 %}<div style="display:flex;justify-content:space-between;align-items:center;font-size:11.5px"><span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary)"><span style="width:7px;height:7px;border-radius:50%;background:#f87171"></span>Overdue</span><span style="font-weight:700;color:#dc2626">{{ invoice_status_counts.overdue }}</span></div>{% endif %}
+      {% if kpis.total_invoice_count > 0 %}
+      <div class="db-donut-wrap">
+        <canvas id="statusDonut"></canvas>
+        <div class="db-donut-center">
+          <p class="db-donut-count">{{ kpis.total_invoice_count }}</p>
+          <p class="db-donut-label">Total</p>
+        </div>
+      </div>
+      <div class="db-status-list">
+        {% for key, label, color in invoice_status_items %}
+        {% with count=invoice_status_counts|dict_get:key %}
+        {% if count > 0 %}
+        <div class="db-status-row">
+          <span class="db-status-dot" style="background:{{ color }}"></span>
+          <span class="db-status-name">{{ label }}</span>
+          <span class="db-status-bar-wrap"><span class="db-status-bar" style="background:{{ color }};width:{% widthratio count kpis.total_invoice_count 100 %}%"></span></span>
+          <span class="db-status-count">{{ count }}</span>
+        </div>
+        {% endif %}
+        {% endwith %}
+        {% endfor %}
       </div>
       {% else %}
-      <div style="height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-muted)">
-        <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-bottom:8px;opacity:.3"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
-        <p style="font-size:12px">No invoices yet</p>
-      </div>
-      <div style="margin-top:14px">
-        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="width:100%;justify-content:center">Create First Invoice</a>
+      <div class="db-chart-empty" style="padding:24px 20px">
+        <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+        <p class="db-chart-empty-title">No invoices yet</p>
+        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:10px">Create Invoice</a>
       </div>
       {% endif %}
     </div>
 
   </div>
 
-  <!-- ── Main Grid ─────────────────────────────────────────────── -->
-  <div class="dashboard-main-grid">
+  <!-- ════════════════════════════════════════════════════════════
+       MAIN GRID: TABLES + SIDEBAR
+  ═══════════════════════════════════════════════════════════════ -->
+  <div class="db-main-grid">
 
-    <!-- LEFT COLUMN ─────────────────────────────────────────────── -->
-    <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+    <!-- LEFT: Tabbed Data Tables -->
+    <div class="db-table-col">
+      <div class="card" x-data="{tab:'invoices'}">
 
-      {% if overdue_invoices %}
-      <div class="card alert-overdue reveal">
-        <div style="padding:16px 20px;background:linear-gradient(90deg,rgba(254,242,242,.5),transparent);border-bottom:1px solid rgba(252,165,165,.4);display:flex;align-items:center;justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="stat-icon si-red" style="width:32px;height:32px;border-radius:8px">
-              <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
-            <div>
-              <p style="font-size:13.5px;font-weight:700;color:#dc2626;margin:0">Overdue Invoices</p>
-              <p style="font-size:11px;color:#ef4444;margin:0">Requires immediate attention</p>
-            </div>
+        <!-- Tabs -->
+        <div class="db-tab-row">
+          <button @click="tab='invoices'" :class="tab==='invoices' ? 'db-tab-active' : ''" class="db-tab">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+            Recent Invoices
+            {% if recent_invoices %}<span class="db-tab-count" :class="tab==='invoices' ? 'db-tab-count-active' : ''">{{ recent_invoices|length }}</span>{% endif %}
+          </button>
+          <button @click="tab='payments'" :class="tab==='payments' ? 'db-tab-active' : ''" class="db-tab">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            Recent Payments
+            {% if recent_payments %}<span class="db-tab-count" :class="tab==='payments' ? 'db-tab-count-active' : ''">{{ recent_payments|length }}</span>{% endif %}
+          </button>
+          {% if overdue_invoices %}
+          <button @click="tab='overdue'" :class="tab==='overdue' ? 'db-tab-active db-tab-overdue-active' : 'db-tab-overdue'" class="db-tab">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            Overdue
+            <span class="db-tab-count db-tab-count-danger">{{ kpis.overdue_count }}</span>
+          </button>
+          {% endif %}
+          <div class="db-tab-spacer"></div>
+          <a x-show="tab==='invoices'" href="{% url 'invoices:invoice_list' %}" class="db-tab-viewall">View all →</a>
+          <a x-show="tab==='payments'" x-cloak href="{% url 'invoices:payment_overview' %}" class="db-tab-viewall">View all →</a>
+          {% if overdue_invoices %}<a x-show="tab==='overdue'" x-cloak href="{% url 'invoices:invoice_list' %}?status=overdue" class="db-tab-viewall">View all →</a>{% endif %}
+        </div>
+
+        <!-- Recent Invoices Tab -->
+        <div x-show="tab==='invoices'">
+          {% if recent_invoices %}
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Invoice #</th>
+                  <th>Client</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in recent_invoices %}
+                <tr class="db-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'">
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="db-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
+                  <td>
+                    <div class="db-tbl-client">
+                      <div class="db-tbl-avatar">{{ inv.client.name|slice:":1"|upper }}</div>
+                      <span class="db-tbl-client-name">{{ inv.client.name }}</span>
+                    </div>
+                  </td>
+                  <td class="db-tbl-amount">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
+                  <td><span class="badge b-{{ inv.status }}"><span class="badge-dot"></span>{{ inv.get_status_display }}</span></td>
+                  <td class="{% if inv.status == 'overdue' %}db-tbl-overdue{% else %}db-tbl-date{% endif %}">{{ inv.due_date|date:"d M Y"|default:"—" }}</td>
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()">↗</a></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
           </div>
-          <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="btn btn-xs" style="background:#fee2e2;color:#dc2626">View all</a>
+          {% else %}
+          <div class="db-tbl-empty">
+            <div class="stat-icon si-indigo" style="margin:0 auto 14px;width:44px;height:44px">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+            </div>
+            <p class="db-tbl-empty-title">No invoices yet</p>
+            <p class="db-tbl-empty-sub">Create your first invoice to start tracking revenue.</p>
+            <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:16px">Create Invoice</a>
+          </div>
+          {% endif %}
         </div>
-        <div style="overflow-x:auto">
-          <table class="tbl">
-            <thead><tr><th>Invoice</th><th>Client</th><th>Amount Due</th><th>Days Overdue</th><th></th></tr></thead>
-            <tbody>
-              {% for inv in overdue_invoices %}
-              <tr>
-                <td><a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:600;color:var(--brand-600)">{{ inv.invoice_number }}</a></td>
-                <td style="font-weight:500;color:var(--text-primary)">{{ inv.client.name }}</td>
-                <td style="font-weight:700;color:#dc2626">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</td>
-                <td>{% if inv.days_overdue > 0 %}<span class="badge b-overdue">{{ inv.days_overdue }}d overdue</span>{% else %}<span class="badge b-overdue">Due today</span>{% endif %}</td>
-                <td style="display:flex;gap:6px;align-items:center">
-                  <button onclick="sendReminder({{ inv.id }}, this)" class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none">Remind</button>
-                  <a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">View →</a>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      {% endif %}
 
-      <!-- Recent Invoices -->
-      <div class="card">
-        <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <h3 style="font-size:14px;font-weight:700;margin:0">Recent Invoices</h3>
-          <a href="{% url 'invoices:invoice_list' %}" style="font-size:12.5px;font-weight:600;color:var(--brand-600)">View all →</a>
+        <!-- Recent Payments Tab -->
+        <div x-show="tab==='payments'" x-cloak>
+          {% if recent_payments %}
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Invoice</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pmt in recent_payments %}
+                <tr class="db-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' pmt.invoice.id %}'">
+                  <td>
+                    <div class="db-tbl-client">
+                      <div class="db-tbl-avatar db-tbl-avatar-green">{{ pmt.invoice.client.name|slice:":1"|upper }}</div>
+                      <span class="db-tbl-client-name">{{ pmt.invoice.client.name }}</span>
+                    </div>
+                  </td>
+                  <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="db-tbl-link" onclick="event.stopPropagation()">{{ pmt.invoice.invoice_number }}</a></td>
+                  <td class="db-tbl-amount db-tbl-amount-green">+{{ pmt.invoice.currency_symbol }}{{ pmt.amount|floatformat:2 }}</td>
+                  <td class="db-tbl-date">{{ pmt.payment_date|date:"d M Y" }}</td>
+                  <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()">↗</a></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="db-tbl-empty">
+            <div class="stat-icon si-green" style="margin:0 auto 14px;width:44px;height:44px">
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            </div>
+            <p class="db-tbl-empty-title">No payments recorded</p>
+            <p class="db-tbl-empty-sub">Record a payment against any invoice to track cash flow.</p>
+            <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm" style="margin-top:16px">Select Invoice</a>
+          </div>
+          {% endif %}
         </div>
-        {% if recent_invoices %}
-        <div style="overflow-x:auto">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th data-sort>Invoice #</th>
-                <th data-sort>Client</th>
-                <th data-sort>Amount</th>
-                <th>Status</th>
-                <th data-sort>Due</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for inv in recent_invoices %}
-              <tr data-href="{% url 'invoices:invoice_detail' inv.id %}">
-                <td><a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:600;color:var(--brand-600)">{{ inv.invoice_number }}</a></td>
-                <td style="font-weight:500;color:var(--text-primary)">{{ inv.client.name }}</td>
-                <td style="font-variant-numeric:tabular-nums">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
-                <td><span class="badge b-{{ inv.status }}"><span class="badge-dot"></span>{{ inv.get_status_display }}</span></td>
-                <td style="color:{% if inv.status == 'overdue' %}#dc2626{% else %}var(--text-secondary){% endif %}">{{ inv.due_date|date:"d M Y" }}</td>
-                <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()">↗</a></td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        {% else %}
-        <div style="padding:48px 24px;text-align:center">
-          <div class="stat-icon si-indigo" style="margin:0 auto 16px"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg></div>
-          <p style="font-size:14px;font-weight:600;margin:0 0 6px">No invoices yet</p>
-          <p style="font-size:12.5px;color:var(--text-muted);margin:0 0 16px">Create your first invoice to get started and track your revenue.</p>
-          <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm">Create Invoice</a>
+
+        <!-- Overdue Tab -->
+        {% if overdue_invoices %}
+        <div x-show="tab==='overdue'" x-cloak>
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Invoice #</th>
+                  <th>Client</th>
+                  <th>Amount Due</th>
+                  <th>Days Overdue</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for inv in overdue_invoices %}
+                <tr class="db-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'">
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="db-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
+                  <td>
+                    <div class="db-tbl-client">
+                      <div class="db-tbl-avatar db-tbl-avatar-red">{{ inv.client.name|slice:":1"|upper }}</div>
+                      <span class="db-tbl-client-name">{{ inv.client.name }}</span>
+                    </div>
+                  </td>
+                  <td class="db-tbl-amount db-tbl-amount-red">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</td>
+                  <td>{% if inv.days_overdue > 0 %}<span class="badge b-overdue"><span class="badge-dot"></span>{{ inv.days_overdue }}d</span>{% else %}<span class="badge b-overdue"><span class="badge-dot"></span>Today</span>{% endif %}</td>
+                  <td>
+                    <div style="display:flex;gap:6px" onclick="event.stopPropagation()">
+                      <button onclick="sendReminder({{ inv.id }}, this)" class="btn btn-xs" style="background:#fee2e2;color:#dc2626">Remind</button>
+                      <a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">View →</a>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
         </div>
         {% endif %}
+
       </div>
 
+      <!-- Due Soon card (if any) -->
       {% if invoices_due_soon %}
-      <div class="card">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <h3 style="font-size:13.5px;font-weight:700;margin:0">Due in Next 7 Days</h3>
-          <span class="badge b-pending">{{ invoices_due_soon|length }} invoice{% if invoices_due_soon|length != 1 %}s{% endif %}</span>
+      <div class="card db-due-soon-card">
+        <div class="card-hdr">
+          <div>
+            <p class="card-hdr-title">Due in Next 7 Days</p>
+            <p class="card-hdr-sub">{{ invoices_due_soon|length }} invoice{{ invoices_due_soon|length|pluralize }} requiring attention</p>
+          </div>
+          <span class="badge b-pending">{{ invoices_due_soon|length }}</span>
         </div>
         {% for inv in invoices_due_soon %}
-        <a href="{% url 'invoices:invoice_detail' inv.id %}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;{% if not forloop.last %}border-bottom:1px solid var(--border){% endif %};text-decoration:none;transition:background var(--anim-fast)" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
-          <div>
-            <p style="font-size:13px;font-weight:600;color:var(--brand-600);margin:0">{{ inv.invoice_number }}</p>
-            <p style="font-size:11.5px;color:var(--text-muted);margin:1px 0 0">{{ inv.client.name }}</p>
-          </div>
-          <div style="text-align:right">
-            <p style="font-weight:700;font-size:13px;margin:0;color:var(--text-primary)">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</p>
-            <p style="font-size:11px;color:var(--text-muted);margin:1px 0 0">Due {{ inv.due_date|date:"d M" }}</p>
+        <a href="{% url 'invoices:invoice_detail' inv.id %}" class="db-due-row {% if forloop.last %}db-due-row-last{% endif %}">
+          <div class="db-due-number">{{ inv.invoice_number }}</div>
+          <div class="db-due-client">{{ inv.client.name }}</div>
+          <div class="db-due-right">
+            <p class="db-due-amount">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</p>
+            <p class="db-due-date">Due {{ inv.due_date|date:"d M" }}</p>
           </div>
         </a>
         {% endfor %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- RIGHT: Sidebar -->
+    <div class="db-sidebar-col">
+
+      <!-- Business Stats -->
+      <div class="card db-stats-card">
+        <div class="card-hdr">
+          <p class="card-hdr-title">Business Overview</p>
+        </div>
+        <div class="db-stats-list">
+          <div class="db-stat-row">
+            <span class="db-stat-label">All-time revenue</span>
+            <span class="db-stat-value">{{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-label">Active recurring</span>
+            <span class="db-stat-value">{{ kpis.active_schedules }}</span>
+          </div>
+          <div class="db-stat-row">
+            <span class="db-stat-label">Estimate conversion</span>
+            <span class="db-stat-value {% if kpis.estimate_conversion >= 60 %}db-stat-green{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
+          </div>
+          {% if kpis.collection_rate is not None %}
+          <div class="db-stat-row">
+            <span class="db-stat-label">Collection rate</span>
+            <span class="db-stat-value {% if kpis.collection_rate >= 75 %}db-stat-green{% elif kpis.collection_rate < 50 %}db-stat-red{% else %}db-stat-amber{% endif %}">{{ kpis.collection_rate }}%</span>
+          </div>
+          {% endif %}
+          <div class="db-stat-row">
+            <span class="db-stat-label">Total invoices</span>
+            <span class="db-stat-value">{{ kpis.total_invoice_count }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Clients -->
+      {% if top_clients %}
+      <div class="card">
+        <div class="card-hdr">
+          <p class="card-hdr-title">Top Clients</p>
+          <a href="{% url 'invoices:client_list' %}" class="db-card-viewall">View all →</a>
+        </div>
+        <div>
+          {% for cl in top_clients %}
+          <a href="{% url 'invoices:client_detail' cl.id %}" class="db-client-row {% if forloop.last %}db-client-row-last{% endif %}">
+            <div class="db-client-avatar">{{ cl.name|slice:":1"|upper }}</div>
+            <div class="db-client-info">
+              <p class="db-client-name">{{ cl.name }}</p>
+              <p class="db-client-meta">{{ cl.invoice_count }} invoice{{ cl.invoice_count|pluralize }}</p>
+            </div>
+            <span class="db-client-amount">{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}</span>
+          </a>
+          {% endfor %}
+        </div>
       </div>
       {% endif %}
 
       <!-- Activity Feed -->
       <div class="card">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <h3 style="font-size:14px;font-weight:700;margin:0">Activity Feed</h3>
-          <span style="font-size:11px;color:var(--text-muted)">Recent actions</span>
+        <div class="card-hdr">
+          <p class="card-hdr-title">Activity</p>
+          <span class="db-activity-live"><span class="db-activity-dot"></span>Live</span>
         </div>
         {% if recent_activity %}
-        <div style="padding:8px 0">
-          {% for activity in recent_activity %}
-          <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 20px;{% if not forloop.last %}border-bottom:1px solid var(--border){% endif %}">
-            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">
-              {% if activity.user %}{{ activity.user.get_full_name|default:activity.user.username|slice:":1"|upper }}{% else %}?{% endif %}
-            </div>
-            <div style="flex:1;min-width:0">
-              <p style="font-size:12.5px;font-weight:500;color:var(--text-primary);margin:0">{{ activity.action }}</p>
-              <p style="font-size:11px;color:var(--text-muted);margin:2px 0 0">
-                {% if activity.user %}{{ activity.user.get_full_name|default:activity.user.username }} · {% endif %}{{ activity.timestamp|timesince }} ago
+        <div class="db-activity-feed">
+          {% for act in recent_activity %}
+          <div class="db-activity-item {% if forloop.last %}db-activity-item-last{% endif %}">
+            <div class="db-activity-line"></div>
+            <div class="db-activity-avatar">{% if act.user %}{{ act.user.get_full_name|default:act.user.username|slice:":1"|upper }}{% else %}?{% endif %}</div>
+            <div class="db-activity-body">
+              <p class="db-activity-action">{{ act.action }}</p>
+              <p class="db-activity-time">
+                {% if act.user %}<span>{{ act.user.get_full_name|default:act.user.username }}</span> · {% endif %}{{ act.timestamp|timesince }} ago
               </p>
             </div>
-            {% if activity.resource_type and activity.resource_id %}
-            <a href="/{{ activity.resource_type }}s/{{ activity.resource_id }}/" style="font-size:11px;color:var(--brand-500);text-decoration:none;flex-shrink:0" title="View">↗</a>
+            {% if act.resource_type and act.resource_id %}
+            <a href="/{{ act.resource_type }}s/{{ act.resource_id }}/" class="db-activity-link" title="View">↗</a>
             {% endif %}
           </div>
           {% endfor %}
         </div>
         {% else %}
-        <div style="padding:32px 20px;text-align:center">
-          <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 10px;opacity:.3;color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <p style="font-size:13px;font-weight:500;color:var(--text-secondary);margin:0 0 4px">No activity yet</p>
-          <p style="font-size:12px;color:var(--text-muted);margin:0">Actions like creating invoices and recording payments will appear here.</p>
+        <div class="db-tbl-empty" style="padding:28px 20px">
+          <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity:.25;margin:0 auto 10px;color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <p class="db-tbl-empty-title">No activity yet</p>
+          <p class="db-tbl-empty-sub">Actions like creating invoices and recording payments will appear here.</p>
         </div>
         {% endif %}
-      </div>
-
-    </div>
-
-    <!-- RIGHT COLUMN ────────────────────────────────────────────── -->
-    <div style="display:flex;flex-direction:column;gap:20px">
-
-      <!-- Recent Payments -->
-      <div class="card">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <h3 style="font-size:14px;font-weight:700;margin:0">Recent Payments</h3>
-          <a href="{% url 'invoices:payment_overview' %}" style="font-size:12px;font-weight:600;color:var(--brand-600)">View all →</a>
-        </div>
-        {% if recent_payments %}
-        {% for pmt in recent_payments %}
-        <div style="display:flex;align-items:center;gap:12px;padding:11px 16px;{% if not forloop.last %}border-bottom:1px solid var(--border){% endif %}">
-          <div class="stat-icon si-green" style="width:32px;height:32px;border-radius:8px;flex-shrink:0">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-          </div>
-          <div style="flex:1;min-width:0">
-            <p style="font-size:12.5px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary)">{{ pmt.invoice.client.name }}</p>
-            <p style="font-size:11px;color:var(--text-muted);margin:1px 0 0">{{ pmt.invoice.invoice_number }} · {{ pmt.payment_date|date:"d M Y" }}</p>
-          </div>
-          <span style="font-size:12.5px;font-weight:700;color:#16a34a;white-space:nowrap">+{{ pmt.invoice.currency_symbol }}{{ pmt.amount|floatformat:2 }}</span>
-        </div>
-        {% endfor %}
-        {% else %}
-        <div style="padding:36px 16px;text-align:center">
-          <div class="stat-icon si-green" style="margin:0 auto 14px;width:40px;height:40px"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
-          <p style="font-size:13px;font-weight:600;margin:0 0 6px">No payments recorded</p>
-          <p style="font-size:12px;color:var(--text-muted);margin:0 0 14px">Record a payment against an invoice to track your cash flow.</p>
-          <a href="{% url 'invoices:invoice_list' %}" class="btn btn-sm btn-secondary" style="width:100%;justify-content:center">Select Invoice to Record</a>
-        </div>
-        {% endif %}
-      </div>
-
-      {% if top_clients %}
-      <div class="card">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-          <h3 style="font-size:14px;font-weight:700;margin:0">Top Clients</h3>
-          <a href="{% url 'invoices:client_list' %}" style="font-size:12px;font-weight:600;color:var(--brand-600)">View all →</a>
-        </div>
-        {% for cl in top_clients %}
-        <a href="{% url 'invoices:client_detail' cl.id %}" style="display:flex;align-items:center;gap:11px;padding:11px 16px;{% if not forloop.last %}border-bottom:1px solid var(--border){% endif %};text-decoration:none;transition:background var(--anim-fast)" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
-          <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ cl.name|slice:":1"|upper }}</div>
-          <div style="flex:1;min-width:0">
-            <p style="font-size:12.5px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary)">{{ cl.name }}</p>
-            <p style="font-size:11px;color:var(--text-muted);margin:1px 0 0">{{ cl.invoice_count }} invoice{% if cl.invoice_count != 1 %}s{% endif %}</p>
-          </div>
-          <span style="font-size:12.5px;font-weight:700;color:var(--text-primary)">{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}</span>
-        </a>
-        {% endfor %}
-      </div>
-      {% endif %}
-
-      <!-- Quick Actions -->
-      <div class="card" style="padding:20px">
-        <h3 style="font-size:13.5px;font-weight:700;margin:0 0 14px">Quick Actions</h3>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <a href="{% url 'invoices:invoice_create' %}" class="btn btn-secondary btn-sm quick-action-btn" style="justify-content:flex-start;gap:10px">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Create Invoice
-          </a>
-          <a href="{% url 'invoices:estimate_create' %}" class="btn btn-secondary btn-sm quick-action-btn" style="justify-content:flex-start;gap:10px">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
-            New Estimate
-          </a>
-          <a href="{% url 'invoices:client_create' %}" class="btn btn-secondary btn-sm quick-action-btn" style="justify-content:flex-start;gap:10px">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-            Add Client
-          </a>
-          <a href="{% url 'invoices:expense_create' %}" class="btn btn-secondary btn-sm quick-action-btn" style="justify-content:flex-start;gap:10px">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-            Log Expense
-          </a>
-          <a href="{% url 'invoices:reports_home' %}" class="btn btn-secondary btn-sm quick-action-btn" style="justify-content:flex-start;gap:10px">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-            View Reports
-          </a>
-        </div>
-
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
-          <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 10px">Business Stats</p>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div style="display:flex;justify-content:space-between;font-size:12.5px">
-              <span style="color:var(--text-secondary)">All-time revenue</span>
-              <span style="font-weight:700">{{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:12.5px">
-              <span style="color:var(--text-secondary)">Active schedules</span>
-              <span style="font-weight:700">{{ kpis.active_schedules }}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:12.5px">
-              <span style="color:var(--text-secondary)">Estimate conversion</span>
-              <span style="font-weight:700">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
-            </div>
-            {% if kpis.collection_rate is not None %}
-            <div style="display:flex;justify-content:space-between;font-size:12.5px">
-              <span style="color:var(--text-secondary)">Collection rate</span>
-              <span style="font-weight:700;color:{% if kpis.collection_rate >= 75 %}#16a34a{% else %}#d97706{% endif %}">{{ kpis.collection_rate }}%</span>
-            </div>
-            {% endif %}
-          </div>
-        </div>
       </div>
 
     </div>
   </div>
 
-</div>
+</div><!-- /x-data dashController -->
 
 <script>
-/* ── Dashboard Live Refresh Component ─────────────────────── */
-function dashLive() {
+/* ══════════════════════════════════════════════════════════════
+   Dashboard Controller (Alpine.js)
+═══════════════════════════════════════════════════════════════ */
+function dashController() {
   return {
     chartsReady: false,
-    refreshing: false,
-    fetchError: false,
-    refreshCount: 0,
+    refreshing:  false,
+    fetchError:  false,
     lastUpdated: '',
-    kpis: {},
+    live: {},
     sym: '{{ workspace.currency_symbol|escapejs }}',
 
     init() {
+      // Set greeting
+      const h = new Date().getHours();
+      const el = document.getElementById('greetingPart');
+      if (el) el.textContent = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+
       this.$nextTick(() => {
         this.chartsReady = true;
         initDashCharts();
+        initScrollReveal();
       });
-      // Auto-refresh every 5 minutes (silent, no error banner)
-      setInterval(() => this.refresh(true), 5 * 60 * 1000);
+      // Silent auto-refresh every 5 min
+      setInterval(() => this.silentRefresh(), 5 * 60 * 1000);
     },
 
     fmt(n) {
@@ -489,15 +601,13 @@ function dashLive() {
       return num.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
 
-    setLastUpdated() {
-      const now = new Date();
-      this.lastUpdated = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setTime() {
+      this.lastUpdated = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     },
 
-    async refresh(silent = false) {
+    async silentRefresh() {
       if (this.refreshing) return;
       this.refreshing = true;
-      if (!silent) this.refreshCount++;
       this.fetchError = false;
       try {
         const res = await fetch('/api/dashboard/summary', {
@@ -506,7 +616,7 @@ function dashLive() {
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const d = await res.json();
         this.sym = d.currency_symbol || this.sym;
-        this.kpis = {
+        this.live = {
           revenue:       d.this_month_revenue,
           outstanding:   d.total_outstanding,
           overdue:       d.total_overdue,
@@ -515,18 +625,17 @@ function dashLive() {
           net_profit:    d.net_profit,
           total_clients: d.total_clients,
         };
-        this.setLastUpdated();
-        if (!silent && window.showToast) showToast('Metrics refreshed', 'success');
+        this.setTime();
       } catch(e) {
-        if (!silent) this.fetchError = true;
+        this.fetchError = true;
       } finally {
         this.refreshing = false;
       }
     }
-  }
+  };
 }
 
-/* ── Send reminder ────────────────────────────────────────── */
+/* ── Send Reminder ────────────────────────────────────────── */
 function sendReminder(invoiceId, btn) {
   const orig = btn.textContent;
   btn.textContent = '…';
@@ -534,139 +643,137 @@ function sendReminder(invoiceId, btn) {
   fetch(`/invoices/${invoiceId}/reminders/send/`, {
     method: 'POST',
     headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' }
-  }).then(res => res.json()).then(data => {
+  }).then(r => r.json()).then(data => {
     if (data.status === 'ok') {
       btn.textContent = 'Sent ✓';
-      btn.style.background = '#dcfce7';
-      btn.style.color = '#16a34a';
-      if (window.showToast) showToast('Reminder recorded successfully.', 'success');
+      btn.style.cssText = 'background:#dcfce7;color:#16a34a';
+      if (window.showToast) showToast('Reminder sent successfully.', 'success');
     } else {
-      btn.textContent = orig;
-      btn.disabled = false;
-      if (window.showToast) showToast(data.message || 'Failed to send reminder.', 'error');
+      btn.textContent = orig; btn.disabled = false;
+      if (window.showToast) showToast(data.message || 'Failed to send.', 'error');
     }
   }).catch(() => {
-    btn.textContent = orig;
-    btn.disabled = false;
-    if (window.showToast) showToast('Network error. Please try again.', 'error');
+    btn.textContent = orig; btn.disabled = false;
+    if (window.showToast) showToast('Network error. Try again.', 'error');
   });
 }
 
-/* ── Chart initialization ────────────────────────────────── */
+/* ── Charts ───────────────────────────────────────────────── */
 function initDashCharts() {
-  const dark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
-  const gc = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
-  const tc = dark ? 'rgba(255,255,255,.45)' : 'rgba(0,0,0,.45)';
+  const dark = document.body.classList.contains('dark');
+  const gc  = dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
+  const tc  = dark ? 'rgba(255,255,255,.4)'  : 'rgba(0,0,0,.4)';
   const sym = '{{ workspace.currency_symbol|escapejs }}';
-  const tooltipBase = {
-    backgroundColor: dark ? '#1e2030' : '#fff',
-    titleColor: dark ? '#e2e8f0' : '#1e293b',
-    bodyColor: dark ? '#94a3b8' : '#64748b',
-    borderColor: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)',
-    borderWidth: 1,
-    padding: 12,
-    cornerRadius: 10
+  const tooltip = {
+    backgroundColor: dark ? '#0c1220' : '#fff',
+    titleColor:      dark ? '#e2e8f0' : '#1e293b',
+    bodyColor:       dark ? '#94a3b8' : '#64748b',
+    borderColor:     dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)',
+    borderWidth: 1, padding: 12, cornerRadius: 10,
+    displayColors: true, boxPadding: 4,
   };
 
-  /* Revenue vs Expenses bar chart */
+  /* Revenue vs Expenses + Net Profit */
   const rc = document.getElementById('revExpChart');
   if (rc) {
-    const chartRevenue  = {{ chart_revenue|safe }};
-    const chartExpenses = {{ chart_expenses|safe }};
-    const hasData = chartRevenue.some(v => v > 0) || chartExpenses.some(v => v > 0);
-    if (hasData) {
+    const chartRev = {{ chart_revenue|safe }};
+    const chartExp = {{ chart_expenses|safe }};
+    const chartNet = {{ chart_net|safe }};
+    if (chartRev.some(v => v > 0) || chartExp.some(v => v > 0)) {
       new Chart(rc, {
-        type: 'bar',
         data: {
           labels: {{ chart_labels|safe }},
           datasets: [
             {
+              type: 'bar',
               label: 'Revenue',
-              data: chartRevenue,
-              backgroundColor: 'rgba(99,102,241,.85)',
-              borderRadius: 6,
-              borderSkipped: false,
-              hoverBackgroundColor: 'rgba(99,102,241,1)'
+              data: chartRev,
+              backgroundColor: 'rgba(99,102,241,.8)',
+              hoverBackgroundColor: '#6366f1',
+              borderRadius: 6, borderSkipped: false,
+              yAxisID: 'y',
             },
             {
+              type: 'bar',
               label: 'Expenses',
-              data: chartExpenses,
-              backgroundColor: 'rgba(249,115,22,.7)',
-              borderRadius: 6,
-              borderSkipped: false,
-              hoverBackgroundColor: 'rgba(249,115,22,.9)'
+              data: chartExp,
+              backgroundColor: 'rgba(249,115,22,.65)',
+              hoverBackgroundColor: '#f97316',
+              borderRadius: 6, borderSkipped: false,
+              yAxisID: 'y',
+            },
+            {
+              type: 'line',
+              label: 'Net Profit',
+              data: chartNet,
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34,197,94,.08)',
+              borderWidth: 2.5,
+              pointBackgroundColor: '#22c55e',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              tension: 0.4,
+              fill: true,
+              yAxisID: 'y',
             }
           ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { display: false },
-            tooltip: {
-              ...tooltipBase,
-              callbacks: {
-                label: c => ` ${c.dataset.label}: ${sym}${Number(c.parsed.y).toLocaleString(undefined,{minimumFractionDigits:2})}`
-              }
-            }
+            tooltip: { ...tooltip, callbacks: {
+              label: c => ` ${c.dataset.label}: ${sym}${Number(c.parsed.y).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
+            }}
           },
           scales: {
-            x: {
-              grid: { display: false },
-              ticks: { font: { size: 11 }, color: tc },
-              border: { display: false }
-            },
-            y: {
-              grid: { color: gc },
-              ticks: { font: { size: 11 }, color: tc, callback: v => sym + Number(v).toLocaleString() },
-              border: { display: false }
-            }
+            x: { grid:{display:false}, ticks:{font:{size:11},color:tc}, border:{display:false} },
+            y: { grid:{color:gc}, ticks:{font:{size:11},color:tc,callback:v=>sym+Number(v).toLocaleString()}, border:{display:false} }
           }
         }
       });
     }
   }
 
-  /* Invoice status donut chart */
+  /* Invoice Status Donut */
   const dc = document.getElementById('statusDonut');
   if (dc) {
     const d = {{ invoice_status_counts_json|safe }};
-    const ks = ['draft','sent','viewed','part_paid','paid','overdue'];
-    const cs = { draft:'#94a3b8', sent:'#a78bfa', viewed:'#60a5fa', part_paid:'#2dd4bf', paid:'#4ade80', overdue:'#f87171' };
-    const labels = { draft:'Draft', sent:'Sent', viewed:'Viewed', part_paid:'Part Paid', paid:'Paid', overdue:'Overdue' };
-    const vals = ks.map(k => d[k] || 0);
-    const bgs  = ks.map(k => cs[k]);
+    const keys   = ['draft','sent','viewed','part_paid','paid','overdue'];
+    const colors = { draft:'#94a3b8', sent:'#a78bfa', viewed:'#60a5fa', part_paid:'#2dd4bf', paid:'#4ade80', overdue:'#f87171' };
+    const lbls   = { draft:'Draft', sent:'Sent', viewed:'Viewed', part_paid:'Part Paid', paid:'Paid', overdue:'Overdue' };
+    const vals = keys.map(k => d[k] || 0);
     if (vals.some(v => v > 0)) {
       new Chart(dc, {
         type: 'doughnut',
         data: {
-          labels: ks.map(k => labels[k]),
-          datasets: [{
-            data: vals,
-            backgroundColor: bgs,
-            borderWidth: 0,
-            hoverOffset: 5,
-            borderRadius: 3
-          }]
+          labels: keys.map(k => lbls[k]),
+          datasets: [{ data: vals, backgroundColor: keys.map(k => colors[k]), borderWidth: 2, borderColor: dark ? '#0c1220' : '#fff', hoverOffset: 5, borderRadius: 4 }]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          cutout: '72%',
+          responsive: true, maintainAspectRatio: false, cutout: '74%',
           plugins: {
             legend: { display: false },
-            tooltip: {
-              ...tooltipBase,
-              callbacks: {
-                label: c => ` ${c.label}: ${c.parsed} invoice${c.parsed !== 1 ? 's' : ''}`
-              }
-            }
+            tooltip: { ...tooltip, callbacks: {
+              label: c => ` ${c.label}: ${c.parsed} invoice${c.parsed !== 1 ? 's' : ''}`
+            }}
           }
         }
       });
     }
   }
 }
+
+/* ── Scroll Reveal ────────────────────────────────────────── */
+function initScrollReveal() {
+  const els = document.querySelectorAll('.reveal');
+  if (!els.length) return;
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  els.forEach(el => io.observe(el));
+}
 </script>
+
 {% endblock %}
