@@ -55,12 +55,13 @@ def handle_invoice_save(sender, instance, created: bool, **kwargs):
 
 @receiver(post_save, sender='invoices.Invoice')
 def handle_invoice_paid(sender, instance, created: bool, **kwargs):
-    if created or getattr(instance, "_previous_status", None) == instance.status or instance.status != "paid" or not instance.client_email:
+    client_email = getattr(getattr(instance, 'client', None), 'email', None)
+    if created or getattr(instance, "_previous_status", None) == instance.status or instance.status != "paid" or not client_email:
         return
     try:
         from .sendgrid_service import SendGridEmailService
         service = SendGridEmailService()
-        service.send_invoice_paid(instance, instance.client_email)
+        service.send_invoice_paid(instance, client_email)
     except Exception as exc:
         logger.exception("Invoice paid email handler failed: %s", exc)
 

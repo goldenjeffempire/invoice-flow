@@ -294,6 +294,13 @@ CREATE INDEX IF NOT EXISTS "invoices_payout_provider_payout_id_efc1d33b" ON "inv
 """
 
 
+def run_repair_sql(apps, schema_editor):
+    if schema_editor.connection.vendor != "postgresql":
+        return
+    schema_editor.execute(_SQL_CREATE)
+    schema_editor.execute(_SQL_FK)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -303,8 +310,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(_SQL_CREATE, migrations.RunSQL.noop),
-                migrations.RunSQL(_SQL_FK, migrations.RunSQL.noop),
+                migrations.RunPython(run_repair_sql, migrations.RunPython.noop),
             ],
             state_operations=[],
         ),

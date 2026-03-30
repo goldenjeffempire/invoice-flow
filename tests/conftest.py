@@ -6,11 +6,23 @@ User = get_user_model()
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(
+    from invoices.models import UserProfile
+    u = User.objects.create_user(
         username="testuser",
         email="test@example.com",
         password="testpass123",
     )
+    UserProfile.objects.get_or_create(
+        user=u,
+        defaults={"email_verified": True, "company_name": "Test Co"},
+    )
+    return u
+
+
+@pytest.fixture
+def workspace(db, user):
+    from tests.factories import WorkspaceFactory
+    return WorkspaceFactory(owner=user)
 
 
 @pytest.fixture
@@ -22,7 +34,6 @@ def authenticated_client(client, user):
 @pytest.fixture
 def api_client():
     from rest_framework.test import APIClient
-
     return APIClient()
 
 
