@@ -597,9 +597,88 @@ kbd { display: inline-flex; align-items: center; justify-content: center; font-f
 @media (max-width: 900px)  { .g3 { grid-template-columns: 1fr 1fr } }
 @media (max-width: 640px)  { .g2,.g3,.g4 { grid-template-columns: 1fr } }
 
+/* ── Dashboard responsive layouts ───────────────────────── */
+.chart-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+}
+@media (max-width: 1200px) {
+  .chart-grid-2col { grid-template-columns: 1fr 260px; }
+}
+@media (max-width: 1024px) {
+  .chart-grid-2col { grid-template-columns: 1fr; }
+  .dashboard-main-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Animate children (staggered fade-up for KPI cards) ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-children > * {
+  animation: fadeInUp 380ms cubic-bezier(.4,0,.2,1) both;
+}
+.animate-children > *:nth-child(1) { animation-delay:  0ms }
+.animate-children > *:nth-child(2) { animation-delay: 55ms }
+.animate-children > *:nth-child(3) { animation-delay:110ms }
+.animate-children > *:nth-child(4) { animation-delay:165ms }
+.animate-children > *:nth-child(5) { animation-delay:220ms }
+.animate-children > *:nth-child(6) { animation-delay:275ms }
+
+/* ── KPI card color variants ─────────────────────────────── */
+.kpi-card { transition: box-shadow var(--anim), border-color var(--anim) }
+.kpi-card:hover { box-shadow: var(--shadow); border-color: var(--brand-200) }
+.dark .kpi-card:hover { border-color: rgba(99,102,241,.25) }
+.kpi-card-revenue  { border-left: 3px solid #6366f1 }
+.kpi-card-outstanding { border-left: 3px solid #d97706 }
+.kpi-card-overdue  { border-left: 3px solid #dc2626 }
+.kpi-card-expenses { border-left: 3px solid #7c3aed }
+.kpi-card-profit   { border-left: 3px solid #16a34a }
+.kpi-card-clients  { border-left: 3px solid #0d9488 }
+
+/* ── Dashboard refresh spin ──────────────────────────────── */
+@keyframes dashRefreshSpin {
+  from { transform: rotate(0deg) }
+  to   { transform: rotate(360deg) }
+}
+.dash-refreshing { animation: dashRefreshSpin .7s linear infinite }
+
+/* ── KPI refreshing skeleton ─────────────────────────────── */
+.kpi-loading .kpi-value {
+  display: inline-block;
+  min-width: 90px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(90deg,var(--bg-subtle) 25%,var(--bg-hover) 50%,var(--bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+  color: transparent !important;
+  vertical-align: middle;
+}
+.kpi-loading .kpi-delta { opacity: 0 }
+
 /* ── Skeleton shorthand ── */
 .skel {
   background: linear-gradient(90deg,var(--bg-subtle) 25%,var(--bg-hover) 50%,var(--bg-subtle) 75%);
   background-size: 200% 100%;
   animation: skeleton-wave 1.5s ease-in-out infinite;
+}
+
+/* ── Dashboard error state ───────────────────────────────── */
+.dash-error-banner {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px;
+  background: #fef2f2; border: 1px solid #fecaca;
+  border-radius: var(--radius-lg); margin-bottom: 20px;
+  font-size: 13px; color: #b91c1c;
+}
+.dark .dash-error-banner {
+  background: rgba(220,38,38,.08); border-color: rgba(220,38,38,.25); color: #f87171;
 }
