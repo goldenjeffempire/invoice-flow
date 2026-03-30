@@ -175,6 +175,70 @@ document.addEventListener('keydown', e => {
   }
 });
 
+/* ── Navigation keyboard shortcuts (g + key, like Gmail) ── */
+(function() {
+  let gPressed = false;
+  let gTimer = null;
+
+  const ROUTES = {
+    'i': '/invoices/',
+    'c': '/clients/',
+    'e': '/expenses/',
+    'd': '/dashboard/',
+    'p': '/payments/',
+    'x': '/estimates/',
+    'r': '/reports/',
+    'w': '/wallet/',
+    's': '/settings/',
+    'u': '/recurring/',
+  };
+
+  function isEditing() {
+    const el = document.activeElement;
+    return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (isEditing()) { gPressed = false; return; }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (gPressed) {
+      clearTimeout(gTimer);
+      gPressed = false;
+      const route = ROUTES[e.key.toLowerCase()];
+      if (route) {
+        e.preventDefault();
+        window.location.href = route;
+      }
+      return;
+    }
+
+    // g prefix
+    if (e.key === 'g') {
+      gPressed = true;
+      gTimer = setTimeout(() => { gPressed = false; }, 1000);
+      return;
+    }
+
+    // ? = show shortcuts panel
+    if (e.key === '?') {
+      const panel = document.getElementById('shortcuts-panel');
+      if (panel) {
+        e.preventDefault();
+        panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
+      }
+    }
+
+    // n = new invoice (from anywhere)
+    if (e.key === 'n' && !e.shiftKey) {
+      if (window.location.pathname === '/invoices/') {
+        const btn = document.querySelector('a[href*="invoice/create"]');
+        if (btn) { e.preventDefault(); window.location.href = btn.href; }
+      }
+    }
+  });
+})();
+
 /* ── CSRF token helper ── */
 function getCsrfToken() {
   return document.querySelector('meta[name="csrf-token"]')?.content

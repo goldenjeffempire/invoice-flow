@@ -3,7 +3,7 @@
 {% block page_title %}Invoices{% endblock %}
 
 {% block content %}
-<div class="page-in">
+<div class="page-in" x-data="invoiceListApp()">
 
 <div class="page-hdr" style="margin-bottom:24px">
   <div>
@@ -11,6 +11,26 @@
     <p class="page-sub">Manage and track all your invoices.</p>
   </div>
   <div class="page-hdr-actions">
+    <div x-data="{open:false}" style="position:relative">
+      <button @click="open=!open" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:6px">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Export
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      <div x-show="open" x-cloak @click.outside="open=false" class="dropdown" style="right:0;min-width:180px"
+           x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
+        <div style="padding:6px">
+          <a href="{% url 'invoices:invoice_export_csv' %}?status={{ current_status }}&q={{ search_query }}" class="dd-item">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Export as CSV
+          </a>
+          <a href="{% url 'invoices:exports_hub' %}" class="dd-item">
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Full Export Hub
+          </a>
+        </div>
+      </div>
+    </div>
     <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm">
       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
       New Invoice
@@ -51,14 +71,16 @@
   </div>
 
   <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <form method="get" style="flex:1;min-width:200px;display:flex;gap:8px">
+    <form method="get" style="flex:1;min-width:200px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <input type="hidden" name="status" value="{{ current_status }}">
-      <div style="position:relative;flex:1">
+      <div style="position:relative;flex:1;min-width:160px">
         <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         <input type="text" name="q" value="{{ search_query }}" placeholder="Search invoices, clients…" class="form-input" style="padding-left:34px">
       </div>
-      <button type="submit" class="btn btn-secondary btn-sm">Search</button>
-      {% if search_query %}<a href="?status={{ current_status }}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+      <input type="date" name="date_from" value="{{ date_from }}" class="form-input" style="width:auto;min-width:130px" title="From date">
+      <input type="date" name="date_to" value="{{ date_to }}" class="form-input" style="width:auto;min-width:130px" title="To date">
+      <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      {% if search_query or current_status or date_from or date_to %}<a href="{% url 'invoices:invoice_list' %}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
     </form>
     <div style="display:flex;gap:6px;flex-shrink:0">
       <select onchange="window.location='?status={{ current_status }}&q={{ search_query }}&ordering='+this.value" class="form-select" style="width:auto;padding:8px 28px 8px 10px;font-size:12.5px">
@@ -71,11 +93,27 @@
     </div>
   </div>
 
+  <!-- Bulk Action Bar (shows when rows are selected) -->
+  <div x-show="selectedIds.length > 0" x-cloak
+       style="padding:10px 20px;background:var(--bg-subtle);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12.5px;font-weight:700;color:var(--text-secondary)" x-text="selectedIds.length + ' invoice' + (selectedIds.length > 1 ? 's' : '') + ' selected'"></span>
+    <div style="display:flex;gap:6px">
+      <a :href="'{% url 'invoices:invoice_export_csv' %}?ids=' + selectedIds.join(',')" class="btn btn-xs btn-secondary">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Export Selected
+      </a>
+      <button @click="selectedIds=[]" class="btn btn-xs btn-ghost">Clear selection</button>
+    </div>
+  </div>
+
   <!-- Table -->
   {% if invoices %}
   <div style="overflow-x:auto">
     <table class="tbl">
       <thead><tr>
+        <th style="width:32px;padding:10px 8px 10px 16px">
+          <input type="checkbox" @change="toggleAll($event)" :checked="allSelected" style="cursor:pointer;width:14px;height:14px;border-radius:3px">
+        </th>
         <th>Invoice #</th>
         <th>Client</th>
         <th>Issue Date</th>
@@ -87,7 +125,10 @@
       </tr></thead>
       <tbody>
         {% for inv in invoices %}
-        <tr data-href="{% url 'invoices:invoice_detail' inv.id %}">
+        <tr data-href="{% url 'invoices:invoice_detail' inv.id %}" :class="{'selected-row': selectedIds.includes('{{ inv.id }}')}" @click.stop>
+          <td style="padding:13px 8px 13px 16px" @click.stop>
+            <input type="checkbox" :value="'{{ inv.id }}'" x-model="selectedIds" style="cursor:pointer;width:14px;height:14px;border-radius:3px" @click.stop>
+          </td>
           <td>
             <a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:700;color:var(--brand-600);font-size:13px">{{ inv.invoice_number }}</a>
           </td>
@@ -129,6 +170,15 @@
       {% if invoices.has_previous %}
       <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ invoices.previous_page_number }}" class="btn btn-xs btn-secondary">← Previous</a>
       {% endif %}
+      {% for num in invoices.paginator.page_range %}
+        {% if invoices.number == num %}
+        <span class="btn btn-xs btn-primary" style="pointer-events:none">{{ num }}</span>
+        {% elif num == 1 or num == invoices.paginator.num_pages or num >= invoices.number|add:"-2" and num <= invoices.number|add:"2" %}
+        <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ num }}" class="btn btn-xs btn-secondary">{{ num }}</a>
+        {% elif num == invoices.number|add:"-3" or num == invoices.number|add:"3" %}
+        <span style="padding:4px 2px;font-size:12px;color:var(--text-muted)">…</span>
+        {% endif %}
+      {% endfor %}
       {% if invoices.has_next %}
       <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ invoices.next_page_number }}" class="btn btn-xs btn-secondary">Next →</a>
       {% endif %}
@@ -158,4 +208,29 @@
 </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function invoiceListApp() {
+  return {
+    selectedIds: [],
+    get allSelected() {
+      const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+      return checkboxes.length > 0 && this.selectedIds.length === checkboxes.length;
+    },
+    toggleAll(e) {
+      if (e.target.checked) {
+        this.selectedIds = Array.from(document.querySelectorAll('tbody input[type="checkbox"]')).map(cb => cb.value);
+      } else {
+        this.selectedIds = [];
+      }
+    }
+  }
+}
+</script>
+<style>
+.selected-row { background: rgba(99,102,241,.04) !important }
+.dark .selected-row { background: rgba(99,102,241,.08) !important }
+</style>
 {% endblock %}

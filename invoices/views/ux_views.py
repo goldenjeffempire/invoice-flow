@@ -193,6 +193,12 @@ def wallet_view(request):
     balance = total_received - total_payouts
     currency_symbol = workspace.currency_symbol if workspace else '₦'
 
+    import json
+    monthly_inflow_json = json.dumps([
+        {'month': r['month'].strftime('%Y-%m-%d') if r.get('month') else '', 'total': float(r['total'] or 0)}
+        for r in monthly_inflow
+    ])
+
     context = {
         'page_title': 'Wallet',
         'total_received': total_received,
@@ -202,7 +208,8 @@ def wallet_view(request):
         'payout_count': payout_count,
         'recent_payments': recent_payments,
         'recent_payouts': recent_payouts,
-        'monthly_inflow': list(monthly_inflow),
+        'monthly_inflow': monthly_inflow,
+        'monthly_inflow_json': monthly_inflow_json,
         'currency_symbol': currency_symbol,
         'workspace': workspace,
     }
