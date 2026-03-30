@@ -127,9 +127,9 @@
                   {% if item.long_description %}<p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">{{ item.long_description }}</p>{% endif %}
                 </td>
                 <td style="padding:12px 14px;text-align:right;font-size:13px;color:var(--text-secondary)">{{ item.quantity|floatformat:2 }}</td>
-                <td style="padding:12px 14px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums">{{ invoice.currency }}{{ item.unit_price|floatformat:2 }}</td>
+                <td style="padding:12px 14px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums">{{ invoice.currency_symbol }}{{ item.unit_price|floatformat:2 }}</td>
                 <td style="padding:12px 14px;text-align:right;font-size:13px;color:var(--text-secondary)">{{ item.tax_rate|floatformat:1 }}%</td>
-                <td style="padding:12px 14px;text-align:right;font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums">{{ invoice.currency }}{{ item.total|floatformat:2 }}</td>
+                <td style="padding:12px 14px;text-align:right;font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums">{{ invoice.currency_symbol }}{{ item.total|floatformat:2 }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -139,12 +139,12 @@
         <!-- Totals -->
         <div style="display:flex;justify-content:flex-end;margin-bottom:28px">
           <div style="width:280px">
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Subtotal</span><span style="font-weight:600">{{ invoice.currency }}{{ invoice.subtotal|floatformat:2 }}</span></div>
-            {% if invoice.discount_total > 0 %}<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Discount</span><span style="font-weight:600;color:#dc2626">- {{ invoice.currency }}{{ invoice.discount_total|floatformat:2 }}</span></div>{% endif %}
-            {% if invoice.tax_total > 0 %}<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Tax</span><span style="font-weight:600">{{ invoice.currency }}{{ invoice.tax_total|floatformat:2 }}</span></div>{% endif %}
-            <div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:16px;font-weight:800"><span>Total</span><span>{{ invoice.currency }}{{ invoice.total_amount|floatformat:2 }}</span></div>
-            {% if invoice.amount_paid > 0 %}<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span style="color:var(--text-secondary)">Paid</span><span style="font-weight:600;color:#16a34a">- {{ invoice.currency }}{{ invoice.amount_paid|floatformat:2 }}</span></div>{% endif %}
-            {% if invoice.amount_due > 0 %}<div style="display:flex;justify-content:space-between;padding:8px 14px;margin-top:8px;background:var(--brand-600);border-radius:8px;font-size:14px;font-weight:800;color:#fff"><span>Balance Due</span><span>{{ invoice.currency }}{{ invoice.amount_due|floatformat:2 }}</span></div>{% endif %}
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Subtotal</span><span style="font-weight:600">{{ invoice.currency_symbol }}{{ invoice.subtotal|floatformat:2 }}</span></div>
+            {% if invoice.discount_total > 0 %}<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Discount</span><span style="font-weight:600;color:#dc2626">- {{ invoice.currency_symbol }}{{ invoice.discount_total|floatformat:2 }}</span></div>{% endif %}
+            {% if invoice.tax_total > 0 %}<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Tax</span><span style="font-weight:600">{{ invoice.currency_symbol }}{{ invoice.tax_total|floatformat:2 }}</span></div>{% endif %}
+            <div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:16px;font-weight:800"><span>Total</span><span>{{ invoice.currency_symbol }}{{ invoice.total_amount|floatformat:2 }}</span></div>
+            {% if invoice.amount_paid > 0 %}<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px"><span style="color:var(--text-secondary)">Paid</span><span style="font-weight:600;color:#16a34a">- {{ invoice.currency_symbol }}{{ invoice.amount_paid|floatformat:2 }}</span></div>{% endif %}
+            {% if invoice.amount_due > 0 %}<div style="display:flex;justify-content:space-between;padding:8px 14px;margin-top:8px;background:var(--brand-600);border-radius:8px;font-size:14px;font-weight:800;color:#fff"><span>Balance Due</span><span>{{ invoice.currency_symbol }}{{ invoice.amount_due|floatformat:2 }}</span></div>{% endif %}
           </div>
         </div>
 
@@ -176,7 +176,7 @@
               <td>{{ pmt.payment_date|date:"d M Y H:i" }}</td>
               <td>{{ pmt.get_payment_method_display }}</td>
               <td style="color:var(--text-muted)">{{ pmt.transaction_id|default:"—" }}</td>
-              <td style="font-weight:600">{{ pmt.currency }}{{ pmt.amount|floatformat:2 }}</td>
+              <td style="font-weight:600">{{ pmt.currency_symbol }}{{ pmt.amount|floatformat:2 }}</td>
               <td><span class="badge b-{{ pmt.status }}">{{ pmt.get_status_display }}</span></td>
             </tr>
             {% endfor %}
@@ -246,24 +246,24 @@
         <div style="display:flex;flex-direction:column;gap:9px">
           <div class="stat-row" style="padding:6px 0">
             <span class="stat-row-label">Invoice Total</span>
-            <span class="stat-row-value">{{ invoice.currency }}{{ invoice.total_amount|floatformat:2 }}</span>
+            <span class="stat-row-value">{{ invoice.currency_symbol }}{{ invoice.total_amount|floatformat:2 }}</span>
           </div>
           {% if invoice.amount_paid > 0 %}
           <div class="stat-row" style="padding:6px 0">
             <span class="stat-row-label">Amount Paid</span>
-            <span class="stat-row-value" style="color:#16a34a">{{ invoice.currency }}{{ invoice.amount_paid|floatformat:2 }}</span>
+            <span class="stat-row-value" style="color:#16a34a">{{ invoice.currency_symbol }}{{ invoice.amount_paid|floatformat:2 }}</span>
           </div>
           {% endif %}
           {% if invoice.discount_total > 0 %}
           <div class="stat-row" style="padding:6px 0">
             <span class="stat-row-label">Discount</span>
-            <span class="stat-row-value" style="color:#dc2626">-{{ invoice.currency }}{{ invoice.discount_total|floatformat:2 }}</span>
+            <span class="stat-row-value" style="color:#dc2626">-{{ invoice.currency_symbol }}{{ invoice.discount_total|floatformat:2 }}</span>
           </div>
           {% endif %}
           {% if invoice.amount_due > 0 %}
           <div style="display:flex;justify-content:space-between;padding:10px 14px;background:var(--bg-subtle);border-radius:8px;margin-top:4px;border:1px solid var(--border)">
             <span style="font-size:13.5px;font-weight:700">Balance Due</span>
-            <span style="font-size:14px;font-weight:800;color:#d97706">{{ invoice.currency }}{{ invoice.amount_due|floatformat:2 }}</span>
+            <span style="font-size:14px;font-weight:800;color:#d97706">{{ invoice.currency_symbol }}{{ invoice.amount_due|floatformat:2 }}</span>
           </div>
           {% endif %}
           {% if invoice.amount_due == 0 %}

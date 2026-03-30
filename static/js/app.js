@@ -241,3 +241,50 @@ if (!document.querySelector('#spin-keyframes')) {
   s.textContent = '@keyframes spin { to { transform: rotate(360deg) } }';
   document.head.appendChild(s);
 }
+
+/* ── Clickable table rows via data-href ─────────────────────
+   Any <tr data-href="/some/url"> becomes a navigable row.
+   Clicks on <a>, <button>, or cells with onclick are ignored.
+──────────────────────────────────────────────────────────── */
+(function initClickableRows() {
+  function bind(root) {
+    root.querySelectorAll('tr[data-href]').forEach(row => {
+      if (row._clickBound) return;
+      row._clickBound = true;
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('a, button, [onclick], input, select, textarea')) return;
+        const href = row.dataset.href;
+        if (href) {
+          if (e.metaKey || e.ctrlKey) {
+            window.open(href, '_blank');
+          } else {
+            window.location.href = href;
+          }
+        }
+      });
+      row.addEventListener('mouseenter', function() {
+        row.style.background = 'var(--bg-hover)';
+      });
+      row.addEventListener('mouseleave', function() {
+        row.style.background = '';
+      });
+    });
+  }
+
+  // Bind on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => bind(document));
+  } else {
+    bind(document);
+  }
+
+  // Re-bind if content is dynamically added (Alpine.js mutations)
+  if (window.MutationObserver) {
+    new MutationObserver(mutations => {
+      mutations.forEach(m => m.addedNodes.forEach(node => {
+        if (node.nodeType === 1) bind(node.tagName === 'TR' ? node.parentElement || node : node);
+      }));
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+})();

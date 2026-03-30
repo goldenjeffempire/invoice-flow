@@ -100,8 +100,8 @@
               <tr style="border-bottom:1px solid var(--border)">
                 <td style="padding:12px 14px;font-size:13.5px;color:var(--text-primary)">{{ item.description }}</td>
                 <td style="padding:12px 14px;text-align:right;font-size:13px;color:var(--text-secondary)">{{ item.quantity|floatformat:2 }}</td>
-                <td style="padding:12px 14px;text-align:right;font-size:13px">{{ estimate.currency }}{{ item.unit_price|floatformat:2 }}</td>
-                <td style="padding:12px 14px;text-align:right;font-size:13.5px;font-weight:600">{{ estimate.currency }}{{ item.total|floatformat:2 }}</td>
+                <td style="padding:12px 14px;text-align:right;font-size:13px">{{ estimate.currency_symbol }}{{ item.unit_price|floatformat:2 }}</td>
+                <td style="padding:12px 14px;text-align:right;font-size:13.5px;font-weight:600">{{ estimate.currency_symbol }}{{ item.total|floatformat:2 }}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -110,9 +110,9 @@
 
         <div style="display:flex;justify-content:flex-end;margin-bottom:24px">
           <div style="width:260px">
-            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Subtotal</span><span style="font-weight:600">{{ estimate.currency }}{{ estimate.subtotal|floatformat:2 }}</span></div>
-            {% if estimate.tax_total > 0 %}<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Tax</span><span style="font-weight:600">{{ estimate.currency }}{{ estimate.tax_total|floatformat:2 }}</span></div>{% endif %}
-            <div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:16px;font-weight:800"><span>Total</span><span>{{ estimate.currency }}{{ estimate.total_amount|floatformat:2 }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Subtotal</span><span style="font-weight:600">{{ estimate.currency_symbol }}{{ estimate.subtotal|floatformat:2 }}</span></div>
+            {% if estimate.tax_total > 0 %}<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid var(--border)"><span style="color:var(--text-secondary)">Tax</span><span style="font-weight:600">{{ estimate.currency_symbol }}{{ estimate.tax_total|floatformat:2 }}</span></div>{% endif %}
+            <div style="display:flex;justify-content:space-between;padding:10px 0 4px;font-size:16px;font-weight:800"><span>Total</span><span>{{ estimate.currency_symbol }}{{ estimate.total_amount|floatformat:2 }}</span></div>
           </div>
         </div>
 
@@ -142,7 +142,7 @@
     <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:80px">
       <div class="card" style="padding:20px">
         <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 12px">Estimate Total</p>
-        <p style="font-size:28px;font-weight:800;margin:0">{{ estimate.currency }}{{ estimate.total_amount|floatformat:2 }}</p>
+        <p style="font-size:28px;font-weight:800;margin:0">{{ estimate.currency_symbol }}{{ estimate.total_amount|floatformat:2 }}</p>
         {% if estimate.status == 'approved' and not estimate.converted_invoice %}
         <form method="post" action="{% url 'invoices:convert_estimate' estimate.id %}" style="margin-top:14px">{% csrf_token %}<button type="submit" class="btn btn-success btn-sm" style="width:100%;justify-content:center">Convert to Invoice</button></form>
         {% endif %}
