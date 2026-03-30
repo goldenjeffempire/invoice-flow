@@ -216,6 +216,22 @@ A further targeted audit of all view files identified and fixed 3 additional bug
 **Problem:** `invoices/views/invoice_views.py` `public_invoice_view` computed `profile = invoice.workspace.members.first().user.profile if invoice.workspace.members.exists() else None` — a fragile N+1 chain accessing the first workspace member's user profile. This variable was passed as context but never used in `templates/payments/public_invoice.html` (the template uses `invoice.workspace.*` directly). The dead code introduced both an unnecessary DB query and a potential `AttributeError` if any link in the chain was None.
 **Fix:** Removed the dead code entirely. The public invoice template now receives only the `invoice`, `is_public`, and `page_title` context variables.
 
+## Session Audit & Fixes (2026-03-30)
+
+Comprehensive full-system audit completed:
+
+### Demo Data Fixes
+- `create_demo_data.py` — Added `profile.email_verified = True` and `profile.onboarding_completed = True` to the profile setup section. Previously, demo users created via the management command had both flags as False, causing all login attempts to be redirected to the email verification page instead of the dashboard.
+- Demo user name fixed: `first_name = 'Alex'`, `last_name = 'Johnson'` (was empty string from `get_or_create` default).
+
+### Verified Working (Zero Issues)
+- Django 6.0.3 system check: **0 issues, 0 silenced**
+- All 130+ templates load correctly (verified via Django template loader)
+- All URL name references in templates validated — **zero broken URL tags**
+- All service modules import cleanly (`invoice_service`, `payment_service`, `expense_service`, `estimate_service`, `recurring_service`, `reports_service`, `pdf_service`, `email_service`, `auth_services`)
+- Demo data: `demo`/`demo1234` → Johnson Consulting workspace, 16 invoices, 8 clients, 5 payments, 15 expenses, 5 estimates, 4 recurring schedules
+- `auth_services.py` `register_user()` correctly sets `email_verified=True` for all new users going through the standard signup flow
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.

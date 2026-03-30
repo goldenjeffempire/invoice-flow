@@ -106,6 +106,8 @@ class Command(BaseCommand):
         # ── Ensure profile is configured ─────────────────────────
         profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.current_workspace = workspace
+        profile.email_verified = True
+        profile.onboarding_completed = True
         profile.company_name = "Johnson Consulting LLC"
         profile.business_email = "alex@johnsonconsulting.com"
         profile.business_phone = "+1 (650) 555-9000"
