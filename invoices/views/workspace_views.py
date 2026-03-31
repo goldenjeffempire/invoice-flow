@@ -54,6 +54,9 @@ def workspace_create(request):
 @login_required
 def workspace_settings(request):
     workspace = request.user.profile.current_workspace
+    if not workspace:
+        messages.warning(request, "You need to create or join a workspace first.")
+        return redirect('invoices:workspace_create')
     members = workspace.members.all().select_related('user')
     invitations = WorkspaceInvitation.objects.filter(inviter=request.user, accepted_at__isnull=True, is_revoked=False)
 

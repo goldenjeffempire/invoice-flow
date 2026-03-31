@@ -635,12 +635,69 @@ def public_invoice_pdf(request, token):
 
 
 @login_required
+@require_POST
+def invoice_bulk_action(request):
+    """
+    Perform bulk actions on selected invoices.
+    POST: action, ids[] (comma-separated or repeated)
+    Supported actions: delete_drafts, send_reminders, mark_sent, export_csv
+    """
+    workspace = request.user.profile.current_workspace
+    if not workspace:
+        return JsonResponse({'error': 'No workspace'}, status=400)
+
+    action = request.POST.get('action', '').strip()
+    ids_raw = request.POST.getlist('ids') or (request.POST.get('ids', '').split(',') if request.POST.get('ids') else [])
+    ids = [i.strip() for i in ids_raw if i.strip().isdigit()]
+
+    if not ids:
+        return JsonResponse({'error': 'No invoice IDs provided'}, status=400)
+
+    invoices = Invoice.objects.filter(workspace=workspace, id__in=ids)
+    count = invoices.count()
+
+    if action == 'delete_drafts':
+        deleted = invoices.filter(status='draft').delete()[0]
+        return JsonResponse({'success': True, 'message': f'{deleted} draft invoice(s) deleted.'})
+
+    elif action == 'send_reminders':
+        sent = 0
+        for inv in invoices.filter(status__in=['sent', 'viewed', 'part_paid', 'overdue']):
+            if inv.client and inv.client.email:
+                try:
+                    from ..services.email_service import EmailService
+                    EmailService.send_reminder(inv, inv.client.email)
+                    sent += 1
+                except Exception:
+                    pass
+        return JsonResponse({'success': True, 'message': f'Reminders sent for {sent} invoice(s).'})
+
+    elif action == 'mark_sent':
+        updated = invoices.filter(status='draft').update(status='sent', sent_at=timezone.now())
+        return JsonResponse({'success': True, 'message': f'{updated} invoice(s) marked as sent.'})
+
+    elif action == 'mark_void':
+        updated = invoices.exclude(status__in=['paid', 'void']).update(status='void')
+        return JsonResponse({'success': True, 'message': f'{updated} invoice(s) voided.'})
+
+    else:
+        return JsonResponse({'error': f'Unknown action: {action}'}, status=400)
+
+
+@login_required
 def invoice_export_csv(request):
     import csv
     from django.http import HttpResponse
 
     workspace = request.user.profile.current_workspace
+
+    # Support filtering by specific IDs (for bulk export)
+    ids_param = request.GET.get('ids', '')
     invoices = Invoice.objects.filter(workspace=workspace).select_related('client')
+    if ids_param:
+        ids = [i.strip() for i in ids_param.split(',') if i.strip().isdigit()]
+        if ids:
+            invoices = invoices.filter(id__in=ids)
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="invoices_{timezone.now().strftime("%Y%m%d")}.csv"'

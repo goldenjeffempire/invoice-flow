@@ -95,15 +95,27 @@
 
   <!-- Bulk Action Bar (shows when rows are selected) -->
   <div x-show="selectedIds.length > 0" x-cloak
-       style="padding:10px 20px;background:var(--bg-subtle);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:12.5px;font-weight:700;color:var(--text-secondary)" x-text="selectedIds.length + ' invoice' + (selectedIds.length > 1 ? 's' : '') + ' selected'"></span>
-    <div style="display:flex;gap:6px">
+       style="padding:10px 20px;background:rgba(99,102,241,.06);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12.5px;font-weight:700;color:var(--brand-600)" x-text="selectedIds.length + ' invoice' + (selectedIds.length > 1 ? 's' : '') + ' selected'"></span>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
       <a :href="'{% url 'invoices:invoice_export_csv' %}?ids=' + selectedIds.join(',')" class="btn btn-xs btn-secondary">
         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Export Selected
+        Export CSV
       </a>
-      <button @click="selectedIds=[]" class="btn btn-xs btn-ghost">Clear selection</button>
+      <button @click="bulkAction('send_reminders')" class="btn btn-xs btn-secondary" :disabled="bulkLoading">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+        Send Reminders
+      </button>
+      <button @click="bulkAction('mark_sent')" class="btn btn-xs btn-secondary" :disabled="bulkLoading">
+        Mark Sent
+      </button>
+      <button @click="bulkAction('delete_drafts')" class="btn btn-xs btn-danger-outline" :disabled="bulkLoading"
+              onclick="return confirm('Delete all selected draft invoices? This cannot be undone.')">
+        Delete Drafts
+      </button>
+      <button @click="selectedIds=[]" class="btn btn-xs btn-ghost">Clear</button>
     </div>
+    <span x-show="bulkMsg" x-text="bulkMsg" style="font-size:12px;color:var(--text-secondary);font-style:italic"></span>
   </div>
 
   <!-- Table -->
@@ -215,6 +227,8 @@
 function invoiceListApp() {
   return {
     selectedIds: [],
+    bulkLoading: false,
+    bulkMsg: '',
     get allSelected() {
       const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
       return checkboxes.length > 0 && this.selectedIds.length === checkboxes.length;
@@ -224,6 +238,27 @@ function invoiceListApp() {
         this.selectedIds = Array.from(document.querySelectorAll('tbody input[type="checkbox"]')).map(cb => cb.value);
       } else {
         this.selectedIds = [];
+      }
+    },
+    async bulkAction(action) {
+      if (!this.selectedIds.length) return;
+      this.bulkLoading = true;
+      this.bulkMsg = '';
+      try {
+        const form = new FormData();
+        form.append('action', action);
+        form.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '');
+        this.selectedIds.forEach(id => form.append('ids', id));
+        const resp = await fetch('{% url "invoices:invoice_bulk_action" %}', {method:'POST', body:form, headers:{'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''}});
+        const data = await resp.json();
+        this.bulkMsg = data.message || data.error || '';
+        if (data.success && action === 'delete_drafts') {
+          setTimeout(() => window.location.reload(), 800);
+        }
+      } catch(e) {
+        this.bulkMsg = 'Error performing bulk action.';
+      } finally {
+        this.bulkLoading = false;
       }
     }
   }

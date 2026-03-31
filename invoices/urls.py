@@ -180,6 +180,9 @@ urlpatterns = [
     path("i/<str:token>/pdf/", invoice_views.public_invoice_pdf, name="public_invoice_pdf"),
     path("i/<str:token>/pay/", invoice_views.public_initiate_payment, name="public_initiate_payment"),
 
+    # ── Invoice Bulk Actions ──────────────────────────────────────────────────
+    path("invoices/bulk/", invoice_views.invoice_bulk_action, name="invoice_bulk_action"),
+
     # ── Invoice API ───────────────────────────────────────────────────────────
     path("api/invoices/calculate/", invoice_views.api_invoice_calculate, name="api_invoice_calculate"),
     path("api/clients/create/", invoice_views.api_client_create, name="api_client_create"),
