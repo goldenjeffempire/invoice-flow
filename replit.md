@@ -232,6 +232,23 @@ Comprehensive full-system audit completed:
 - Demo data: `demo`/`demo1234` → Johnson Consulting workspace, 16 invoices, 8 clients, 5 payments, 15 expenses, 5 estimates, 4 recurring schedules
 - `auth_services.py` `register_user()` correctly sets `email_verified=True` for all new users going through the standard signup flow
 
+## Critical Model Fix (2026-03-31)
+
+### Bug Fix — `PaymentAuditLog.calculate_totals()` on Wrong Model
+**Problem:** `calculate_totals()` was defined on `PaymentAuditLog` but needed on `LineItem`. `LineItem` lacked the method entirely, causing `AttributeError` whenever invoice totals were computed. Additionally, `PaymentAuditLog.__str__` was missing, causing admin list pages to show unhelpful `<PaymentAuditLog object>` strings.
+**Fix:**
+- Moved `calculate_totals()` to `LineItem` with full tax-inclusive/exclusive logic: supports `tax_inclusive` mode (price includes tax), discount calculation as percentage or flat amount, proper `Decimal` rounding to 2dp.
+- Added `PaymentAuditLog.__str__` returning `"PAL #{id} | {invoice_number} | {action} | {amount}"`.
+- Added `LineItem.__str__` returning `"{description} (x{quantity} @ {unit_price})"`.
+
+### Verified Systems (Post-Audit)
+- Django system check: **0 issues, 0 silenced**
+- All 12+ main authenticated views return HTTP 200
+- HMAC Paystack webhook verification confirmed working (`hmac.new(key, payload, digestmod=hashlib.sha512)`)
+- All service modules import cleanly
+- Gunicorn `gunicorn.conf.py` production-ready (dynamic workers, memory leak prevention, TCP keepalive, structured logging)
+- Demo credentials: `demo`/`demo1234` → Johnson Consulting workspace
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.

@@ -732,25 +732,8 @@ class PaymentAuditLog(models.Model):
     class Meta:
         ordering = ['-created_at']
 
-    def calculate_totals(self, tax_mode='exclusive'):
-        line_subtotal = self.quantity * self.unit_price
-
-        if self.discount_type == 'percentage':
-            self.discount_amount = (line_subtotal * self.discount_value) / Decimal('100')
-        else:
-            self.discount_amount = self.discount_value
-
-        after_discount = line_subtotal - self.discount_amount
-
-        if tax_mode == 'inclusive':
-            base_amount = after_discount / (1 + self.tax_rate / Decimal('100'))
-            self.tax_amount = after_discount - base_amount
-            self.subtotal = base_amount
-            self.total = after_discount
-        else:
-            self.tax_amount = (after_discount * self.tax_rate) / Decimal('100')
-            self.subtotal = after_discount
-            self.total = after_discount + self.tax_amount
+    def __str__(self):
+        return f"PaymentAuditLog: {self.action} on Payment #{self.payment_id}"
 
 
 class LineItem(models.Model):
@@ -774,6 +757,31 @@ class LineItem(models.Model):
 
     class Meta:
         ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return f"{self.description[:60]} (qty {self.quantity} × {self.unit_price})"
+
+    def calculate_totals(self, tax_mode='exclusive'):
+        """Compute discount, tax and totals for this line item."""
+        line_subtotal = self.quantity * self.unit_price
+
+        if self.discount_type == 'percentage':
+            self.discount_amount = (line_subtotal * self.discount_value / Decimal('100')).quantize(Decimal('0.01'))
+        else:
+            self.discount_amount = self.discount_value
+
+        after_discount = line_subtotal - self.discount_amount
+
+        if tax_mode == 'inclusive':
+            divisor = (Decimal('1') + self.tax_rate / Decimal('100'))
+            base_amount = (after_discount / divisor).quantize(Decimal('0.01'))
+            self.tax_amount = (after_discount - base_amount).quantize(Decimal('0.01'))
+            self.subtotal = base_amount
+            self.total = after_discount
+        else:
+            self.tax_amount = (after_discount * self.tax_rate / Decimal('100')).quantize(Decimal('0.01'))
+            self.subtotal = after_discount
+            self.total = after_discount + self.tax_amount
 
 
 class InvoiceAttachment(models.Model):
