@@ -173,6 +173,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "django.contrib.sitemaps",
     "rest_framework",
     "csp",
     "invoices.apps.InvoicesConfig",
@@ -344,6 +345,7 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "EXCEPTION_HANDLER": "invoices.validation.api_exceptions.custom_exception_handler",

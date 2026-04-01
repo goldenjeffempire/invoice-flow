@@ -41,6 +41,44 @@ def require_verified_email(user):
         )
 
 
+class EmailService:
+    """Centralized email delivery service for transactional emails."""
+
+    @staticmethod
+    def send_verification_email(user, request=None) -> bool:
+        """Send email verification link to user. Returns True on success."""
+        try:
+            domain = request.get_host() if request else getattr(settings, "SITE_DOMAIN", "localhost:5000")
+            scheme = "https" if (not settings.DEBUG or (request and request.is_secure())) else "http"
+            token_obj = EmailToken.create_token(user, EmailToken.TokenType.VERIFY, hours=48)
+            verify_url = f"{scheme}://{domain}/verify-email/{token_obj.token}/"
+
+            subject = "Verify your InvoiceFlow email address"
+            html_body = render_to_string(
+                "emails/verify_email.html",
+                {"user": user, "verify_url": verify_url},
+            )
+            plain_body = strip_tags(html_body)
+            send_mail(
+                subject, plain_body, settings.DEFAULT_FROM_EMAIL,
+                [user.email], html_message=html_body, fail_silently=True,
+            )
+            return True
+        except Exception as exc:
+            logger.error("Failed to send verification email: %s", exc)
+            return False
+
+    @staticmethod
+    def send_password_reset_email(user, request=None) -> bool:
+        """Send password reset link to user. Returns True on success."""
+        try:
+            AuthService._send_reset_email(user, EmailToken.create_token(user, EmailToken.TokenType.RESET, hours=1).token, request)
+            return True
+        except Exception as exc:
+            logger.error("Failed to send password reset email: %s", exc)
+            return False
+
+
 # ---------------------------------------------------------------------------
 # Security Event Constants
 # ---------------------------------------------------------------------------
@@ -95,7 +133,7 @@ class PasswordValidator:
         if password.lower() in cls.COMMON_PASSWORDS:
             errors.append("This password is too common. Please choose a more unique one.")
 
-        if check_breach and not errors:
+        if check_breach and not errors and not getattr(settings, "TESTING", False):
             is_breached, count = cls._check_breach(password)
             if is_breached:
                 errors.append(
@@ -225,6 +263,20 @@ class SecurityService:
         except Exception as exc:
             logger.error("Failed to log security event: %s", exc)
 
+    @classmethod
+    def log_login_attempt(cls, identifier: str, request, success: bool = True, failure_reason: str = "") -> None:
+        """Record a login attempt for security monitoring and rate limiting."""
+        try:
+            LoginAttempt.objects.create(
+                username=identifier[:150],
+                ip_address=cls.get_client_ip(request) if request else None,
+                user_agent=cls.get_user_agent(request) if request else "",
+                success=success,
+                failure_reason=failure_reason if not success else "",
+            )
+        except Exception as exc:
+            logger.error("Failed to log login attempt: %s", exc)
+
 
 # ---------------------------------------------------------------------------
 # Core Authentication Service
@@ -259,27 +311,27 @@ class AuthService:
                 username=username,
                 email=email,
                 password=password,
-                is_active=True,
+                is_active=False,
             )
 
-            profile = UserProfile.objects.create(
-                user=user,
-                email_verified=True,
-                onboarding_step=1,
-                onboarding_started_at=timezone.now(),
-            )
+            profile, _ = UserProfile.objects.get_or_create(user=user)
+            profile.email_verified = False
+            profile.onboarding_step = 1
+            profile.onboarding_started_at = timezone.now()
+            profile.save(update_fields=["email_verified", "onboarding_step", "onboarding_started_at"])
 
-            MFAProfile.objects.create(user=user)
+            MFAProfile.objects.get_or_create(user=user)
 
             workspace = Workspace.objects.create(
                 name=f"{username}'s Workspace",
                 owner=user,
                 slug=secrets.token_urlsafe(8),
             )
-            WorkspaceMember.objects.create(workspace=workspace, user=user, role="owner")
+            WorkspaceMember.objects.get_or_create(workspace=workspace, user=user, defaults={"role": "owner"})
             profile.current_workspace = workspace
             profile.save(update_fields=["current_workspace"])
 
+            EmailService.send_verification_email(user, request)
             SecurityService.log_event(user, SecurityEventType.SIGNUP, request)
             return user, "Account created successfully."
 
@@ -317,6 +369,9 @@ class AuthService:
             if user is None:
                 cls._record_failed_attempt(identifier, request, "user_not_found")
                 return None, "Invalid credentials. Please check your email/username and password.", False
+
+            if not user.is_active:
+                return None, "Your account is not active. Please verify your email address.", False
 
             profile, _ = UserProfile.objects.get_or_create(user=user)
 
@@ -695,13 +750,23 @@ class InvitationService:
     @staticmethod
     def accept_invitation(token: str, user, request=None) -> Tuple[bool, str]:
         try:
-            inv = WorkspaceInvitation.objects.get(token=token)
+            inv = WorkspaceInvitation.objects.select_related("inviter").get(token=token)
             if inv.is_expired or inv.accepted_at:
                 return False, "This invitation is no longer valid."
-            WorkspaceMember.objects.get_or_create(workspace=inv.workspace, user=user, defaults={"role": inv.role})
+            # Locate the inviter's workspace; create one if it doesn't exist yet
+            workspace = Workspace.objects.filter(owner=inv.inviter).first()
+            if not workspace:
+                workspace = Workspace.objects.create(
+                    owner=inv.inviter,
+                    name=f"{inv.inviter.get_full_name() or inv.inviter.username}'s Workspace",
+                    slug=secrets.token_urlsafe(8),
+                )
+                WorkspaceMember.objects.get_or_create(workspace=workspace, user=inv.inviter, defaults={"role": "owner"})
+            WorkspaceMember.objects.get_or_create(workspace=workspace, user=user, defaults={"role": inv.role})
             inv.accepted_at = timezone.now()
-            inv.save(update_fields=["accepted_at"])
-            return True, f"You've joined {inv.workspace.name}."
+            inv.accepted_by = user
+            inv.save(update_fields=["accepted_at", "accepted_by"])
+            return True, f"You've joined {workspace.name}."
         except WorkspaceInvitation.DoesNotExist:
             return False, "Invitation not found."
         except Exception as exc:

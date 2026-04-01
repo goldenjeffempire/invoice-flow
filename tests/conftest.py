@@ -6,16 +6,23 @@ User = get_user_model()
 
 @pytest.fixture
 def user(db):
-    from invoices.models import UserProfile
+    from invoices.models import UserProfile, Workspace, WorkspaceMember
     u = User.objects.create_user(
         username="testuser",
         email="test@example.com",
         password="testpass123",
     )
-    UserProfile.objects.get_or_create(
-        user=u,
-        defaults={"email_verified": True, "company_name": "Test Co"},
+    profile, _ = UserProfile.objects.get_or_create(user=u)
+    profile.email_verified = True
+    profile.company_name = "Test Co"
+    profile.onboarding_completed = True
+    workspace, _ = Workspace.objects.get_or_create(
+        slug="test-co",
+        defaults={"name": "Test Co", "owner": u, "currency": "NGN"},
     )
+    WorkspaceMember.objects.get_or_create(workspace=workspace, user=u, defaults={"role": "owner"})
+    profile.current_workspace = workspace
+    profile.save()
     return u
 
 

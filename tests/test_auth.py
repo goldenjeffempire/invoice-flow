@@ -36,7 +36,7 @@ def user(db):
     )
     user.is_active = True
     user.save()
-    UserProfile.objects.create(user=user, email_verified=True)
+    UserProfile.objects.filter(user=user).update(email_verified=True)
     return user
 
 
@@ -49,7 +49,7 @@ def inactive_user(db):
     )
     user.is_active = False
     user.save()
-    UserProfile.objects.create(user=user, email_verified=False)
+    UserProfile.objects.filter(user=user).update(email_verified=False)
     return user
 
 
@@ -105,11 +105,12 @@ class TestSignup:
     def test_signup_with_valid_data(self, client):
         with patch('invoices.auth_services.EmailService.send_verification_email', return_value=True):
             response = client.post(reverse('invoices:signup'), {
+                'full_name': 'New User',
                 'username': 'newuser',
                 'email': 'newuser@example.com',
                 'password': 'StrongPass1!',
                 'confirm_password': 'StrongPass1!',
-                'terms_accepted': True,
+                'agree_terms': True,
             })
         assert response.status_code == 302
         assert User.objects.filter(username='newuser').exists()

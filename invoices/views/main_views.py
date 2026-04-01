@@ -15,6 +15,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST, require_GET
@@ -85,8 +86,8 @@ def custom_500_view(request):
 @ratelimit(key="ip", rate="10/m", method="POST", block=True)
 def signup_view(request):
     """
-    User registration. On success → auto-login and redirect to onboarding.
-    No email verification required.
+    User registration. On success → redirect to verification sent page.
+    Email verification is required before first login.
     """
     if request.user.is_authenticated:
         return redirect("invoices:onboarding_router")
@@ -95,7 +96,6 @@ def signup_view(request):
         form = SignUpForm(request.POST)
         if form.is_valid():
             try:
-                # Split full_name into first/last for the User model
                 full_name = form.cleaned_data.get("full_name", "").strip()
                 name_parts = full_name.split(" ", 1)
                 first_name = name_parts[0]
@@ -108,14 +108,11 @@ def signup_view(request):
                     request=request,
                 )
                 if user:
-                    # Persist first/last name
                     user.first_name = first_name
                     user.last_name = last_name
                     user.save(update_fields=["first_name", "last_name"])
-
-                    AuthService.complete_login(request, user)
-                    messages.success(request, f"Welcome to InvoiceFlow, {first_name}!")
-                    return redirect("invoices:onboarding_router")
+                    request.session["pending_verify_email"] = user.email
+                    return redirect("invoices:verification_sent")
                 else:
                     messages.error(request, message)
             except Exception as exc:
@@ -1132,25 +1129,70 @@ def faq_api(request):
 
 
 # ============================================================================
-# Legacy email verification stubs
-# (redirected to login — email verification not required in this system)
+# Email Verification
 # ============================================================================
 
 @require_GET
 def verification_sent(request):
-    """Kept for URL backward-compat; redirect to login."""
-    return redirect("invoices:login")
+    """Show a page confirming that the verification email was sent."""
+    return render(request, "pages/auth/verification_sent.html", {
+        "email": request.session.get("pending_verify_email", ""),
+    })
 
 
 def verify_email(request, token):
-    """Legacy route — redirect to login."""
+    """Verify a user's email address using a signed token."""
+    from ..models import EmailToken
+    try:
+        token_obj = EmailToken.objects.get(
+            token=token,
+            token_type=EmailToken.TokenType.VERIFY,
+        )
+    except EmailToken.DoesNotExist:
+        return render(request, "pages/auth/verification_failed.html", {
+            "message": "Invalid verification link. Please request a new one.",
+        })
+
+    if token_obj.used_at is not None:
+        return render(request, "pages/auth/verification_failed.html", {
+            "message": "This verification link has already been used.",
+        })
+
+    if token_obj.is_expired:
+        return render(request, "pages/auth/verification_failed.html", {
+            "message": "This verification link has expired. Please request a new one.",
+        })
+
+    user = token_obj.user
+    user.is_active = True
+    user.save(update_fields=["is_active"])
+    token_obj.used_at = timezone.now()
+    token_obj.save(update_fields=["used_at"])
+
+    from ..models import UserProfile
+    UserProfile.objects.filter(user=user).update(email_verified=True)
+
+    messages.success(request, "Your email has been verified. You can now sign in.")
     return redirect("invoices:login")
 
 
 @csrf_protect
 def resend_verification(request):
-    """Legacy route — redirect to login."""
-    return redirect("invoices:login")
+    """Allow users to request a new verification email."""
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip().lower()
+        if email:
+            from django.contrib.auth import get_user_model
+            _User = get_user_model()
+            try:
+                user = _User.objects.get(email__iexact=email, is_active=False)
+                from ..auth_services import EmailService
+                EmailService.send_verification_email(user, request)
+            except _User.DoesNotExist:
+                pass
+        messages.success(request, "If an unverified account exists with that email, we've sent a new verification link.")
+        return redirect("invoices:verification_sent")
+    return render(request, "pages/auth/resend_verification.html")
 
 
 @login_required

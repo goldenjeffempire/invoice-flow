@@ -38,7 +38,7 @@ class InvoiceListSerializer(serializers.ModelSerializer):
         # Security: account_number removed from list view - sensitive data not exposed in list
 
     def get_line_items_count(self, obj) -> int:
-        return obj.line_items.count()
+        return obj.items.count()
 
 
 class InvoiceDetailSerializer(serializers.ModelSerializer):

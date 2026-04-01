@@ -33,6 +33,7 @@ class WorkspaceFactory(factory.django.DjangoModelFactory):
         skip_postgeneration_save = True
 
     name = factory.Sequence(lambda n: f"Workspace {n}")
+    slug = factory.Sequence(lambda n: f"workspace-{n}")
     owner = factory.SubFactory(UserFactory)
     currency = "USD"
     is_active = True
