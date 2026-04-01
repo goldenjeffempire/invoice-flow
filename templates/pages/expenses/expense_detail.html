@@ -1,52 +1,117 @@
 {% extends "base/layout_app.html" %}
 {% block title %}{{ expense.description|truncatechars:30 }} — InvoiceFlow{% endblock %}
-{% block content %}
+{% block page_title %}Expense Detail{% endblock %}
 
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-  <a href="{% url 'invoices:expense_list' %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
-  <div style="flex:1">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0">{{ expense.description|truncatechars:60 }}</h1>
-      <span class="badge b-{{ expense.status }}">{{ expense.get_status_display }}</span>
+{% block content %}
+<div class="page-in">
+
+<!-- Header -->
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px">
+  <div style="display:flex;align-items:center;gap:14px">
+    <a href="{% url 'invoices:expense_list' %}" class="btn btn-ghost btn-sm btn-icon" aria-label="Back to expenses">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
+    <div>
+      <p class="page-eyebrow">Expense</p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:1px">
+        <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0;color:var(--text-primary)">{{ expense.description|truncatechars:60 }}</h1>
+        <span class="badge b-{{ expense.status }}"><span class="badge-dot"></span>{{ expense.get_status_display }}</span>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin:4px 0 0">
+        {{ expense.expense_date|date:"d F Y" }}{% if expense.vendor %} &middot; {{ expense.vendor }}{% endif %}
+        {% if expense.category %} &middot; <span style="color:var(--brand-600);font-weight:600">{{ expense.category.name }}</span>{% endif %}
+      </p>
     </div>
-    <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0">{{ expense.expense_date|date:"d F Y" }}{% if expense.vendor %} · {{ expense.vendor }}{% endif %}</p>
   </div>
-  <div style="display:flex;gap:8px">
-    <a href="{% url 'invoices:expense_edit' expense.id %}" class="btn btn-secondary btn-sm">Edit</a>
-    <form method="post" action="{% url 'invoices:expense_delete' expense.id %}" onsubmit="return confirm('Delete this expense?')">
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <a href="{% url 'invoices:expense_edit' expense.id %}" class="btn btn-secondary btn-sm">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      Edit
+    </a>
+    <form method="post" action="{% url 'invoices:expense_delete' expense.id %}" onsubmit="return confirm('Delete this expense? This cannot be undone.')">
       {% csrf_token %}
-      <button type="submit" class="btn btn-ghost btn-sm" style="color:#dc2626">Delete</button>
+      <button type="submit" class="btn btn-ghost btn-sm" style="color:#dc2626">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+        Delete
+      </button>
     </form>
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 280px;gap:20px;max-width:900px">
+<div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;max-width:900px">
+
+  <!-- Main card -->
   <div class="card" style="padding:28px">
+    <!-- Amount hero -->
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <div>
-        <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 4px">Expense Amount</p>
-        <p style="font-size:32px;font-weight:900;margin:0">{{ workspace.currency_symbol }}{{ expense.amount|floatformat:2 }}</p>
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 6px">Expense Amount</p>
+        <p style="font-size:36px;font-weight:900;letter-spacing:-.5px;margin:0;color:var(--text-primary)">{{ workspace.currency_symbol }}{{ expense.amount|floatformat:2 }}</p>
+        {% if expense.tax_rate > 0 %}
+        <p style="font-size:12px;color:var(--text-muted);margin:4px 0 0">Includes {{ expense.tax_rate }}% tax = {{ workspace.currency_symbol }}{% widthratio expense.amount 100 expense.tax_rate %}</p>
+        {% endif %}
       </div>
-      <span class="badge b-{{ expense.status }}" style="font-size:13px;padding:6px 12px">{{ expense.get_status_display }}</span>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:var(--text-secondary)">Description</span><span style="font-weight:600;max-width:280px;text-align:right">{{ expense.description }}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:var(--text-secondary)">Date</span><span>{{ expense.expense_date|date:"d F Y" }}</span></div>
-      {% if expense.vendor %}<div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:var(--text-secondary)">Vendor</span><span>{{ expense.vendor }}</span></div>{% endif %}
-      {% if expense.category %}<div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:var(--text-secondary)">Category</span><span class="badge b-info">{{ expense.category.name }}</span></div>{% endif %}
-      {% if expense.tax_rate > 0 %}<div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:var(--text-secondary)">Tax Rate</span><span>{{ expense.tax_rate }}%</span></div>{% endif %}
-      <div style="display:flex;justify-content:space-between;font-size:13.5px"><span style="color:var(--text-secondary)">Billable</span><span>{% if expense.is_billable %}<span style="color:#16a34a;font-weight:600">Yes{% if expense.client %} — {{ expense.client.name }}{% endif %}</span>{% else %}No{% endif %}</span></div>
-      {% if expense.notes %}<div style="padding:12px 14px;background:var(--bg-subtle);border-radius:8px;font-size:13px;color:var(--text-secondary)">{{ expense.notes }}</div>{% endif %}
+      <div class="stat-icon si-red" style="width:52px;height:52px;border-radius:14px">
+        <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </div>
     </div>
 
-    {% with attachment=expense.attachments.first %}
-    {% if attachment %}
+    <!-- Detail rows -->
+    <div style="display:flex;flex-direction:column;gap:13px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:13.5px;padding-bottom:11px;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-secondary);font-weight:500">Description</span>
+        <span style="font-weight:600;max-width:300px;text-align:right;color:var(--text-primary)">{{ expense.description }}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13.5px;padding-bottom:11px;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-secondary);font-weight:500">Date</span>
+        <span style="font-weight:500">{{ expense.expense_date|date:"d F Y" }}</span>
+      </div>
+      {% if expense.vendor %}
+      <div style="display:flex;justify-content:space-between;font-size:13.5px;padding-bottom:11px;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-secondary);font-weight:500">Vendor</span>
+        <span style="font-weight:600">{{ expense.vendor }}</span>
+      </div>
+      {% endif %}
+      {% if expense.category %}
+      <div style="display:flex;justify-content:space-between;font-size:13.5px;padding-bottom:11px;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-secondary);font-weight:500">Category</span>
+        <span class="badge b-info">{{ expense.category.name }}</span>
+      </div>
+      {% endif %}
+      {% if expense.tax_rate > 0 %}
+      <div style="display:flex;justify-content:space-between;font-size:13.5px;padding-bottom:11px;border-bottom:1px solid var(--border)">
+        <span style="color:var(--text-secondary);font-weight:500">Tax Rate</span>
+        <span style="font-weight:600">{{ expense.tax_rate }}%</span>
+      </div>
+      {% endif %}
+      <div style="display:flex;justify-content:space-between;font-size:13.5px;{% if not expense.notes %}{% else %}padding-bottom:11px;border-bottom:1px solid var(--border){% endif %}">
+        <span style="color:var(--text-secondary);font-weight:500">Billable to Client</span>
+        <span style="font-weight:600">
+          {% if expense.is_billable %}
+          <span style="color:#16a34a">Yes{% if expense.client %} — {{ expense.client.name }}{% endif %}</span>
+          {% else %}
+          <span style="color:var(--text-muted)">No</span>
+          {% endif %}
+        </span>
+      </div>
+      {% if expense.notes %}
+      <div style="padding:14px;background:var(--bg-subtle);border-radius:10px;border:1px solid var(--border)">
+        <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 6px">Notes</p>
+        <p style="font-size:13.5px;color:var(--text-secondary);margin:0;line-height:1.6">{{ expense.notes }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Attachments -->
+    {% if expense.attachments.count %}
     <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-      <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 10px">Attachments ({{ expense.attachments.count }})</p>
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 12px">Attachments ({{ expense.attachments.count }})</p>
       {% for att in expense.attachments.all %}
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg-subtle);border-radius:8px;margin-bottom:6px">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-        <span style="flex:1;font-size:12.5px;font-weight:500">{{ att.original_file_name|default:att.file_name }}</span>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-subtle);border-radius:9px;margin-bottom:6px;border:1px solid var(--border)">
+        <div style="width:30px;height:30px;background:rgba(99,102,241,.08);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="14" height="14" fill="none" stroke="var(--brand-600)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+        </div>
+        <span style="flex:1;font-size:13px;font-weight:500;color:var(--text-primary)">{{ att.original_file_name|default:att.file_name }}</span>
         {% if att.file_path %}
         <a href="{{ MEDIA_URL }}{{ att.file_path }}" target="_blank" class="btn btn-xs btn-ghost">View</a>
         {% endif %}
@@ -54,26 +119,51 @@
       {% endfor %}
     </div>
     {% endif %}
-    {% endwith %}
   </div>
 
-  <div style="display:flex;flex-direction:column;gap:16px">
-    <div class="card" style="padding:20px">
-      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 12px">Quick Actions</p>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <a href="{% url 'invoices:expense_edit' expense.id %}" class="btn btn-secondary btn-sm" style="justify-content:flex-start;gap:8px"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>Edit Expense</a>
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <!-- Quick Actions -->
+    <div class="card" style="padding:18px">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 12px">Actions</p>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <a href="{% url 'invoices:expense_edit' expense.id %}" class="btn btn-secondary btn-sm" style="justify-content:center">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Edit Expense
+        </a>
         {% if expense.is_billable and expense.client and expense.status != 'billed' %}
-        <a href="{% url 'invoices:invoice_create' %}?expense={{ expense.id }}" class="btn btn-secondary btn-sm" style="justify-content:flex-start;gap:8px"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>Bill to Client</a>
+        <a href="{% url 'invoices:invoice_create' %}?expense={{ expense.id }}" class="btn btn-primary btn-sm" style="justify-content:center">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+          Bill to Client
+        </a>
+        {% endif %}
+        <a href="{% url 'invoices:expense_list' %}" class="btn btn-ghost btn-sm" style="justify-content:center">← All Expenses</a>
+      </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="card" style="padding:18px">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 12px">Details</p>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Created</span>
+          <span style="color:var(--text-secondary)">{{ expense.created_at|date:"d M Y" }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:var(--text-muted)">Updated</span>
+          <span style="color:var(--text-secondary)">{{ expense.updated_at|date:"d M Y" }}</span>
+        </div>
+        {% if expense.status %}
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--text-muted)">Status</span>
+          <span class="badge b-{{ expense.status }}"><span class="badge-dot"></span>{{ expense.get_status_display }}</span>
+        </div>
         {% endif %}
       </div>
     </div>
-    <div class="card" style="padding:18px">
-      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 10px">Details</p>
-      <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px">
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Created</span><span>{{ expense.created_at|date:"d M Y" }}</span></div>
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Updated</span><span>{{ expense.updated_at|date:"d M Y" }}</span></div>
-      </div>
-    </div>
   </div>
+
+</div>
+
 </div>
 {% endblock %}

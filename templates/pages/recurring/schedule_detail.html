@@ -5,25 +5,50 @@
 {% block content %}
 <div class="page-in">
 
-<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px">
-  <div style="display:flex;align-items:center;gap:12px">
-    <a href="{% url 'invoices:recurring_list' %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px">
+  <div style="display:flex;align-items:center;gap:14px">
+    <a href="{% url 'invoices:recurring_list' %}" class="btn btn-ghost btn-sm btn-icon" aria-label="Back to recurring invoices">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+    </a>
     <div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0">{{ schedule.description }}</h1>
+      <p class="page-eyebrow">Recurring Schedule</p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:1px">
+        <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0;color:var(--text-primary)">{{ schedule.description }}</h1>
         <span class="badge b-{% if schedule.status == 'active' %}paid{% elif schedule.status == 'paused' %}pending{% else %}overdue{% endif %}"><span class="badge-dot"></span>{{ schedule.get_status_display }}</span>
       </div>
-      <p style="font-size:13px;color:var(--text-muted);margin:3px 0 0">{{ schedule.client.name }} · {{ schedule.get_interval_type_display }}</p>
+      <p style="font-size:13px;color:var(--text-muted);margin:4px 0 0">
+        <a href="{% url 'invoices:client_detail' schedule.client.id %}" style="color:var(--brand-600);font-weight:600;text-decoration:none">{{ schedule.client.name }}</a>
+        &nbsp;&middot;&nbsp;{{ schedule.get_interval_type_display }}
+        &nbsp;&middot;&nbsp;{{ schedule.currency_symbol }}{{ schedule.base_amount|floatformat:2 }} per invoice
+      </p>
     </div>
   </div>
-  <div style="display:flex;gap:6px">
-    <a href="{% url 'invoices:recurring_edit' schedule.id %}" class="btn btn-secondary btn-sm">Edit</a>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <a href="{% url 'invoices:recurring_edit' schedule.id %}" class="btn btn-secondary btn-sm">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      Edit
+    </a>
     {% if schedule.status == 'active' %}
-    <form method="post" action="{% url 'invoices:recurring_pause' schedule.id %}">{% csrf_token %}<button type="submit" class="btn btn-secondary btn-sm">Pause</button></form>
+    <form method="post" action="{% url 'invoices:recurring_pause' schedule.id %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary btn-sm" style="color:#d97706">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Pause
+      </button>
+    </form>
     {% elif schedule.status == 'paused' %}
-    <form method="post" action="{% url 'invoices:recurring_resume' schedule.id %}">{% csrf_token %}<button type="submit" class="btn btn-success btn-sm">Resume</button></form>
+    <form method="post" action="{% url 'invoices:recurring_resume' schedule.id %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-success btn-sm">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Resume
+      </button>
+    </form>
     {% endif %}
-    <form method="post" action="{% url 'invoices:recurring_delete' schedule.id %}" onsubmit="return confirm('Delete this schedule?')">{% csrf_token %}<button type="submit" class="btn btn-ghost btn-sm" style="color:#dc2626">Delete</button></form>
+    <form method="post" action="{% url 'invoices:recurring_delete' schedule.id %}" onsubmit="return confirm('Delete this schedule? This cannot be undone.')">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost btn-sm" style="color:#dc2626">Delete</button>
+    </form>
   </div>
 </div>
 

@@ -7,15 +7,22 @@
 <div x-data="{ sendModal: false, voidModal: false }">
 
   <!-- Header -->
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <a href="{% url 'invoices:estimate_list' %}" class="btn btn-ghost btn-sm btn-icon"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg></a>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <a href="{% url 'invoices:estimate_list' %}" class="btn btn-ghost btn-sm btn-icon" aria-label="Back to estimates">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      </a>
       <div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0">{{ estimate.estimate_number }}</h1>
+        <p class="page-eyebrow">Estimate</p>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:1px">
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.4px;margin:0;color:var(--text-primary)">{{ estimate.estimate_number }}</h1>
           <span class="badge b-{{ estimate.status }}"><span class="badge-dot"></span>{{ estimate.get_status_display }}</span>
         </div>
-        <p style="font-size:13px;color:var(--text-muted);margin:3px 0 0">{{ estimate.client.name }} · {{ estimate.issue_date|date:"d F Y" }}</p>
+        <p style="font-size:13px;color:var(--text-muted);margin:4px 0 0">
+          <a href="{% url 'invoices:client_detail' estimate.client.id %}" style="color:var(--brand-600);font-weight:600;text-decoration:none">{{ estimate.client.name }}</a>
+          &nbsp;&middot;&nbsp;{{ estimate.issue_date|date:"d F Y" }}
+          &nbsp;&middot;&nbsp;Valid until <span style="{% if estimate.status == 'expired' %}color:#dc2626;font-weight:700{% endif %}">{{ estimate.expiry_date|date:"d F Y" }}</span>
+        </p>
       </div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">

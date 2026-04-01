@@ -7,11 +7,15 @@
 
 <div class="page-hdr" style="margin-bottom:24px">
   <div>
-    <h1 class="page-title">Vendors</h1>
-    <p class="page-sub">Manage your suppliers and service providers.</p>
+    <p class="page-eyebrow">Finance</p>
+    <h1 class="page-title-lg">Vendors</h1>
+    <p class="page-sub-premium">Manage your suppliers and service providers for faster expense logging.</p>
   </div>
   <div class="page-hdr-actions">
-    <a href="{% url 'invoices:expense_list' %}" class="btn btn-ghost btn-sm">← Expenses</a>
+    <a href="{% url 'invoices:expense_list' %}" class="btn btn-ghost btn-sm">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Expenses
+    </a>
     <a href="{% url 'invoices:vendor_create' %}" class="btn btn-primary btn-sm">
       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
       Add Vendor
@@ -22,7 +26,7 @@
 {% if messages %}
 <div style="margin-bottom:16px">
   {% for msg in messages %}
-  <div style="padding:12px 16px;border-radius:10px;margin-bottom:8px;font-size:13.5px;font-weight:500;
+  <div style="padding:12px 16px;border-radius:10px;margin-bottom:8px;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:8px;
     {% if 'error' in msg.tags %}background:#fef2f2;color:#dc2626;border:1px solid #fecaca;
     {% elif 'success' in msg.tags %}background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;
     {% else %}background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;{% endif %}">
@@ -51,40 +55,41 @@
       <thead>
         <tr>
           <th>Vendor</th>
-          <th>Contact</th>
+          <th class="desk-only">Contact</th>
           <th>Category</th>
-          <th>Total Expenses</th>
+          <th style="text-align:right">Total Expenses</th>
           <th>Status</th>
           <th style="text-align:right">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for vendor in vendors %}
-        <tr>
+        <tr style="cursor:pointer" onclick="window.location='{% url 'invoices:vendor_detail' vendor.id %}'">
           <td>
             <div style="display:flex;align-items:center;gap:10px">
               <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ vendor.name|slice:":1"|upper }}</div>
               <div>
-                <p style="font-weight:600;margin:0;font-size:13.5px">{{ vendor.name }}</p>
+                <p style="font-weight:700;margin:0;font-size:13.5px;color:var(--text-primary)">{{ vendor.name }}</p>
                 {% if vendor.email %}<p style="font-size:11.5px;color:var(--text-muted);margin:1px 0 0">{{ vendor.email }}</p>{% endif %}
               </div>
             </div>
           </td>
-          <td>
+          <td class="desk-only">
             {% if vendor.contact_name %}
-            <p style="font-size:13px;margin:0">{{ vendor.contact_name }}</p>
+            <p style="font-size:13px;margin:0;font-weight:500;color:var(--text-primary)">{{ vendor.contact_name }}</p>
             {% endif %}
             {% if vendor.phone %}<p style="font-size:11.5px;color:var(--text-muted);margin:1px 0 0">{{ vendor.phone }}</p>{% endif %}
+            {% if not vendor.contact_name and not vendor.phone %}<span style="color:var(--text-muted)">—</span>{% endif %}
           </td>
           <td>
             {% if vendor.default_category %}
-            <span class="badge b-info">{{ vendor.default_category.name }}</span>
+            <span class="badge b-info" style="font-size:11px">{{ vendor.default_category.name }}</span>
             {% else %}
             <span style="color:var(--text-muted)">—</span>
             {% endif %}
           </td>
-          <td style="font-weight:700;font-variant-numeric:tabular-nums">
-            {{ workspace.currency_symbol }}{{ vendor.total_expenses|default:0|floatformat:2 }}
+          <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:13.5px;color:var(--text-primary)">
+            {{ workspace.currency_symbol }}{{ vendor.total_expenses|default:0|floatformat:0 }}
             {% if vendor.expense_count %}<span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:4px">({{ vendor.expense_count }})</span>{% endif %}
           </td>
           <td>
@@ -95,7 +100,7 @@
             {% endif %}
           </td>
           <td>
-            <div style="display:flex;gap:4px;justify-content:flex-end">
+            <div class="action-row" onclick="event.stopPropagation()">
               <a href="{% url 'invoices:vendor_detail' vendor.id %}" class="btn btn-xs btn-ghost">View</a>
               <a href="{% url 'invoices:vendor_edit' vendor.id %}" class="btn btn-xs btn-ghost">Edit</a>
             </div>
@@ -107,28 +112,39 @@
   </div>
 
   {% if vendors.has_other_pages %}
-  <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+  <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
     <p style="font-size:12.5px;color:var(--text-muted);margin:0">Page {{ vendors.number }} of {{ vendors.paginator.num_pages }}</p>
-    <div style="display:flex;gap:4px">
-      {% if vendors.has_previous %}<a href="?search={{ search }}&page={{ vendors.previous_page_number }}" class="btn btn-xs btn-secondary">← Prev</a>{% endif %}
-      {% if vendors.has_next %}<a href="?search={{ search }}&page={{ vendors.next_page_number }}" class="btn btn-xs btn-secondary">Next →</a>{% endif %}
+    <div class="pagination">
+      {% if vendors.has_previous %}
+      <a href="?search={{ search }}&page={{ vendors.previous_page_number }}" class="pg-btn">← Prev</a>
+      {% else %}
+      <span class="pg-btn" style="opacity:.4;pointer-events:none">← Prev</span>
+      {% endif %}
+      {% if vendors.has_next %}
+      <a href="?search={{ search }}&page={{ vendors.next_page_number }}" class="pg-btn active">Next →</a>
+      {% else %}
+      <span class="pg-btn" style="opacity:.4;pointer-events:none">Next →</span>
+      {% endif %}
     </div>
   </div>
   {% endif %}
 
   {% else %}
-  <div style="padding:64px 24px;text-align:center">
-    <div class="stat-icon si-indigo" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px">
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+  <div class="empty-state">
+    <div class="empty-icon si-indigo" style="border-radius:16px">
+      <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
     </div>
     {% if search %}
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No vendors found</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Try a different search term.</p>
+    <p class="empty-title">No vendors found</p>
+    <p class="empty-desc">Try a different search term to find your vendor.</p>
     <a href="{% url 'invoices:vendor_list' %}" class="btn btn-secondary btn-sm">Clear Search</a>
     {% else %}
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No vendors yet</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Add your first vendor to speed up expense logging.</p>
-    <a href="{% url 'invoices:vendor_create' %}" class="btn btn-primary btn-sm">Add Vendor</a>
+    <p class="empty-title">No vendors yet</p>
+    <p class="empty-desc">Add your first vendor to speed up expense logging and track supplier spending.</p>
+    <a href="{% url 'invoices:vendor_create' %}" class="btn btn-primary btn-sm">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      Add Vendor
+    </a>
     {% endif %}
   </div>
   {% endif %}
