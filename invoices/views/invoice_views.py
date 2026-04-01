@@ -170,6 +170,29 @@ def invoice_create(request):
 
     default_due_date = timezone.now().date() + timedelta(days=30)
 
+    # Handle pre-population from billable expense
+    prefill_expense = None
+    prefill_items_json = '[]'
+    prefill_client_id = None
+    expense_id = request.GET.get('expense')
+    if expense_id:
+        try:
+            from invoices.models import Expense
+            prefill_expense = Expense.objects.select_related('client', 'category').get(
+                id=expense_id, workspace=workspace, is_billable=True
+            )
+            prefill_client_id = prefill_expense.client_id
+            prefill_items_json = json.dumps([{
+                'description': prefill_expense.description,
+                'quantity': 1,
+                'unit_price': float(prefill_expense.amount),
+                'tax_rate': float(prefill_expense.tax_rate or 0),
+                'discount_type': 'none',
+                'discount_value': 0,
+            }])
+        except Exception:
+            prefill_expense = None
+
     context = {
         'clients': clients,
         'profile': profile,
@@ -184,6 +207,9 @@ def invoice_create(request):
         'default_terms': getattr(profile, 'default_payment_terms', '') or '',
         'is_edit': False,
         'page_title': 'Create Invoice',
+        'prefill_expense': prefill_expense,
+        'prefill_items_json': prefill_items_json,
+        'prefill_client_id': prefill_client_id,
     }
 
     return render(request, "pages/invoices/builder.html", context)

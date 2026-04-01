@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse, Http404
 from django.core.paginator import Paginator
 from django.core.exceptions import ValidationError
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.views.decorators.http import require_POST
 
 from invoices.models import (
@@ -90,9 +90,19 @@ def expense_list(request):
     )
 
     # Build summary stats using actual service keys
+    from django.utils import timezone as _tz
+    _today = _tz.now().date()
+    _month_start = _today.replace(day=1)
+    _this_month_total = Expense.objects.filter(
+        workspace=workspace,
+        expense_date__gte=_month_start,
+        expense_date__lte=_today,
+    ).aggregate(
+        t=Sum('total_amount')
+    )['t'] or 0
     stats = {
         'total': summary.get('total_expenses', 0),
-        'this_month': summary.get('total_expenses', 0),
+        'this_month': _this_month_total,
         'billable': summary.get('billable_total', 0),
         'pending_count': Expense.objects.filter(workspace=workspace, status='pending').count(),
     }

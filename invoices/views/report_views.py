@@ -113,13 +113,74 @@ def revenue_report(request):
     date_range = parse_date_range(request)
     group_by = request.GET.get('group_by', 'month')
 
+    import json
+    from decimal import Decimal
+
     try:
         data = ReportsService.get_revenue_report(request.workspace, date_range, group_by)
     except Exception as e:
-        data = {"error": str(e), "date_range": date_range}
+        data = {"error": str(e), "date_range": date_range, "summary": {}, "revenue_trend": [], "by_client": [], "invoices": []}
+
+    summary = data.get('summary', {})
+
+    # Build outstanding amounts for by_client using amount_paid vs total
+    raw_by_client = data.get('by_client', [])
+    total_rev = sum(r.get('total', 0) for r in raw_by_client) or Decimal('1')
+    by_client_transformed = []
+    for row in raw_by_client:
+        rev = row.get('total', Decimal('0'))
+        collected = row.get('collected', Decimal('0'))
+        outstanding = max(rev - collected, Decimal('0'))
+        pct = (rev / total_rev * 100) if total_rev else Decimal('0')
+        by_client_transformed.append({
+            'client__id': row.get('client__id'),
+            'client__name': row.get('client__name', 'Unknown'),
+            'invoice_count': row.get('count', 0),
+            'total_revenue': rev,
+            'outstanding': outstanding,
+            'pct': float(pct),
+        })
+
+    # Build chart data from revenue_trend
+    revenue_trend = data.get('revenue_trend', [])
+    chart_labels = json.dumps([r['label'] for r in revenue_trend])
+    chart_data = json.dumps([float(r.get('invoiced', 0)) for r in revenue_trend])
+
+    # Build outstanding total
+    from invoices.models import Invoice as _Invoice
+    outstanding_total = _Invoice.objects.filter(
+        workspace=request.workspace,
+        status__in=[_Invoice.Status.SENT, _Invoice.Status.VIEWED, _Invoice.Status.PART_PAID, _Invoice.Status.OVERDUE]
+    ).aggregate(
+        total=models.Sum('amount_due')
+    )['total'] or Decimal('0')
+
+    totals = {
+        'revenue': summary.get('total_invoiced', Decimal('0')),
+        'paid_count': summary.get('invoice_count', 0),
+        'outstanding': outstanding_total,
+        'avg_invoice': summary.get('avg_invoice', Decimal('0')),
+        'collection_rate': summary.get('collection_rate', Decimal('0')),
+    }
+
+    if request.GET.get('export') == 'csv':
+        invoices_qs = data.get('invoices', [])
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="revenue_report.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Invoice #', 'Client', 'Issue Date', 'Amount', 'Paid', 'Status'])
+        for inv in invoices_qs:
+            writer.writerow([inv.invoice_number, inv.client.name, inv.issue_date, inv.total_amount, inv.amount_paid, inv.get_status_display()])
+        return response
 
     return render(request, 'pages/reports/revenue.html', {
         **data,
+        "by_client": by_client_transformed,
+        "totals": totals,
+        "chart_labels": chart_labels,
+        "chart_data": chart_data,
+        "date_from": date_range.start_date,
+        "date_to": date_range.end_date,
         "page_title": "Revenue Report",
         "presets": get_date_presets(),
         "current_preset": request.GET.get('preset', 'this_month'),
@@ -131,13 +192,52 @@ def revenue_report(request):
 @workspace_required
 def aging_report(request):
     """Accounts Receivable aging report."""
+    from decimal import Decimal
+
     try:
         data = ReportsService.get_aging_report(request.workspace)
     except Exception as e:
-        data = {"error": str(e)}
+        data = {"error": str(e), "buckets": {}, "total_outstanding": Decimal('0'), "by_client": []}
+
+    raw_buckets = data.get('buckets', {})
+
+    # Flatten bucket data for template (keys starting with digits can't use dot notation)
+    flat_buckets = {
+        "total": data.get('total_outstanding', Decimal('0')),
+        "current": raw_buckets.get('current', {}).get('total', Decimal('0')),
+        "current_count": raw_buckets.get('current', {}).get('count', 0),
+        "d31_60": raw_buckets.get('31_60', {}).get('total', Decimal('0')),
+        "d31_60_count": raw_buckets.get('31_60', {}).get('count', 0),
+        "d61_90": raw_buckets.get('61_90', {}).get('total', Decimal('0')),
+        "d61_90_count": raw_buckets.get('61_90', {}).get('count', 0),
+        "d90_plus": raw_buckets.get('over_90', {}).get('total', Decimal('0')),
+        "d90_plus_count": raw_buckets.get('over_90', {}).get('count', 0),
+    }
+
+    # Build a flat list of aging rows combining all buckets, sorted by due_date
+    aging_rows = []
+    for bucket in raw_buckets.values():
+        for inv in bucket.get('invoices', []):
+            # Wrap client info so template can access row.client.name
+            inv_copy = dict(inv)
+            inv_copy['client'] = {'name': inv.get('client_name', ''), 'id': inv.get('client_id')}
+            aging_rows.append(inv_copy)
+    aging_rows.sort(key=lambda x: (-(x.get('days_overdue') or 0)))
+
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="ar_aging.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['Invoice #', 'Client', 'Due Date', 'Days Overdue', 'Amount Due', 'Bucket'])
+        for row in aging_rows:
+            bucket_label = '>90d' if row.get('days_overdue', 0) > 90 else '61-90d' if row.get('days_overdue', 0) > 60 else '31-60d' if row.get('days_overdue', 0) > 30 else 'Current'
+            writer.writerow([row.get('invoice_number'), row['client']['name'], row.get('due_date'), row.get('days_overdue', 0), row.get('amount_due'), bucket_label])
+        return response
 
     return render(request, 'pages/reports/aging.html', {
         **data,
+        "buckets": flat_buckets,
+        "aging_rows": aging_rows,
         "page_title": "A/R Aging Report",
     })
 
@@ -146,15 +246,50 @@ def aging_report(request):
 @workspace_required
 def cashflow_report(request):
     """Cash flow analysis report."""
+    import json
+    from decimal import Decimal
+
     date_range = parse_date_range(request)
 
     try:
         data = ReportsService.get_cashflow_report(request.workspace, date_range)
     except Exception as e:
-        data = {"error": str(e), "date_range": date_range}
+        data = {"error": str(e), "date_range": date_range, "cashflow_data": [], "summary": {}}
+
+    cf_summary = data.get('summary', {})
+    cashflow_data = data.get('cashflow_data', [])
+
+    # Transform for template
+    monthly_rows = [
+        {
+            "month": row.get('period_label', row.get('period', '')),
+            "inflows": row.get('inflow', Decimal('0')),
+            "outflows": row.get('outflow', Decimal('0')),
+            "net": row.get('net', Decimal('0')),
+            "running_balance": row.get('running_balance', Decimal('0')),
+        }
+        for row in cashflow_data
+    ]
+
+    totals = {
+        "inflows": cf_summary.get('total_inflows', Decimal('0')),
+        "outflows": cf_summary.get('total_outflows', Decimal('0')),
+        "net": cf_summary.get('net_cashflow', Decimal('0')),
+    }
+
+    chart_labels = json.dumps([r['month'] for r in monthly_rows])
+    chart_inflows = json.dumps([float(r['inflows']) for r in monthly_rows])
+    chart_outflows = json.dumps([float(r['outflows']) for r in monthly_rows])
 
     return render(request, 'pages/reports/cashflow.html', {
         **data,
+        "totals": totals,
+        "monthly_rows": monthly_rows,
+        "chart_labels": chart_labels,
+        "chart_inflows": chart_inflows,
+        "chart_outflows": chart_outflows,
+        "date_from": date_range.start_date,
+        "date_to": date_range.end_date,
         "page_title": "Cash Flow Report",
         "presets": get_date_presets(),
         "current_preset": request.GET.get('preset', 'this_month'),
@@ -184,15 +319,30 @@ def profitability_report(request):
 @workspace_required
 def tax_report(request):
     """Tax summary report."""
+    from decimal import Decimal
+
     date_range = parse_date_range(request)
 
     try:
         data = ReportsService.get_tax_report(request.workspace, date_range)
     except Exception as e:
-        data = {"error": str(e), "date_range": date_range}
+        data = {"error": str(e), "date_range": date_range, "tax_collected": {}, "tax_paid": {}, "net_tax_liability": Decimal('0'), "by_rate": [], "monthly_data": []}
+
+    tax_collected = data.get('tax_collected', {})
+    tax_paid = data.get('tax_paid', {})
+
+    totals = {
+        'collected': tax_collected.get('total_tax', Decimal('0')),
+        'on_expenses': tax_paid.get('total_tax', Decimal('0')),
+        'net': data.get('net_tax_liability', Decimal('0')),
+        'invoice_count': tax_collected.get('invoice_count', 0),
+    }
 
     return render(request, 'pages/reports/tax.html', {
         **data,
+        "totals": totals,
+        "date_from": date_range.start_date,
+        "date_to": date_range.end_date,
         "page_title": "Tax Summary Report",
         "presets": get_date_presets(),
         "current_preset": request.GET.get('preset', 'this_month'),

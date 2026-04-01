@@ -49,7 +49,7 @@
               <select name="client_id" class="form-select" required>
                 <option value="">— Select client —</option>
                 {% for cl in clients %}
-                <option value="{{ cl.id }}" {% if invoice and invoice.client_id == cl.id %}selected{% endif %}>{{ cl.name }}</option>
+                <option value="{{ cl.id }}" {% if invoice and invoice.client_id == cl.id %}selected{% elif prefill_client_id == cl.id %}selected{% endif %}>{{ cl.name }}</option>
                 {% endfor %}
               </select>
               <p class="form-hint">Don't see a client? <a href="{% url 'invoices:client_create' %}?next={{ request.path }}" style="color:var(--brand-600);font-weight:600">Add one</a></p>
@@ -281,8 +281,18 @@ function invoiceBuilder() {
         {% endfor %}
         {% endif %}
       ];
+      const prefillItems = {{ prefill_items_json|default:"[]" }};
       if (existing.length > 0) {
         this.items = existing;
+      } else if (prefillItems.length > 0) {
+        this.items = prefillItems.map(item => ({
+          id: this._uid++, itemId: null,
+          description: item.description || '',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          tax_rate: item.tax_rate || 0,
+          total: (item.quantity || 1) * (item.unit_price || 0),
+        }));
       } else {
         this.addItem();
       }
@@ -300,18 +310,31 @@ function invoiceBuilder() {
 
     calcTotals() {
       let sub = 0, tax = 0;
+      const taxModeEl = document.querySelector('[name="tax_mode"]');
+      const taxMode = taxModeEl ? taxModeEl.value : 'exclusive';
       this.items.forEach(item => {
-        const lineAmt = parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0);
-        const lineTax = lineAmt * parseFloat(item.tax_rate || 0) / 100;
-        item.total = lineAmt + lineTax;
-        sub += lineAmt;
+        const qty = parseFloat(item.quantity || 0);
+        const price = parseFloat(item.unit_price || 0);
+        const rate = parseFloat(item.tax_rate || 0);
+        const lineAmt = qty * price;
+        let lineTax = 0;
+        if (taxMode === 'inclusive') {
+          // Tax is included in the price: extract it
+          lineTax = lineAmt * rate / (100 + rate);
+          item.total = lineAmt;
+          sub += lineAmt - lineTax;
+        } else {
+          lineTax = lineAmt * rate / 100;
+          item.total = lineAmt + lineTax;
+          sub += lineAmt;
+        }
         tax += lineTax;
       });
       this.subtotal = sub;
       this.taxTotal = tax;
       if (this.discountType === 'percentage') {
         this.discount = sub * parseFloat(this.discountValue || 0) / 100;
-      } else if (this.discountType === 'fixed') {
+      } else if (this.discountType === 'fixed' || this.discountType === 'flat') {
         this.discount = parseFloat(this.discountValue || 0);
       } else {
         this.discount = 0;
@@ -343,7 +366,7 @@ function invoiceBuilder() {
     },
 
     saveAndSend() {
-      this.formAction = 'save';
+      this.formAction = 'save_and_send';
       this.saving = true;
       this.serializeItems();
       this.$nextTick(() => document.getElementById('invoiceForm').submit());

@@ -238,7 +238,7 @@ class ReportsService:
 
         revenue_trend = cls._get_revenue_trend(workspace, date_range, group_by)
 
-        by_client = invoices.values('client__name').annotate(
+        by_client = invoices.values('client__id', 'client__name').annotate(
             count=Count('id'),
             total=Coalesce(Sum('total_amount'), Value(Decimal('0')), output_field=DecimalField()),
             collected=Coalesce(Sum('amount_paid'), Value(Decimal('0')), output_field=DecimalField()),

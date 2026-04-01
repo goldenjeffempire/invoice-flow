@@ -42,7 +42,13 @@
         </div>
         <div class="form-group">
           <label class="form-label">Vendor / Merchant</label>
-          <input type="text" name="vendor" class="form-input" value="{{ expense.vendor|default:'' }}" placeholder="Who did you pay?">
+          <select name="vendor" class="form-select">
+            <option value="">— No vendor —</option>
+            {% for v in vendors %}
+            <option value="{{ v.id }}" {% if expense and expense.vendor_id == v.id %}selected{% endif %}>{{ v.name }}</option>
+            {% endfor %}
+          </select>
+          <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0"><a href="{% url 'invoices:vendor_create' %}" target="_blank" style="color:var(--brand-600)">+ Add new vendor</a></p>
         </div>
       </div>
     </div>
