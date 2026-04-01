@@ -1,0 +1,334 @@
+/* ============================================================
+   InvoiceFlow — Settings v3 (Complete Rebuild)
+   ============================================================ */
+:root {
+  --font-mono: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
+}
+
+/* ── Layout ───────────────────────────────────────────────── */
+.st-layout { display: flex; gap: 24px; align-items: flex-start }
+
+/* ── Sidebar ──────────────────────────────────────────────── */
+.st-sidebar {
+  width: 224px; flex-shrink: 0; position: sticky; top: 90px;
+}
+.st-sidebar-profile {
+  padding: 16px; border-radius: var(--radius-lg); border: 1px solid var(--border);
+  background: var(--bg-card); margin-bottom: 6px;
+  display: flex; align-items: center; gap: 11px; overflow: hidden;
+}
+.st-sidebar-avatar {
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
+  font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; box-shadow: 0 2px 8px rgba(79,70,229,.25);
+}
+.st-sidebar-avatar img { width: 100%; height: 100%; object-fit: cover }
+.st-sidebar-name { font-size: 13px; font-weight: 700; color: var(--text-primary); margin: 0 0 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.st-sidebar-email { font-size: 11px; color: var(--text-muted); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+
+.st-nav { display: flex; flex-direction: column; gap: 1px }
+.st-nav-group {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-muted); padding: 12px 10px 4px; margin-top: 4px;
+}
+.st-nav-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 11px;
+  border-radius: 9px; font-size: 13px; font-weight: 500;
+  color: var(--sb-item); background: transparent; border: none;
+  cursor: pointer; font-family: inherit; text-decoration: none;
+  text-align: left; width: 100%; white-space: nowrap;
+  transition: background 120ms, color 120ms;
+}
+.st-nav-item:hover { background: var(--sb-item-hover-bg); color: var(--text-primary) }
+.st-nav-item.active {
+  background: var(--sb-item-active-bg); color: var(--sb-item-active); font-weight: 600;
+}
+.st-nav-icon { width: 15px; height: 15px; flex-shrink: 0; opacity: .65 }
+.st-nav-item:hover .st-nav-icon, .st-nav-item.active .st-nav-icon { opacity: 1 }
+.st-nav-badge {
+  margin-left: auto; font-size: 9.5px; font-weight: 700;
+  padding: 1px 6px; border-radius: 99px;
+  background: rgba(220,38,38,.1); color: #dc2626;
+}
+.dark .st-nav-badge { background: rgba(220,38,38,.15); color: #f87171 }
+.st-nav-ext { margin-left: auto; opacity: .35; flex-shrink: 0 }
+.st-nav-divider { height: 1px; background: var(--border); margin: 5px 0 }
+
+/* ── Content Panel ────────────────────────────────────────── */
+.st-panel { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px }
+
+/* ── Section Card ─────────────────────────────────────────── */
+.st-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden }
+.st-section-hdr {
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: var(--bg-subtle);
+}
+.dark .st-section-hdr { background: rgba(255,255,255,.015) }
+.st-section-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0 0 2px }
+.st-section-sub   { font-size: 12px; color: var(--text-muted); margin: 0 }
+.st-section-body  { padding: 24px }
+.st-section-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  background: var(--bg-subtle); display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+}
+.dark .st-section-footer { background: rgba(255,255,255,.015) }
+
+/* ── Profile Card ─────────────────────────────────────────── */
+.st-profile-banner {
+  padding: 24px;
+  background: linear-gradient(135deg, var(--bg-subtle) 0%, var(--bg-card) 100%);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.st-avatar-ring {
+  position: relative; flex-shrink: 0;
+}
+.st-avatar {
+  width: 80px; height: 80px; border-radius: 20px; overflow: hidden;
+  box-shadow: 0 4px 16px rgba(79,70,229,.25);
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 28px; font-weight: 800; letter-spacing: -.5px;
+  cursor: pointer; position: relative; transition: opacity 150ms;
+}
+.st-avatar:hover { opacity: .9 }
+.st-avatar img { width: 100%; height: 100%; object-fit: cover }
+.st-avatar-upload-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,.45); border-radius: 20px;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+  opacity: 0; transition: opacity 150ms; pointer-events: none;
+}
+.st-avatar:hover .st-avatar-upload-overlay { opacity: 1 }
+.st-avatar-status {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 16px; height: 16px; border-radius: 50%; background: #22c55e;
+  border: 2.5px solid var(--bg-card);
+}
+.st-profile-info { flex: 1; min-width: 0 }
+.st-profile-name   { font-size: 20px; font-weight: 800; color: var(--text-primary); margin: 0 0 3px; letter-spacing: -.3px }
+.st-profile-email  { font-size: 13px; color: var(--text-muted); margin: 0 0 10px }
+.st-badge-row      { display: flex; flex-wrap: wrap; gap: 6px; align-items: center }
+
+/* ── Form Rows ────────────────────────────────────────────── */
+.st-form-grid { display: grid; gap: 18px }
+.st-form-cols-2 { grid-template-columns: 1fr 1fr }
+.st-form-cols-3 { grid-template-columns: 1fr 1fr 1fr }
+.st-form-group  { display: flex; flex-direction: column; gap: 6px }
+.st-label {
+  font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--text-muted);
+}
+.st-hint { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.4 }
+.st-error { font-size: 11px; color: #dc2626; margin-top: 3px; font-weight: 500 }
+
+/* ── Toggle Switches ──────────────────────────────────────── */
+.st-notify-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 14px 0; border-bottom: 1px solid var(--border); gap: 16px;
+}
+.st-notify-row:last-child { border-bottom: none; padding-bottom: 0 }
+.st-notify-row:first-child { padding-top: 0 }
+.st-notify-info { flex: 1 }
+.st-notify-label { font-size: 13.5px; font-weight: 600; color: var(--text-primary); margin: 0 0 3px }
+.st-notify-sub   { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.4 }
+
+.st-toggle {
+  position: relative; width: 40px; height: 22px; flex-shrink: 0;
+}
+.st-toggle input { opacity: 0; width: 0; height: 0; position: absolute }
+.st-toggle-track {
+  position: absolute; inset: 0; border-radius: 99px;
+  background: var(--bg-subtle); border: 1.5px solid var(--border);
+  transition: background 200ms, border-color 200ms; cursor: pointer;
+}
+.st-toggle input:checked ~ .st-toggle-track { background: #4f46e5; border-color: #4f46e5 }
+.dark .st-toggle input:checked ~ .st-toggle-track { background: #6366f1; border-color: #6366f1 }
+.st-toggle-thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px; border-radius: 50%; background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform 200ms var(--anim);
+  pointer-events: none;
+}
+.st-toggle input:checked ~ .st-toggle-track .st-toggle-thumb { transform: translateX(18px) }
+
+/* ── Color Pickers ────────────────────────────────────────── */
+.st-color-row { display: flex; flex-wrap: wrap; gap: 16px }
+.st-color-group { display: flex; flex-direction: column; gap: 7px; min-width: 120px }
+.st-color-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted) }
+.st-color-wrap {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-subtle); border: 1.5px solid var(--border-input);
+  border-radius: var(--radius-sm); padding: 6px 10px;
+  cursor: pointer; transition: border-color 150ms;
+}
+.st-color-wrap:focus-within { border-color: var(--border-focus) }
+.st-color-swatch {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  border: 1.5px solid rgba(0,0,0,.1); cursor: pointer;
+}
+.st-color-input { opacity: 0; width: 0; height: 0; position: absolute }
+.st-color-value { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); font-family: var(--font-mono) }
+
+/* ── Invoice Style Grid ───────────────────────────────────── */
+.st-style-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px }
+.st-style-card {
+  border: 2px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; overflow: hidden; transition: border-color 150ms, transform 150ms;
+  position: relative;
+}
+.st-style-card:hover { border-color: var(--brand-300); transform: translateY(-2px) }
+.st-style-card.selected { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.15) }
+.dark .st-style-card.selected { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(99,102,241,.2) }
+.st-style-preview {
+  height: 90px; background: var(--bg-subtle); display: flex; flex-direction: column;
+  padding: 8px; gap: 4px; overflow: hidden;
+}
+.st-style-line  { height: 4px; border-radius: 2px; background: var(--border) }
+.st-style-line-h{ height: 6px; border-radius: 2px; background: #6366f1; width: 55% }
+.st-style-label {
+  text-align: center; padding: 7px; font-size: 11px; font-weight: 600;
+  color: var(--text-secondary); background: var(--bg-card);
+  border-top: 1px solid var(--border);
+}
+.st-style-check {
+  position: absolute; top: 5px; right: 5px;
+  width: 18px; height: 18px; border-radius: 50%; background: #4f46e5;
+  color: white; display: none; align-items: center; justify-content: center;
+  font-size: 10px;
+}
+.st-style-card.selected .st-style-check { display: flex }
+
+/* ── Security Sections ────────────────────────────────────── */
+.st-security-event {
+  display: flex; align-items: center; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.st-security-event:last-child { border-bottom: none; padding-bottom: 0 }
+.st-security-event:first-child { padding-top: 0 }
+.st-security-icon {
+  width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.st-security-info { flex: 1; min-width: 0 }
+.st-security-label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 0 0 2px }
+.st-security-meta  { font-size: 11.5px; color: var(--text-muted); margin: 0 }
+.st-security-time  { font-size: 11.5px; color: var(--text-muted); flex-shrink: 0; text-align: right }
+
+.st-session-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.st-session-row:last-child { border-bottom: none; padding-bottom: 0 }
+.st-session-icon {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: var(--bg-subtle); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+}
+.st-session-info  { flex: 1; min-width: 0 }
+.st-session-label { font-size: 13px; font-weight: 600; color: var(--text-primary); margin: 0 0 2px; display: flex; align-items: center; gap: 6px }
+.st-session-meta  { font-size: 11.5px; color: var(--text-muted); margin: 0 }
+
+/* ── Danger Zone ──────────────────────────────────────────── */
+.st-danger-section {
+  border: 1px solid rgba(220,38,38,.25) !important;
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+.st-danger-section .st-section-hdr { background: rgba(254,242,242,.5) }
+.dark .st-danger-section .st-section-hdr { background: rgba(220,38,38,.06) }
+.st-danger-section .st-section-title { color: #b91c1c }
+.dark .st-danger-section .st-section-title { color: #f87171 }
+
+/* ── Password strength ────────────────────────────────────── */
+.st-pw-strength { display: flex; flex-direction: column; gap: 5px; margin-top: 8px }
+.st-pw-bars { display: flex; gap: 4px }
+.st-pw-bar {
+  flex: 1; height: 3px; border-radius: 99px;
+  background: var(--bg-subtle); transition: background 200ms;
+}
+.st-pw-bar.weak   { background: #ef4444 }
+.st-pw-bar.fair   { background: #f59e0b }
+.st-pw-bar.good   { background: #22c55e }
+.st-pw-bar.strong { background: #10b981 }
+.st-pw-text { font-size: 11px; color: var(--text-muted); font-weight: 600 }
+
+/* ── Modal ────────────────────────────────────────────────── */
+.st-modal-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: st-fade-in 150ms ease;
+}
+.st-modal {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-xl); padding: 28px;
+  width: 100%; max-width: 440px; position: relative;
+  box-shadow: var(--shadow-xl);
+  animation: st-slide-up 200ms var(--anim);
+}
+.st-modal-title { font-size: 17px; font-weight: 800; color: var(--text-primary); margin: 0 0 6px; letter-spacing: -.3px }
+.st-modal-sub   { font-size: 13px; color: var(--text-muted); margin: 0 0 20px; line-height: 1.5 }
+.st-modal-close {
+  position: absolute; top: 16px; right: 16px; width: 28px; height: 28px;
+  border-radius: 7px; border: 1px solid var(--border); background: transparent;
+  cursor: pointer; color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+  transition: background 120ms, color 120ms;
+}
+.st-modal-close:hover { background: var(--bg-hover); color: var(--text-primary) }
+.st-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px }
+@keyframes st-fade-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes st-slide-up { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+
+/* ── 2FA card ─────────────────────────────────────────────── */
+.st-mfa-card {
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 20px; display: flex; align-items: flex-start; gap: 14px;
+}
+.st-mfa-icon {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.st-mfa-on  { background: rgba(22,163,74,.1); color: #16a34a }
+.st-mfa-off { background: rgba(217,119,6,.1); color: #d97706 }
+.dark .st-mfa-on  { background: rgba(22,163,74,.15); color: #4ade80 }
+.dark .st-mfa-off { background: rgba(217,119,6,.15); color: #fbbf24 }
+.st-mfa-info { flex: 1; min-width: 0 }
+.st-mfa-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin: 0 0 4px }
+.st-mfa-desc  { font-size: 12.5px; color: var(--text-muted); margin: 0 0 12px; line-height: 1.5 }
+
+/* ── Save indicator ───────────────────────────────────────── */
+.st-saving-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #f59e0b;
+  animation: st-blink 1s ease infinite;
+}
+@keyframes st-blink { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .st-form-cols-3 { grid-template-columns: 1fr 1fr }
+  .st-style-grid  { grid-template-columns: repeat(3,1fr) }
+}
+@media (max-width: 900px) {
+  .st-layout       { flex-direction: column }
+  .st-sidebar      { width: 100%; position: static; display: flex; flex-direction: column; gap: 0 }
+  .st-nav          { flex-direction: row; flex-wrap: wrap; gap: 4px; overflow-x: auto; scrollbar-width: none }
+  .st-nav::-webkit-scrollbar { display: none }
+  .st-nav-group    { display: none }
+  .st-nav-divider  { display: none }
+  .st-nav-item     { white-space: nowrap; padding: 7px 12px; border-radius: 99px; font-size: 12.5px }
+  .st-sidebar-profile { display: none }
+  .st-style-grid   { grid-template-columns: repeat(3,1fr) }
+}
+@media (max-width: 640px) {
+  .st-form-cols-2  { grid-template-columns: 1fr }
+  .st-form-cols-3  { grid-template-columns: 1fr }
+  .st-style-grid   { grid-template-columns: repeat(2,1fr) }
+  .st-color-row    { flex-direction: column }
+  .st-section-body { padding: 18px }
+  .st-profile-banner { flex-direction: column; align-items: flex-start }
+  .st-nav-item .st-nav-icon { display: none }
+}

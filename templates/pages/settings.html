@@ -1,844 +1,1216 @@
 {% extends "base/layout_app.html" %}
+{% load static %}
 {% block title %}Settings — InvoiceFlow{% endblock %}
 {% block page_title %}Settings{% endblock %}
 
-{% block content %}
-<div x-data="settingsPage()" x-init="init()">
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/settings.css' %}">
+{% endblock %}
 
-  <!-- Page Header -->
-  <div class="page-hdr" style="margin-bottom:28px">
+{% block content %}
+<div x-data="settingsApp()" x-init="init()" @keydown.escape.window="closeModals()">
+
+  <!-- ── Page Header ──────────────────────────────────────── -->
+  <div class="page-hdr" style="margin-bottom:24px">
     <div>
       <h1 class="page-title">Settings</h1>
-      <p class="page-sub">Manage your profile, business details, branding, and notifications.</p>
+      <p class="page-sub">Manage your profile, business, branding, security, and preferences.</p>
     </div>
   </div>
 
-  <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+  <!-- ── Toast Notifications ─────────────────────────────── -->
+  <div style="position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none">
+    <template x-for="toast in toasts" :key="toast.id">
+      <div :class="'card toast-notify toast-' + toast.type" style="display:flex;align-items:center;gap:10px;padding:12px 16px;min-width:280px;max-width:380px;pointer-events:all;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.15)"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-x-full"
+        x-transition:enter-end="opacity-100 translate-x-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0 translate-x-full">
+        <span x-text="toast.icon" style="font-size:16px"></span>
+        <span x-text="toast.message" style="font-size:13px;font-weight:500;flex:1;color:var(--text-primary)"></span>
+        <button @click="removeToast(toast.id)" style="background:transparent;border:none;cursor:pointer;color:var(--text-muted);padding:0;line-height:1">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </template>
+  </div>
 
-    <!-- ── Sidebar Nav ─────────────────────────────────────── -->
-    <aside style="width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
-      <button @click="tab='profile'" :class="tab==='profile' ? 'nav-item active' : 'nav-item'"
-        style="width:100%;text-align:left;font-family:inherit;border:none;cursor:pointer;background:transparent">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-        Profile
-      </button>
-      <button @click="tab='business'" :class="tab==='business' ? 'nav-item active' : 'nav-item'"
-        style="width:100%;text-align:left;font-family:inherit;border:none;cursor:pointer;background:transparent">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-        Business
-      </button>
-      <button @click="tab='branding'" :class="tab==='branding' ? 'nav-item active' : 'nav-item'"
-        style="width:100%;text-align:left;font-family:inherit;border:none;cursor:pointer;background:transparent">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
-        Branding
-      </button>
-      <button @click="tab='notifications'" :class="tab==='notifications' ? 'nav-item active' : 'nav-item'"
-        style="width:100%;text-align:left;font-family:inherit;border:none;cursor:pointer;background:transparent">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-        Notifications
-      </button>
+  <!-- ── Layout ──────────────────────────────────────────── -->
+  <div class="st-layout">
 
-      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+    <!-- ── Sidebar ─────────────────────────────────────────── -->
+    <aside class="st-sidebar">
 
-      <a href="{% url 'invoices:workspace_settings' %}" class="nav-item">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-        Workspace
-        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left:auto;opacity:.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-      </a>
-      <a href="{% url 'invoices:security_settings' %}" class="nav-item">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-        Security
-        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-left:auto;opacity:.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-      </a>
+      <!-- Profile mini-card -->
+      <div class="st-sidebar-profile">
+        <div class="st-sidebar-avatar">
+          {% if profile.company_logo %}
+            <img src="{{ profile.company_logo.url }}" alt="Avatar">
+          {% else %}
+            {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+          {% endif %}
+        </div>
+        <div style="overflow:hidden">
+          <p class="st-sidebar-name">{{ user.get_full_name|default:user.username }}</p>
+          <p class="st-sidebar-email">{{ user.email }}</p>
+        </div>
+      </div>
+
+      <nav class="st-nav">
+        <span class="st-nav-group">Account</span>
+
+        <button class="st-nav-item" :class="tab==='profile' && 'active'" @click="setTab('profile')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          Profile
+        </button>
+
+        <button class="st-nav-item" :class="tab==='business' && 'active'" @click="setTab('business')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+          Business
+        </button>
+
+        <button class="st-nav-item" :class="tab==='branding' && 'active'" @click="setTab('branding')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+          Branding
+        </button>
+
+        <span class="st-nav-group">Preferences</span>
+
+        <button class="st-nav-item" :class="tab==='notifications' && 'active'" @click="setTab('notifications')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          Notifications
+        </button>
+
+        <button class="st-nav-item" :class="tab==='payments' && 'active'" @click="setTab('payments')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+          Payments
+        </button>
+
+        <div class="st-nav-divider"></div>
+        <span class="st-nav-group">Security & Team</span>
+
+        <button class="st-nav-item" :class="tab==='security' && 'active'" @click="setTab('security')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          Security
+        </button>
+
+        <a href="{% url 'invoices:workspace_settings' %}" class="st-nav-item">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Workspace
+          <svg class="st-nav-ext" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+
+        <a href="{% url 'invoices:reminder_dashboard' %}" class="st-nav-item">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Reminders
+          <svg class="st-nav-ext" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+      </nav>
     </aside>
 
-    <!-- ── Main Panel ──────────────────────────────────────── -->
-    <div style="flex:1;min-width:0">
+    <!-- ── Content Panel ──────────────────────────────────── -->
+    <div class="st-panel">
 
-      <!-- ─ PROFILE TAB ─ -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB: PROFILE -->
+      <!-- ══════════════════════════════════════════════════ -->
       <div x-show="tab==='profile'" x-cloak>
 
-        <!-- Avatar Section -->
-        <div class="card" style="overflow:hidden;margin-bottom:20px">
-          <div style="padding:24px 32px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;background:linear-gradient(to right,var(--bg-subtle),var(--bg-card));border-bottom:1px solid var(--border)">
+        <!-- Profile Card (avatar + badges) -->
+        <div class="st-section" style="margin-bottom:0">
+          <div class="st-profile-banner">
 
-            <!-- Avatar display -->
-            <div style="position:relative;flex-shrink:0">
-              <div id="avatar-wrap" style="width:80px;height:80px;border-radius:20px;overflow:hidden;box-shadow:0 4px 16px rgba(99,102,241,.3);flex-shrink:0">
-                {% if profile.company_logo %}
-                  <img id="avatar-img" src="{{ profile.company_logo.url }}" alt="Avatar"
-                    style="width:100%;height:100%;object-fit:cover">
-                {% else %}
-                  <div id="avatar-initials" style="width:100%;height:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:800;letter-spacing:-.5px">
-                    {{ user.get_full_name|default:user.username|slice:":1"|upper }}
+            <!-- Avatar -->
+            <div class="st-avatar-ring">
+              <label for="avatar-file" style="cursor:pointer">
+                <div class="st-avatar" id="avatar-display">
+                  {% if profile.company_logo %}
+                    <img id="avatar-img" src="{{ profile.company_logo.url }}" alt="Avatar">
+                  {% else %}
+                    <span id="avatar-initials">{{ user.get_full_name|default:user.username|slice:":1"|upper }}</span>
+                  {% endif %}
+                  <div class="st-avatar-upload-overlay">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                   </div>
+                </div>
+              </label>
+              <input type="file" id="avatar-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" @change="uploadAvatar($event)">
+              <span class="st-avatar-status"></span>
+            </div>
+
+            <div class="st-profile-info">
+              <h2 class="st-profile-name" id="display-name">{{ user.get_full_name|default:user.username }}</h2>
+              <p class="st-profile-email" id="display-email">{{ user.email }}</p>
+              <div class="st-badge-row">
+                {% if profile.email_verified %}
+                  <span class="badge b-paid" style="font-size:10.5px">✓ Email Verified</span>
+                {% else %}
+                  <span class="badge b-pending" style="font-size:10.5px">Email Not Verified</span>
+                {% endif %}
+                {% if mfa_enabled %}
+                  <span class="badge b-approved" style="font-size:10.5px">✓ 2FA Active</span>
+                {% else %}
+                  <span class="badge b-draft" style="font-size:10.5px">2FA Off</span>
+                {% endif %}
+                {% if profile.company_name %}
+                  <span class="badge b-outline" style="font-size:10.5px">{{ profile.company_name }}</span>
                 {% endif %}
               </div>
-              <span style="position:absolute;bottom:-3px;right:-3px;width:18px;height:18px;border-radius:50%;background:#10b981;border:2px solid var(--bg-card)"></span>
             </div>
 
-            <div style="flex:1;min-width:0">
-              <h2 id="display-name" style="font-size:18px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">{{ user.get_full_name|default:user.username }}</h2>
-              <p id="display-email" style="font-size:13px;color:var(--text-muted);margin:0 0 10px">{{ user.email }}</p>
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                {% if profile.email_verified %}<span class="badge b-paid" style="font-size:10px">✓ Email Verified</span>{% else %}<span class="badge b-pending" style="font-size:10px">Email Not Verified</span>{% endif %}
-                {% if profile.two_factor_enabled %}<span class="badge b-approved" style="font-size:10px">✓ 2FA Enabled</span>{% else %}<span class="badge b-draft" style="font-size:10px">2FA Disabled</span>{% endif %}
-              </div>
-            </div>
-
-            <!-- Avatar upload -->
-            <div>
-              <label for="avatar-file-input" class="btn btn-secondary btn-sm" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                Change Photo
-              </label>
-              <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/webp,image/gif"
-                style="display:none" @change="handleAvatarChange($event)">
-              <p style="font-size:11px;color:var(--text-muted);margin:6px 0 0;text-align:center">JPG, PNG, WebP (max 5 MB)</p>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- Profile Completeness -->
-        {% with has_name=user.get_full_name has_avatar=profile.company_logo has_phone=profile.business_phone has_biz=profile.company_name has_2fa=profile.two_factor_enabled has_verified=profile.email_verified %}
-        <div class="card" style="overflow:hidden;margin-bottom:20px;padding:18px 28px">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px">
-            <div>
-              <p style="font-size:13px;font-weight:700;margin:0 0 2px;color:var(--text-primary)">Profile Completeness</p>
-              <p style="font-size:12px;color:var(--text-muted);margin:0">Complete your profile to get the most out of InvoiceFlow.</p>
-            </div>
-            <div style="font-size:22px;font-weight:900;color:{% if has_name and has_avatar and has_phone and has_biz and has_2fa and has_verified %}#10b981{% elif has_name and has_biz %}#f59e0b{% else %}#6366f1{% endif %}">
-              {% if has_name and has_avatar and has_phone and has_biz and has_2fa and has_verified %}100%
-              {% elif has_name and has_avatar and has_phone and has_biz %}83%
-              {% elif has_name and has_avatar and has_phone %}67%
-              {% elif has_name and has_avatar %}50%
-              {% elif has_name %}33%
-              {% else %}17%{% endif %}
+            <div style="flex-shrink:0">
+              <p style="font-size:11px;color:var(--text-muted);margin:4px 0 0;text-align:center">JPG, PNG, WebP · max 5 MB</p>
             </div>
           </div>
-          <div style="height:6px;border-radius:99px;background:var(--border);overflow:hidden;margin-bottom:14px">
-            <div style="height:100%;border-radius:99px;background:linear-gradient(90deg,#6366f1,#8b5cf6);transition:width .5s;
-              width:{% if has_name and has_avatar and has_phone and has_biz and has_2fa and has_verified %}100%
-              {% elif has_name and has_avatar and has_phone and has_biz %}83%
-              {% elif has_name and has_avatar and has_phone %}67%
-              {% elif has_name and has_avatar %}50%
-              {% elif has_name %}33%
-              {% else %}17%{% endif %}"></div>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_name %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_name %}✓{% else %}○{% endif %} Full name</span>
-            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_verified %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_verified %}✓{% else %}○{% endif %} Email verified</span>
-            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_avatar %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_avatar %}✓{% else %}○{% endif %} Profile photo</span>
-            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_phone %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_phone %}✓{% else %}○{% endif %} Business phone</span>
-            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_biz %}background:#dcfce7;color:#16a34a{% else %}background:var(--bg-subtle);color:var(--text-muted){% endif %}">{% if has_biz %}✓{% else %}○{% endif %} Business name</span>
-            <span style="font-size:11.5px;padding:4px 10px;border-radius:99px;font-weight:600;{% if has_2fa %}background:#dcfce7;color:#16a34a{% else %}background:#fef3c7;color:#b45309{% endif %}">{% if has_2fa %}✓{% else %}!{% endif %} Two-factor auth</span>
-          </div>
-        </div>
-        {% endwith %}
 
-        <!-- Profile Form -->
-        <div class="card" style="overflow:hidden;margin-bottom:20px">
-          <div style="padding:20px 32px;border-bottom:1px solid var(--border)">
-            <h3 style="font-size:15px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Personal Information</h3>
-            <p style="font-size:13px;color:var(--text-muted);margin:0">Update your name, timezone, and language preferences.</p>
-          </div>
-          <form id="profile-form" style="padding:28px 32px">
+          <!-- Profile Form -->
+          <form id="form-profile" @submit.prevent="saveSection('profile', $event)">
             {% csrf_token %}
-            <div class="form-row cols-2">
-              <div class="form-group" style="margin-bottom:0">
-                <label class="form-label">Full Name <span style="color:#ef4444">*</span></label>
-                <input type="text" name="full_name" id="profile-fullname"
-                  value="{{ user.get_full_name }}" class="form-input"
-                  placeholder="Your full name" maxlength="150" required>
-                <p class="form-hint" id="name-error" style="color:#ef4444;display:none">Full name is required.</p>
-              </div>
-              <div class="form-group" style="margin-bottom:0">
-                <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
-                  Email Address
-                  <button type="button" @click="emailModal=true"
-                    style="font-size:11.5px;color:var(--brand-600);font-weight:600;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px">
-                    Change email →
-                  </button>
-                </label>
-                <input type="email" id="current-email-display" value="{{ user.email }}" class="form-input"
-                  disabled style="opacity:.65;cursor:default;background:var(--bg-subtle)">
-                <p class="form-hint">Verified address used for login and notifications.</p>
-              </div>
-              <div class="form-group" style="margin-bottom:0">
-                <label class="form-label">Timezone</label>
-                <select name="timezone" class="form-select">
-                  <option value="Africa/Lagos" {% if profile.timezone == 'Africa/Lagos' %}selected{% endif %}>Africa/Lagos (WAT, GMT+1)</option>
-                  <option value="Africa/Abidjan" {% if profile.timezone == 'Africa/Abidjan' %}selected{% endif %}>Africa/Abidjan (GMT+0)</option>
-                  <option value="Africa/Nairobi" {% if profile.timezone == 'Africa/Nairobi' %}selected{% endif %}>Africa/Nairobi (EAT, GMT+3)</option>
-                  <option value="Africa/Johannesburg" {% if profile.timezone == 'Africa/Johannesburg' %}selected{% endif %}>Africa/Johannesburg (SAST, GMT+2)</option>
-                  <option value="Africa/Accra" {% if profile.timezone == 'Africa/Accra' %}selected{% endif %}>Africa/Accra (GMT+0)</option>
-                  <option value="UTC" {% if profile.timezone == 'UTC' %}selected{% endif %}>UTC (GMT+0)</option>
-                  <option value="America/New_York" {% if profile.timezone == 'America/New_York' %}selected{% endif %}>New York (EST/EDT)</option>
-                  <option value="America/Chicago" {% if profile.timezone == 'America/Chicago' %}selected{% endif %}>Chicago (CST/CDT)</option>
-                  <option value="America/Los_Angeles" {% if profile.timezone == 'America/Los_Angeles' %}selected{% endif %}>Los Angeles (PST/PDT)</option>
-                  <option value="Europe/London" {% if profile.timezone == 'Europe/London' %}selected{% endif %}>London (GMT/BST)</option>
-                  <option value="Europe/Paris" {% if profile.timezone == 'Europe/Paris' %}selected{% endif %}>Paris (CET/CEST)</option>
-                  <option value="Asia/Dubai" {% if profile.timezone == 'Asia/Dubai' %}selected{% endif %}>Dubai (GST, GMT+4)</option>
-                  <option value="Asia/Kolkata" {% if profile.timezone == 'Asia/Kolkata' %}selected{% endif %}>Mumbai/Kolkata (IST, GMT+5:30)</option>
-                  <option value="Asia/Singapore" {% if profile.timezone == 'Asia/Singapore' %}selected{% endif %}>Singapore (SGT, GMT+8)</option>
-                </select>
-              </div>
-              <div class="form-group" style="margin-bottom:0">
-                <label class="form-label">Language & Locale</label>
-                <select name="locale" class="form-select">
-                  <option value="en-NG" {% if profile.locale == 'en-NG' %}selected{% endif %}>English (Nigeria)</option>
-                  <option value="en-US" {% if profile.locale == 'en-US' %}selected{% endif %}>English (US)</option>
-                  <option value="en-GB" {% if profile.locale == 'en-GB' %}selected{% endif %}>English (UK)</option>
-                  <option value="fr-FR" {% if profile.locale == 'fr-FR' %}selected{% endif %}>Français (France)</option>
-                  <option value="ar-SA" {% if profile.locale == 'ar-SA' %}selected{% endif %}>العربية</option>
-                </select>
+            <div class="st-section-body">
+              <div class="st-form-grid st-form-cols-2">
+                <div class="st-form-group">
+                  <label class="st-label" for="full_name">Full Name</label>
+                  <input class="form-input" type="text" id="full_name" name="full_name"
+                    value="{{ user.get_full_name }}" placeholder="Your full name" required maxlength="150"
+                    @input="dirty.profile = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label">Account Email</label>
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <input class="form-input" type="email" value="{{ user.email }}" readonly
+                      style="flex:1;background:var(--bg-subtle);cursor:default" id="profile-email-display">
+                    <button type="button" class="btn btn-secondary btn-sm" @click="showEmailModal = true">Change</button>
+                  </div>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="timezone">Timezone</label>
+                  <select class="form-input" id="timezone" name="timezone" @change="dirty.profile = true">
+                    <optgroup label="Africa">
+                      <option value="Africa/Lagos" {% if profile.timezone == 'Africa/Lagos' %}selected{% endif %}>Africa/Lagos (WAT)</option>
+                      <option value="Africa/Accra" {% if profile.timezone == 'Africa/Accra' %}selected{% endif %}>Africa/Accra (GMT)</option>
+                      <option value="Africa/Nairobi" {% if profile.timezone == 'Africa/Nairobi' %}selected{% endif %}>Africa/Nairobi (EAT)</option>
+                      <option value="Africa/Johannesburg" {% if profile.timezone == 'Africa/Johannesburg' %}selected{% endif %}>Africa/Johannesburg (SAST)</option>
+                      <option value="Africa/Cairo" {% if profile.timezone == 'Africa/Cairo' %}selected{% endif %}>Africa/Cairo (EET)</option>
+                    </optgroup>
+                    <optgroup label="Europe">
+                      <option value="Europe/London" {% if profile.timezone == 'Europe/London' %}selected{% endif %}>Europe/London (GMT/BST)</option>
+                      <option value="Europe/Paris" {% if profile.timezone == 'Europe/Paris' %}selected{% endif %}>Europe/Paris (CET)</option>
+                    </optgroup>
+                    <optgroup label="Americas">
+                      <option value="America/New_York" {% if profile.timezone == 'America/New_York' %}selected{% endif %}>America/New_York (EST)</option>
+                      <option value="America/Chicago" {% if profile.timezone == 'America/Chicago' %}selected{% endif %}>America/Chicago (CST)</option>
+                      <option value="America/Los_Angeles" {% if profile.timezone == 'America/Los_Angeles' %}selected{% endif %}>America/Los_Angeles (PST)</option>
+                    </optgroup>
+                    <optgroup label="Asia">
+                      <option value="Asia/Dubai" {% if profile.timezone == 'Asia/Dubai' %}selected{% endif %}>Asia/Dubai (GST)</option>
+                      <option value="Asia/Kolkata" {% if profile.timezone == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (IST)</option>
+                      <option value="Asia/Singapore" {% if profile.timezone == 'Asia/Singapore' %}selected{% endif %}>Asia/Singapore (SGT)</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="locale">Language & Format</label>
+                  <select class="form-input" id="locale" name="locale" @change="dirty.profile = true">
+                    <option value="en-NG" {% if profile.locale == 'en-NG' %}selected{% endif %}>English (Nigeria)</option>
+                    <option value="en-US" {% if profile.locale == 'en-US' %}selected{% endif %}>English (US)</option>
+                    <option value="en-GB" {% if profile.locale == 'en-GB' %}selected{% endif %}>English (UK)</option>
+                    <option value="en-GH" {% if profile.locale == 'en-GH' %}selected{% endif %}>English (Ghana)</option>
+                    <option value="en-KE" {% if profile.locale == 'en-KE' %}selected{% endif %}>English (Kenya)</option>
+                    <option value="en-ZA" {% if profile.locale == 'en-ZA' %}selected{% endif %}>English (South Africa)</option>
+                    <option value="fr-FR" {% if profile.locale == 'fr-FR' %}selected{% endif %}>Français</option>
+                  </select>
+                </div>
               </div>
             </div>
-            <div style="margin-top:24px;display:flex;justify-content:flex-end">
-              <button type="button" @click="submitProfile()" :disabled="profileLoading"
-                class="btn btn-primary" style="min-width:130px">
-                <span x-show="!profileLoading">Save Profile</span>
-                <span x-show="profileLoading" style="display:flex;align-items:center;gap:6px">
-                  <svg style="animation:spin 1s linear infinite" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                  Saving…
-                </span>
+            <div class="st-section-footer">
+              <span x-show="dirty.profile" class="st-saving-dot" title="Unsaved changes"></span>
+              <span x-show="dirty.profile" style="font-size:12px;color:var(--text-muted)">Unsaved changes</span>
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.profile">
+                <span x-show="loading.profile" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.profile ? 'Saving…' : 'Save Profile'"></span>
               </button>
             </div>
           </form>
         </div>
 
-        <!-- Account Security -->
-        <div class="card" style="overflow:hidden">
-          <div style="padding:20px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:var(--bg-subtle)">
+      </div><!-- /profile tab -->
+
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB: BUSINESS -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div x-show="tab==='business'" x-cloak>
+
+        <div class="st-section">
+          <div class="st-section-hdr">
             <div>
-              <p style="font-size:13.5px;font-weight:700;margin:0 0 2px;color:var(--text-primary)">Account Security</p>
-              <p style="font-size:12.5px;color:var(--text-muted);margin:0">Manage your password, two-factor auth, and active sessions.</p>
-            </div>
-            <a href="{% url 'invoices:security_settings' %}" class="btn btn-secondary btn-sm">
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-              Manage Security
-            </a>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- ─ BUSINESS TAB ─ -->
-      <div x-show="tab==='business'" x-cloak class="card" style="overflow:hidden">
-        <div style="padding:24px 32px;border-bottom:1px solid var(--border)">
-          <h3 style="font-size:16px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">Business Information</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin:0">These details appear on your invoices and estimates.</p>
-        </div>
-        <form id="business-form" style="padding:28px 32px">
-          {% csrf_token %}
-          <div class="form-row cols-2">
-            <div class="form-group">
-              <label class="form-label">Company Name</label>
-              <input type="text" name="company_name" value="{{ profile.company_name|default:'' }}"
-                class="form-input" placeholder="Acme Corp" maxlength="255">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Business Type</label>
-              <select name="business_type" class="form-select">
-                {% for code, label in profile.BUSINESS_TYPE_CHOICES %}
-                <option value="{{ code }}" {% if profile.business_type == code %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Business Email</label>
-              <input type="email" name="business_email" value="{{ profile.business_email|default:'' }}"
-                class="form-input" placeholder="billing@yourcompany.com" maxlength="254">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Business Phone</label>
-              <input type="text" name="business_phone" value="{{ profile.business_phone|default:'' }}"
-                class="form-input" placeholder="+234 800 000 0000" maxlength="50">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Tax ID / CAC Number</label>
-              <input type="text" name="tax_id_number" value="{{ profile.tax_id_number|default:'' }}"
-                class="form-input" placeholder="RC-123456" maxlength="50">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Default Currency</label>
-              <select name="default_currency" class="form-select">
-                <option value="NGN" {% if profile.default_currency == 'NGN' %}selected{% endif %}>NGN (₦) — Nigerian Naira</option>
-                <option value="USD" {% if profile.default_currency == 'USD' %}selected{% endif %}>USD ($) — US Dollar</option>
-                <option value="GBP" {% if profile.default_currency == 'GBP' %}selected{% endif %}>GBP (£) — British Pound</option>
-                <option value="EUR" {% if profile.default_currency == 'EUR' %}selected{% endif %}>EUR (€) — Euro</option>
-                <option value="GHS" {% if profile.default_currency == 'GHS' %}selected{% endif %}>GHS (₵) — Ghanaian Cedi</option>
-                <option value="KES" {% if profile.default_currency == 'KES' %}selected{% endif %}>KES (KSh) — Kenyan Shilling</option>
-                <option value="ZAR" {% if profile.default_currency == 'ZAR' %}selected{% endif %}>ZAR (R) — South African Rand</option>
-                <option value="CAD" {% if profile.default_currency == 'CAD' %}selected{% endif %}>CAD (CA$) — Canadian Dollar</option>
-                <option value="AUD" {% if profile.default_currency == 'AUD' %}selected{% endif %}>AUD (A$) — Australian Dollar</option>
-              </select>
+              <p class="st-section-title">Business Information</p>
+              <p class="st-section-sub">This information appears on invoices and client-facing documents.</p>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Business Address</label>
-            <textarea name="business_address" class="form-textarea" rows="3"
-              placeholder="123 Business Street, City, State, Country">{{ profile.business_address|default:'' }}</textarea>
-          </div>
-          <div style="display:flex;justify-content:flex-end">
-            <button type="button" @click="submitBusiness()" :disabled="businessLoading"
-              class="btn btn-primary" style="min-width:160px">
-              <span x-show="!businessLoading">Update Business Info</span>
-              <span x-show="businessLoading" style="display:flex;align-items:center;gap:6px">
-                <svg style="animation:spin 1s linear infinite" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Saving…
-              </span>
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- ─ BRANDING TAB ─ -->
-      <div x-show="tab==='branding'" x-cloak class="card" style="overflow:hidden">
-        <div style="padding:24px 32px;border-bottom:1px solid var(--border)">
-          <h3 style="font-size:16px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">Branding & Style</h3>
-          <p style="font-size:13px;color:var(--text-muted);margin:0">Customize colors and layout of your invoices and estimates.</p>
-        </div>
-        <form id="branding-form" style="padding:28px 32px">
-          {% csrf_token %}
-
-          <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 16px">Brand Colors</h4>
-          <div class="form-row cols-3" style="margin-bottom:28px">
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Primary Color</label>
-              <div style="display:flex;align-items:center;gap:10px">
-                <input type="color" name="primary_color" id="pc-pick" value="{{ profile.primary_color|default:'#6366f1' }}"
-                  style="width:44px;height:44px;border-radius:10px;cursor:pointer;border:2px solid var(--border);padding:3px;background:var(--bg-input)"
-                  oninput="document.getElementById('pc-text').value=this.value">
-                <input type="text" id="pc-text" value="{{ profile.primary_color|default:'#6366f1' }}"
-                  class="form-input" style="font-family:monospace;font-size:13px;text-transform:uppercase"
-                  oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('pc-pick').value=this.value"
-                  maxlength="7">
+          <form id="form-business" @submit.prevent="saveSection('business', $event)">
+            {% csrf_token %}
+            <div class="st-section-body">
+              <div class="st-form-grid st-form-cols-2">
+                <div class="st-form-group" style="grid-column:1/-1">
+                  <label class="st-label" for="company_name">Business / Company Name</label>
+                  <input class="form-input" type="text" id="company_name" name="company_name"
+                    value="{{ profile.company_name }}" placeholder="Acme Ltd." maxlength="255"
+                    @input="dirty.business = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="business_type">Business Type</label>
+                  <select class="form-input" id="business_type" name="business_type" @change="dirty.business = true">
+                    <option value="">— Select type —</option>
+                    {% for value, label in business_types %}
+                      <option value="{{ value }}" {% if profile.business_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="default_currency">Default Currency</label>
+                  <select class="form-input" id="default_currency" name="default_currency" @change="dirty.business = true">
+                    {% for value, label in currencies %}
+                      <option value="{{ value }}" {% if profile.default_currency == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="business_email">Business Email</label>
+                  <input class="form-input" type="email" id="business_email" name="business_email"
+                    value="{{ profile.business_email }}" placeholder="billing@yourcompany.com" maxlength="254"
+                    @input="dirty.business = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="business_phone">Business Phone</label>
+                  <input class="form-input" type="tel" id="business_phone" name="business_phone"
+                    value="{{ profile.business_phone }}" placeholder="+234 800 000 0000" maxlength="50"
+                    @input="dirty.business = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="business_website">Website (optional)</label>
+                  <input class="form-input" type="url" id="business_website" name="business_website"
+                    value="{{ profile.business_website }}" placeholder="https://yourcompany.com"
+                    @input="dirty.business = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="tax_id_number">Tax ID / CAC Number</label>
+                  <input class="form-input" type="text" id="tax_id_number" name="tax_id_number"
+                    value="{{ profile.tax_id_number }}" placeholder="RC-123456789" maxlength="50"
+                    @input="dirty.business = true">
+                </div>
+                <div class="st-form-group" style="grid-column:1/-1">
+                  <label class="st-label" for="business_address">Business Address</label>
+                  <textarea class="form-input" id="business_address" name="business_address" rows="2"
+                    placeholder="123 Business Street, Victoria Island, Lagos" maxlength="500"
+                    @input="dirty.business = true">{{ profile.business_address }}</textarea>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="business_city">City</label>
+                  <input class="form-input" type="text" id="business_city" name="business_city"
+                    value="{{ profile.business_city }}" placeholder="Lagos" maxlength="100"
+                    @input="dirty.business = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="business_state">State / Region</label>
+                  <input class="form-input" type="text" id="business_state" name="business_state"
+                    value="{{ profile.business_state }}" placeholder="Lagos State" maxlength="100"
+                    @input="dirty.business = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="business_country">Country</label>
+                  <input class="form-input" type="text" id="business_country" name="business_country"
+                    value="{{ profile.business_country }}" placeholder="Nigeria" maxlength="100"
+                    @input="dirty.business = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="business_postal_code">Postal Code</label>
+                  <input class="form-input" type="text" id="business_postal_code" name="business_postal_code"
+                    value="{{ profile.business_postal_code }}" placeholder="100001" maxlength="20"
+                    @input="dirty.business = true">
+                </div>
               </div>
             </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Secondary Color</label>
-              <div style="display:flex;align-items:center;gap:10px">
-                <input type="color" name="secondary_color" id="sc-pick" value="{{ profile.secondary_color|default:'#8b5cf6' }}"
-                  style="width:44px;height:44px;border-radius:10px;cursor:pointer;border:2px solid var(--border);padding:3px;background:var(--bg-input)"
-                  oninput="document.getElementById('sc-text').value=this.value">
-                <input type="text" id="sc-text" value="{{ profile.secondary_color|default:'#8b5cf6' }}"
-                  class="form-input" style="font-family:monospace;font-size:13px;text-transform:uppercase"
-                  oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('sc-pick').value=this.value"
-                  maxlength="7">
-              </div>
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Accent Color</label>
-              <div style="display:flex;align-items:center;gap:10px">
-                <input type="color" name="accent_color" id="ac-pick" value="{{ profile.accent_color|default:'#10b981' }}"
-                  style="width:44px;height:44px;border-radius:10px;cursor:pointer;border:2px solid var(--border);padding:3px;background:var(--bg-input)"
-                  oninput="document.getElementById('ac-text').value=this.value">
-                <input type="text" id="ac-text" value="{{ profile.accent_color|default:'#10b981' }}"
-                  class="form-input" style="font-family:monospace;font-size:13px;text-transform:uppercase"
-                  oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById('ac-pick').value=this.value"
-                  maxlength="7">
-              </div>
-            </div>
-          </div>
-
-          <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 16px">Invoice Layout Style</h4>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-bottom:28px">
-            {% for style, label in profile.INVOICE_STYLE_CHOICES %}
-            <label style="cursor:pointer;position:relative">
-              <input type="radio" name="invoice_style" value="{{ style }}"
-                {% if profile.invoice_style == style %}checked{% endif %}
-                style="position:absolute;opacity:0;pointer-events:none"
-                onchange="document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('selected'));this.closest('label').querySelector('.style-card').classList.add('selected')">
-              <div class="style-card{% if profile.invoice_style == style %} selected{% endif %}"
-                onclick="this.closest('label').querySelector('input').checked=true;document.querySelectorAll('.style-card').forEach(c=>c.classList.remove('selected'));this.classList.add('selected')"
-                style="border:2px solid var(--border);border-radius:12px;padding:14px;text-align:center;transition:border-color 150ms,background 150ms;cursor:pointer">
-                <div style="width:100%;aspect-ratio:3/4;background:var(--bg-subtle);border-radius:6px;margin-bottom:10px;border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;gap:4px;padding:8px">
-                  <div style="height:4px;border-radius:3px;background:{{ profile.primary_color|default:'#6366f1' }};width:60%"></div>
-                  <div style="height:2px;border-radius:2px;background:var(--border);width:100%"></div>
-                  <div style="height:2px;border-radius:2px;background:var(--border);width:80%"></div>
-                  <div style="margin-top:4px;height:12px;border-radius:3px;background:var(--bg-hover)"></div>
-                  <div style="height:2px;border-radius:2px;background:var(--border);width:100%"></div>
-                  <div style="height:2px;border-radius:2px;background:var(--border);width:70%"></div>
-                </div>
-                <p style="font-size:12px;font-weight:700;color:var(--text-primary);margin:0">{{ label }}</p>
-                {% if profile.invoice_style == style %}
-                <div style="position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center">
-                  <svg width="10" height="10" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                {% endif %}
-              </div>
-            </label>
-            {% endfor %}
-          </div>
-
-          <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 16px">Invoice Numbering</h4>
-          <div class="form-row cols-2" style="margin-bottom:24px">
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Invoice Prefix</label>
-              <input type="text" name="invoice_prefix" value="{{ profile.invoice_prefix|default:'INV' }}"
-                class="form-input" placeholder="INV" maxlength="10">
-              <p class="form-hint">e.g. INV → INV-2024-0001</p>
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Starting Number</label>
-              <input type="number" name="invoice_start_number"
-                value="{{ profile.invoice_start_number|default:'1' }}"
-                class="form-input" min="1" placeholder="1">
-            </div>
-          </div>
-
-          <div style="display:flex;justify-content:flex-end">
-            <button type="button" @click="submitBranding()" :disabled="brandingLoading"
-              class="btn btn-primary" style="min-width:150px">
-              <span x-show="!brandingLoading">Apply Branding</span>
-              <span x-show="brandingLoading" style="display:flex;align-items:center;gap:6px">
-                <svg style="animation:spin 1s linear infinite" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Saving…
-              </span>
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- ─ NOTIFICATIONS TAB ─ -->
-      <div x-show="tab==='notifications'" x-cloak>
-        <form id="notif-form">
-          {% csrf_token %}
-          <div class="card" style="overflow:hidden;margin-bottom:20px">
-            <div style="padding:24px 32px;border-bottom:1px solid var(--border)">
-              <h3 style="font-size:16px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">Email Notifications</h3>
-              <p style="font-size:13px;color:var(--text-muted);margin:0">Control which events send you an email alert.</p>
-            </div>
-            <div style="padding:16px 32px;display:flex;flex-direction:column;gap:2px">
-
-              {% with items=profile %}
-              <!-- Invoice Created -->
-              <label class="notif-row" x-data="{on: {{ profile.notify_invoice_created|yesno:'true,false' }}}">
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div class="stat-icon si-indigo" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                  </div>
-                  <div>
-                    <p style="font-size:13.5px;font-weight:700;margin:0;color:var(--text-primary)">Invoice Created</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">When a new invoice is generated</p>
-                  </div>
-                </div>
-                <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_invoice_created" value="on" x-model="on"
-                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_invoice_created %}checked{% endif %}>
-                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
-                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
-                  </div>
-                </div>
-              </label>
-
-              <!-- Payment Received -->
-              <label class="notif-row" x-data="{on: {{ profile.notify_payment_received|yesno:'true,false' }}}">
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div class="stat-icon si-green" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                  </div>
-                  <div>
-                    <p style="font-size:13.5px;font-weight:700;margin:0;color:var(--text-primary)">Payment Received</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">When a client pays an invoice</p>
-                  </div>
-                </div>
-                <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_payment_received" value="on" x-model="on"
-                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_payment_received %}checked{% endif %}>
-                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
-                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
-                  </div>
-                </div>
-              </label>
-
-              <!-- Invoice Viewed -->
-              <label class="notif-row" x-data="{on: {{ profile.notify_invoice_viewed|yesno:'true,false' }}}">
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div class="stat-icon si-blue" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                  </div>
-                  <div>
-                    <p style="font-size:13.5px;font-weight:700;margin:0;color:var(--text-primary)">Invoice Viewed</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">When a client opens your invoice link</p>
-                  </div>
-                </div>
-                <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_invoice_viewed" value="on" x-model="on"
-                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_invoice_viewed %}checked{% endif %}>
-                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
-                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
-                  </div>
-                </div>
-              </label>
-
-              <!-- Overdue Alerts -->
-              <label class="notif-row" x-data="{on: {{ profile.notify_invoice_overdue|yesno:'true,false' }}}">
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div class="stat-icon si-red" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                  </div>
-                  <div>
-                    <p style="font-size:13.5px;font-weight:700;margin:0;color:var(--text-primary)">Overdue Alerts</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">Notifications for overdue invoices</p>
-                  </div>
-                </div>
-                <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_invoice_overdue" value="on" x-model="on"
-                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_invoice_overdue %}checked{% endif %}>
-                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
-                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
-                  </div>
-                </div>
-              </label>
-
-              <!-- Weekly Summary -->
-              <label class="notif-row" x-data="{on: {{ profile.notify_weekly_summary|yesno:'true,false' }}}">
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div class="stat-icon si-violet" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                  </div>
-                  <div>
-                    <p style="font-size:13.5px;font-weight:700;margin:0;color:var(--text-primary)">Weekly Summary</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">Weekly business performance digest</p>
-                  </div>
-                </div>
-                <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_weekly_summary" value="on" x-model="on"
-                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_weekly_summary %}checked{% endif %}>
-                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
-                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
-                  </div>
-                </div>
-              </label>
-
-              <!-- Security Alerts -->
-              <label class="notif-row" x-data="{on: {{ profile.notify_security_alerts|yesno:'true,false' }}}">
-                <div style="display:flex;align-items:center;gap:14px">
-                  <div class="stat-icon si-amber" style="width:38px;height:38px;border-radius:10px;flex-shrink:0">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                  </div>
-                  <div>
-                    <p style="font-size:13.5px;font-weight:700;margin:0;color:var(--text-primary)">Security Alerts</p>
-                    <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">Critical account and login notifications</p>
-                  </div>
-                </div>
-                <div style="position:relative;flex-shrink:0">
-                  <input type="checkbox" name="notify_security_alerts" value="on" x-model="on"
-                    style="opacity:0;position:absolute;width:0;height:0" {% if profile.notify_security_alerts %}checked{% endif %}>
-                  <div @click="on=!on;autoSaveNotif()" :style="on?'background:#6366f1':'background:var(--border)'" class="toggle-track">
-                    <div :style="on?'transform:translateX(20px)':'transform:translateX(2px)'" class="toggle-thumb"></div>
-                  </div>
-                </div>
-              </label>
-
-              {% endwith %}
-            </div>
-
-            <div style="padding:14px 32px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--bg-subtle)">
-              <span x-show="notifSaving" style="font-size:12.5px;color:var(--text-muted);display:flex;align-items:center;gap:6px">
-                <svg style="animation:spin 1s linear infinite" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Saving…
-              </span>
-              <span x-show="!notifSaving" style="font-size:12.5px;color:var(--text-muted)">Changes are saved automatically.</span>
-              <button type="button" @click="submitNotifications()" :disabled="notifSaving" class="btn btn-primary btn-sm">
-                Save Settings
+            <div class="st-section-footer">
+              <span x-show="dirty.business" class="st-saving-dot" title="Unsaved changes"></span>
+              <span x-show="dirty.business" style="font-size:12px;color:var(--text-muted)">Unsaved changes</span>
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.business">
+                <span x-show="loading.business" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.business ? 'Saving…' : 'Save Business Info'"></span>
               </button>
             </div>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
 
-    </div><!-- /main panel -->
-  </div><!-- /flex -->
+      </div><!-- /business tab -->
 
-  <!-- ════════ EMAIL CHANGE MODAL ════════ -->
-  <div x-show="emailModal" x-cloak
-    style="position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px"
-    @click.self="emailModal=false">
-    <div style="position:absolute;inset:0;background:rgba(0,0,0,.5)" @click="emailModal=false"></div>
-    <div style="position:relative;background:var(--bg-card);border-radius:20px;padding:0;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">
-      <div style="padding:24px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <h3 style="font-size:16px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Change Email Address</h3>
-          <p style="font-size:12.5px;color:var(--text-muted);margin:0">Password confirmation required for security.</p>
-        </div>
-        <button @click="emailModal=false" style="background:none;border:none;cursor:pointer;color:var(--text-muted);padding:4px;border-radius:8px">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div style="padding:24px 28px">
-        <div class="form-group">
-          <label class="form-label">New Email Address <span style="color:#ef4444">*</span></label>
-          <input type="email" x-model="newEmail" class="form-input" placeholder="new@example.com" maxlength="254">
-          <p x-show="emailErrors.new_email" x-text="emailErrors.new_email" style="font-size:11.5px;color:#ef4444;margin-top:4px"></p>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Current Password <span style="color:#ef4444">*</span></label>
-          <div style="position:relative">
-            <input :type="showEmailPwd?'text':'password'" x-model="emailPassword" class="form-input"
-              placeholder="Confirm your password" style="padding-right:42px">
-            <button type="button" @click="showEmailPwd=!showEmailPwd"
-              style="position:absolute;right:11px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);padding:3px">
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-            </button>
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB: BRANDING -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div x-show="tab==='branding'" x-cloak>
+
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Invoice Branding</p>
+              <p class="st-section-sub">Customize your invoice appearance and numbering system.</p>
+            </div>
           </div>
-          <p x-show="emailErrors.password" x-text="emailErrors.password" style="font-size:11.5px;color:#ef4444;margin-top:4px"></p>
+          <form id="form-branding" @submit.prevent="saveSection('branding', $event)">
+            {% csrf_token %}
+            <div class="st-section-body">
+
+              <!-- Color Pickers -->
+              <div class="st-form-group" style="margin-bottom:24px">
+                <label class="st-label" style="margin-bottom:12px">Brand Colors</label>
+                <div class="st-color-row">
+
+                  <div class="st-color-group">
+                    <span class="st-color-label">Primary</span>
+                    <div class="st-color-wrap" @click="$refs.primaryPicker.click()">
+                      <div class="st-color-swatch" :style="'background:' + colors.primary" x-ref="primarySwatch"></div>
+                      <span class="st-color-value" x-text="colors.primary"></span>
+                      <input class="st-color-input" type="color" x-ref="primaryPicker" name="primary_color"
+                        :value="colors.primary" @input="colors.primary = $event.target.value; dirty.branding = true">
+                    </div>
+                    <span class="st-hint">Main brand color used on invoices</span>
+                  </div>
+
+                  <div class="st-color-group">
+                    <span class="st-color-label">Secondary</span>
+                    <div class="st-color-wrap" @click="$refs.secondaryPicker.click()">
+                      <div class="st-color-swatch" :style="'background:' + colors.secondary"></div>
+                      <span class="st-color-value" x-text="colors.secondary"></span>
+                      <input class="st-color-input" type="color" x-ref="secondaryPicker" name="secondary_color"
+                        :value="colors.secondary" @input="colors.secondary = $event.target.value; dirty.branding = true">
+                    </div>
+                    <span class="st-hint">Accent headers and highlights</span>
+                  </div>
+
+                  <div class="st-color-group">
+                    <span class="st-color-label">Accent</span>
+                    <div class="st-color-wrap" @click="$refs.accentPicker.click()">
+                      <div class="st-color-swatch" :style="'background:' + colors.accent"></div>
+                      <span class="st-color-value" x-text="colors.accent"></span>
+                      <input class="st-color-input" type="color" x-ref="accentPicker" name="accent_color"
+                        :value="colors.accent" @input="colors.accent = $event.target.value; dirty.branding = true">
+                    </div>
+                    <span class="st-hint">Badges, totals, and callouts</span>
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Invoice Style -->
+              <div class="st-form-group" style="margin-bottom:24px">
+                <label class="st-label" style="margin-bottom:12px">Invoice Style Template</label>
+                <div class="st-style-grid">
+                  {% for value, label in invoice_styles %}
+                  <div class="st-style-card" :class="invoiceStyle==='{{ value }}' && 'selected'"
+                    @click="invoiceStyle='{{ value }}'; dirty.branding = true" title="{{ label }}">
+                    <input type="radio" name="invoice_style" value="{{ value }}" style="display:none"
+                      :checked="invoiceStyle==='{{ value }}'">
+                    <div class="st-style-preview">
+                      <!-- Minimal preview bars per style -->
+                      {% if value == 'modern' %}
+                        <div class="st-style-line-h" style="width:45%;height:7px;border-radius:3px;background:#6366f1;margin-bottom:4px"></div>
+                        <div class="st-style-line" style="width:70%"></div>
+                        <div class="st-style-line" style="width:55%"></div>
+                        <div style="flex:1"></div>
+                        <div class="st-style-line" style="width:90%"></div>
+                        <div class="st-style-line" style="width:90%"></div>
+                        <div class="st-style-line-h" style="width:40%;height:4px;margin-top:4px"></div>
+                      {% elif value == 'classic' %}
+                        <div style="border-bottom:2px solid #374151;margin-bottom:4px;padding-bottom:4px">
+                          <div class="st-style-line" style="width:50%"></div>
+                        </div>
+                        <div class="st-style-line" style="width:70%"></div>
+                        <div class="st-style-line" style="width:60%"></div>
+                        <div style="flex:1"></div>
+                        <div class="st-style-line" style="width:90%"></div>
+                      {% elif value == 'minimal' %}
+                        <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between">
+                          <div class="st-style-line" style="width:45%"></div>
+                          <div class="st-style-line" style="width:80%"></div>
+                          <div class="st-style-line" style="width:80%"></div>
+                          <div class="st-style-line-h" style="width:35%;height:3px"></div>
+                        </div>
+                      {% elif value == 'professional' %}
+                        <div style="background:#1e293b;height:20px;margin:-8px -8px 6px;border-radius:2px 2px 0 0;display:flex;align-items:center;padding:0 6px">
+                          <div class="st-style-line" style="width:40%;background:rgba(255,255,255,.4)"></div>
+                        </div>
+                        <div class="st-style-line" style="width:65%"></div>
+                        <div class="st-style-line" style="width:50%"></div>
+                        <div style="flex:1"></div>
+                        <div class="st-style-line-h" style="width:40%;height:4px"></div>
+                      {% elif value == 'bold' %}
+                        <div style="background:#4f46e5;height:14px;margin:-8px -8px 5px;border-radius:2px 2px 0 0"></div>
+                        <div class="st-style-line" style="width:70%;height:5px;border-radius:2px"></div>
+                        <div class="st-style-line" style="width:55%"></div>
+                        <div style="flex:1"></div>
+                        <div class="st-style-line-h" style="width:45%;height:5px"></div>
+                      {% endif %}
+                    </div>
+                    <div class="st-style-label">{{ label }}</div>
+                    <div class="st-style-check">✓</div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <!-- Invoice Numbering -->
+              <div class="st-form-grid st-form-cols-3">
+                <div class="st-form-group">
+                  <label class="st-label" for="invoice_prefix">Invoice Prefix</label>
+                  <input class="form-input" type="text" id="invoice_prefix" name="invoice_prefix"
+                    value="{{ profile.invoice_prefix }}" placeholder="INV" maxlength="10"
+                    style="font-family:var(--font-mono);letter-spacing:.05em"
+                    @input="dirty.branding = true">
+                  <span class="st-hint">E.g. INV, ACME, 2024</span>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="invoice_start_number">Starting Number</label>
+                  <input class="form-input" type="number" id="invoice_start_number" name="invoice_start_number"
+                    value="{{ profile.invoice_start_number }}" min="1" max="999999"
+                    @input="dirty.branding = true">
+                  <span class="st-hint">First invoice will be #{{ profile.invoice_start_number }}</span>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label">Preview</label>
+                  <div class="form-input" style="background:var(--bg-subtle);font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--text-primary);letter-spacing:.02em">
+                    <span x-text="branding.prefix || '{{ profile.invoice_prefix }}'"></span>-<span x-text="String(branding.start || {{ profile.invoice_start_number }}).padStart(4,'0')"></span>
+                  </div>
+                  <span class="st-hint">Sample invoice number</span>
+                </div>
+              </div>
+
+            </div>
+            <div class="st-section-footer">
+              <span x-show="dirty.branding" class="st-saving-dot"></span>
+              <span x-show="dirty.branding" style="font-size:12px;color:var(--text-muted)">Unsaved changes</span>
+              <button type="button" class="btn btn-ghost btn-sm" @click="resetBrandingColors()">Reset Colors</button>
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.branding">
+                <span x-show="loading.branding" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.branding ? 'Saving…' : 'Save Branding'"></span>
+              </button>
+            </div>
+          </form>
         </div>
-      </div>
-      <div style="padding:16px 28px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;background:var(--bg-subtle)">
-        <button @click="emailModal=false" class="btn btn-ghost btn-sm">Cancel</button>
-        <button @click="submitEmailChange()" :disabled="emailLoading" class="btn btn-primary btn-sm" style="min-width:130px">
-          <span x-show="!emailLoading">Update Email</span>
-          <span x-show="emailLoading" style="display:flex;align-items:center;gap:6px">
-            <svg style="animation:spin 1s linear infinite" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            Updating…
-          </span>
-        </button>
-      </div>
+
+      </div><!-- /branding tab -->
+
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB: NOTIFICATIONS -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div x-show="tab==='notifications'" x-cloak>
+
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Email Notifications</p>
+              <p class="st-section-sub">Choose which events trigger email notifications to your account.</p>
+            </div>
+          </div>
+          <form id="form-notifications" @submit.prevent="saveSection('notifications', $event)">
+            {% csrf_token %}
+            <div class="st-section-body">
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">Invoice Created</p>
+                  <p class="st-notify-sub">Receive an email when a new invoice is generated in your workspace.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="notify_invoice_created" {% if profile.notify_invoice_created %}checked{% endif %}
+                    @change="dirty.notifications = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">Payment Received</p>
+                  <p class="st-notify-sub">Get notified when a client pays an invoice — includes amount and payer details.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="notify_payment_received" {% if profile.notify_payment_received %}checked{% endif %}
+                    @change="dirty.notifications = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">Invoice Viewed</p>
+                  <p class="st-notify-sub">Know when a client opens and views your invoice.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="notify_invoice_viewed" {% if profile.notify_invoice_viewed %}checked{% endif %}
+                    @change="dirty.notifications = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">Invoice Overdue</p>
+                  <p class="st-notify-sub">Alert when an outstanding invoice passes its due date.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="notify_invoice_overdue" {% if profile.notify_invoice_overdue %}checked{% endif %}
+                    @change="dirty.notifications = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">Weekly Summary</p>
+                  <p class="st-notify-sub">Every Monday receive a summary of invoices, payments, and outstanding amounts.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="notify_weekly_summary" {% if profile.notify_weekly_summary %}checked{% endif %}
+                    @change="dirty.notifications = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">Security Alerts</p>
+                  <p class="st-notify-sub">Critical emails for logins from new devices, password changes, and suspicious activity.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="notify_security_alerts" {% if profile.notify_security_alerts %}checked{% endif %}
+                    @change="dirty.notifications = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+            </div>
+            <div class="st-section-footer">
+              <span x-show="dirty.notifications" class="st-saving-dot"></span>
+              <span x-show="dirty.notifications" style="font-size:12px;color:var(--text-muted)">Unsaved changes</span>
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.notifications">
+                <span x-show="loading.notifications" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.notifications ? 'Saving…' : 'Save Preferences'"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div><!-- /notifications tab -->
+
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB: PAYMENTS -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div x-show="tab==='payments'" x-cloak>
+
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Payment Methods</p>
+              <p class="st-section-sub">Choose which payment methods appear on your invoices for clients.</p>
+            </div>
+          </div>
+          <form id="form-payments" @submit.prevent="saveSection('payments', $event)">
+            {% csrf_token %}
+            <div class="st-section-body">
+
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:5px;color:#6366f1"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    Card Payments (Paystack)
+                  </p>
+                  <p class="st-notify-sub">Accept credit/debit cards via Paystack. Clients can pay directly from their invoice.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="accept_card_payments" {% if profile.accept_card_payments %}checked{% endif %}
+                    @change="dirty.payments = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:5px;color:#0ea5e9"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
+                    Bank Transfers
+                  </p>
+                  <p class="st-notify-sub">Include your bank account details on invoices for direct transfers.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="accept_bank_transfers" {% if profile.accept_bank_transfers %}checked{% endif %}
+                    @change="dirty.payments = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:5px;color:#22c55e"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Mobile Money
+                  </p>
+                  <p class="st-notify-sub">Accept payments via mobile money platforms (MoMo, M-Pesa, etc.).</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="accept_mobile_money" {% if profile.accept_mobile_money %}checked{% endif %}
+                    @change="dirty.payments = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+
+              <div class="st-form-group" style="margin-top:20px">
+                <label class="st-label" for="payment_instructions">Payment Instructions</label>
+                <textarea class="form-input" id="payment_instructions" name="payment_instructions" rows="4"
+                  placeholder="Account Name: Acme Ltd.&#10;Bank: Zenith Bank&#10;Account Number: 1234567890&#10;Sort Code: 056"
+                  maxlength="2000" @input="dirty.payments = true">{{ profile.payment_instructions }}</textarea>
+                <span class="st-hint">Displayed on invoices when bank transfer is enabled. Supports multiple lines.</span>
+              </div>
+
+            </div>
+            <div class="st-section-footer">
+              <span x-show="dirty.payments" class="st-saving-dot"></span>
+              <span x-show="dirty.payments" style="font-size:12px;color:var(--text-muted)">Unsaved changes</span>
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.payments">
+                <span x-show="loading.payments" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.payments ? 'Saving…' : 'Save Payment Settings'"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div><!-- /payments tab -->
+
+
+      <!-- ══════════════════════════════════════════════════ -->
+      <!-- TAB: SECURITY -->
+      <!-- ══════════════════════════════════════════════════ -->
+      <div x-show="tab==='security'" x-cloak>
+
+        <!-- Change Password -->
+        <div class="st-section" style="margin-bottom:0">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Change Password</p>
+              <p class="st-section-sub">Use a strong, unique password at least 8 characters long.</p>
+            </div>
+          </div>
+          <form id="form-password" @submit.prevent="changePassword($event)">
+            {% csrf_token %}
+            <div class="st-section-body">
+              <div class="st-form-grid st-form-cols-2">
+                <div class="st-form-group" style="grid-column:1/-1">
+                  <label class="st-label" for="current_password">Current Password</label>
+                  <input class="form-input" type="password" id="current_password" name="current_password"
+                    placeholder="Enter your current password" autocomplete="current-password" required>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="new_password">New Password</label>
+                  <input class="form-input" type="password" id="new_password" name="new_password"
+                    placeholder="At least 8 characters" autocomplete="new-password" required
+                    @input="checkPasswordStrength($event.target.value)">
+                  <div class="st-pw-strength" x-show="pwStrength.score > 0">
+                    <div class="st-pw-bars">
+                      <div class="st-pw-bar" :class="pwStrength.score >= 1 ? pwStrength.cls : ''"></div>
+                      <div class="st-pw-bar" :class="pwStrength.score >= 2 ? pwStrength.cls : ''"></div>
+                      <div class="st-pw-bar" :class="pwStrength.score >= 3 ? pwStrength.cls : ''"></div>
+                      <div class="st-pw-bar" :class="pwStrength.score >= 4 ? pwStrength.cls : ''"></div>
+                    </div>
+                    <span class="st-pw-text" x-text="pwStrength.label" :style="'color:' + pwStrength.color"></span>
+                  </div>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="confirm_password">Confirm New Password</label>
+                  <input class="form-input" type="password" id="confirm_password" name="confirm_password"
+                    placeholder="Repeat new password" autocomplete="new-password" required>
+                </div>
+              </div>
+            </div>
+            <div class="st-section-footer">
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.password">
+                <span x-show="loading.password" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.password ? 'Updating…' : 'Update Password'"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Two-Factor Authentication -->
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Two-Factor Authentication (2FA)</p>
+              <p class="st-section-sub">Add an extra layer of security with an authenticator app.</p>
+            </div>
+          </div>
+          <div class="st-section-body">
+            <div class="st-mfa-card">
+              <div class="st-mfa-icon {% if mfa_enabled %}st-mfa-on{% else %}st-mfa-off{% endif %}">
+                {% if mfa_enabled %}
+                  <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                {% else %}
+                  <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                {% endif %}
+              </div>
+              <div class="st-mfa-info">
+                {% if mfa_enabled %}
+                  <p class="st-mfa-title">2FA is Active</p>
+                  <p class="st-mfa-desc">Your account is protected with an authenticator app. You have <strong>{{ remaining_codes }}</strong> backup code{{ remaining_codes|pluralize }} remaining.</p>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <a href="{% url 'invoices:mfa_backup_codes' %}" class="btn btn-secondary btn-sm">View Backup Codes</a>
+                    <a href="{% url 'invoices:mfa_disable' %}" class="btn btn-ghost btn-sm" style="color:#dc2626">Disable 2FA</a>
+                  </div>
+                {% else %}
+                  <p class="st-mfa-title">2FA is Not Enabled</p>
+                  <p class="st-mfa-desc">Protect your account with an authenticator app (Google Authenticator, Authy, etc.). Required for high-value accounts and team owners.</p>
+                  <a href="{% url 'invoices:mfa_setup' %}" class="btn btn-primary btn-sm">Enable 2FA</a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Sessions -->
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Active Sessions</p>
+              <p class="st-section-sub">Devices currently logged into your account. Revoke any you don't recognize.</p>
+            </div>
+            {% if sessions|length > 1 %}
+            <form method="post" action="{% url 'invoices:revoke_all_sessions' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost btn-sm" style="color:#dc2626;white-space:nowrap"
+                onclick="return confirm('Sign out all other sessions?')">
+                Sign Out All Others
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          <div class="st-section-body">
+            {% if sessions %}
+              {% for session in sessions %}
+              <div class="st-session-row">
+                <div class="st-session-icon">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-1"/></svg>
+                </div>
+                <div class="st-session-info">
+                  <p class="st-session-label">
+                    {{ session.ip_address|default:"Unknown IP" }}
+                    {% if session.is_current %}
+                      <span class="badge b-paid" style="font-size:9.5px">Current</span>
+                    {% endif %}
+                  </p>
+                  <p class="st-session-meta">{{ session.user_agent|truncatechars:80 }} · {{ session.created_at|timesince }} ago</p>
+                </div>
+                {% if not session.is_current %}
+                <form method="post" action="{% url 'invoices:revoke_session' session.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-ghost btn-sm" style="font-size:12px;white-space:nowrap">Revoke</button>
+                </form>
+                {% endif %}
+              </div>
+              {% endfor %}
+            {% else %}
+              <div style="text-align:center;padding:24px;color:var(--text-muted)">
+                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 10px;opacity:.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v10a2 2 0 01-2 2h-1"/></svg>
+                <p style="font-size:13px">No active sessions found.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Recent Security Events -->
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Security Activity Log</p>
+              <p class="st-section-sub">Recent security events on your account.</p>
+            </div>
+          </div>
+          <div class="st-section-body">
+            {% if security_events %}
+              {% for event in security_events %}
+              <div class="st-security-event">
+                <div class="st-security-icon" style="{% if event.severity == 'warning' or event.severity == 'high' %}background:rgba(217,119,6,.1);color:#d97706{% elif event.severity == 'critical' %}background:rgba(220,38,38,.1);color:#dc2626{% else %}background:rgba(79,70,229,.08);color:#6366f1{% endif %}">
+                  {% if event.severity == 'warning' or event.severity == 'high' %}
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                  {% elif event.severity == 'critical' %}
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                  {% else %}
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                  {% endif %}
+                </div>
+                <div class="st-security-info">
+                  <p class="st-security-label">{{ event.get_display_name }}</p>
+                  <p class="st-security-meta">{{ event.ip_address|default:"—" }} · {{ event.user_agent|truncatechars:60|default:"—" }}</p>
+                </div>
+                <span class="st-security-time">{{ event.created_at|timesince }} ago</span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div style="text-align:center;padding:24px;color:var(--text-muted)">
+                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 10px;opacity:.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                <p style="font-size:13px">No security events recorded yet.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Security Notification Preferences -->
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Security Notifications</p>
+              <p class="st-section-sub">Control which security events send you email alerts.</p>
+            </div>
+          </div>
+          <form @submit.prevent="saveSection('security', $event)">
+            {% csrf_token %}
+            <div class="st-section-body">
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">Security Alerts</p>
+                  <p class="st-notify-sub">New logins, suspicious activity, and account access warnings.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="notify_security_alerts" {% if profile.notify_security_alerts %}checked{% endif %}
+                    @change="dirty.security = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+              <div class="st-notify-row">
+                <div class="st-notify-info">
+                  <p class="st-notify-label">Password Changes</p>
+                  <p class="st-notify-sub">Confirmation email every time your password is updated.</p>
+                </div>
+                <label class="st-toggle">
+                  <input type="checkbox" name="notify_password_changes" {% if profile.notify_password_changes %}checked{% endif %}
+                    @change="dirty.security = true">
+                  <div class="st-toggle-track"><div class="st-toggle-thumb"></div></div>
+                </label>
+              </div>
+            </div>
+            <div class="st-section-footer">
+              <span x-show="dirty.security" class="st-saving-dot"></span>
+              <span x-show="dirty.security" style="font-size:12px;color:var(--text-muted)">Unsaved changes</span>
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.security">
+                <span x-show="loading.security" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.security ? 'Saving…' : 'Save'"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div><!-- /security tab -->
+
+    </div><!-- /panel -->
+  </div><!-- /layout -->
+
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!-- MODAL: Change Email -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="st-modal-backdrop" x-show="showEmailModal" x-cloak @click.self="showEmailModal = false">
+    <div class="st-modal" @click.stop>
+      <button class="st-modal-close" @click="showEmailModal = false">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <h3 class="st-modal-title">Change Email Address</h3>
+      <p class="st-modal-sub">Enter your new email and confirm your password. Your email will be updated immediately.</p>
+      <form @submit.prevent="changeEmail($event)">
+        {% csrf_token %}
+        <div class="st-form-grid" style="gap:14px">
+          <div class="st-form-group">
+            <label class="st-label" for="new_email">New Email Address</label>
+            <input class="form-input" type="email" id="new_email" name="new_email"
+              placeholder="new@email.com" required autocomplete="email">
+          </div>
+          <div class="st-form-group">
+            <label class="st-label" for="email_password">Current Password</label>
+            <input class="form-input" type="password" id="email_password" name="current_password"
+              placeholder="Confirm your password" required autocomplete="current-password">
+          </div>
+        </div>
+        <div class="st-modal-actions">
+          <button type="button" class="btn btn-ghost btn-sm" @click="showEmailModal = false">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.email">
+            <span x-show="loading.email" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+            <span x-text="loading.email ? 'Updating…' : 'Update Email'"></span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
-</div>
-
-<style>
-  .style-card.selected {
-    border-color: #6366f1 !important;
-    background: rgba(99,102,241,.08);
-  }
-  .notif-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 16px;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: background 150ms;
-    gap: 16px;
-  }
-  .notif-row:hover { background: var(--bg-subtle); }
-  .toggle-track {
-    width: 44px; height: 24px; border-radius: 99px; cursor: pointer;
-    position: relative; transition: background 200ms; flex-shrink: 0;
-  }
-  .toggle-thumb {
-    position: absolute; top: 2px; width: 20px; height: 20px; border-radius: 50%;
-    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform 200ms;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @media (max-width: 768px) {
-    aside { width: 100% !important; flex-direction: row !important; flex-wrap: wrap !important; }
-  }
-</style>
+</div><!-- /x-data -->
+{% endblock %}
 
 {% block scripts %}
 <script>
-function settingsPage() {
+function settingsApp() {
   return {
-    tab: new URLSearchParams(location.search).get('tab') || 'profile',
-    profileLoading: false,
-    businessLoading: false,
-    brandingLoading: false,
-    notifSaving: false,
-    notifTimer: null,
-    emailModal: false,
-    emailLoading: false,
-    newEmail: '',
-    emailPassword: '',
-    showEmailPwd: false,
-    emailErrors: {},
+    tab: '{{ active_tab|escapejs }}',
+    showEmailModal: false,
 
-    init() {},
+    loading: { profile: false, business: false, branding: false, notifications: false, payments: false, security: false, password: false, email: false },
+    dirty:   { profile: false, business: false, branding: false, notifications: false, payments: false, security: false },
 
-    getCsrf() {
-      return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
-             document.cookie.split(';').find(c=>c.trim().startsWith('csrftoken='))?.split('=')[1] || '';
+    colors: {
+      primary:   '{{ profile.primary_color|escapejs }}',
+      secondary: '{{ profile.secondary_color|escapejs }}',
+      accent:    '{{ profile.accent_color|escapejs }}',
+    },
+    invoiceStyle: '{{ profile.invoice_style|escapejs }}',
+    branding: {
+      prefix: '{{ profile.invoice_prefix|escapejs }}',
+      start:  {{ profile.invoice_start_number }},
     },
 
-    async ajaxPost(url, formData) {
-      formData.append('csrfmiddlewaretoken', this.getCsrf());
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: formData,
-      });
-      return resp.json();
-    },
+    pwStrength: { score: 0, label: '', cls: '', color: '' },
+    toasts: [],
+    _toastId: 0,
 
-    /* ── Profile ─────────────────────────────────── */
-    async submitProfile() {
-      const name = document.getElementById('profile-fullname')?.value?.trim();
-      if (!name) {
-        document.getElementById('name-error').style.display = 'block';
-        Toast.show('Full name is required.', 'error');
-        return;
+    init() {
+      // Sync branding preview fields
+      const prefixEl = document.getElementById('invoice_prefix');
+      const startEl  = document.getElementById('invoice_start_number');
+      if (prefixEl) prefixEl.addEventListener('input', e => this.branding.prefix = e.target.value);
+      if (startEl)  startEl.addEventListener('input', e => this.branding.start  = parseInt(e.target.value) || 1);
+
+      // URL hash → tab
+      const hash = window.location.hash.replace('#', '');
+      if (['profile','business','branding','notifications','payments','security'].includes(hash)) {
+        this.tab = hash;
       }
-      document.getElementById('name-error').style.display = 'none';
-      this.profileLoading = true;
+    },
+
+    setTab(name) {
+      this.tab = name;
+      history.replaceState(null, '', '#' + name);
+    },
+
+    closeModals() {
+      this.showEmailModal = false;
+    },
+
+    /* ── Toast ─────────────────────────────────────────── */
+    toast(message, type = 'success') {
+      const id = ++this._toastId;
+      const icons = { success: '✓', error: '✕', warning: '⚠' };
+      this.toasts.push({ id, message, type, icon: icons[type] || '•' });
+      setTimeout(() => this.removeToast(id), 4500);
+    },
+    removeToast(id) {
+      this.toasts = this.toasts.filter(t => t.id !== id);
+    },
+
+    /* ── Generic AJAX form save ────────────────────────── */
+    async saveSection(section, event) {
+      const form = event.target;
+      const urlMap = {
+        profile:       "{% url 'invoices:settings_profile_update' %}",
+        business:      "{% url 'invoices:settings_business_update' %}",
+        branding:      "{% url 'invoices:settings_branding_update' %}",
+        notifications: "{% url 'invoices:settings_notifications_update' %}",
+        payments:      "{% url 'invoices:settings_payments_update' %}",
+        security:      "{% url 'invoices:settings_security_update' %}",
+      };
+
+      const url = urlMap[section];
+      if (!url) return;
+
+      this.loading[section] = true;
       try {
-        const fd = new FormData(document.getElementById('profile-form'));
-        const data = await this.ajaxPost('{% url "invoices:settings_profile_update" %}', fd);
-        if (data.success) {
-          Toast.show(data.message, 'success');
-          const el = document.getElementById('display-name');
-          if (el) el.textContent = name;
+        const data = new FormData(form);
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: data,
+        });
+        const json = await resp.json();
+        if (json.success) {
+          this.toast(json.message || 'Saved successfully.', 'success');
+          this.dirty[section] = false;
+          if (section === 'profile') {
+            const nameEl  = document.getElementById('display-name');
+            const sidebarName = document.querySelector('.st-sidebar-name');
+            const fullName = form.querySelector('[name="full_name"]')?.value;
+            if (fullName && nameEl) nameEl.textContent = fullName;
+            if (fullName && sidebarName) sidebarName.textContent = fullName;
+          }
         } else {
-          Toast.show(data.message || 'Update failed.', 'error');
+          this.toast(json.message || 'Failed to save. Please try again.', 'error');
         }
-      } catch(e) {
-        Toast.show('Network error. Please try again.', 'error');
+      } catch (err) {
+        this.toast('Network error. Please check your connection.', 'error');
       } finally {
-        this.profileLoading = false;
+        this.loading[section] = false;
       }
     },
 
-    /* ── Avatar ──────────────────────────────────── */
-    async handleAvatarChange(event) {
+    /* ── Avatar Upload ─────────────────────────────────── */
+    async uploadAvatar(event) {
       const file = event.target.files[0];
       if (!file) return;
+
       if (file.size > 5 * 1024 * 1024) {
-        Toast.show('File is too large. Maximum size is 5 MB.', 'error');
+        this.toast('File too large. Maximum size is 5 MB.', 'error');
         return;
       }
-      const allowed = ['image/jpeg','image/png','image/webp','image/gif'];
-      if (!allowed.includes(file.type)) {
-        Toast.show('Invalid file type. Use JPG, PNG, WebP, or GIF.', 'error');
+
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        this.toast('Invalid file type. Use JPG, PNG, WebP or GIF.', 'error');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = e => {
-        const wrap = document.getElementById('avatar-wrap');
-        if (wrap) {
-          wrap.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover" alt="Avatar preview">`;
-        }
-      };
-      reader.readAsDataURL(file);
 
-      const fd = new FormData();
-      fd.append('avatar', file);
+      const previewUrl = URL.createObjectURL(file);
+      const avatarEl = document.getElementById('avatar-display');
+      const initialsEl = document.getElementById('avatar-initials');
+      if (initialsEl) initialsEl.style.display = 'none';
+      let imgEl = document.getElementById('avatar-img');
+      if (!imgEl) {
+        imgEl = document.createElement('img');
+        imgEl.id = 'avatar-img';
+        imgEl.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;inset:0';
+        avatarEl.appendChild(imgEl);
+      }
+      imgEl.src = previewUrl;
+
+      const sidebarAvatar = document.querySelector('.st-sidebar-avatar');
+
+      const formData = new FormData();
+      formData.append('avatar', file);
+      formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
       try {
-        const data = await this.ajaxPost('{% url "invoices:settings_avatar_upload" %}', fd);
-        if (data.success) {
-          Toast.show(data.message, 'success');
-        } else {
-          Toast.show(data.message || 'Upload failed.', 'error');
-        }
-      } catch(e) {
-        Toast.show('Network error uploading avatar.', 'error');
-      }
-    },
-
-    /* ── Business ────────────────────────────────── */
-    async submitBusiness() {
-      this.businessLoading = true;
-      try {
-        const fd = new FormData(document.getElementById('business-form'));
-        const data = await this.ajaxPost('{% url "invoices:settings_business_update" %}', fd);
-        if (data.success) {
-          Toast.show(data.message, 'success');
-        } else {
-          Toast.show(data.message || 'Update failed.', 'error');
-        }
-      } catch(e) {
-        Toast.show('Network error. Please try again.', 'error');
-      } finally {
-        this.businessLoading = false;
-      }
-    },
-
-    /* ── Branding ────────────────────────────────── */
-    async submitBranding() {
-      const form = document.getElementById('branding-form');
-      const pcText = document.getElementById('pc-text');
-      const scText = document.getElementById('sc-text');
-      const acText = document.getElementById('ac-text');
-      if (pcText) form.querySelector('[name=primary_color]').value = pcText.value;
-      if (scText) form.querySelector('[name=secondary_color]').value = scText.value;
-      if (acText) form.querySelector('[name=accent_color]').value = acText.value;
-
-      this.brandingLoading = true;
-      try {
-        const fd = new FormData(form);
-        const data = await this.ajaxPost('{% url "invoices:settings_branding_update" %}', fd);
-        if (data.success) {
-          Toast.show(data.message, 'success');
-        } else {
-          Toast.show(data.message || 'Update failed.', 'error');
-        }
-      } catch(e) {
-        Toast.show('Network error. Please try again.', 'error');
-      } finally {
-        this.brandingLoading = false;
-      }
-    },
-
-    /* ── Notifications (auto-save with debounce) ── */
-    autoSaveNotif() {
-      if (this.notifTimer) clearTimeout(this.notifTimer);
-      this.notifTimer = setTimeout(() => this.submitNotifications(), 600);
-    },
-
-    async submitNotifications() {
-      if (this.notifSaving) return;
-      this.notifSaving = true;
-      try {
-        const fd = new FormData(document.getElementById('notif-form'));
-        const data = await this.ajaxPost('{% url "invoices:settings_notifications_update" %}', fd);
-        if (data.success) {
-          Toast.show(data.message, 'success');
-        } else {
-          Toast.show(data.message || 'Failed to save.', 'error');
-        }
-      } catch(e) {
-        Toast.show('Network error. Please try again.', 'error');
-      } finally {
-        this.notifSaving = false;
-      }
-    },
-
-    /* ── Email Change ────────────────────────────── */
-    async submitEmailChange() {
-      this.emailErrors = {};
-      if (!this.newEmail || !this.newEmail.includes('@')) {
-        this.emailErrors.new_email = 'Please enter a valid email address.';
-        return;
-      }
-      if (!this.emailPassword) {
-        this.emailErrors.password = 'Current password is required.';
-        return;
-      }
-      this.emailLoading = true;
-      try {
-        const fd = new FormData();
-        fd.append('new_email', this.newEmail);
-        fd.append('current_password', this.emailPassword);
-        const data = await this.ajaxPost('{% url "invoices:settings_email_change" %}', fd);
-        if (data.success) {
-          Toast.show(data.message, 'success');
-          this.emailModal = false;
-          const el = document.getElementById('display-email');
-          if (el) el.textContent = data.new_email;
-          const input = document.getElementById('current-email-display');
-          if (input) input.value = data.new_email;
-          this.newEmail = '';
-          this.emailPassword = '';
-        } else {
-          if (data.message && data.message.toLowerCase().includes('password')) {
-            this.emailErrors.password = data.message;
-          } else {
-            this.emailErrors.new_email = data.message || 'Update failed.';
+        const resp = await fetch("{% url 'invoices:settings_avatar_upload' %}", {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData,
+        });
+        const json = await resp.json();
+        if (json.success) {
+          this.toast('Profile photo updated.', 'success');
+          if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = `<img src="${json.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;
           }
+        } else {
+          this.toast(json.message || 'Upload failed.', 'error');
+          URL.revokeObjectURL(previewUrl);
         }
-      } catch(e) {
-        this.emailErrors.new_email = 'Network error. Please try again.';
-      } finally {
-        this.emailLoading = false;
+      } catch {
+        this.toast('Upload failed. Please try again.', 'error');
       }
     },
-  }
+
+    /* ── Email Change ──────────────────────────────────── */
+    async changeEmail(event) {
+      const form = event.target;
+      this.loading.email = true;
+      try {
+        const data = new FormData(form);
+        const resp = await fetch("{% url 'invoices:settings_email_change' %}", {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: data,
+        });
+        const json = await resp.json();
+        if (json.success) {
+          this.toast('Email updated successfully.', 'success');
+          this.showEmailModal = false;
+          form.reset();
+          const emailDisplay = document.getElementById('profile-email-display');
+          const sidebarEmail = document.querySelector('.st-sidebar-email');
+          const displayEmail = document.getElementById('display-email');
+          if (emailDisplay) emailDisplay.value = json.new_email;
+          if (sidebarEmail) sidebarEmail.textContent = json.new_email;
+          if (displayEmail) displayEmail.textContent = json.new_email;
+        } else {
+          this.toast(json.message || 'Email change failed.', 'error');
+        }
+      } catch {
+        this.toast('Network error. Please try again.', 'error');
+      } finally {
+        this.loading.email = false;
+      }
+    },
+
+    /* ── Password Change ───────────────────────────────── */
+    async changePassword(event) {
+      const form = event.target;
+      const newPw  = form.querySelector('[name="new_password"]').value;
+      const confirm = form.querySelector('[name="confirm_password"]').value;
+      if (newPw !== confirm) {
+        this.toast('New passwords do not match.', 'error');
+        return;
+      }
+      if (newPw.length < 8) {
+        this.toast('Password must be at least 8 characters.', 'error');
+        return;
+      }
+      this.loading.password = true;
+      try {
+        const data = new FormData(form);
+        const resp = await fetch("{% url 'invoices:change_password' %}", {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: data,
+        });
+        const json = await resp.json();
+        if (json.ok) {
+          this.toast(json.message || 'Password updated successfully.', 'success');
+          form.reset();
+          this.pwStrength = { score: 0, label: '', cls: '', color: '' };
+        } else {
+          this.toast(json.message || 'Failed to update password.', 'error');
+        }
+      } catch {
+        this.toast('Network error. Please try again.', 'error');
+      } finally {
+        this.loading.password = false;
+      }
+    },
+
+    /* ── Password Strength ─────────────────────────────── */
+    checkPasswordStrength(pw) {
+      if (!pw) { this.pwStrength = { score: 0 }; return; }
+      let score = 0;
+      if (pw.length >= 8)  score++;
+      if (pw.length >= 12) score++;
+      if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+      if (/[0-9]/.test(pw)) score++;
+      if (/[^A-Za-z0-9]/.test(pw)) score++;
+      score = Math.min(4, Math.floor(score * 4 / 5) + (score > 0 ? 1 : 0));
+
+      const levels = [
+        null,
+        { label: 'Weak',   cls: 'weak',   color: '#ef4444' },
+        { label: 'Fair',   cls: 'fair',   color: '#f59e0b' },
+        { label: 'Good',   cls: 'good',   color: '#22c55e' },
+        { label: 'Strong', cls: 'strong', color: '#10b981' },
+      ];
+      this.pwStrength = { score, ...(levels[Math.max(1, score)] || levels[1]) };
+    },
+
+    /* ── Reset Branding Colors ─────────────────────────── */
+    resetBrandingColors() {
+      this.colors.primary   = '#6366f1';
+      this.colors.secondary = '#8b5cf6';
+      this.colors.accent    = '#10b981';
+      this.dirty.branding = true;
+    },
+  };
 }
 </script>
-{% endblock scripts %}
-{% endblock content %}
+
+<style>
+[x-cloak] { display: none !important }
+.toast-notify { border: 1px solid var(--border) }
+.toast-success { border-left: 3px solid #22c55e }
+.toast-error   { border-left: 3px solid #ef4444 }
+.toast-warning { border-left: 3px solid #f59e0b }
+</style>
+{% endblock %}

@@ -118,6 +118,36 @@ All authenticated settings pages were rewritten to use the app's inline-style de
 - Run with: `python manage.py create_demo_data --username demo`
 - Login: `username=demo`, `password=demo1234`
 
+## Settings Complete Rebuild (2026-04-01)
+
+Full teardown and rebuild of the Settings system from scratch:
+
+### Architecture
+- **Single-page settings** at `/settings/` with 6 tabs controlled by Alpine.js (`settingsApp()` controller)
+- **New CSS** at `static/css/settings.css` with `st-` prefix classes (no conflicts with existing styles)
+- All tabs use **AJAX save with zero page reloads**, loading spinners, unsaved-changes indicators, toast notifications
+- Sidebar profile mini-card + sticky navigation + responsive (collapses to horizontal pill nav on mobile)
+
+### Settings Tabs
+1. **Profile** — Avatar upload (click-to-upload with preview), display name, account email (Change modal with password confirm), timezone, locale, email verified / 2FA badges
+2. **Business** — Company name, type, currency, email, phone, website, address (city/state/country/postal), tax ID
+3. **Branding** — 3 brand color pickers (primary/secondary/accent) with real-time swatch + hex display, 5 invoice style cards (visual preview), invoice numbering (prefix + start number) with live preview
+4. **Notifications** — 6 email notification toggles with descriptions (Invoice Created, Payment Received, Invoice Viewed, Invoice Overdue, Weekly Summary, Security Alerts)
+5. **Payments** — Accept card/bank/mobile money toggles, payment instructions textarea
+6. **Security** — Change password (with strength meter, confirm validation), 2FA card (setup/disable/backup codes), Active Sessions list with per-session revoke + "Sign Out All Others", Security Activity Log (recent 10 events), Security notification preferences
+
+### Enhanced View (`settings_page`)
+Now passes: `mfa_enabled`, `remaining_codes`, `security_events` (last 10), `sessions` (with `is_current` flag), `business_types`, `invoice_styles`, `currencies`, `active_tab`
+
+### Business Update Endpoint
+Now saves expanded fields: `business_city`, `business_state`, `business_country`, `business_postal_code`, `business_website` (all previously missing)
+
+### Removed
+- `templates/pages/auth/security_settings.html` content merged into main settings Security tab
+- All legacy inline styles replaced with `st-` CSS component classes
+
+---
+
 ## Settings System Overhaul (2026-03-28)
 
 Complete audit, repair, and upgrade of the Settings module:

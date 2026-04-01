@@ -664,13 +664,45 @@ def resources_view(request):
 
 @login_required
 def settings_page(request):
-    profile = request.user.profile
+    user = request.user
+    profile = user.profile
     workspace = getattr(profile, 'current_workspace', None)
+
+    mfa_enabled = False
+    remaining_codes = 0
+    try:
+        mfa_enabled = MFAService.is_mfa_enabled(user)
+        if mfa_enabled:
+            remaining_codes = MFAService.get_remaining_codes(user)
+    except Exception:
+        pass
+
+    from ..models import SecurityEvent
+    security_events = SecurityEvent.objects.filter(user=user).order_by('-created_at')[:10]
+
+    sessions = []
+    current_session_key = request.session.session_key
+    try:
+        sessions = SessionService.get_user_sessions(user)
+        for s in sessions:
+            s.is_current = s.session_key == current_session_key
+    except Exception:
+        pass
+
+    from ..models import UserProfile
     context = {
         'profile': profile,
         'workspace': workspace,
-        'user': request.user,
+        'user': user,
         'page_title': 'Settings',
+        'mfa_enabled': mfa_enabled,
+        'remaining_codes': remaining_codes,
+        'security_events': security_events,
+        'sessions': sessions,
+        'business_types': UserProfile.BUSINESS_TYPE_CHOICES,
+        'invoice_styles': UserProfile.INVOICE_STYLE_CHOICES,
+        'currencies': UserProfile.CURRENCY_CHOICES,
+        'active_tab': request.GET.get('tab', 'profile'),
     }
     return render(request, "pages/settings.html", context)
 
@@ -899,13 +931,18 @@ def settings_business_update(request):
     try:
         profile = request.user.profile
 
-        company_name = request.POST.get('company_name', '').strip()[:255]
-        business_email = request.POST.get('business_email', '').strip()[:254]
-        business_phone = request.POST.get('business_phone', '').strip()[:50]
-        business_address = request.POST.get('business_address', '').strip()
-        business_type = request.POST.get('business_type', '').strip()
-        default_currency = request.POST.get('default_currency', '').strip()
-        tax_id_number = request.POST.get('tax_id_number', '').strip()[:50]
+        company_name       = request.POST.get('company_name', '').strip()[:255]
+        business_email     = request.POST.get('business_email', '').strip()[:254]
+        business_phone     = request.POST.get('business_phone', '').strip()[:50]
+        business_address   = request.POST.get('business_address', '').strip()
+        business_city      = request.POST.get('business_city', '').strip()[:100]
+        business_state     = request.POST.get('business_state', '').strip()[:100]
+        business_country   = request.POST.get('business_country', '').strip()[:100]
+        business_postal_code = request.POST.get('business_postal_code', '').strip()[:20]
+        business_website   = request.POST.get('business_website', '').strip()
+        business_type      = request.POST.get('business_type', '').strip()
+        default_currency   = request.POST.get('default_currency', '').strip()
+        tax_id_number      = request.POST.get('tax_id_number', '').strip()[:50]
 
         if business_email:
             try:
@@ -916,10 +953,15 @@ def settings_business_update(request):
                 messages.error(request, "Invalid business email address.")
                 return redirect("invoices:settings")
 
-        profile.company_name = company_name
-        profile.business_email = business_email
-        profile.business_phone = business_phone
-        profile.business_address = business_address
+        profile.company_name         = company_name
+        profile.business_email       = business_email
+        profile.business_phone       = business_phone
+        profile.business_address     = business_address
+        profile.business_city        = business_city
+        profile.business_state       = business_state
+        profile.business_country     = business_country
+        profile.business_postal_code = business_postal_code
+        profile.business_website     = business_website
         if business_type:
             profile.business_type = business_type
         if default_currency:
@@ -927,8 +969,9 @@ def settings_business_update(request):
         if tax_id_number is not None:
             profile.tax_id_number = tax_id_number
         profile.save(update_fields=[
-            'company_name', 'business_email', 'business_phone',
-            'business_address', 'business_type', 'default_currency', 'tax_id_number',
+            'company_name', 'business_email', 'business_phone', 'business_address',
+            'business_city', 'business_state', 'business_country', 'business_postal_code',
+            'business_website', 'business_type', 'default_currency', 'tax_id_number',
         ])
 
         from ..models import SecurityEvent
