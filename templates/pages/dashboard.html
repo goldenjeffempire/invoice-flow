@@ -11,44 +11,44 @@
      x-data="dashCtrl()"
      x-init="init()"
      @keydown.r.window="if(!$event.target.matches('input,textarea,select')) silentRefresh()"
-     @keydown.escape.window="dismissInsight($event)">
+     @keydown.escape.window="dismissInsight()">
 
-  <!-- ═══════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════
        1. HEADER
-  ════════════════════════════════════════ -->
-  <div class="dash-hdr">
-    <div class="dash-hdr-left">
-      <div class="dash-avatar" aria-hidden="true">
+  ═══════════════════════════════════════════════════════ -->
+  <div class="d-hdr">
+    <div class="d-hdr-left">
+      <div class="d-avatar" aria-hidden="true">
         {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
       </div>
       <div>
-        <h1 class="dash-greeting">
-          Good <span class="dash-period" x-text="period">morning</span>,
+        <h1 class="d-greeting">
+          Good <span class="d-period" x-text="period">morning</span>,
           {{ request.user.first_name|default:request.user.username }}.
         </h1>
-        <div class="dash-meta">
-          <a href="{% url 'invoices:workspace_settings' %}" class="dash-ws-pill" title="Workspace settings">
-            <span class="dash-ws-dot"></span>{{ workspace.name }}
+        <div class="d-meta">
+          <a href="{% url 'invoices:workspace_settings' %}" class="d-ws-pill" title="Workspace settings">
+            <span class="d-ws-dot"></span>{{ workspace.name }}
           </a>
-          <span class="dash-meta-sep" aria-hidden="true">·</span>
-          <time class="dash-date" datetime="{{ today|date:'Y-m-d' }}">{{ today|date:"l, j F Y" }}</time>
-          <span class="dash-clock" x-text="clock" aria-live="off"></span>
-          <span x-show="lastUpdated" x-cloak class="dash-live-chip">
-            <span class="dash-live-dot" aria-hidden="true"></span>
-            Updated <span x-text="lastUpdated" class="dash-live-time"></span>
+          <span class="d-meta-sep" aria-hidden="true">·</span>
+          <time class="d-date" datetime="{{ today|date:'Y-m-d' }}">{{ today|date:"l, j F Y" }}</time>
+          <span class="d-clock" x-text="clock" aria-live="off"></span>
+          <span x-show="lastUpdated" x-cloak class="d-live">
+            <span class="d-live-dot" aria-hidden="true"></span>
+            Updated <span x-text="lastUpdated" class="d-live-time"></span>
           </span>
         </div>
       </div>
     </div>
 
-    <div class="dash-hdr-right">
+    <div class="d-hdr-right">
       <button @click="silentRefresh()"
               :disabled="refreshing"
-              class="dash-refresh-btn"
+              class="d-refresh"
               title="Refresh dashboard (R)"
               aria-label="Refresh dashboard">
-        <svg :class="refreshing ? 'dash-spin' : ''"
-             width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <svg :class="refreshing ? 'd-spin' : ''"
+             width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
@@ -70,22 +70,22 @@
   </div>
 
   <!-- Error banner -->
-  <div x-show="fetchError" x-cloak class="dash-error" role="alert" x-transition>
-    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+  <div x-show="fetchError" x-cloak class="d-error" role="alert" x-transition>
+    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
     </svg>
     <span>Could not refresh — showing cached data. Check your connection.</span>
-    <button @click="silentRefresh()" class="dash-error-retry" aria-label="Retry refresh">Retry</button>
+    <button @click="silentRefresh()" class="d-error-retry" aria-label="Retry refresh">Retry</button>
   </div>
 
-  <!-- ═══════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════
        2. SMART INSIGHTS
-  ════════════════════════════════════════ -->
+  ═══════════════════════════════════════════════════════ -->
   {% if insights %}
-  <div class="dash-insights-bar" role="region" aria-label="Smart insights">
+  <div class="d-insights" role="region" aria-label="Smart insights">
     {% for insight in insights %}
-    <div class="dash-insight dash-insight-{{ insight.type }}" role="status">
-      <div class="dash-insight-icon" aria-hidden="true">
+    <div class="d-insight d-insight-{{ insight.type }}" role="status">
+      <div class="d-insight-icon" aria-hidden="true">
         {% if insight.icon == "alert" %}
         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         {% elif insight.icon == "clock" %}
@@ -96,429 +96,429 @@
         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         {% endif %}
       </div>
-      <span class="dash-insight-text">{{ insight.text }}</span>
-      {% if insight.url %}<a href="{{ insight.url }}" class="dash-insight-cta">{{ insight.action }} →</a>{% endif %}
+      <span class="d-insight-text">{{ insight.text }}</span>
+      {% if insight.url %}<a href="{{ insight.url }}" class="d-insight-cta">{{ insight.action }} →</a>{% endif %}
     </div>
     {% endfor %}
   </div>
   {% endif %}
 
-  <!-- ═══════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════
        3. QUICK ACTIONS
-  ════════════════════════════════════════ -->
-  <nav class="dash-qa" aria-label="Quick actions">
-    <a href="{% url 'invoices:invoice_create' %}" class="dash-qa-card dash-qa-primary">
-      <div class="dash-qa-icon-wrap" aria-hidden="true">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v4h4"/></svg>
+  ═══════════════════════════════════════════════════════ -->
+  <nav class="d-qa" aria-label="Quick actions">
+    <a href="{% url 'invoices:invoice_create' %}" class="d-qa-card d-qa-hero">
+      <div class="d-qa-ic" aria-hidden="true">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v4h4"/></svg>
       </div>
-      <div class="dash-qa-content">
-        <span class="dash-qa-label">Create Invoice</span>
-        <span class="dash-qa-sub">Send &amp; track payments</span>
+      <div class="d-qa-body">
+        <span class="d-qa-name">Create Invoice</span>
+        <span class="d-qa-sub">Send &amp; track payments</span>
       </div>
-      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <svg class="d-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
-    <a href="{% url 'invoices:client_create' %}" class="dash-qa-card dash-qa-teal">
-      <div class="dash-qa-icon-wrap" aria-hidden="true">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+    <a href="{% url 'invoices:client_create' %}" class="d-qa-card d-qa-teal">
+      <div class="d-qa-ic" aria-hidden="true">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
       </div>
-      <div class="dash-qa-content">
-        <span class="dash-qa-label">Add Client</span>
-        <span class="dash-qa-sub">Build relationships</span>
+      <div class="d-qa-body">
+        <span class="d-qa-name">Add Client</span>
+        <span class="d-qa-sub">Build relationships</span>
       </div>
-      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <svg class="d-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
-    <a href="{% url 'invoices:payment_overview' %}" class="dash-qa-card dash-qa-green">
-      <div class="dash-qa-icon-wrap" aria-hidden="true">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+    <a href="{% url 'invoices:payment_overview' %}" class="d-qa-card d-qa-green">
+      <div class="d-qa-ic" aria-hidden="true">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
       </div>
-      <div class="dash-qa-content">
-        <span class="dash-qa-label">Record Payment</span>
-        <span class="dash-qa-sub">Log cash received</span>
+      <div class="d-qa-body">
+        <span class="d-qa-name">Record Payment</span>
+        <span class="d-qa-sub">Log cash received</span>
       </div>
-      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <svg class="d-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
-    <a href="{% url 'invoices:estimate_create' %}" class="dash-qa-card dash-qa-violet">
-      <div class="dash-qa-icon-wrap" aria-hidden="true">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+    <a href="{% url 'invoices:estimate_create' %}" class="d-qa-card d-qa-violet">
+      <div class="d-qa-ic" aria-hidden="true">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
       </div>
-      <div class="dash-qa-content">
-        <span class="dash-qa-label">New Estimate</span>
-        <span class="dash-qa-sub">Quote &amp; convert</span>
+      <div class="d-qa-body">
+        <span class="d-qa-name">New Estimate</span>
+        <span class="d-qa-sub">Quote &amp; convert</span>
       </div>
-      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <svg class="d-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
-    <a href="{% url 'invoices:expense_create' %}" class="dash-qa-card dash-qa-amber">
-      <div class="dash-qa-icon-wrap" aria-hidden="true">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+    <a href="{% url 'invoices:expense_create' %}" class="d-qa-card d-qa-amber">
+      <div class="d-qa-ic" aria-hidden="true">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
       </div>
-      <div class="dash-qa-content">
-        <span class="dash-qa-label">Log Expense</span>
-        <span class="dash-qa-sub">Track spending</span>
+      <div class="d-qa-body">
+        <span class="d-qa-name">Log Expense</span>
+        <span class="d-qa-sub">Track spending</span>
       </div>
-      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <svg class="d-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
-    <a href="{% url 'invoices:reports_home' %}" class="dash-qa-card dash-qa-blue">
-      <div class="dash-qa-icon-wrap" aria-hidden="true">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+    <a href="{% url 'invoices:reports_home' %}" class="d-qa-card d-qa-blue">
+      <div class="d-qa-ic" aria-hidden="true">
+        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
       </div>
-      <div class="dash-qa-content">
-        <span class="dash-qa-label">View Reports</span>
-        <span class="dash-qa-sub">Analyse finances</span>
+      <div class="d-qa-body">
+        <span class="d-qa-name">View Reports</span>
+        <span class="d-qa-sub">Analyse finances</span>
       </div>
-      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <svg class="d-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
   </nav>
 
-  <!-- ═══════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════
        4. KPI ROW 1 — Revenue, Outstanding, Net Profit, Overdue
-  ════════════════════════════════════════ -->
-  <div class="kpi-grid" id="kpi-grid-1" style="grid-template-columns:repeat(4,1fr)" role="region" aria-label="Key performance indicators">
+  ═══════════════════════════════════════════════════════ -->
+  <div class="d-kpi-grid d-kpi-grid-4" role="region" aria-label="Key performance indicators">
 
     <!-- Revenue This Month -->
-    <div class="kpi-card kpi-indigo" :class="refreshing ? 'kpi-loading' : ''">
-      <div class="kpi-top">
-        <div class="kpi-icon kpi-icon-indigo" aria-hidden="true">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div class="d-kpi d-kpi-indigo" :class="refreshing ? 'd-kpi-loading' : ''">
+      <div class="d-kpi-top">
+        <div class="d-kpi-icon d-kpi-icon-indigo" aria-hidden="true">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
         {% if kpis.revenue_change_pct is not None %}
-        <span class="kpi-delta {% if kpis.revenue_change_pct >= 0 %}kpi-delta-up{% else %}kpi-delta-down{% endif %}" aria-label="{{ kpis.revenue_change_pct }}% change from last month">
+        <span class="d-delta {% if kpis.revenue_change_pct >= 0 %}d-delta-up{% else %}d-delta-down{% endif %}" aria-label="{{ kpis.revenue_change_pct }}% change from last month">
           {% if kpis.revenue_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.revenue_change_pct|floatformat:1 }}%
         </span>
         {% endif %}
       </div>
-      <p class="kpi-label">Revenue This Month</p>
-      <p class="kpi-value"
+      <p class="d-kpi-label">Revenue This Month</p>
+      <p class="d-kpi-val"
          id="kpi-revenue"
          x-text="live.revenue !== undefined ? sym + fmt(live.revenue) : '{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}'">
         {{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}
       </p>
-      <div class="kpi-sparkline-wrap" aria-hidden="true">
-        <svg class="kpi-spark" id="spark-revenue" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      <div class="d-spark-wrap" aria-hidden="true">
+        <svg class="d-spark" id="spark-revenue" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
       </div>
-      <div class="kpi-footer">
-        <span class="kpi-sub">vs {{ workspace.currency_symbol }}{{ last_month_revenue|floatformat:0 }} last month</span>
-        <a href="{% url 'invoices:reports_home' %}" class="kpi-link">Reports →</a>
+      <div class="d-kpi-foot">
+        <span class="d-kpi-sub">vs {{ workspace.currency_symbol }}{{ last_month_revenue|floatformat:0 }} last month</span>
+        <a href="{% url 'invoices:reports_home' %}" class="d-kpi-link">Reports →</a>
       </div>
     </div>
 
     <!-- Outstanding -->
-    <div class="kpi-card kpi-amber" :class="refreshing ? 'kpi-loading' : ''">
-      <div class="kpi-top">
-        <div class="kpi-icon kpi-icon-amber" aria-hidden="true">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    <div class="d-kpi d-kpi-amber" :class="refreshing ? 'd-kpi-loading' : ''">
+      <div class="d-kpi-top">
+        <div class="d-kpi-icon d-kpi-icon-amber" aria-hidden="true">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
         {% if kpis.draft_count > 0 %}
-        <span class="kpi-badge">{{ kpis.draft_count }} draft{{ kpis.draft_count|pluralize }}</span>
+        <span class="d-kpi-badge">{{ kpis.draft_count }} draft{{ kpis.draft_count|pluralize }}</span>
         {% endif %}
       </div>
-      <p class="kpi-label">Outstanding</p>
-      <p class="kpi-value"
+      <p class="d-kpi-label">Outstanding</p>
+      <p class="d-kpi-val"
          id="kpi-outstanding"
          x-text="live.outstanding !== undefined ? sym + fmt(live.outstanding) : '{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}'">
         {{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}
       </p>
-      <div class="kpi-sparkline-wrap" aria-hidden="true">
-        <svg class="kpi-spark" id="spark-outstanding" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      <div class="d-spark-wrap" aria-hidden="true">
+        <svg class="d-spark" id="spark-outstanding" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
       </div>
-      <div class="kpi-footer">
-        <span class="kpi-sub">Awaiting collection</span>
-        <a href="{% url 'invoices:invoice_list' %}" class="kpi-link">View all →</a>
+      <div class="d-kpi-foot">
+        <span class="d-kpi-sub">Awaiting collection</span>
+        <a href="{% url 'invoices:invoice_list' %}" class="d-kpi-link">View all →</a>
       </div>
     </div>
 
     <!-- Net Profit -->
-    <div class="kpi-card kpi-green" :class="refreshing ? 'kpi-loading' : ''">
-      <div class="kpi-top">
-        <div class="kpi-icon kpi-icon-green" aria-hidden="true">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+    <div class="d-kpi d-kpi-green" :class="refreshing ? 'd-kpi-loading' : ''">
+      <div class="d-kpi-top">
+        <div class="d-kpi-icon d-kpi-icon-green" aria-hidden="true">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         </div>
         {% if kpis.collection_rate is not None %}
-        <span class="kpi-delta {% if kpis.collection_rate >= 75 %}kpi-delta-up{% else %}kpi-delta-warn{% endif %}">
+        <span class="d-delta {% if kpis.collection_rate >= 75 %}d-delta-up{% else %}d-delta-warn{% endif %}">
           {{ kpis.collection_rate }}% collected
         </span>
         {% endif %}
       </div>
-      <p class="kpi-label">Net Profit MTD</p>
-      <p class="kpi-value"
+      <p class="d-kpi-label">Net Profit MTD</p>
+      <p class="d-kpi-val"
          id="kpi-net"
-         :class="(live.net_profit ?? {{ kpis.net_profit }}) >= 0 ? 'kpi-val-pos' : 'kpi-val-neg'"
+         :class="(live.net_profit ?? {{ kpis.net_profit }}) >= 0 ? 'd-val-pos' : 'd-val-neg'"
          x-text="live.net_profit !== undefined
            ? (live.net_profit < 0 ? '–' : '') + sym + fmt(Math.abs(live.net_profit))
            : '{% if kpis.net_profit < 0 %}–{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}'">
         {% if kpis.net_profit < 0 %}–{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}
       </p>
-      <div class="kpi-sparkline-wrap" aria-hidden="true">
-        <svg class="kpi-spark" id="spark-net" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      <div class="d-spark-wrap" aria-hidden="true">
+        <svg class="d-spark" id="spark-net" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
       </div>
-      <div class="kpi-footer">
+      <div class="d-kpi-foot">
         {% if kpis.collection_rate is not None %}
         <div style="width:100%">
-          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-            <span class="kpi-sub">Collection rate</span>
-            <span class="kpi-sub" style="font-weight:700;color:var(--text-primary)">{{ kpis.collection_rate }}%</span>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span class="d-kpi-sub">Collection rate</span>
+            <span class="d-kpi-sub" style="font-weight:700;color:var(--text-primary)">{{ kpis.collection_rate }}%</span>
           </div>
-          <div class="kpi-progress" role="progressbar" aria-valuenow="{{ kpis.collection_rate }}" aria-valuemin="0" aria-valuemax="100">
-            <div class="kpi-progress-fill" style="width:{{ kpis.collection_rate }}%;background:{% if kpis.collection_rate >= 75 %}#22c55e{% elif kpis.collection_rate < 50 %}#ef4444{% else %}#f59e0b{% endif %}"></div>
+          <div class="d-progress" role="progressbar" aria-valuenow="{{ kpis.collection_rate }}" aria-valuemin="0" aria-valuemax="100">
+            <div class="d-progress-fill" style="width:{{ kpis.collection_rate }}%;background:{% if kpis.collection_rate >= 75 %}#22c55e{% elif kpis.collection_rate < 50 %}#ef4444{% else %}#f59e0b{% endif %}"></div>
           </div>
         </div>
         {% else %}
-        <span class="kpi-sub">Revenue minus expenses</span>
+        <span class="d-kpi-sub">Revenue minus expenses</span>
         {% endif %}
       </div>
     </div>
 
     <!-- Overdue -->
-    <div class="kpi-card kpi-red {% if kpis.overdue_count > 0 %}kpi-danger{% endif %}" :class="refreshing ? 'kpi-loading' : ''">
-      <div class="kpi-top">
-        <div class="kpi-icon kpi-icon-red" aria-hidden="true">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <div class="d-kpi d-kpi-red {% if kpis.overdue_count > 0 %}d-kpi-danger{% endif %}" :class="refreshing ? 'd-kpi-loading' : ''">
+      <div class="d-kpi-top">
+        <div class="d-kpi-icon d-kpi-icon-red" aria-hidden="true">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         </div>
-        <span class="kpi-delta kpi-delta-down"
+        <span class="d-delta d-delta-down"
               x-text="(live.overdue_count ?? {{ kpis.overdue_count }}) + ' invoice' + ((live.overdue_count ?? {{ kpis.overdue_count }}) !== 1 ? 's' : '')">
           {{ kpis.overdue_count }} invoice{{ kpis.overdue_count|pluralize }}
         </span>
       </div>
-      <p class="kpi-label">Overdue Balance</p>
-      <p class="kpi-value {% if kpis.total_overdue > 0 %}kpi-val-neg{% endif %}"
+      <p class="d-kpi-label">Overdue Balance</p>
+      <p class="d-kpi-val {% if kpis.total_overdue > 0 %}d-val-neg{% endif %}"
          id="kpi-overdue"
          x-text="live.overdue !== undefined ? sym + fmt(live.overdue) : '{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}'">
         {{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}
       </p>
-      <div class="kpi-sparkline-wrap" aria-hidden="true">
-        <svg class="kpi-spark" id="spark-overdue" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      <div class="d-spark-wrap" aria-hidden="true">
+        <svg class="d-spark" id="spark-overdue" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
       </div>
-      <div class="kpi-footer">
+      <div class="d-kpi-foot">
         {% if kpis.overdue_count > 0 %}
-        <span class="kpi-sub" style="color:#dc2626;font-weight:600">Needs attention</span>
-        <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="kpi-link" style="color:#dc2626">Send reminders →</a>
+        <span class="d-kpi-sub" style="color:#dc2626;font-weight:600">Needs attention</span>
+        <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="d-kpi-link" style="color:#dc2626">Send reminders →</a>
         {% else %}
-        <span class="kpi-sub" style="color:#16a34a;font-weight:600">All clear ✓</span>
+        <span class="d-kpi-sub" style="color:#16a34a;font-weight:600">All clear</span>
         {% endif %}
       </div>
     </div>
 
   </div>
 
-  <!-- ═══════════════════════════════════════
-       KPI ROW 2 — Expenses, Clients
-  ════════════════════════════════════════ -->
-  <div class="kpi-grid" style="grid-template-columns:1fr 1fr" role="region" aria-label="Financial overview">
+  <!-- ═══════════════════════════════════════════════════════
+       KPI ROW 2 — Expenses, Clients & Health
+  ═══════════════════════════════════════════════════════ -->
+  <div class="d-kpi-grid d-kpi-grid-2" role="region" aria-label="Financial overview">
 
     <!-- Expenses MTD -->
-    <div class="kpi-card kpi-violet" :class="refreshing ? 'kpi-loading' : ''">
-      <div class="kpi-top">
-        <div class="kpi-icon kpi-icon-violet" aria-hidden="true">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+    <div class="d-kpi d-kpi-violet" :class="refreshing ? 'd-kpi-loading' : ''">
+      <div class="d-kpi-top">
+        <div class="d-kpi-icon d-kpi-icon-violet" aria-hidden="true">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
         </div>
         {% if kpis.expenses_change_pct is not None %}
-        <span class="kpi-delta {% if kpis.expenses_change_pct <= 0 %}kpi-delta-up{% else %}kpi-delta-down{% endif %}">
+        <span class="d-delta {% if kpis.expenses_change_pct <= 0 %}d-delta-up{% else %}d-delta-down{% endif %}">
           {% if kpis.expenses_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.expenses_change_pct|floatformat:1 }}% vs last month
         </span>
         {% endif %}
       </div>
-      <p class="kpi-label">Expenses This Month</p>
-      <p class="kpi-value"
+      <p class="d-kpi-label">Expenses This Month</p>
+      <p class="d-kpi-val"
          id="kpi-expenses"
          x-text="live.expenses !== undefined ? sym + fmt(live.expenses) : '{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}'">
         {{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}
       </p>
-      <div class="kpi-sparkline-wrap" aria-hidden="true">
-        <svg class="kpi-spark" id="spark-expenses" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      <div class="d-spark-wrap" aria-hidden="true">
+        <svg class="d-spark" id="spark-expenses" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
       </div>
-      <div class="kpi-footer">
-        <span class="kpi-sub">All-time revenue: {{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }} collected</span>
-        <a href="{% url 'invoices:expense_list' %}" class="kpi-link">View expenses →</a>
+      <div class="d-kpi-foot">
+        <span class="d-kpi-sub">All-time revenue: {{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }} collected</span>
+        <a href="{% url 'invoices:expense_list' %}" class="d-kpi-link">View expenses →</a>
       </div>
     </div>
 
     <!-- Clients & Health -->
-    <div class="kpi-card kpi-teal" :class="refreshing ? 'kpi-loading' : ''">
-      <div class="kpi-top">
-        <div class="kpi-icon kpi-icon-teal" aria-hidden="true">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    <div class="d-kpi d-kpi-teal" :class="refreshing ? 'd-kpi-loading' : ''">
+      <div class="d-kpi-top">
+        <div class="d-kpi-icon d-kpi-icon-teal" aria-hidden="true">
+          <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
         {% if kpis.new_clients_this_month > 0 %}
-        <span class="kpi-badge kpi-badge-green">+{{ kpis.new_clients_this_month }} this month</span>
+        <span class="d-kpi-badge d-kpi-badge-green">+{{ kpis.new_clients_this_month }} this month</span>
         {% endif %}
       </div>
-      <p class="kpi-label">Total Clients</p>
-      <p class="kpi-value"
+      <p class="d-kpi-label">Total Clients</p>
+      <p class="d-kpi-val"
          id="kpi-clients"
          x-text="live.total_clients !== undefined ? live.total_clients : '{{ kpis.total_clients }}'">
         {{ kpis.total_clients }}
       </p>
-      <div class="kpi-stat-row" aria-label="Business health metrics">
-        <div class="kpi-mini-stat">
-          <span class="kpi-mini-label">Recurring</span>
-          <span class="kpi-mini-val">{{ kpis.active_schedules }}</span>
+      <div class="d-mini-row" aria-label="Business health metrics">
+        <div class="d-mini-stat">
+          <span class="d-mini-label">Recurring</span>
+          <span class="d-mini-val">{{ kpis.active_schedules }}</span>
         </div>
-        <div class="kpi-mini-stat">
-          <span class="kpi-mini-label">Est. conversion</span>
-          <span class="kpi-mini-val {% if kpis.estimate_conversion >= 60 %}kpi-val-pos{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
+        <div class="d-mini-stat">
+          <span class="d-mini-label">Est. conversion</span>
+          <span class="d-mini-val {% if kpis.estimate_conversion >= 60 %}d-val-pos{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
         </div>
-        <div class="kpi-mini-stat">
-          <span class="kpi-mini-label">Draft invoices</span>
-          <span class="kpi-mini-val {% if kpis.draft_count > 0 %}kpi-val-neg{% endif %}">{{ kpis.draft_count }}</span>
+        <div class="d-mini-stat">
+          <span class="d-mini-label">Draft invoices</span>
+          <span class="d-mini-val {% if kpis.draft_count > 0 %}d-val-neg{% endif %}">{{ kpis.draft_count }}</span>
         </div>
       </div>
-      <div class="kpi-footer">
-        <span class="kpi-sub">Active business relationships</span>
-        <a href="{% url 'invoices:client_list' %}" class="kpi-link">View clients →</a>
+      <div class="d-kpi-foot">
+        <span class="d-kpi-sub">Active business relationships</span>
+        <a href="{% url 'invoices:client_list' %}" class="d-kpi-link">View clients →</a>
       </div>
     </div>
 
   </div>
 
-  <!-- ═══════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════
        5. CHARTS ROW
-  ════════════════════════════════════════ -->
-  <div class="dash-charts" role="region" aria-label="Revenue and expense charts">
+  ═══════════════════════════════════════════════════════ -->
+  <div class="d-charts" role="region" aria-label="Revenue and expense charts">
 
     <!-- Revenue & Expenses Trend -->
-    <div class="card dash-chart-card">
-      <div class="dash-chart-hdr">
-        <div class="dash-chart-hdr-left">
+    <div class="card d-chart-card">
+      <div class="d-chart-hdr">
+        <div class="d-chart-hdr-l">
           <h3>Revenue &amp; Expenses</h3>
           <p>Monthly cash flow with net profit overlay</p>
         </div>
-        <div class="dash-chart-controls">
-          <div class="dash-chart-legend" aria-hidden="true">
-            <span class="dash-legend-item"><span class="dash-legend-dot" style="background:#6366f1"></span>Revenue</span>
-            <span class="dash-legend-item"><span class="dash-legend-dot" style="background:#f97316"></span>Expenses</span>
-            <span class="dash-legend-item"><span class="dash-legend-dot dash-legend-dot-round" style="background:#22c55e"></span>Net</span>
+        <div class="d-chart-ctrl">
+          <div class="d-legend" aria-hidden="true">
+            <span class="d-legend-item"><span class="d-legend-dot" style="background:#6366f1"></span>Revenue</span>
+            <span class="d-legend-item"><span class="d-legend-dot" style="background:#f97316"></span>Expenses</span>
+            <span class="d-legend-item"><span class="d-legend-dot d-legend-dot-round" style="background:#22c55e"></span>Net</span>
           </div>
-          <div class="dash-periods" role="group" aria-label="Chart time period">
-            <button class="dash-period-btn" :class="chartPeriod===3 ? 'active' : ''" @click="changeChartPeriod(3)" aria-pressed="chartPeriod===3">3M</button>
-            <button class="dash-period-btn" :class="chartPeriod===6 ? 'active' : ''" @click="changeChartPeriod(6)" aria-pressed="chartPeriod===6">6M</button>
-            <button class="dash-period-btn" :class="chartPeriod===12 ? 'active' : ''" @click="changeChartPeriod(12)" aria-pressed="chartPeriod===12">1Y</button>
+          <div class="d-periods" role="group" aria-label="Chart time period">
+            <button class="d-period-btn" :class="chartPeriod===3 ? 'active' : ''" @click="changeChartPeriod(3)">3M</button>
+            <button class="d-period-btn" :class="chartPeriod===6 ? 'active' : ''" @click="changeChartPeriod(6)">6M</button>
+            <button class="d-period-btn" :class="chartPeriod===12 ? 'active' : ''" @click="changeChartPeriod(12)">1Y</button>
           </div>
         </div>
       </div>
       {% if chart_has_data %}
-      <div x-show="chartLoading" class="dash-chart-skel" role="status" aria-label="Loading chart"></div>
-      <div x-show="!chartLoading" x-cloak class="dash-chart-canvas">
+      <div x-show="chartLoading" class="d-chart-skel" role="status" aria-label="Loading chart"></div>
+      <div x-show="!chartLoading" x-cloak class="d-chart-canvas">
         <canvas id="revExpChart" aria-label="Revenue and expenses bar chart"></canvas>
       </div>
       {% else %}
-      <div class="dash-chart-empty" role="status">
-        <div class="dash-empty-illo" aria-hidden="true">
-          <svg width="72" height="72" fill="none" stroke="currentColor" viewBox="0 0 24 24" opacity=".1">
+      <div class="d-chart-empty" role="status">
+        <div class="d-empty-illo" aria-hidden="true">
+          <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24" opacity=".1">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width=".8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
           </svg>
         </div>
-        <p class="dash-chart-empty-title">No revenue data yet</p>
-        <p class="dash-chart-empty-sub">Record payments against invoices to see your revenue trend here.</p>
-        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:16px">Create Your First Invoice</a>
+        <p class="d-chart-empty-title">No revenue data yet</p>
+        <p class="d-chart-empty-sub">Record payments against invoices to see your revenue trend here.</p>
+        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:14px">Create Your First Invoice</a>
       </div>
       {% endif %}
     </div>
 
     <!-- Invoice Status Donut -->
-    <div class="card dash-chart-card" style="padding:20px">
-      <div class="dash-chart-hdr" style="margin-bottom:12px">
-        <div class="dash-chart-hdr-left">
+    <div class="card d-chart-card" style="padding:18px">
+      <div class="d-chart-hdr" style="margin-bottom:10px">
+        <div class="d-chart-hdr-l">
           <h3>Invoice Status</h3>
           <p>Distribution by current status</p>
         </div>
       </div>
       {% if kpis.total_invoice_count > 0 %}
-      <div class="dash-donut-wrap">
+      <div class="d-donut-wrap">
         <canvas id="statusDonut" aria-label="Invoice status donut chart"></canvas>
-        <div class="dash-donut-center">
-          <p class="dash-donut-count">{{ kpis.total_invoice_count }}</p>
-          <p class="dash-donut-lbl">Total</p>
+        <div class="d-donut-center">
+          <p class="d-donut-count">{{ kpis.total_invoice_count }}</p>
+          <p class="d-donut-lbl">Total</p>
         </div>
       </div>
-      <div class="dash-status-list" role="list">
+      <div class="d-status-list" role="list">
         {% for key, label, color in invoice_status_items %}
         {% with count=invoice_status_counts|dict_get:key %}
         {% if count > 0 %}
-        <div class="dash-status-row" role="listitem">
-          <span class="dash-status-dot" style="background:{{ color }}" aria-hidden="true"></span>
-          <span class="dash-status-name">{{ label }}</span>
-          <span class="dash-status-bar-wrap" role="progressbar" aria-valuenow="{% widthratio count kpis.total_invoice_count 100 %}" aria-valuemin="0" aria-valuemax="100">
-            <span class="dash-status-bar" style="background:{{ color }};width:{% widthratio count kpis.total_invoice_count 100 %}%"></span>
+        <div class="d-status-row" role="listitem">
+          <span class="d-status-dot" style="background:{{ color }}" aria-hidden="true"></span>
+          <span class="d-status-name">{{ label }}</span>
+          <span class="d-status-bar-wrap" role="progressbar" aria-valuenow="{% widthratio count kpis.total_invoice_count 100 %}" aria-valuemin="0" aria-valuemax="100">
+            <span class="d-status-bar" style="background:{{ color }};width:{% widthratio count kpis.total_invoice_count 100 %}%"></span>
           </span>
-          <span class="dash-status-cnt">{{ count }}</span>
+          <span class="d-status-cnt">{{ count }}</span>
         </div>
         {% endif %}
         {% endwith %}
         {% endfor %}
       </div>
       {% else %}
-      <div class="dash-chart-empty" style="padding:36px 20px">
-        <div class="dash-empty-illo" aria-hidden="true">
-          <svg width="52" height="52" fill="none" stroke="currentColor" viewBox="0 0 24 24" opacity=".1"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+      <div class="d-chart-empty" style="padding:32px 18px">
+        <div class="d-empty-illo" aria-hidden="true">
+          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" opacity=".1"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
         </div>
-        <p class="dash-chart-empty-title">No invoices yet</p>
-        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:12px">Create Invoice</a>
+        <p class="d-chart-empty-title">No invoices yet</p>
+        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:10px">Create Invoice</a>
       </div>
       {% endif %}
     </div>
 
   </div>
 
-  <!-- ═══════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════
        6. MAIN GRID — Tables + Sidebar
-  ════════════════════════════════════════ -->
-  <div class="dash-main">
+  ═══════════════════════════════════════════════════════ -->
+  <div class="d-main">
 
     <!-- LEFT: Tabbed Data Tables -->
-    <div class="dash-left">
+    <div class="d-left">
       <div class="card" x-data="{tab:'invoices'}" role="region" aria-label="Recent data">
 
         <!-- Tab Nav -->
-        <div class="dash-tabs" role="tablist">
+        <div class="d-tabs" role="tablist">
           <button role="tab" :aria-selected="tab==='invoices'" :id="'tab-invoices'"
                   @click="tab='invoices'"
-                  :class="tab==='invoices' ? 'dash-tab active' : 'dash-tab'">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+                  :class="tab==='invoices' ? 'd-tab active' : 'd-tab'">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
             Recent Invoices
-            {% if recent_invoices %}<span class="dash-tab-cnt" :class="tab==='invoices' ? 'active' : ''">{{ recent_invoices|length }}</span>{% endif %}
+            {% if recent_invoices %}<span class="d-tab-cnt" :class="tab==='invoices' ? 'active' : ''">{{ recent_invoices|length }}</span>{% endif %}
           </button>
           <button role="tab" :aria-selected="tab==='payments'" :id="'tab-payments'"
                   @click="tab='payments'"
-                  :class="tab==='payments' ? 'dash-tab active' : 'dash-tab'">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                  :class="tab==='payments' ? 'd-tab active' : 'd-tab'">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
             Payments
-            {% if recent_payments %}<span class="dash-tab-cnt" :class="tab==='payments' ? 'active' : ''">{{ recent_payments|length }}</span>{% endif %}
+            {% if recent_payments %}<span class="d-tab-cnt" :class="tab==='payments' ? 'active' : ''">{{ recent_payments|length }}</span>{% endif %}
           </button>
           {% if overdue_invoices %}
           <button role="tab" :aria-selected="tab==='overdue'" :id="'tab-overdue'"
                   @click="tab='overdue'"
-                  :class="tab==='overdue' ? 'dash-tab dash-tab-danger active' : 'dash-tab dash-tab-danger'">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                  :class="tab==='overdue' ? 'd-tab d-tab-danger active' : 'd-tab d-tab-danger'">
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
             Overdue
-            <span class="dash-tab-cnt dash-tab-cnt-danger" aria-label="{{ kpis.overdue_count }} overdue invoices">{{ kpis.overdue_count }}</span>
+            <span class="d-tab-cnt d-tab-cnt-danger" aria-label="{{ kpis.overdue_count }} overdue invoices">{{ kpis.overdue_count }}</span>
           </button>
           {% endif %}
-          <div class="dash-tab-spacer"></div>
-          <a x-show="tab==='invoices'" href="{% url 'invoices:invoice_list' %}" class="dash-tab-viewall">View all →</a>
-          <a x-show="tab==='payments'" x-cloak href="{% url 'invoices:payment_overview' %}" class="dash-tab-viewall">View all →</a>
-          {% if overdue_invoices %}<a x-show="tab==='overdue'" x-cloak href="{% url 'invoices:invoice_list' %}?status=overdue" class="dash-tab-viewall">View all →</a>{% endif %}
+          <div class="d-tab-spacer"></div>
+          <a x-show="tab==='invoices'" href="{% url 'invoices:invoice_list' %}" class="d-tab-viewall">View all →</a>
+          <a x-show="tab==='payments'" x-cloak href="{% url 'invoices:payment_overview' %}" class="d-tab-viewall">View all →</a>
+          {% if overdue_invoices %}<a x-show="tab==='overdue'" x-cloak href="{% url 'invoices:invoice_list' %}?status=overdue" class="d-tab-viewall">View all →</a>{% endif %}
         </div>
 
-        <!-- Recent Invoices -->
+        <!-- Recent Invoices Tab -->
         <div x-show="tab==='invoices'" role="tabpanel" aria-labelledby="tab-invoices">
           {% if recent_invoices %}
-          <div class="dash-mob-scroll">
+          <div class="d-mob-scroll">
             <table class="tbl" aria-label="Recent invoices">
               <thead><tr>
                 <th>Invoice #</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th></th>
               </tr></thead>
               <tbody>
                 {% for inv in recent_invoices %}
-                <tr class="dash-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'" tabindex="0" @keydown.enter="window.location='{% url 'invoices:invoice_detail' inv.id %}'" aria-label="Invoice {{ inv.invoice_number }}">
-                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="dash-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
+                <tr class="d-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'" tabindex="0" @keydown.enter="window.location='{% url 'invoices:invoice_detail' inv.id %}'" aria-label="Invoice {{ inv.invoice_number }}">
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="d-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
                   <td>
-                    <div class="dash-tbl-client">
-                      <div class="dash-tbl-avatar" aria-hidden="true">{{ inv.client.name|slice:":1"|upper }}</div>
-                      <span class="dash-tbl-name">{{ inv.client.name }}</span>
+                    <div class="d-tbl-client">
+                      <div class="d-tbl-avatar" aria-hidden="true">{{ inv.client.name|slice:":1"|upper }}</div>
+                      <span class="d-tbl-name">{{ inv.client.name }}</span>
                     </div>
                   </td>
-                  <td class="dash-tbl-amount">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
+                  <td class="d-tbl-amount">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
                   <td><span class="badge b-{{ inv.status }}"><span class="badge-dot" aria-hidden="true"></span>{{ inv.get_status_display }}</span></td>
-                  <td class="{% if inv.status == 'overdue' %}dash-tbl-late{% else %}dash-tbl-date{% endif %}">{{ inv.due_date|date:"d M Y"|default:"—" }}</td>
+                  <td class="{% if inv.status == 'overdue' %}d-tbl-late{% else %}d-tbl-date{% endif %}">{{ inv.due_date|date:"d M Y"|default:"—" }}</td>
                   <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()" aria-label="View invoice {{ inv.invoice_number }}">↗</a></td>
                 </tr>
                 {% endfor %}
@@ -526,35 +526,35 @@
             </table>
           </div>
           {% else %}
-          <div class="dash-empty">
-            <div class="dash-empty-icon si-indigo" aria-hidden="true"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg></div>
-            <p class="dash-empty-title">No invoices yet</p>
-            <p class="dash-empty-sub">Create your first invoice to start tracking revenue.</p>
-            <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:16px">Create Invoice</a>
+          <div class="d-empty">
+            <div class="d-empty-icon si-indigo" aria-hidden="true"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg></div>
+            <p class="d-empty-title">No invoices yet</p>
+            <p class="d-empty-sub">Create your first invoice to start tracking revenue.</p>
+            <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:14px">Create Invoice</a>
           </div>
           {% endif %}
         </div>
 
-        <!-- Recent Payments -->
+        <!-- Payments Tab -->
         <div x-show="tab==='payments'" x-cloak role="tabpanel" aria-labelledby="tab-payments">
           {% if recent_payments %}
-          <div class="dash-mob-scroll">
+          <div class="d-mob-scroll">
             <table class="tbl" aria-label="Recent payments">
               <thead><tr>
                 <th>Client</th><th>Invoice</th><th>Amount</th><th>Date</th><th></th>
               </tr></thead>
               <tbody>
                 {% for pmt in recent_payments %}
-                <tr class="dash-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' pmt.invoice.id %}'" aria-label="Payment for {{ pmt.invoice.invoice_number }}">
+                <tr class="d-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' pmt.invoice.id %}'" aria-label="Payment for {{ pmt.invoice.invoice_number }}">
                   <td>
-                    <div class="dash-tbl-client">
-                      <div class="dash-tbl-avatar dash-tbl-avatar-green" aria-hidden="true">{{ pmt.invoice.client.name|slice:":1"|upper }}</div>
-                      <span class="dash-tbl-name">{{ pmt.invoice.client.name }}</span>
+                    <div class="d-tbl-client">
+                      <div class="d-tbl-avatar d-tbl-avatar-green" aria-hidden="true">{{ pmt.invoice.client.name|slice:":1"|upper }}</div>
+                      <span class="d-tbl-name">{{ pmt.invoice.client.name }}</span>
                     </div>
                   </td>
-                  <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="dash-tbl-link" onclick="event.stopPropagation()">{{ pmt.invoice.invoice_number }}</a></td>
-                  <td class="dash-tbl-amount dash-tbl-amount-green">+{{ pmt.invoice.currency_symbol }}{{ pmt.amount|floatformat:2 }}</td>
-                  <td class="dash-tbl-date">{{ pmt.payment_date|date:"d M Y" }}</td>
+                  <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="d-tbl-link" onclick="event.stopPropagation()">{{ pmt.invoice.invoice_number }}</a></td>
+                  <td class="d-tbl-amount d-tbl-amount-green">+{{ pmt.invoice.currency_symbol }}{{ pmt.amount|floatformat:2 }}</td>
+                  <td class="d-tbl-date">{{ pmt.payment_date|date:"d M Y" }}</td>
                   <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()" aria-label="View invoice">↗</a></td>
                 </tr>
                 {% endfor %}
@@ -562,34 +562,34 @@
             </table>
           </div>
           {% else %}
-          <div class="dash-empty">
-            <div class="dash-empty-icon si-green" aria-hidden="true"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
-            <p class="dash-empty-title">No payments recorded</p>
-            <p class="dash-empty-sub">Record payments against invoices to track cash flow.</p>
-            <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm" style="margin-top:16px">Select Invoice</a>
+          <div class="d-empty">
+            <div class="d-empty-icon si-green" aria-hidden="true"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
+            <p class="d-empty-title">No payments recorded</p>
+            <p class="d-empty-sub">Record payments against invoices to track cash flow.</p>
+            <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm" style="margin-top:14px">Select Invoice</a>
           </div>
           {% endif %}
         </div>
 
-        <!-- Overdue -->
+        <!-- Overdue Tab -->
         {% if overdue_invoices %}
         <div x-show="tab==='overdue'" x-cloak role="tabpanel" aria-labelledby="tab-overdue">
-          <div class="dash-mob-scroll">
+          <div class="d-mob-scroll">
             <table class="tbl" aria-label="Overdue invoices">
               <thead><tr>
                 <th>Invoice #</th><th>Client</th><th>Amount Due</th><th>Days Overdue</th><th>Actions</th>
               </tr></thead>
               <tbody>
                 {% for inv in overdue_invoices %}
-                <tr class="dash-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'" aria-label="Overdue invoice {{ inv.invoice_number }}">
-                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="dash-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
+                <tr class="d-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'" aria-label="Overdue invoice {{ inv.invoice_number }}">
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="d-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
                   <td>
-                    <div class="dash-tbl-client">
-                      <div class="dash-tbl-avatar dash-tbl-avatar-red" aria-hidden="true">{{ inv.client.name|slice:":1"|upper }}</div>
-                      <span class="dash-tbl-name">{{ inv.client.name }}</span>
+                    <div class="d-tbl-client">
+                      <div class="d-tbl-avatar d-tbl-avatar-red" aria-hidden="true">{{ inv.client.name|slice:":1"|upper }}</div>
+                      <span class="d-tbl-name">{{ inv.client.name }}</span>
                     </div>
                   </td>
-                  <td class="dash-tbl-amount dash-tbl-amount-red">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</td>
+                  <td class="d-tbl-amount d-tbl-amount-red">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</td>
                   <td>
                     {% if inv.days_overdue > 0 %}
                     <span class="badge b-overdue"><span class="badge-dot" aria-hidden="true"></span>{{ inv.days_overdue }}d late</span>
@@ -616,312 +616,306 @@
         </div>
         {% endif %}
 
-      </div><!-- /card tabbed -->
+      </div>
 
       <!-- Due Soon -->
       {% if invoices_due_soon %}
       <div class="card" role="region" aria-label="Invoices due soon">
-        <div class="dash-card-hdr">
+        <div class="d-card-hdr">
           <div>
-            <p class="dash-card-title">Due in the Next 7 Days</p>
-            <p class="dash-card-sub">{{ invoices_due_soon|length }} invoice{{ invoices_due_soon|length|pluralize }} requiring attention</p>
+            <p class="d-card-title">Due in the Next 7 Days</p>
+            <p class="d-card-sub">{{ invoices_due_soon|length }} invoice{{ invoices_due_soon|length|pluralize }} requiring attention</p>
           </div>
           <span class="badge b-pending" aria-label="{{ invoices_due_soon|length }} invoices due soon">{{ invoices_due_soon|length }}</span>
         </div>
         {% for inv in invoices_due_soon %}
-        <a href="{% url 'invoices:invoice_detail' inv.id %}" class="dash-due-row" aria-label="{{ inv.invoice_number }} for {{ inv.client.name }}, due {{ inv.due_date|date:'d M' }}">
-          <div class="dash-due-num">{{ inv.invoice_number }}</div>
-          <div class="dash-due-client">{{ inv.client.name }}</div>
-          <div class="dash-due-right">
-            <p class="dash-due-amt">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</p>
-            <p class="dash-due-date">Due {{ inv.due_date|date:"d M" }}</p>
+        <a href="{% url 'invoices:invoice_detail' inv.id %}" class="d-due-row" aria-label="{{ inv.invoice_number }} for {{ inv.client.name }}, due {{ inv.due_date|date:'d M' }}">
+          <div class="d-due-num">{{ inv.invoice_number }}</div>
+          <div class="d-due-client">{{ inv.client.name }}</div>
+          <div class="d-due-right">
+            <p class="d-due-amt">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</p>
+            <p class="d-due-date">Due {{ inv.due_date|date:"d M" }}</p>
           </div>
         </a>
         {% endfor %}
       </div>
       {% endif %}
 
-    </div><!-- /dash-left -->
+    </div>
 
     <!-- RIGHT: Sidebar -->
-    <div class="dash-right">
+    <div class="d-right">
 
       <!-- Activity Feed -->
       <div class="card" style="overflow:hidden" role="region" aria-label="Recent activity">
-        <div class="dash-card-hdr">
+        <div class="d-card-hdr">
           <div>
-            <p class="dash-card-title">Activity</p>
-            <p class="dash-card-sub">Recent workspace events</p>
+            <p class="d-card-title">Activity</p>
+            <p class="d-card-sub">Recent workspace events</p>
           </div>
-          <span class="dash-live-chip" aria-label="Live updates">
-            <span class="dash-live-dot" aria-hidden="true"></span>Live
+          <span class="d-live" aria-label="Live updates">
+            <span class="d-live-dot" aria-hidden="true"></span>Live
           </span>
         </div>
         {% if recent_activity %}
-        <div class="dash-feed" aria-live="polite">
+        <div class="d-feed" aria-live="polite">
           {% for act in recent_activity %}
-          <div class="dash-feed-item">
-            <div class="dash-feed-timeline">
-              <div class="dash-feed-avatar
-                {% if 'payment' in act.action|lower %}dash-feed-avatar-green
-                {% elif 'overdue' in act.action|lower or 'void' in act.action|lower %}dash-feed-avatar-red
-                {% elif 'expense' in act.action|lower %}dash-feed-avatar-amber{% endif %}"
+          <div class="d-feed-item">
+            <div class="d-feed-timeline">
+              <div class="d-feed-avatar
+                {% if 'payment' in act.action|lower %}d-feed-avatar-green
+                {% elif 'overdue' in act.action|lower or 'void' in act.action|lower %}d-feed-avatar-red
+                {% elif 'expense' in act.action|lower %}d-feed-avatar-amber{% endif %}"
                 aria-hidden="true">
                 {% if act.user %}{{ act.user.get_full_name|default:act.user.username|slice:":1"|upper }}{% else %}?{% endif %}
               </div>
-              {% if not forloop.last %}<div class="dash-feed-line" aria-hidden="true"></div>{% endif %}
+              {% if not forloop.last %}<div class="d-feed-line" aria-hidden="true"></div>{% endif %}
             </div>
-            <div class="dash-feed-body">
-              <p class="dash-feed-action">{{ act.action }}</p>
-              <p class="dash-feed-time">
-                {% if act.user %}<span class="dash-feed-user">{{ act.user.get_full_name|default:act.user.username }}</span> · {% endif %}
+            <div class="d-feed-body">
+              <p class="d-feed-action">{{ act.action }}</p>
+              <p class="d-feed-time">
+                {% if act.user %}<span class="d-feed-user">{{ act.user.get_full_name|default:act.user.username }}</span> · {% endif %}
                 <time datetime="{{ act.timestamp|date:'c' }}" title="{{ act.timestamp|date:'d M Y, H:i' }}">{{ act.timestamp|timesince }} ago</time>
               </p>
             </div>
             {% if act.resource_type and act.resource_id %}
-            <a href="/{{ act.resource_type }}s/{{ act.resource_id }}/" class="dash-feed-link" title="View {{ act.resource_type }}" aria-label="View {{ act.resource_type }}">↗</a>
+            <a href="/{{ act.resource_type }}s/{{ act.resource_id }}/" class="d-feed-link" title="View {{ act.resource_type }}" aria-label="View {{ act.resource_type }}">↗</a>
             {% endif %}
           </div>
           {% endfor %}
         </div>
         {% else %}
-        <div class="dash-empty" style="padding:36px 20px">
-          <div class="dash-empty-icon si-indigo" aria-hidden="true"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-          <p class="dash-empty-title">No activity yet</p>
-          <p class="dash-empty-sub">Actions like creating invoices will appear here.</p>
+        <div class="d-empty" style="padding:32px 18px">
+          <div class="d-empty-icon si-indigo" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+          <p class="d-empty-title">No activity yet</p>
+          <p class="d-empty-sub">Actions like creating invoices will appear here.</p>
         </div>
         {% endif %}
       </div>
 
       <!-- Business Overview -->
       <div class="card" role="region" aria-label="Business overview">
-        <div class="dash-card-hdr">
-          <p class="dash-card-title">Business Overview</p>
-          <a href="{% url 'invoices:reports_home' %}" class="dash-card-link">Reports →</a>
+        <div class="d-card-hdr">
+          <p class="d-card-title">Business Overview</p>
+          <a href="{% url 'invoices:reports_home' %}" class="d-card-link">Reports →</a>
         </div>
-        <div class="dash-stat-list">
-          <div class="dash-stat-row">
-            <span class="dash-stat-label">All-time revenue</span>
-            <span class="dash-stat-value">{{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }}</span>
+        <div class="d-stat-list">
+          <div class="d-stat-row">
+            <span class="d-stat-label">All-time revenue</span>
+            <span class="d-stat-value">{{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }}</span>
           </div>
-          <div class="dash-stat-row">
-            <span class="dash-stat-label">Total invoices</span>
-            <span class="dash-stat-value">{{ kpis.total_invoice_count }}</span>
+          <div class="d-stat-row">
+            <span class="d-stat-label">Total invoices</span>
+            <span class="d-stat-value">{{ kpis.total_invoice_count }}</span>
           </div>
-          <div class="dash-stat-row">
-            <span class="dash-stat-label">Active recurring</span>
-            <span class="dash-stat-value">{{ kpis.active_schedules }}</span>
+          <div class="d-stat-row">
+            <span class="d-stat-label">Active recurring</span>
+            <span class="d-stat-value">{{ kpis.active_schedules }}</span>
           </div>
-          <div class="dash-stat-row">
-            <span class="dash-stat-label">Estimate conversion</span>
-            <span class="dash-stat-value {% if kpis.estimate_conversion >= 60 %}dash-stat-green{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
+          <div class="d-stat-row">
+            <span class="d-stat-label">Estimate conversion</span>
+            <span class="d-stat-value {% if kpis.estimate_conversion >= 60 %}d-stat-green{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
           </div>
           {% if kpis.collection_rate is not None %}
-          <div class="dash-stat-row">
-            <span class="dash-stat-label">Collection rate</span>
-            <span class="dash-stat-value {% if kpis.collection_rate >= 75 %}dash-stat-green{% elif kpis.collection_rate < 50 %}dash-stat-red{% else %}dash-stat-amber{% endif %}">{{ kpis.collection_rate }}%</span>
+          <div class="d-stat-row">
+            <span class="d-stat-label">Collection rate</span>
+            <span class="d-stat-value {% if kpis.collection_rate >= 75 %}d-stat-green{% elif kpis.collection_rate < 50 %}d-stat-red{% else %}d-stat-amber{% endif %}">{{ kpis.collection_rate }}%</span>
           </div>
           {% endif %}
-          <div class="dash-stat-row">
-            <span class="dash-stat-label">Draft invoices</span>
-            <span class="dash-stat-value {% if kpis.draft_count > 0 %}dash-stat-amber{% endif %}">{{ kpis.draft_count }}</span>
+          <div class="d-stat-row">
+            <span class="d-stat-label">Draft invoices</span>
+            <span class="d-stat-value {% if kpis.draft_count > 0 %}d-stat-amber{% endif %}">{{ kpis.draft_count }}</span>
           </div>
         </div>
       </div>
 
-    </div><!-- /dash-right -->
-  </div><!-- /dash-main -->
+    </div>
+  </div>
 
-  <!-- ═══════════════════════════════════════
-       7. BOTTOM — Top Clients + Aging + Stats
-  ════════════════════════════════════════ -->
-  <div class="dash-bottom">
+  <!-- ═══════════════════════════════════════════════════════
+       7. BOTTOM — Top Clients + Aging + Quick Stats
+  ═══════════════════════════════════════════════════════ -->
+  <div class="d-bottom">
 
     <!-- Top Clients -->
     <div class="card" style="overflow:hidden" role="region" aria-label="Top clients">
-      <div class="dash-card-hdr">
+      <div class="d-card-hdr">
         <div>
-          <p class="dash-card-title">Top Clients</p>
-          <p class="dash-card-sub">By total revenue generated</p>
+          <p class="d-card-title">Top Clients</p>
+          <p class="d-card-sub">By total revenue generated</p>
         </div>
-        <a href="{% url 'invoices:client_list' %}" class="dash-card-link">View all →</a>
+        <a href="{% url 'invoices:client_list' %}" class="d-card-link">View all →</a>
       </div>
       {% if top_clients %}
       {% for cl in top_clients %}
-      <a href="{% url 'invoices:client_detail' cl.id %}" class="dash-client-row" aria-label="{{ cl.name }}, {{ cl.invoice_count }} invoices">
-        <div class="dash-client-avatar" aria-hidden="true">{{ cl.name|slice:":1"|upper }}</div>
-        <div class="dash-client-info">
-          <p class="dash-client-name">{{ cl.name }}</p>
-          <p class="dash-client-meta">{{ cl.invoice_count }} invoice{{ cl.invoice_count|pluralize }}</p>
+      <a href="{% url 'invoices:client_detail' cl.id %}" class="d-client-row" aria-label="{{ cl.name }}, {{ cl.invoice_count }} invoices">
+        <div class="d-client-avatar" aria-hidden="true">{{ cl.name|slice:":1"|upper }}</div>
+        <div class="d-client-info">
+          <p class="d-client-name">{{ cl.name }}</p>
+          <p class="d-client-meta">{{ cl.invoice_count }} invoice{{ cl.invoice_count|pluralize }}</p>
         </div>
-        <div class="dash-client-right">
-          <span class="dash-client-amt">{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}</span>
-          {% if forloop.first %}<span class="dash-client-rank" aria-label="Top client">🥇</span>
-          {% elif forloop.counter == 2 %}<span class="dash-client-rank" aria-label="Second top client">🥈</span>
-          {% elif forloop.counter == 3 %}<span class="dash-client-rank" aria-label="Third top client">🥉</span>{% endif %}
+        <div class="d-client-right">
+          <span class="d-client-amt">{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}</span>
+          {% if forloop.first %}<span class="d-client-rank" aria-label="Top client">🥇</span>
+          {% elif forloop.counter == 2 %}<span class="d-client-rank" aria-label="Second top client">🥈</span>
+          {% elif forloop.counter == 3 %}<span class="d-client-rank" aria-label="Third top client">🥉</span>{% endif %}
         </div>
       </a>
       {% endfor %}
       {% else %}
-      <div class="dash-empty" style="padding:32px 20px">
-        <div class="dash-empty-icon si-teal" aria-hidden="true"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-        <p class="dash-empty-title">No paid clients yet</p>
-        <p class="dash-empty-sub">Top clients will appear once payments are recorded.</p>
+      <div class="d-empty" style="padding:28px 18px">
+        <div class="d-empty-icon si-teal" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
+        <p class="d-empty-title">No paid clients yet</p>
+        <p class="d-empty-sub">Top clients will appear once payments are recorded.</p>
       </div>
       {% endif %}
     </div>
 
     <!-- Overdue Aging -->
     <div class="card" style="overflow:hidden" role="region" aria-label="Overdue aging analysis">
-      <div class="dash-card-hdr">
+      <div class="d-card-hdr">
         <div>
-          <p class="dash-card-title">Overdue Aging</p>
-          <p class="dash-card-sub">Breakdown by days overdue</p>
+          <p class="d-card-title">Overdue Aging</p>
+          <p class="d-card-sub">Breakdown by days overdue</p>
         </div>
         {% if kpis.overdue_count > 0 %}
         <span class="badge b-overdue" aria-label="{{ kpis.overdue_count }} overdue invoices">{{ kpis.overdue_count }} overdue</span>
         {% endif %}
       </div>
       {% if kpis.overdue_count > 0 %}
-      <div class="dash-aging-list">
+      <div class="d-aging-list">
         {% if aging.0_30 %}
-        <div class="dash-aging-row">
-          <div class="dash-aging-meta">
-            <span class="dash-aging-label">0 – 30 days</span>
-            <span class="dash-aging-val">{{ workspace.currency_symbol }}{{ aging.0_30|floatformat:0 }}</span>
+        <div class="d-aging-row">
+          <div class="d-aging-meta">
+            <span class="d-aging-label">0 – 30 days</span>
+            <span class="d-aging-val">{{ workspace.currency_symbol }}{{ aging.0_30|floatformat:0 }}</span>
           </div>
-          <div class="dash-aging-bar" role="progressbar" aria-valuenow="{% if aging.0_30 and kpis.total_overdue %}{% widthratio aging.0_30 kpis.total_overdue 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
-            <div class="dash-aging-fill" style="background:#fbbf24;width:{% if aging.0_30 and kpis.total_overdue %}{% widthratio aging.0_30 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
+          <div class="d-aging-bar" role="progressbar" aria-valuenow="{% if aging.0_30 and kpis.total_overdue %}{% widthratio aging.0_30 kpis.total_overdue 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
+            <div class="d-aging-fill" style="background:#fbbf24;width:{% if aging.0_30 and kpis.total_overdue %}{% widthratio aging.0_30 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
           </div>
         </div>
         {% endif %}
         {% if aging.31_60 %}
-        <div class="dash-aging-row">
-          <div class="dash-aging-meta">
-            <span class="dash-aging-label">31 – 60 days</span>
-            <span class="dash-aging-val">{{ workspace.currency_symbol }}{{ aging.31_60|floatformat:0 }}</span>
+        <div class="d-aging-row">
+          <div class="d-aging-meta">
+            <span class="d-aging-label">31 – 60 days</span>
+            <span class="d-aging-val">{{ workspace.currency_symbol }}{{ aging.31_60|floatformat:0 }}</span>
           </div>
-          <div class="dash-aging-bar" role="progressbar" aria-valuenow="{% if aging.31_60 and kpis.total_overdue %}{% widthratio aging.31_60 kpis.total_overdue 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
-            <div class="dash-aging-fill" style="background:#f97316;width:{% if aging.31_60 and kpis.total_overdue %}{% widthratio aging.31_60 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
+          <div class="d-aging-bar" role="progressbar" aria-valuenow="{% if aging.31_60 and kpis.total_overdue %}{% widthratio aging.31_60 kpis.total_overdue 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
+            <div class="d-aging-fill" style="background:#f97316;width:{% if aging.31_60 and kpis.total_overdue %}{% widthratio aging.31_60 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
           </div>
         </div>
         {% endif %}
         {% if aging.61_90 %}
-        <div class="dash-aging-row">
-          <div class="dash-aging-meta">
-            <span class="dash-aging-label">61 – 90 days</span>
-            <span class="dash-aging-val">{{ workspace.currency_symbol }}{{ aging.61_90|floatformat:0 }}</span>
+        <div class="d-aging-row">
+          <div class="d-aging-meta">
+            <span class="d-aging-label">61 – 90 days</span>
+            <span class="d-aging-val">{{ workspace.currency_symbol }}{{ aging.61_90|floatformat:0 }}</span>
           </div>
-          <div class="dash-aging-bar" role="progressbar" aria-valuenow="{% if aging.61_90 and kpis.total_overdue %}{% widthratio aging.61_90 kpis.total_overdue 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
-            <div class="dash-aging-fill" style="background:#ef4444;width:{% if aging.61_90 and kpis.total_overdue %}{% widthratio aging.61_90 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
+          <div class="d-aging-bar" role="progressbar" aria-valuenow="{% if aging.61_90 and kpis.total_overdue %}{% widthratio aging.61_90 kpis.total_overdue 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
+            <div class="d-aging-fill" style="background:#ef4444;width:{% if aging.61_90 and kpis.total_overdue %}{% widthratio aging.61_90 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
           </div>
         </div>
         {% endif %}
         {% if aging.90_plus %}
-        <div class="dash-aging-row">
-          <div class="dash-aging-meta">
-            <span class="dash-aging-label">90+ days</span>
-            <span class="dash-aging-val" style="color:#dc2626;font-weight:800">{{ workspace.currency_symbol }}{{ aging.90_plus|floatformat:0 }}</span>
+        <div class="d-aging-row">
+          <div class="d-aging-meta">
+            <span class="d-aging-label">90+ days</span>
+            <span class="d-aging-val">{{ workspace.currency_symbol }}{{ aging.90_plus|floatformat:0 }}</span>
           </div>
-          <div class="dash-aging-bar" role="progressbar" aria-valuenow="{% if aging.90_plus and kpis.total_overdue %}{% widthratio aging.90_plus kpis.total_overdue 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
-            <div class="dash-aging-fill" style="background:#dc2626;width:{% if aging.90_plus and kpis.total_overdue %}{% widthratio aging.90_plus kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
+          <div class="d-aging-bar" role="progressbar" aria-valuenow="{% if aging.90_plus and kpis.total_overdue %}{% widthratio aging.90_plus kpis.total_overdue 100 %}{% else %}0{% endif %}" aria-valuemin="0" aria-valuemax="100">
+            <div class="d-aging-fill" style="background:#991b1b;width:{% if aging.90_plus and kpis.total_overdue %}{% widthratio aging.90_plus kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
           </div>
         </div>
         {% endif %}
       </div>
       {% else %}
-      <div class="dash-empty" style="padding:32px 20px">
-        <div class="dash-empty-icon si-green" aria-hidden="true"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>
-        <p class="dash-empty-title">All clear!</p>
-        <p class="dash-empty-sub">No overdue invoices. Keep it up!</p>
+      <div class="d-empty" style="padding:28px 18px">
+        <div class="d-empty-icon si-green" aria-hidden="true"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>
+        <p class="d-empty-title">All clear!</p>
+        <p class="d-empty-sub">No overdue invoices. Keep it up!</p>
       </div>
       {% endif %}
     </div>
 
     <!-- Quick Stats -->
     <div class="card" style="overflow:hidden" role="region" aria-label="Quick business statistics">
-      <div class="dash-card-hdr">
+      <div class="d-card-hdr">
         <div>
-          <p class="dash-card-title">Quick Stats</p>
-          <p class="dash-card-sub">Business health at a glance</p>
+          <p class="d-card-title">Quick Stats</p>
+          <p class="d-card-sub">Business health at a glance</p>
         </div>
       </div>
-      <div class="dash-stat-list">
-        <div class="dash-stat-row">
-          <span class="dash-stat-label">Active recurring</span>
-          <span class="dash-stat-value">{{ kpis.active_schedules }}</span>
+      <div class="d-stat-list">
+        <div class="d-stat-row">
+          <span class="d-stat-label">Active recurring</span>
+          <span class="d-stat-value">{{ kpis.active_schedules }}</span>
         </div>
-        <div class="dash-stat-row">
-          <span class="dash-stat-label">Draft invoices</span>
-          <span class="dash-stat-value {% if kpis.draft_count > 0 %}dash-stat-amber{% endif %}">{{ kpis.draft_count }}</span>
+        <div class="d-stat-row">
+          <span class="d-stat-label">Draft invoices</span>
+          <span class="d-stat-value {% if kpis.draft_count > 0 %}d-stat-amber{% endif %}">{{ kpis.draft_count }}</span>
         </div>
-        <div class="dash-stat-row">
-          <span class="dash-stat-label">Total clients</span>
-          <span class="dash-stat-value">{{ kpis.total_clients }}</span>
+        <div class="d-stat-row">
+          <span class="d-stat-label">Total clients</span>
+          <span class="d-stat-value">{{ kpis.total_clients }}</span>
         </div>
-        <div class="dash-stat-row">
-          <span class="dash-stat-label">New this month</span>
-          <span class="dash-stat-value {% if kpis.new_clients_this_month > 0 %}dash-stat-green{% endif %}">+{{ kpis.new_clients_this_month }}</span>
+        <div class="d-stat-row">
+          <span class="d-stat-label">New this month</span>
+          <span class="d-stat-value {% if kpis.new_clients_this_month > 0 %}d-stat-green{% endif %}">+{{ kpis.new_clients_this_month }}</span>
         </div>
-        <div class="dash-stat-row">
-          <span class="dash-stat-label">Estimate conversion</span>
-          <span class="dash-stat-value {% if kpis.estimate_conversion >= 60 %}dash-stat-green{% elif kpis.estimate_conversion < 40 %}dash-stat-amber{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
+        <div class="d-stat-row">
+          <span class="d-stat-label">Estimate conversion</span>
+          <span class="d-stat-value {% if kpis.estimate_conversion >= 60 %}d-stat-green{% elif kpis.estimate_conversion < 40 %}d-stat-amber{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
         </div>
       </div>
-      <div style="padding:14px 18px;border-top:1px solid var(--border)">
+      <div style="padding:12px 16px;border-top:1px solid var(--border)">
         <a href="{% url 'invoices:recurring_list' %}" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center">
           Manage Recurring Invoices
         </a>
       </div>
     </div>
 
-  </div><!-- /dash-bottom -->
+  </div>
 
-</div><!-- /#dash-root -->
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-/* ══════════════════════════════════════════════════════════
-   InvoiceFlow Dashboard v5 — Enterprise Controller
-══════════════════════════════════════════════════════════ */
+(function() {
+'use strict';
 
-/* ── Sparkline renderer ──────────────────────────────────── */
 function drawSparkline(elId, data, color, fill) {
-  const svg = document.getElementById(elId);
+  var svg = document.getElementById(elId);
   if (!svg || !data || data.length < 2) return;
-  const W = 120, H = 36, PAD = 3;
-  const min = Math.min(...data, 0);
-  const max = Math.max(...data, min + 0.001);
-  const rng = max - min || 1;
-  const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * W;
-    const y = H - PAD - ((v - min) / rng) * (H - PAD * 2);
+  var W = 120, H = 36, PAD = 3;
+  var min = Math.min.apply(null, data.concat([0]));
+  var max = Math.max.apply(null, data.concat([min + 0.001]));
+  var rng = max - min || 1;
+  var pts = data.map(function(v, i) {
+    var x = (i / (data.length - 1)) * W;
+    var y = H - PAD - ((v - min) / rng) * (H - PAD * 2);
     return [x.toFixed(1), y.toFixed(1)];
   });
-  const linePts = pts.map(p => p.join(',')).join(' ');
-  const fillPts = [...pts, [W, H], [0, H]].map(p => p.join(',')).join(' ');
-  const gId = 'sg_' + elId;
-  svg.innerHTML = `
-    <defs>
-      <linearGradient id="${gId}" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${color}" stop-opacity="${fill ? '0.22' : '0'}"/>
-        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
-      </linearGradient>
-    </defs>
-    ${fill ? `<polygon points="${fillPts}" fill="url(#${gId})"/>` : ''}
-    <polyline points="${linePts}" fill="none" stroke="${color}" stroke-width="1.8"
-              stroke-linejoin="round" stroke-linecap="round"/>`;
+  var linePts = pts.map(function(p) { return p.join(','); }).join(' ');
+  var fillPts = pts.concat([[W, H], [0, H]]).map(function(p) { return p.join(','); }).join(' ');
+  var gId = 'sg_' + elId;
+  svg.innerHTML =
+    '<defs><linearGradient id="' + gId + '" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0%" stop-color="' + color + '" stop-opacity="' + (fill ? '0.2' : '0') + '"/>' +
+    '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/>' +
+    '</linearGradient></defs>' +
+    (fill ? '<polygon points="' + fillPts + '" fill="url(#' + gId + ')"/>' : '') +
+    '<polyline points="' + linePts + '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>';
 }
 
-/* ── Animated number counter ─────────────────────────────── */
 function animateCounter(el, endVal, prefix, suffix, decimals, dur) {
   if (!el || isNaN(endVal) || endVal === 0) return;
-  const start = performance.now();
+  var start = performance.now();
   function tick(now) {
-    const p = Math.min((now - start) / dur, 1);
-    const e = 1 - Math.pow(1 - p, 4); // easeOutQuart
-    const v = endVal * e;
+    var p = Math.min((now - start) / dur, 1);
+    var e = 1 - Math.pow(1 - p, 4);
+    var v = endVal * e;
     el.textContent = prefix + v.toLocaleString(undefined, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
@@ -931,8 +925,7 @@ function animateCounter(el, endVal, prefix, suffix, decimals, dur) {
   requestAnimationFrame(tick);
 }
 
-/* ── Alpine dashboard controller ─────────────────────────── */
-function dashCtrl() {
+window.dashCtrl = function() {
   return {
     period:       'morning',
     clock:        '',
@@ -947,159 +940,158 @@ function dashCtrl() {
     _clockInt:    null,
     _refreshInt:  null,
 
-    init() {
-      // Time-based greeting
-      const h = new Date().getHours();
+    init: function() {
+      var h = new Date().getHours();
       this.period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-
-      // Live clock
       this.updateClock();
-      this._clockInt = setInterval(() => this.updateClock(), 1000);
-
-      // Auto-refresh every 90 seconds
-      this._refreshInt = setInterval(() => this.silentRefresh(), 90 * 1000);
-
-      this.$nextTick(() => {
-        this.initCharts();
-        this.initSparklines();
-        this.initCounters();
+      this._clockInt = setInterval(this.updateClock.bind(this), 1000);
+      this._refreshInt = setInterval(this.silentRefresh.bind(this), 90000);
+      var self = this;
+      this.$nextTick(function() {
+        self.initCharts();
+        self.initSparklines();
+        self.initCounters();
       });
     },
 
-    updateClock() {
+    updateClock: function() {
       this.clock = new Date().toLocaleTimeString([], {
         hour: '2-digit', minute: '2-digit',
       });
     },
 
-    fmt(n) {
+    fmt: function(n) {
       return Number(parseFloat(n) || 0).toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
     },
 
-    initCounters() {
-      const sym = this.sym;
-      const dur = 1000;
-      // Animate KPI values from 0 upward on first load
-      const items = [
-        { id: 'kpi-revenue',     val: {{ kpis.this_month_revenue }},     prefix: sym, decimals: 2 },
-        { id: 'kpi-outstanding', val: {{ kpis.total_outstanding }},       prefix: sym, decimals: 2 },
-        { id: 'kpi-expenses',    val: {{ kpis.this_month_expenses }},     prefix: sym, decimals: 2 },
-        { id: 'kpi-overdue',     val: {{ kpis.total_overdue }},           prefix: sym, decimals: 2 },
-        { id: 'kpi-clients',     val: {{ kpis.total_clients }},           prefix: '',  decimals: 0 },
+    initCounters: function() {
+      var sym = this.sym;
+      var dur = 900;
+      var items = [
+        { id: 'kpi-revenue',     val: {{ kpis.this_month_revenue }},   prefix: sym, decimals: 2 },
+        { id: 'kpi-outstanding', val: {{ kpis.total_outstanding }},     prefix: sym, decimals: 2 },
+        { id: 'kpi-expenses',    val: {{ kpis.this_month_expenses }},   prefix: sym, decimals: 2 },
+        { id: 'kpi-overdue',     val: {{ kpis.total_overdue }},         prefix: sym, decimals: 2 },
+        { id: 'kpi-clients',     val: {{ kpis.total_clients }},         prefix: '',  decimals: 0 },
       ];
-      items.forEach(({ id, val, prefix, decimals }) => {
-        const el = document.getElementById(id);
-        if (el && val > 0) animateCounter(el, val, prefix, '', decimals, dur);
+      items.forEach(function(item) {
+        var el = document.getElementById(item.id);
+        if (el && item.val > 0) animateCounter(el, item.val, item.prefix, '', item.decimals, dur);
       });
-      // Net profit (may be negative)
-      const netEl = document.getElementById('kpi-net');
-      const netVal = {{ kpis.net_profit_abs }};
-      const netNeg = {{ kpis.net_profit }} < 0;
+      var netEl = document.getElementById('kpi-net');
+      var netVal = {{ kpis.net_profit_abs }};
+      var netNeg = {{ kpis.net_profit }} < 0;
       if (netEl && netVal > 0) animateCounter(netEl, netVal, netNeg ? '–' + sym : sym, '', 2, dur);
     },
 
-    initSparklines() {
-      const rev = {{ chart_revenue|safe }};
-      const exp = {{ chart_expenses|safe }};
-      const net = {{ chart_net|safe }};
+    initSparklines: function() {
+      var rev = {{ chart_revenue|safe }};
+      var exp = {{ chart_expenses|safe }};
+      var net = {{ chart_net|safe }};
       drawSparkline('spark-revenue',     rev,  '#6366f1', true);
-      drawSparkline('spark-outstanding', rev.map((v, i) => Math.max(v * 0.4 + (exp[i] || 0) * 0.1, 0)), '#f59e0b', true);
+      drawSparkline('spark-outstanding', rev.map(function(v, i) { return Math.max(v * 0.4 + (exp[i] || 0) * 0.1, 0); }), '#f59e0b', true);
       drawSparkline('spark-net',         net,  '#22c55e', true);
-      drawSparkline('spark-overdue',     exp.map(v => v * 0.2), '#ef4444', false);
+      drawSparkline('spark-overdue',     exp.map(function(v) { return v * 0.2; }), '#ef4444', false);
       drawSparkline('spark-expenses',    exp,  '#8b5cf6', true);
     },
 
-    async silentRefresh() {
+    silentRefresh: function() {
       if (this.refreshing) return;
       this.refreshing = true;
       this.fetchError = false;
-      try {
-        const res = await fetch('/api/dashboard/summary', {
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      var self = this;
+      fetch('/api/dashboard/summary', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      })
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function(d) {
+          self.sym = d.currency_symbol || self.sym;
+          self.live = {
+            revenue:       d.this_month_revenue,
+            outstanding:   d.total_outstanding,
+            overdue:       d.total_overdue,
+            overdue_count: d.overdue_count,
+            expenses:      d.this_month_expenses,
+            net_profit:    d.net_profit,
+            total_clients: d.total_clients,
+          };
+          self.lastUpdated = new Date().toLocaleTimeString([], {
+            hour: '2-digit', minute: '2-digit',
+          });
+          self.fetchError = false;
+        })
+        .catch(function() {
+          self.fetchError = true;
+        })
+        .finally(function() {
+          self.refreshing = false;
         });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const d = await res.json();
-        this.sym = d.currency_symbol || this.sym;
-        this.live = {
-          revenue:       d.this_month_revenue,
-          outstanding:   d.total_outstanding,
-          overdue:       d.total_overdue,
-          overdue_count: d.overdue_count,
-          expenses:      d.this_month_expenses,
-          net_profit:    d.net_profit,
-          total_clients: d.total_clients,
-        };
-        this.lastUpdated = new Date().toLocaleTimeString([], {
-          hour: '2-digit', minute: '2-digit',
-        });
-        this.fetchError = false;
-      } catch (e) {
-        this.fetchError = true;
-      } finally {
-        this.refreshing = false;
-      }
     },
 
-    async changeChartPeriod(months) {
+    changeChartPeriod: function(months) {
       if (this.chartPeriod === months && this._revExpChart) return;
       this.chartPeriod  = months;
       this.chartLoading = true;
-      try {
-        const res = await fetch(`/api/analytics/revenue-expenses?months=${months}`, {
-          headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        });
-        if (!res.ok) throw new Error();
-        const d = await res.json();
-        if (this._revExpChart) {
-          this._revExpChart.data.labels = d.labels;
-          this._revExpChart.data.datasets[0].data = d.revenue;
-          this._revExpChart.data.datasets[1].data = d.expenses;
-          this._revExpChart.data.datasets[2].data = d.net_profit;
-          this._revExpChart.update('active');
-        }
-      } catch (e) { /* keep existing chart */ }
-      finally { this.chartLoading = false; }
+      var self = this;
+      fetch('/api/analytics/revenue-expenses?months=' + months, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      })
+        .then(function(res) {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(function(d) {
+          if (self._revExpChart) {
+            self._revExpChart.data.labels = d.labels;
+            self._revExpChart.data.datasets[0].data = d.revenue;
+            self._revExpChart.data.datasets[1].data = d.expenses;
+            self._revExpChart.data.datasets[2].data = d.net_profit;
+            self._revExpChart.update('active');
+          }
+        })
+        .catch(function() {})
+        .finally(function() { self.chartLoading = false; });
     },
 
-    dismissInsight(e) {
-      // Future: handle insight dismissal on Escape
-    },
+    dismissInsight: function() {},
 
-    initCharts() {
-      const dark    = document.body.classList.contains('dark');
-      const gc      = dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.04)';
-      const tc      = dark ? 'rgba(255,255,255,.4)'  : 'rgba(0,0,0,.38)';
-      const sym     = this.sym;
+    initCharts: function() {
+      var dark    = document.body.classList.contains('dark');
+      var gc      = dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.04)';
+      var tc      = dark ? 'rgba(255,255,255,.4)'  : 'rgba(0,0,0,.38)';
+      var sym     = this.sym;
 
-      const tooltip = {
+      var tooltip = {
         backgroundColor: dark ? '#0d1117' : '#fff',
         titleColor:      dark ? '#e2e8f0' : '#1e293b',
         bodyColor:       dark ? '#94a3b8' : '#64748b',
         borderColor:     dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)',
         borderWidth: 1,
-        padding: 13,
-        cornerRadius: 12,
+        padding: 12,
+        cornerRadius: 10,
         displayColors: true,
-        boxPadding: 5,
+        boxPadding: 4,
       };
 
-      /* Revenue vs Expenses chart */
-      const rc = document.getElementById('revExpChart');
+      var rc = document.getElementById('revExpChart');
       if (rc) {
-        const chartRev = {{ chart_revenue|safe }};
-        const chartExp = {{ chart_expenses|safe }};
-        const chartNet = {{ chart_net|safe }};
-        if (chartRev.some(v => v > 0) || chartExp.some(v => v > 0)) {
-          const ctx     = rc.getContext('2d');
-          const gradRev = ctx.createLinearGradient(0, 0, 0, 240);
-          gradRev.addColorStop(0, 'rgba(99,102,241,.82)');
-          gradRev.addColorStop(1, 'rgba(99,102,241,.12)');
-          const gradExp = ctx.createLinearGradient(0, 0, 0, 240);
-          gradExp.addColorStop(0, 'rgba(249,115,22,.68)');
-          gradExp.addColorStop(1, 'rgba(249,115,22,.08)');
+        var chartRev = {{ chart_revenue|safe }};
+        var chartExp = {{ chart_expenses|safe }};
+        var chartNet = {{ chart_net|safe }};
+        if (chartRev.some(function(v) { return v > 0; }) || chartExp.some(function(v) { return v > 0; })) {
+          var ctx     = rc.getContext('2d');
+          var gradRev = ctx.createLinearGradient(0, 0, 0, 230);
+          gradRev.addColorStop(0, 'rgba(99,102,241,.8)');
+          gradRev.addColorStop(1, 'rgba(99,102,241,.1)');
+          var gradExp = ctx.createLinearGradient(0, 0, 0, 230);
+          gradExp.addColorStop(0, 'rgba(249,115,22,.65)');
+          gradExp.addColorStop(1, 'rgba(249,115,22,.06)');
 
           this._revExpChart = new Chart(rc, {
             data: {
@@ -1108,20 +1100,20 @@ function dashCtrl() {
                 {
                   type: 'bar', label: 'Revenue', data: chartRev,
                   backgroundColor: gradRev, hoverBackgroundColor: '#6366f1',
-                  borderRadius: 6, borderSkipped: false, yAxisID: 'y',
+                  borderRadius: 5, borderSkipped: false, yAxisID: 'y',
                 },
                 {
                   type: 'bar', label: 'Expenses', data: chartExp,
                   backgroundColor: gradExp, hoverBackgroundColor: '#f97316',
-                  borderRadius: 6, borderSkipped: false, yAxisID: 'y',
+                  borderRadius: 5, borderSkipped: false, yAxisID: 'y',
                 },
                 {
                   type: 'line', label: 'Net Profit', data: chartNet,
-                  borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.08)',
+                  borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.06)',
                   borderWidth: 2.5, pointBackgroundColor: '#22c55e',
                   pointBorderColor: dark ? '#0f172a' : '#fff',
-                  pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 7,
-                  tension: 0.42, fill: true, yAxisID: 'y',
+                  pointBorderWidth: 2, pointRadius: 3.5, pointHoverRadius: 6,
+                  tension: 0.4, fill: true, yAxisID: 'y',
                 },
               ],
             },
@@ -1129,31 +1121,32 @@ function dashCtrl() {
               responsive: true,
               maintainAspectRatio: false,
               interaction: { mode: 'index', intersect: false },
-              animation: { duration: 600 },
+              animation: { duration: 550 },
               plugins: {
                 legend: { display: false },
-                tooltip: {
-                  ...tooltip,
+                tooltip: Object.assign({}, tooltip, {
                   callbacks: {
-                    label: c => ` ${c.dataset.label}: ${sym}${Number(c.parsed.y).toLocaleString(undefined, {
-                      minimumFractionDigits: 2, maximumFractionDigits: 2,
-                    })}`,
+                    label: function(c) {
+                      return ' ' + c.dataset.label + ': ' + sym + Number(c.parsed.y).toLocaleString(undefined, {
+                        minimumFractionDigits: 2, maximumFractionDigits: 2,
+                      });
+                    },
                   },
-                },
+                }),
               },
               scales: {
                 x: {
                   grid: { display: false },
-                  ticks: { font: { size: 11 }, color: tc },
+                  ticks: { font: { size: 10.5 }, color: tc },
                   border: { display: false },
                 },
                 y: {
                   grid: { color: gc },
                   border: { display: false },
                   ticks: {
-                    font: { size: 11 },
+                    font: { size: 10.5 },
                     color: tc,
-                    callback: v => sym + Number(v).toLocaleString(),
+                    callback: function(v) { return sym + Number(v).toLocaleString(); },
                   },
                 },
               },
@@ -1163,47 +1156,47 @@ function dashCtrl() {
         }
       }
 
-      /* Invoice Status Donut */
-      const dc = document.getElementById('statusDonut');
+      var dc = document.getElementById('statusDonut');
       if (dc) {
-        const d      = {{ invoice_status_counts_json|safe }};
-        const keys   = ['draft','sent','viewed','part_paid','paid','overdue'];
-        const colors = {
+        var d      = {{ invoice_status_counts_json|safe }};
+        var keys   = ['draft','sent','viewed','part_paid','paid','overdue'];
+        var colors = {
           draft: '#94a3b8', sent: '#a78bfa', viewed: '#60a5fa',
           part_paid: '#2dd4bf', paid: '#4ade80', overdue: '#f87171',
         };
-        const lbls = {
+        var lbls = {
           draft: 'Draft', sent: 'Sent', viewed: 'Viewed',
           part_paid: 'Part Paid', paid: 'Paid', overdue: 'Overdue',
         };
-        const vals = keys.map(k => d[k] || 0);
-        if (vals.some(v => v > 0)) {
+        var vals = keys.map(function(k) { return d[k] || 0; });
+        if (vals.some(function(v) { return v > 0; })) {
           new Chart(dc, {
             type: 'doughnut',
             data: {
-              labels: keys.map(k => lbls[k]),
+              labels: keys.map(function(k) { return lbls[k]; }),
               datasets: [{
                 data: vals,
-                backgroundColor: keys.map(k => colors[k]),
+                backgroundColor: keys.map(function(k) { return colors[k]; }),
                 borderWidth: 3,
                 borderColor: dark ? '#0f172a' : '#fff',
-                hoverOffset: 8,
-                borderRadius: 4,
+                hoverOffset: 7,
+                borderRadius: 3,
               }],
             },
             options: {
               responsive: true,
               maintainAspectRatio: false,
               cutout: '74%',
-              animation: { duration: 800, easing: 'easeOutQuart' },
+              animation: { duration: 700, easing: 'easeOutQuart' },
               plugins: {
                 legend: { display: false },
-                tooltip: {
-                  ...tooltip,
+                tooltip: Object.assign({}, tooltip, {
                   callbacks: {
-                    label: c => ` ${c.label}: ${c.parsed} invoice${c.parsed !== 1 ? 's' : ''}`,
+                    label: function(c) {
+                      return ' ' + c.label + ': ' + c.parsed + ' invoice' + (c.parsed !== 1 ? 's' : '');
+                    },
                   },
-                },
+                }),
               },
             },
           });
@@ -1211,33 +1204,34 @@ function dashCtrl() {
       }
     },
   };
-}
+};
 
-/* ── Send reminder ─────────────────────────────────────────── */
-function sendReminder(invId, btn) {
-  const orig = btn.textContent;
+window.sendReminder = function(invId, btn) {
+  var orig = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Sending…';
-  fetch(`/invoices/${invId}/reminders/send/`, {
+  fetch('/invoices/' + invId + '/reminders/send/', {
     method: 'POST',
     headers: {
       'X-CSRFToken': getCsrfToken(),
       'X-Requested-With': 'XMLHttpRequest',
     },
   })
-    .then(r => {
+    .then(function(r) {
       btn.textContent = r.ok ? 'Sent ✓' : 'Failed';
       if (r.ok) btn.style.background = '#dcfce7';
-      setTimeout(() => {
+      setTimeout(function() {
         btn.textContent = orig;
         btn.style.background = '';
         btn.disabled = false;
       }, 2800);
     })
-    .catch(() => {
+    .catch(function() {
       btn.textContent = 'Error';
-      setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+      setTimeout(function() { btn.textContent = orig; btn.disabled = false; }, 2500);
     });
-}
+};
+
+})();
 </script>
 {% endblock %}
