@@ -281,6 +281,41 @@ Comprehensive full-system audit completed:
 - Gunicorn `gunicorn.conf.py` production-ready (dynamic workers, memory leak prevention, TCP keepalive, structured logging)
 - Demo credentials: `demo`/`demo1234` → Johnson Consulting workspace
 
+## Comprehensive Platform Audit & Final Stabilization (2026-04-01)
+
+Full end-to-end audit completed across all modules. All 99 tests pass throughout.
+
+### Report System Fixes (T001/T004)
+- Revenue report: `totals` context dict renamed from `summary`, `chart_labels`/`chart_data` added to view
+- Aging report: bucket keys `d31_60`/`d61_90`/`d90_plus` standardized between service and template
+- Cashflow report: `monthly_rows`/`totals`/`chart_inflows`/`chart_outflows` context keys aligned
+- Tax report: `totals` dict added (`collected`, `on_expenses`, `net`, `invoice_count`) + `date_from`/`date_to`
+- Profitability template: rewritten to app CSS system (was Tailwind + hardcoded ₦)
+- Expense report template: full rewrite from Tailwind/hardcoded to app CSS + `workspace.currency_symbol`
+- Forecast, Exports, Shared Links templates: all rewritten to app CSS design system
+
+### Invoice Builder Fixes (T002)
+- `saveAndSend()` action key corrected from `'save'` → `'save_and_send'`
+- Alpine.js inclusive tax calculation fixed (proper formula for tax-inclusive pricing)
+- Billable expense pre-populate added via `prefill_items_json` / `prefill_client_id` context
+
+### Expense System Fixes (T003)
+- Expense form vendor field changed from free-text input to select dropdown bound to workspace vendors
+- Attachment URL paths fixed: MEDIA_URL prefix added via `django.template.context_processors.media`
+- Billable expense → invoice conversion pre-populate wired end-to-end
+
+### Model Fixes (T005)
+- `Transaction.currency` default changed from `"USD"` → `"NGN"` (migration 0023)
+- `Client` model: added `Meta.indexes` with composite `(workspace, name)` and `(workspace, email)` indexes for faster list queries
+
+### Verified Clean State
+- Django system check: **0 issues, 0 silenced**
+- All 99 tests pass
+- No startup errors; migrations apply cleanly
+- All report pages use app CSS design system consistently
+- Paystack webhook CSRF exemption correct (uses HMAC-SHA512 signature verification)
+- Avatar upload uses magic-byte image type detection (replaces removed Python 3.13 `imghdr`)
+
 ## Deployment
 
 Uses Gunicorn with `gunicorn.conf.py` for production. Build step runs migrations and collectstatic.
