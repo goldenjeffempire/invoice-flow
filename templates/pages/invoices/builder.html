@@ -2,129 +2,274 @@
 {% block title %}{% if invoice %}Edit {{ invoice.invoice_number }}{% else %}New Invoice{% endif %} — InvoiceFlow{% endblock %}
 {% block page_title %}{% if invoice %}Edit Invoice{% else %}New Invoice{% endif %}{% endblock %}
 
-{% block content %}
+{% block head %}
+<style>
+  .builder-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .builder-grid { grid-template-columns: 1fr; }
+    .builder-sidebar { position: static !important; }
+  }
+  .line-table { width: 100%; border-collapse: collapse; min-width: 540px; }
+  .line-table th {
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .07em;
+    color: var(--text-muted);
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border);
+  }
+  .line-table th.r, .line-table td.r { text-align: right; }
+  .line-table td { padding: 7px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .line-table tbody tr:last-child td { border-bottom: none; }
+  .line-table tbody tr:hover { background: var(--bg-subtle); transition: background .1s; }
+  .line-amt { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text-primary); padding-right: 10px; }
+  .section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--text-muted); margin: 0 0 14px;
+  }
+  .totals-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 0; }
+  .totals-row.grand {
+    padding-top: 12px; margin-top: 6px;
+    border-top: 2px solid var(--border);
+    font-size: 15px; font-weight: 800;
+  }
+  .err-banner {
+    background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 20px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .err-banner svg { color: #dc2626; flex-shrink: 0; margin-top: 2px; }
+  .err-banner-title { font-size: 13.5px; font-weight: 700; color: #991b1b; margin-bottom: 6px; }
+  .err-banner ul { margin: 0; padding-left: 16px; }
+  .err-banner li { font-size: 12.5px; color: #b91c1c; margin-bottom: 3px; }
+  .add-line-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-top: 14px; padding: 8px 16px; border-radius: 8px;
+    border: 1.5px dashed var(--brand-400); background: transparent;
+    color: var(--brand-600); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .15s, border-color .15s;
+  }
+  .add-line-btn:hover { background: var(--brand-50); border-color: var(--brand-500); }
+  .rm-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 6px;
+    border: none; background: transparent; cursor: pointer;
+    color: var(--text-muted); transition: background .15s, color .15s;
+  }
+  .rm-btn:hover:not([disabled]) { background: #fee2e2; color: #dc2626; }
+  .rm-btn[disabled] { opacity: .3; cursor: not-allowed; }
+  .side-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; }
+  .side-row.grand { padding-top: 12px; border-top: 2px solid var(--border); font-size: 15px; font-weight: 800; }
+</style>
+{% endblock %}
 
-<div x-data="invoiceBuilder()" x-init="init()" @keydown.escape.window="closeModal()">
+{% block content %}
+<div class="page-in" x-data="invoiceBuilder"
+     @keydown.ctrl.s.prevent.window="saveDraft()"
+     @keydown.meta.s.prevent.window="saveDraft()">
 
   <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px">
     <div style="display:flex;align-items:center;gap:12px">
-      <a href="{% if invoice %}{% url 'invoices:invoice_detail' invoice.id %}{% else %}{% url 'invoices:invoice_list' %}{% endif %}" class="btn btn-ghost btn-sm btn-icon">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      <a href="{% if invoice %}{% url 'invoices:invoice_detail' invoice.id %}{% else %}{% url 'invoices:invoice_list' %}{% endif %}"
+         class="btn btn-ghost btn-sm btn-icon" aria-label="Back to {% if invoice %}invoice{% else %}invoice list{% endif %}">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
       </a>
       <div>
-        <h1 style="font-size:20px;font-weight:800;letter-spacing:-.3px;margin:0">
-          {% if invoice %}Edit Invoice{% else %}Create Invoice{% endif %}
+        <p class="page-eyebrow">{% if invoice %}Edit Invoice{% else %}Invoices{% endif %}</p>
+        <h1 class="page-title-lg" style="margin:2px 0 0">
+          {% if invoice %}{{ invoice.invoice_number }}{% else %}Create New Invoice{% endif %}
         </h1>
-        {% if invoice %}<p style="font-size:12.5px;color:var(--text-muted);margin:2px 0 0">{{ invoice.invoice_number }}</p>{% endif %}
       </div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center">
       <button type="button" @click="saveDraft()" class="btn btn-secondary btn-sm" :disabled="saving">
-        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+        </svg>
         Save Draft
       </button>
       <button type="button" @click="saveAndSend()" class="btn btn-primary btn-sm" :disabled="saving">
-        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-        <span x-text="saving ? 'Saving…' : 'Save & Send'"></span>
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+        </svg>
+        <span x-text="saving ? 'Saving…' : '{% if invoice %}Update & Send{% else %}Save & Send{% endif %}'"></span>
       </button>
     </div>
   </div>
 
-  <form id="invoiceForm" method="post" action="{% if invoice %}{% url 'invoices:invoice_edit' invoice.id %}{% else %}{% url 'invoices:invoice_create' %}{% endif %}">
+  <!-- Validation error banner -->
+  {% if errors %}
+  <div class="err-banner">
+    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
+    <div>
+      <p class="err-banner-title">Please fix the following before saving:</p>
+      <ul>
+        {% for field, msgs in errors.items %}
+          {% for msg in msgs %}<li>{{ msg }}</li>{% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <form id="invoiceForm" method="post"
+        action="{% if invoice %}{% url 'invoices:invoice_edit' invoice.id %}{% else %}{% url 'invoices:invoice_create' %}{% endif %}">
     {% csrf_token %}
     <input type="hidden" name="action" x-model="formAction">
+    <input type="hidden" name="items_json" id="itemsJsonField" value="[]">
 
-    <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start">
+    <div class="builder-grid">
 
-      <!-- MAIN PANEL -->
-      <div style="display:flex;flex-direction:column;gap:20px">
+      <!-- ===== MAIN PANEL ===== -->
+      <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
 
-        <!-- Client + Dates -->
+        <!-- Invoice Details -->
         <div class="card" style="padding:24px">
-          <h2 style="font-size:13.5px;font-weight:700;margin:0 0 18px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Invoice Details</h2>
+          <p class="section-label">Invoice Details</p>
           <div class="form-row cols-2">
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Client *</label>
+              <label class="form-label">Client <span style="color:#dc2626">*</span></label>
               <select name="client_id" class="form-select" required>
                 <option value="">— Select client —</option>
                 {% for cl in clients %}
-                <option value="{{ cl.id }}" {% if invoice and invoice.client_id == cl.id %}selected{% elif prefill_client_id == cl.id %}selected{% endif %}>{{ cl.name }}</option>
+                <option value="{{ cl.id }}"
+                  {% if invoice and invoice.client_id == cl.id %}selected
+                  {% elif prefill_client_id == cl.id %}selected
+                  {% elif form_data.client_id == cl.id|stringformat:"s" %}selected{% endif %}>{{ cl.name }}</option>
                 {% endfor %}
               </select>
               <p class="form-hint">Don't see a client? <a href="{% url 'invoices:client_create' %}?next={{ request.path }}" style="color:var(--brand-600);font-weight:600">Add one</a></p>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Invoice Number</label>
-              <input type="text" name="invoice_number" class="form-input" value="{{ invoice.invoice_number|default:default_invoice_number }}" placeholder="INV-2024-0001">
+              <input type="text" name="invoice_number" class="form-input"
+                value="{{ form_data.invoice_number|default:invoice.invoice_number|default:default_invoice_number }}"
+                placeholder="INV-2024-0001">
             </div>
           </div>
           <div class="form-row cols-3" style="margin-top:16px">
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Issue Date *</label>
-              <input type="date" name="issue_date" class="form-input" value="{{ invoice.issue_date|date:'Y-m-d'|default:default_issue_date }}" required>
+              <label class="form-label">Issue Date <span style="color:#dc2626">*</span></label>
+              <input type="date" name="issue_date" class="form-input" required
+                value="{{ form_data.issue_date|default:invoice.issue_date|date:'Y-m-d'|default:default_issue_date }}">
             </div>
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Due Date *</label>
-              <input type="date" name="due_date" class="form-input" value="{{ invoice.due_date|date:'Y-m-d'|default:default_due_date }}" required>
+              <label class="form-label">Due Date <span style="color:#dc2626">*</span></label>
+              <input type="date" name="due_date" class="form-input" required
+                value="{{ form_data.due_date|default:invoice.due_date|date:'Y-m-d'|default:default_due_date }}">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Currency</label>
-              <select name="currency" class="form-select">
-                {% for code, name in currencies %}
-                <option value="{{ code }}" {% if invoice and invoice.currency == code %}selected{% elif not invoice and code == 'NGN' %}selected{% endif %}>{{ code }} — {{ name }}</option>
+              <select name="currency" class="form-select" x-model="currency" @change="calcTotals()">
+                {% for code, label in currencies %}
+                <option value="{{ code }}"
+                  {% if invoice and invoice.currency == code %}selected
+                  {% elif form_data.currency == code %}selected
+                  {% elif not invoice and not form_data and code == 'NGN' %}selected{% endif %}>{{ code }} — {{ label }}</option>
                 {% endfor %}
               </select>
             </div>
           </div>
-          <div class="form-row cols-1" style="margin-top:16px">
+          <div class="form-row cols-2" style="margin-top:16px">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Tax Mode</label>
-              <select name="tax_mode" class="form-select">
-                <option value="exclusive" {% if not invoice or invoice.tax_mode == 'exclusive' %}selected{% endif %}>Tax Exclusive</option>
-                <option value="inclusive" {% if invoice and invoice.tax_mode == 'inclusive' %}selected{% endif %}>Tax Inclusive</option>
+              <select name="tax_mode" class="form-select" x-model="taxMode" @change="calcTotals()">
+                <option value="exclusive"
+                  {% if form_data.tax_mode == 'exclusive' or not form_data and not invoice or not form_data and invoice and invoice.tax_mode == 'exclusive' %}selected{% endif %}>Tax Exclusive (added on top)</option>
+                <option value="inclusive"
+                  {% if form_data.tax_mode == 'inclusive' or not form_data and invoice and invoice.tax_mode == 'inclusive' %}selected{% endif %}>Tax Inclusive (included in price)</option>
               </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Default Tax Rate (%)</label>
+              <input type="number" name="default_tax_rate" id="defaultTaxRate" class="form-input"
+                value="{{ form_data.default_tax_rate|default:invoice.default_tax_rate|default:'0' }}"
+                min="0" max="100" step="0.01" placeholder="0">
+              <p class="form-hint">Applied automatically to new line items</p>
             </div>
           </div>
         </div>
 
         <!-- Line Items -->
         <div class="card" style="padding:24px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-            <h2 style="font-size:13.5px;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Line Items</h2>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <p class="section-label" style="margin:0">Line Items</p>
+            <span style="font-size:12px;color:var(--text-muted);font-weight:600"
+              x-text="items.length + (items.length === 1 ? ' item' : ' items')"></span>
           </div>
 
-          <div style="overflow-x:auto;margin:-4px -4px 0">
-            <table style="width:100%;border-collapse:collapse;min-width:600px">
+          <div style="overflow-x:auto;margin:0 -4px">
+            <table class="line-table">
               <thead>
-                <tr style="background:var(--bg-subtle)">
-                  <th style="padding:8px 10px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)">Description</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);width:90px">Qty</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);width:120px">Rate</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);width:80px">Tax %</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);width:110px">Amount</th>
+                <tr>
+                  <th>Description</th>
+                  <th class="r" style="width:80px">Qty</th>
+                  <th class="r" style="width:120px">Rate</th>
+                  <th class="r" style="width:80px">Tax %</th>
+                  <th class="r" style="width:110px">Amount</th>
                   <th style="width:36px"></th>
                 </tr>
               </thead>
               <tbody>
-                <template x-for="(item, idx) in items" :key="item.id">
-                  <tr style="border-bottom:1px solid var(--border)">
-                    <td style="padding:8px 6px">
-                      <input type="text" :name="'items['+idx+'][description]'" x-model="item.description" @input="calcTotals()" placeholder="Item description…" class="form-input" style="min-width:180px" required>
+                <template x-for="(item, idx) in items" :key="item._id">
+                  <tr>
+                    <td>
+                      <input type="text"
+                        :name="'items['+idx+'][description]'"
+                        x-model="item.description"
+                        @input="calcTotals()"
+                        placeholder="Item description…"
+                        class="form-input"
+                        style="min-width:200px"
+                        required>
                     </td>
-                    <td style="padding:8px 6px">
-                      <input type="number" :name="'items['+idx+'][quantity]'" x-model.number="item.quantity" @input="calcTotals()" class="form-input" style="text-align:right;padding-right:8px" min="0.0001" step="0.0001" required>
+                    <td>
+                      <input type="number"
+                        :name="'items['+idx+'][quantity]'"
+                        x-model.number="item.quantity"
+                        @input="calcTotals()"
+                        class="form-input"
+                        style="text-align:right;padding-right:8px;min-width:70px"
+                        min="0.0001" step="0.0001" required>
                     </td>
-                    <td style="padding:8px 6px">
-                      <input type="number" :name="'items['+idx+'][unit_price]'" x-model.number="item.unit_price" @input="calcTotals()" class="form-input" style="text-align:right;padding-right:8px" min="0" step="0.01" required>
+                    <td>
+                      <input type="number"
+                        :name="'items['+idx+'][unit_price]'"
+                        x-model.number="item.unit_price"
+                        @input="calcTotals()"
+                        class="form-input"
+                        style="text-align:right;padding-right:8px;min-width:90px"
+                        min="0" step="0.01" required>
                     </td>
-                    <td style="padding:8px 6px">
-                      <input type="number" :name="'items['+idx+'][tax_rate]'" x-model.number="item.tax_rate" @input="calcTotals()" class="form-input" style="text-align:right;padding-right:8px" min="0" max="100" step="0.01">
+                    <td>
+                      <input type="number"
+                        :name="'items['+idx+'][tax_rate]'"
+                        x-model.number="item.tax_rate"
+                        @input="calcTotals()"
+                        class="form-input"
+                        style="text-align:right;padding-right:8px;min-width:60px"
+                        min="0" max="100" step="0.01">
                     </td>
-                    <td style="padding:8px 10px;text-align:right;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text-primary)" x-text="fmtAmt(item.total)"></td>
-                    <td style="padding:8px 4px;text-align:center">
-                      <button type="button" @click="removeItem(idx)" class="btn btn-ghost btn-xs btn-icon" style="color:var(--text-muted);width:28px;height:28px">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <td class="r line-amt" x-text="fmtAmt(item._total)"></td>
+                    <td style="text-align:center">
+                      <button type="button" @click="removeItem(idx)"
+                        class="rm-btn"
+                        :disabled="items.length <= 1"
+                        :title="items.length <= 1 ? 'Cannot remove the only item' : 'Remove this item'">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
                       </button>
                     </td>
                   </tr>
@@ -133,139 +278,185 @@
             </table>
           </div>
 
-          <button type="button" @click="addItem()" class="btn btn-ghost btn-sm" style="margin-top:12px;gap:7px;color:var(--brand-600)">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          <button type="button" @click="addItem()" class="add-line-btn">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
             Add Line Item
           </button>
 
           <!-- Totals -->
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
-            <div style="width:260px;display:flex;flex-direction:column;gap:8px">
-              <div style="display:flex;justify-content:space-between;font-size:12.5px">
+          <div style="display:flex;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="width:280px">
+              <div class="totals-row">
                 <span style="color:var(--text-secondary)">Subtotal</span>
                 <span style="font-weight:600" x-text="fmtAmt(subtotal)"></span>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:12.5px" x-show="discount > 0">
+              <div class="totals-row" x-show="discount > 0" x-cloak>
                 <span style="color:var(--text-secondary)">Discount</span>
-                <span style="color:#dc2626;font-weight:600" x-text="'- ' + fmtAmt(discount)"></span>
+                <span style="color:#dc2626;font-weight:600" x-text="'− ' + fmtAmt(discount)"></span>
               </div>
-              <div style="display:flex;justify-content:space-between;font-size:12.5px" x-show="taxTotal > 0">
+              <div class="totals-row" x-show="taxTotal > 0" x-cloak>
                 <span style="color:var(--text-secondary)">Tax</span>
                 <span style="font-weight:600" x-text="fmtAmt(taxTotal)"></span>
               </div>
-              <div style="display:flex;justify-content:space-between;padding-top:10px;border-top:2px solid var(--border);font-size:15px;font-weight:800">
-                <span>Total</span>
+              <div class="totals-row grand">
+                <span>Total (<span x-text="currency"></span>)</span>
                 <span x-text="fmtAmt(grandTotal)"></span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Notes -->
+        <!-- Notes & Terms -->
         <div class="card" style="padding:24px">
-          <h2 style="font-size:13.5px;font-weight:700;margin:0 0 16px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Notes & Terms</h2>
+          <p class="section-label">Notes &amp; Terms</p>
           <div class="form-row cols-2">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Client Note</label>
-              <textarea name="client_memo" class="form-textarea" rows="4" placeholder="Add a note visible to your client…">{{ invoice.client_memo|default:'' }}</textarea>
+              <textarea name="client_memo" class="form-textarea" rows="4"
+                placeholder="A note visible to your client on the invoice…">{{ form_data.client_memo|default:invoice.client_memo|default:'' }}</textarea>
             </div>
             <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Terms & Conditions</label>
-              <textarea name="terms_conditions" class="form-textarea" rows="4" placeholder="Payment terms, conditions…">{{ invoice.terms_conditions|default:default_terms }}</textarea>
+              <label class="form-label">Terms &amp; Conditions</label>
+              <textarea name="terms_conditions" class="form-textarea" rows="4"
+                placeholder="Payment terms, late fees, conditions…">{{ form_data.terms_conditions|default:invoice.terms_conditions|default:default_terms }}</textarea>
             </div>
           </div>
-          <div class="form-group" style="margin-top:14px;margin-bottom:0">
-            <label class="form-label">Internal Notes</label>
-            <textarea name="internal_notes" class="form-textarea" rows="3" placeholder="Internal notes (not visible to client)…">{{ invoice.internal_notes|default:'' }}</textarea>
+          <div class="form-row cols-2" style="margin-top:14px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Payment Instructions</label>
+              <textarea name="payment_instructions" class="form-textarea" rows="3"
+                placeholder="Bank name, account number, transfer details…">{{ form_data.payment_instructions|default:invoice.payment_instructions|default:'' }}</textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Internal Notes</label>
+              <textarea name="internal_notes" class="form-textarea" rows="3"
+                placeholder="Private notes — not visible to client…">{{ form_data.internal_notes|default:invoice.internal_notes|default:'' }}</textarea>
+            </div>
           </div>
         </div>
 
       </div>
 
-      <!-- SIDE PANEL -->
-      <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:80px">
+      <!-- ===== SIDE PANEL ===== -->
+      <div class="builder-sidebar" style="display:flex;flex-direction:column;gap:16px;position:sticky;top:80px">
 
+        <!-- Discount -->
         <div class="card" style="padding:20px">
-          <h3 style="font-size:13px;font-weight:700;margin:0 0 14px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Discount</h3>
-          <div class="form-row cols-2">
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Type</label>
-              <select name="discount_type" x-model="discountType" @change="calcTotals()" class="form-select">
-                <option value="none">None</option>
-                <option value="percentage">Percentage (%)</option>
-                <option value="fixed">Fixed Amount</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0" x-show="discountType !== 'none'">
-              <label class="form-label" x-text="discountType === 'percentage' ? 'Rate (%)' : 'Amount'"></label>
-              <input type="number" name="discount_value" x-model.number="discountValue" @input="calcTotals()" class="form-input" min="0" step="0.01" placeholder="0">
-            </div>
+          <p class="section-label">Discount</p>
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">Type</label>
+            <select name="discount_type" x-model="discountType" @change="calcTotals()" class="form-select">
+              <option value="none">No discount</option>
+              <option value="percentage">Percentage (%)</option>
+              <option value="fixed">Fixed Amount</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0" x-show="discountType !== 'none'" x-cloak>
+            <label class="form-label"
+              x-text="discountType === 'percentage' ? 'Discount Rate (%)' : 'Discount Amount'"></label>
+            <input type="number" name="discount_value"
+              x-model.number="discountValue"
+              @input="calcTotals()"
+              class="form-input"
+              min="0" step="0.01" placeholder="0">
           </div>
         </div>
 
+        <!-- Amount Summary -->
         <div class="card" style="padding:20px">
-          <h3 style="font-size:13px;font-weight:700;margin:0 0 14px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Amount Summary</h3>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div style="display:flex;justify-content:space-between;font-size:13px">
-              <span style="color:var(--text-secondary)">Items Subtotal</span>
-              <span style="font-weight:600" x-text="fmtAmt(subtotal)"></span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:13px" x-show="discount > 0">
-              <span style="color:var(--text-secondary)">Discount</span>
-              <span style="font-weight:600;color:#dc2626" x-text="'- '+fmtAmt(discount)"></span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:13px" x-show="taxTotal > 0">
-              <span style="color:var(--text-secondary)">Total Tax</span>
-              <span style="font-weight:600" x-text="fmtAmt(taxTotal)"></span>
-            </div>
-            <div style="display:flex;justify-content:space-between;padding-top:12px;border-top:2px solid var(--border);font-size:16px;font-weight:800">
-              <span>Invoice Total</span>
-              <span x-text="fmtAmt(grandTotal)"></span>
-            </div>
+          <p class="section-label">Amount Summary</p>
+          <div class="side-row">
+            <span style="color:var(--text-secondary)">Items Subtotal</span>
+            <span style="font-weight:600" x-text="fmtAmt(subtotal)"></span>
           </div>
-          <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
-            <button type="button" @click="saveDraft()" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center" :disabled="saving">Save Draft</button>
-            <button type="button" @click="saveAndSend()" class="btn btn-primary btn-sm" style="width:100%;justify-content:center" :disabled="saving">
+          <div class="side-row" x-show="discount > 0" x-cloak>
+            <span style="color:var(--text-secondary)">Discount</span>
+            <span style="font-weight:600;color:#dc2626" x-text="'− ' + fmtAmt(discount)"></span>
+          </div>
+          <div class="side-row" x-show="taxTotal > 0" x-cloak>
+            <span style="color:var(--text-secondary)">Total Tax</span>
+            <span style="font-weight:600" x-text="fmtAmt(taxTotal)"></span>
+          </div>
+          <div class="side-row grand">
+            <span>Invoice Total</span>
+            <span x-text="fmtAmt(grandTotal)"></span>
+          </div>
+          <div style="margin-top:18px;display:flex;flex-direction:column;gap:8px">
+            <button type="button" @click="saveDraft()" class="btn btn-secondary btn-sm"
+              style="width:100%;justify-content:center" :disabled="saving">
+              Save Draft
+            </button>
+            <button type="button" @click="saveAndSend()" class="btn btn-primary btn-sm"
+              style="width:100%;justify-content:center" :disabled="saving">
               <span x-text="saving ? 'Saving…' : '{% if invoice %}Update Invoice{% else %}Create Invoice{% endif %}'"></span>
             </button>
           </div>
         </div>
 
         {% if invoice %}
+        <!-- Invoice meta -->
         <div class="card" style="padding:18px">
-          <p style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin:0 0 10px">Invoice Info</p>
-          <div style="display:flex;flex-direction:column;gap:7px;font-size:12.5px">
-            <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Status</span><span class="badge b-{{ invoice.status }} badge-sm">{{ invoice.get_status_display }}</span></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Created</span><span>{{ invoice.created_at|date:"d M Y" }}</span></div>
-            {% if invoice.sent_at %}<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Sent</span><span>{{ invoice.sent_at|date:"d M Y" }}</span></div>{% endif %}
-            {% if invoice.amount_paid > 0 %}<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Paid</span><span style="color:#16a34a;font-weight:700">{{ invoice.currency }}{{ invoice.amount_paid|floatformat:2 }}</span></div>{% endif %}
+          <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 12px">Invoice Info</p>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="color:var(--text-muted)">Status</span>
+              <span class="badge b-{{ invoice.status }} badge-sm">{{ invoice.get_status_display }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--text-muted)">Created</span>
+              <span>{{ invoice.created_at|date:"d M Y" }}</span>
+            </div>
+            {% if invoice.sent_at %}
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--text-muted)">Sent</span>
+              <span>{{ invoice.sent_at|date:"d M Y" }}</span>
+            </div>
+            {% endif %}
+            {% if invoice.amount_paid %}
+            <div style="display:flex;justify-content:space-between">
+              <span style="color:var(--text-muted)">Paid</span>
+              <span style="color:#16a34a;font-weight:700">{{ invoice.currency }} {{ invoice.amount_paid|floatformat:2 }}</span>
+            </div>
+            {% endif %}
           </div>
         </div>
         {% endif %}
 
+        <!-- Tip card -->
+        <div style="background:var(--bg-subtle);border-radius:10px;padding:14px 16px">
+          <p style="font-size:11.5px;color:var(--text-muted);margin:0;line-height:1.65">
+            <strong style="color:var(--text-secondary)">Tip:</strong>
+            {% if invoice %}Editing recalculates all totals and preserves existing payment records.
+            {% else %}Invoice is saved as a <em>Draft</em>. You can edit and send it any time.{% endif %}
+            Use <kbd style="font-family:monospace;background:var(--border);border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+S</kbd> to save draft quickly.
+          </p>
+        </div>
+
       </div>
     </div>
-
-    <!-- Hidden item fields for existing items -->
-    <template x-for="(item, idx) in items" :key="'hidden-'+item.id">
-      <div>
-        <input type="hidden" :name="'items['+idx+'][id]'" :value="item.itemId">
-        <input type="hidden" :name="'items['+idx+'][total]'" :value="item.total">
-      </div>
-    </template>
-    <input type="hidden" name="item_count" :value="items.length">
-    <input type="hidden" name="items_json" id="itemsJsonField" value="[]">
 
   </form>
 </div>
 
 <script>
-function invoiceBuilder() {
-  return {
+document.addEventListener('alpine:init', () => {
+  Alpine.data('invoiceBuilder', () => ({
     saving: false,
     formAction: 'save_draft',
-    discountType: '{{ invoice.discount_type|default:"none" }}',
-    discountValue: {{ invoice.global_discount_value|default:0 }},
+
+    /* Live state */
+    currency: '{% if form_data %}{{ form_data.currency|default:invoice.currency|default:"NGN" }}{% elif invoice %}{{ invoice.currency }}{% else %}NGN{% endif %}',
+    taxMode: '{% if form_data %}{{ form_data.tax_mode|default:"exclusive" }}{% elif invoice %}{{ invoice.tax_mode|default:"exclusive" }}{% else %}exclusive{% endif %}',
+    discountType: (function() {
+      const raw = '{% if form_data %}{{ form_data.discount_type|default:"none" }}{% elif invoice %}{{ invoice.discount_type|default:"none" }}{% else %}none{% endif %}';
+      if (raw === 'flat' || raw === 'fixed') return 'fixed';
+      if (raw === 'percentage') return 'percentage';
+      return 'none';
+    }()),
+    discountValue: {% if form_data %}{{ form_data.discount_value|default:0 }}{% elif invoice %}{{ invoice.global_discount_value|default:0 }}{% else %}0{% endif %},
+
     items: [],
     subtotal: 0,
     taxTotal: 0,
@@ -274,68 +465,100 @@ function invoiceBuilder() {
     _uid: 0,
 
     init() {
-      const existing = [
-        {% if invoice %}
-        {% for item in invoice.items.all %}
-        { id: this._uid++, itemId: {{ item.id }}, description: "{{ item.description|escapejs }}", quantity: {{ item.quantity }}, unit_price: {{ item.unit_price }}, tax_rate: {{ item.tax_rate }}, total: {{ item.total }} },
-        {% endfor %}
-        {% endif %}
+      /* ── 1. Existing saved line items (edit mode) ── */
+      const savedItems = [
+        {% if invoice %}{% for item in invoice.items.all %}{
+          _id: this._uid++,
+          itemId: {{ item.id }},
+          description: "{{ item.description|escapejs }}",
+          quantity: {{ item.quantity }},
+          unit_price: {{ item.unit_price }},
+          tax_rate: {{ item.tax_rate }},
+          _total: {{ item.total }},
+        },{% endfor %}{% endif %}
       ];
-      const prefillItems = {{ prefill_items_json|default:"[]" }};
-      if (existing.length > 0) {
-        this.items = existing;
-      } else if (prefillItems.length > 0) {
+
+      /* ── 2. Prefill / error-recovery items ── */
+      let prefillItems = [];
+      try {
+        prefillItems = JSON.parse('{{ prefill_items_json|default:"[]"|escapejs }}') || [];
+      } catch(e) { prefillItems = []; }
+
+      if (prefillItems.length > 0) {
+        /* Error recovery or expense prefill — submitted items take priority */
         this.items = prefillItems.map(item => ({
-          id: this._uid++, itemId: null,
+          _id: this._uid++,
+          itemId: item.id || null,
           description: item.description || '',
-          quantity: item.quantity || 1,
-          unit_price: item.unit_price || 0,
-          tax_rate: item.tax_rate || 0,
-          total: (item.quantity || 1) * (item.unit_price || 0),
+          quantity: parseFloat(item.quantity) || 1,
+          unit_price: parseFloat(item.unit_price) || 0,
+          tax_rate: parseFloat(item.tax_rate) || 0,
+          _total: (parseFloat(item.quantity) || 1) * (parseFloat(item.unit_price) || 0),
         }));
+      } else if (savedItems.length > 0) {
+        /* Edit mode: load saved DB items */
+        this.items = savedItems;
       } else {
+        /* Blank new invoice: start with one empty line */
         this.addItem();
       }
+
       this.calcTotals();
     },
 
     addItem() {
-      this.items.push({ id: this._uid++, itemId: null, description: '', quantity: 1, unit_price: 0, tax_rate: 0, total: 0 });
+      const taxEl = document.getElementById('defaultTaxRate');
+      const defaultTax = taxEl ? (parseFloat(taxEl.value) || 0) : 0;
+      this.items.push({
+        _id: this._uid++,
+        itemId: null,
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        tax_rate: defaultTax,
+        _total: 0,
+      });
+      /* Auto-focus the new description field */
+      this.$nextTick(() => {
+        const rows = document.querySelectorAll('.line-table tbody input[type="text"]');
+        if (rows.length) rows[rows.length - 1].focus();
+      });
     },
 
     removeItem(idx) {
-      if (this.items.length > 1) this.items.splice(idx, 1);
-      this.calcTotals();
+      if (this.items.length > 1) {
+        this.items.splice(idx, 1);
+        this.calcTotals();
+      }
     },
 
     calcTotals() {
       let sub = 0, tax = 0;
-      const taxModeEl = document.querySelector('[name="tax_mode"]');
-      const taxMode = taxModeEl ? taxModeEl.value : 'exclusive';
+      const mode = this.taxMode || 'exclusive';
       this.items.forEach(item => {
-        const qty = parseFloat(item.quantity || 0);
-        const price = parseFloat(item.unit_price || 0);
-        const rate = parseFloat(item.tax_rate || 0);
+        const qty   = parseFloat(item.quantity)   || 0;
+        const price = parseFloat(item.unit_price) || 0;
+        const rate  = parseFloat(item.tax_rate)   || 0;
         const lineAmt = qty * price;
         let lineTax = 0;
-        if (taxMode === 'inclusive') {
-          // Tax is included in the price: extract it
-          lineTax = lineAmt * rate / (100 + rate);
-          item.total = lineAmt;
-          sub += lineAmt - lineTax;
+        if (mode === 'inclusive') {
+          lineTax     = lineAmt * rate / (100 + rate);
+          item._total = lineAmt;
+          sub        += lineAmt - lineTax;
         } else {
-          lineTax = lineAmt * rate / 100;
-          item.total = lineAmt + lineTax;
-          sub += lineAmt;
+          lineTax     = lineAmt * rate / 100;
+          item._total = lineAmt + lineTax;
+          sub        += lineAmt;
         }
         tax += lineTax;
       });
       this.subtotal = sub;
       this.taxTotal = tax;
+      const dv = parseFloat(this.discountValue) || 0;
       if (this.discountType === 'percentage') {
-        this.discount = sub * parseFloat(this.discountValue || 0) / 100;
-      } else if (this.discountType === 'fixed' || this.discountType === 'flat') {
-        this.discount = parseFloat(this.discountValue || 0);
+        this.discount = sub * dv / 100;
+      } else if (this.discountType === 'fixed') {
+        this.discount = dv;
       } else {
         this.discount = 0;
       }
@@ -343,18 +566,21 @@ function invoiceBuilder() {
     },
 
     fmtAmt(v) {
-      return (v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return (parseFloat(v) || 0).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
     },
 
     serializeItems() {
       document.getElementById('itemsJsonField').value = JSON.stringify(
         this.items.map(item => ({
-          id: item.itemId,
+          id:          item.itemId || null,
           description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          tax_rate: item.tax_rate,
-          total: item.total,
+          quantity:    item.quantity,
+          unit_price:  item.unit_price,
+          tax_rate:    item.tax_rate,
+          total:       item._total,
         }))
       );
     },
@@ -371,9 +597,7 @@ function invoiceBuilder() {
       this.serializeItems();
       this.$nextTick(() => document.getElementById('invoiceForm').submit());
     },
-
-    closeModal() {}
-  }
-}
+  }));
+});
 </script>
 {% endblock %}

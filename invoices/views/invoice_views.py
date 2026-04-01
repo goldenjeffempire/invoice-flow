@@ -147,6 +147,8 @@ def invoice_create(request):
 
         except InvoiceValidationError as e:
             default_due_date = timezone.now().date() + timedelta(days=30)
+            # Pass items_json back so Alpine can repopulate lines after validation failure
+            items_json_back = request.POST.get('items_json', '[]')
             context = {
                 'clients': clients,
                 'profile': profile,
@@ -162,6 +164,7 @@ def invoice_create(request):
                 ),
                 'default_terms': getattr(profile, 'default_payment_terms', '') or '',
                 'page_title': 'Create Invoice',
+                'prefill_items_json': items_json_back,
             }
             return render(request, "pages/invoices/builder.html", context)
         except Exception as e:
@@ -261,6 +264,7 @@ def invoice_edit(request, invoice_id):
             return redirect('invoices:invoice_detail', invoice_id=invoice.id)
 
         except InvoiceValidationError as e:
+            items_json_back = request.POST.get('items_json', '[]')
             context = {
                 'invoice': invoice,
                 'clients': clients,
@@ -274,6 +278,7 @@ def invoice_edit(request, invoice_id):
                 'default_due_date': invoice.due_date.isoformat() if invoice.due_date else '',
                 'is_edit': True,
                 'page_title': f'Edit Invoice {invoice.invoice_number}',
+                'prefill_items_json': items_json_back,
             }
             return render(request, "pages/invoices/builder.html", context)
         except InvoiceStateError as e:
