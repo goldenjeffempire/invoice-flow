@@ -1,199 +1,76 @@
 {% extends "base/layout_app.html" %}
-{% load invoice_filters %}
+{% load static invoice_filters %}
 {% block title %}Dashboard — InvoiceFlow{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
+
 {% block content %}
+<div class="dash" x-data="dashCtrl()" x-init="init()"
+     @keydown.r.window="if(!$event.target.matches('input,textarea,select')) silentRefresh()">
 
-<div x-data="dashController()" x-init="init()" @keydown.r.window="if(!$event.target.matches('input,textarea,select')) silentRefresh()">
-
-  <!-- ════════════════════════════════════════════════════════════
-       HEADER
-  ═══════════════════════════════════════════════════════════════ -->
-  <div class="db-header">
-    <div class="db-header-left">
-      <div class="db-greeting-wrap">
-        <div class="db-greeting-avatar">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</div>
-        <div>
-          <h1 class="db-greeting-text">Good <span id="greetingPart">day</span>, {{ request.user.first_name|default:request.user.username }}.</h1>
-          <p class="db-greeting-sub">
-            Here's what's happening with <strong>{{ workspace.name }}</strong> today
-            <span x-show="lastUpdated" x-cloak> · Updated <span x-text="lastUpdated" class="db-updated-time"></span></span>
-          </p>
-        </div>
+  <!-- ═══════════════════════════════════════════════════════
+       1. HEADER
+  ══════════════════════════════════════════════════════════ -->
+  <div class="dash-hdr">
+    <div class="dash-hdr-left">
+      <div class="dash-avatar">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</div>
+      <div>
+        <h1 class="dash-greeting">
+          Good <em x-text="period">morning</em>,
+          {{ request.user.first_name|default:request.user.username }}.
+        </h1>
+        <p class="dash-greeting-sub">
+          <span class="dash-ws-pill">
+            <span class="dash-ws-dot"></span>
+            {{ workspace.name }}
+          </span>
+          <span>·</span>
+          <span>{{ today|date:"l, j F Y" }}</span>
+          <span x-show="lastUpdated" x-cloak class="dash-live-chip">
+            <span class="dash-live-dot"></span>
+            Updated <span x-text="lastUpdated" style="font-weight:700"></span>
+          </span>
+        </p>
       </div>
     </div>
-    <div class="db-header-actions">
-      <button @click="silentRefresh()" :disabled="refreshing" class="btn btn-ghost btn-sm db-refresh-btn" title="Refresh (R)">
-        <svg :class="refreshing ? 'spin-anim' : ''" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-        <span x-text="refreshing ? 'Refreshing…' : 'Refresh'" class="desk-only"></span>
+    <div class="dash-hdr-right">
+      <button @click="silentRefresh()" :disabled="refreshing"
+              class="btn btn-secondary btn-sm" style="gap:6px" title="Refresh (R)">
+        <svg :class="refreshing ? 'dash-spin' : ''" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        <span class="desk-only" x-text="refreshing ? 'Refreshing…' : 'Refresh'">Refresh</span>
       </button>
       <a href="{% url 'invoices:estimate_create' %}" class="btn btn-secondary btn-sm desk-only">New Estimate</a>
       <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+        </svg>
         New Invoice
       </a>
     </div>
   </div>
 
   <!-- Error Banner -->
-  <div x-show="fetchError" x-cloak class="db-error-banner" x-transition>
-    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+  <div x-show="fetchError" x-cloak class="dash-error" x-transition>
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+    </svg>
     <span>Could not refresh — showing cached data.</span>
-    <button @click="silentRefresh()" class="db-error-retry">Retry</button>
+    <button @click="silentRefresh()" class="dash-error-retry">Retry now</button>
   </div>
 
-  <!-- ════════════════════════════════════════════════════════════
-       QUICK ACTIONS ROW
-  ═══════════════════════════════════════════════════════════════ -->
-  <div class="db-quick-actions">
-    <a href="{% url 'invoices:invoice_create' %}" class="db-qa-card db-qa-primary">
-      <div class="db-qa-icon">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v4h4"/></svg>
-      </div>
-      <span class="db-qa-label">Create Invoice</span>
-      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-    </a>
-    <a href="{% url 'invoices:client_create' %}" class="db-qa-card">
-      <div class="db-qa-icon db-qa-icon-teal">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-      </div>
-      <span class="db-qa-label">Add Client</span>
-      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-    </a>
-    <a href="{% url 'invoices:payment_overview' %}" class="db-qa-card">
-      <div class="db-qa-icon db-qa-icon-green">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-      </div>
-      <span class="db-qa-label">Record Payment</span>
-      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-    </a>
-    <a href="{% url 'invoices:estimate_create' %}" class="db-qa-card">
-      <div class="db-qa-icon db-qa-icon-violet">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-      </div>
-      <span class="db-qa-label">New Estimate</span>
-      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-    </a>
-    <a href="{% url 'invoices:expense_create' %}" class="db-qa-card">
-      <div class="db-qa-icon db-qa-icon-amber">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-      </div>
-      <span class="db-qa-label">Log Expense</span>
-      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-    </a>
-    <a href="{% url 'invoices:reports_home' %}" class="db-qa-card">
-      <div class="db-qa-icon db-qa-icon-blue">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      </div>
-      <span class="db-qa-label">View Reports</span>
-      <svg class="db-qa-arrow" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-    </a>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════
-       KPI METRICS
-  ═══════════════════════════════════════════════════════════════ -->
-  <div class="db-kpi-grid animate-children">
-
-    <!-- Revenue This Month -->
-    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
-      <div class="db-kpi-top">
-        <div class="db-kpi-icon db-kpi-icon-indigo">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </div>
-        <span x-show="!refreshing" class="kpi-delta {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}up{% else %}down{% endif %}{% endif %}">
-          {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.revenue_change_pct|floatformat:1 }}%{% else %}—{% endif %}
-        </span>
-      </div>
-      <p class="db-kpi-label">Revenue This Month</p>
-      <p class="db-kpi-value" x-text="live.revenue !== undefined ? sym + fmt(live.revenue) : '{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}</p>
-      <p class="db-kpi-sub">vs {{ workspace.currency_symbol }}{{ last_month_revenue|default:"0.00"|floatformat:2 }} last month</p>
-    </div>
-
-    <!-- Outstanding -->
-    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
-      <div class="db-kpi-top">
-        <div class="db-kpi-icon db-kpi-icon-amber">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-        </div>
-        {% if kpis.draft_count > 0 %}<span class="db-kpi-badge">{{ kpis.draft_count }} draft{% if kpis.draft_count != 1 %}s{% endif %}</span>{% endif %}
-      </div>
-      <p class="db-kpi-label">Outstanding</p>
-      <p class="db-kpi-value" x-text="live.outstanding !== undefined ? sym + fmt(live.outstanding) : '{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}</p>
-      <p class="db-kpi-sub">Awaiting payment</p>
-    </div>
-
-    <!-- Overdue -->
-    <div class="db-kpi-card {% if kpis.overdue_count > 0 %}db-kpi-card-danger{% endif %}" :class="refreshing ? 'db-kpi-loading' : ''">
-      <div class="db-kpi-top">
-        <div class="db-kpi-icon db-kpi-icon-red">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-        </div>
-        <span x-show="!refreshing" class="kpi-delta down" x-text="(live.overdue_count ?? {{ kpis.overdue_count }}) + ' inv.'"></span>
-      </div>
-      <p class="db-kpi-label">Overdue</p>
-      <p class="db-kpi-value {% if kpis.total_overdue > 0 %}db-kpi-danger-text{% endif %}"
-         :style="(live.overdue ?? {{ kpis.total_overdue }}) > 0 ? 'color:#dc2626' : ''"
-         x-text="live.overdue !== undefined ? sym + fmt(live.overdue) : '{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}</p>
-      <p class="db-kpi-sub">
-        {% if kpis.overdue_count > 0 %}<a href="{% url 'invoices:invoice_list' %}?status=overdue" class="db-kpi-link">Send reminders →</a>{% else %}No overdue invoices{% endif %}
-      </p>
-    </div>
-
-    <!-- Expenses -->
-    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
-      <div class="db-kpi-top">
-        <div class="db-kpi-icon db-kpi-icon-violet">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-        </div>
-        {% if kpis.expenses_change_pct is not None %}<span class="kpi-delta {% if kpis.expenses_change_pct <= 0 %}up{% else %}down{% endif %}">{% if kpis.expenses_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.expenses_change_pct|floatformat:1 }}%</span>{% endif %}
-      </div>
-      <p class="db-kpi-label">Expenses MTD</p>
-      <p class="db-kpi-value" x-text="live.expenses !== undefined ? sym + fmt(live.expenses) : '{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}'">{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}</p>
-      <p class="db-kpi-sub">Month to date</p>
-    </div>
-
-    <!-- Net Profit -->
-    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
-      <div class="db-kpi-top">
-        <div class="db-kpi-icon db-kpi-icon-green">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-        </div>
-        {% if kpis.collection_rate is not None %}<span class="kpi-delta {% if kpis.collection_rate >= 75 %}up{% else %}down{% endif %}">{{ kpis.collection_rate }}% collected</span>{% endif %}
-      </div>
-      <p class="db-kpi-label">Net Profit MTD</p>
-      <p class="db-kpi-value"
-         :style="(live.net_profit ?? {{ kpis.net_profit }}) >= 0 ? 'color:#16a34a' : 'color:#dc2626'"
-         style="color:{% if kpis.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}"
-         x-text="live.net_profit !== undefined ? (live.net_profit < 0 ? '-' : '') + sym + fmt(Math.abs(live.net_profit)) : '{% if kpis.net_profit < 0 %}-{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}'">
-        {% if kpis.net_profit < 0 %}-{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}
-      </p>
-      <p class="db-kpi-sub">Revenue minus expenses</p>
-    </div>
-
-    <!-- Clients -->
-    <div class="db-kpi-card" :class="refreshing ? 'db-kpi-loading' : ''">
-      <div class="db-kpi-top">
-        <div class="db-kpi-icon db-kpi-icon-teal">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        </div>
-        {% if kpis.new_clients_this_month > 0 %}<span class="db-kpi-badge db-kpi-badge-green">+{{ kpis.new_clients_this_month }} new</span>{% endif %}
-      </div>
-      <p class="db-kpi-label">Total Clients</p>
-      <p class="db-kpi-value" x-text="live.total_clients !== undefined ? live.total_clients : '{{ kpis.total_clients }}'">{{ kpis.total_clients }}</p>
-      <p class="db-kpi-sub">Active client relationships</p>
-    </div>
-
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════
-       SMART INSIGHTS
-  ═══════════════════════════════════════════════════════════════ -->
+  <!-- ═══════════════════════════════════════════════════════
+       2. SMART INSIGHTS
+  ══════════════════════════════════════════════════════════ -->
   {% if insights %}
-  <div class="db-insights">
+  <div class="dash-insights">
     {% for insight in insights %}
-    <div class="db-insight db-insight-{{ insight.type }}">
-      <div class="db-insight-icon">
+    <div class="dash-insight dash-insight-{{ insight.type }}">
+      <div class="dash-insight-icon">
         {% if insight.icon == "alert" %}
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         {% elif insight.icon == "clock" %}
@@ -204,191 +81,393 @@
         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         {% endif %}
       </div>
-      <span class="db-insight-text">{{ insight.text }}</span>
-      {% if insight.url %}<a href="{{ insight.url }}" class="db-insight-action">{{ insight.action }} →</a>{% endif %}
+      <span class="dash-insight-text">{{ insight.text }}</span>
+      {% if insight.url %}
+      <a href="{{ insight.url }}" class="dash-insight-cta">{{ insight.action }} →</a>
+      {% endif %}
     </div>
     {% endfor %}
   </div>
   {% endif %}
 
-  <!-- ════════════════════════════════════════════════════════════
-       CHARTS
-  ═══════════════════════════════════════════════════════════════ -->
-  <div class="db-charts-grid">
+  <!-- ═══════════════════════════════════════════════════════
+       3. QUICK ACTIONS
+  ══════════════════════════════════════════════════════════ -->
+  <div class="dash-qa dash-animate">
+    <a href="{% url 'invoices:invoice_create' %}" class="dash-qa-card dash-qa-primary">
+      <div class="dash-qa-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v4h4"/></svg>
+      </div>
+      <span class="dash-qa-label">Create Invoice</span>
+      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:client_create' %}" class="dash-qa-card dash-qa-teal">
+      <div class="dash-qa-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      </div>
+      <span class="dash-qa-label">Add Client</span>
+      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:payment_overview' %}" class="dash-qa-card dash-qa-green">
+      <div class="dash-qa-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+      </div>
+      <span class="dash-qa-label">Record Payment</span>
+      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:estimate_create' %}" class="dash-qa-card dash-qa-violet">
+      <div class="dash-qa-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      </div>
+      <span class="dash-qa-label">New Estimate</span>
+      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:expense_create' %}" class="dash-qa-card dash-qa-amber">
+      <div class="dash-qa-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </div>
+      <span class="dash-qa-label">Log Expense</span>
+      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+    <a href="{% url 'invoices:reports_home' %}" class="dash-qa-card dash-qa-blue">
+      <div class="dash-qa-icon">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <span class="dash-qa-label">View Reports</span>
+      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+    </a>
+  </div>
 
-    <!-- Revenue vs Expenses -->
-    <div class="card db-chart-main">
-      <div class="db-chart-header">
-        <div>
-          <h3 class="db-chart-title">Revenue & Expenses</h3>
-          <p class="db-chart-sub">6-month trend with net profit</p>
+  <!-- ═══════════════════════════════════════════════════════
+       4. KPI METRICS
+  ══════════════════════════════════════════════════════════ -->
+  <div class="dash-kpi-grid dash-animate">
+
+    <!-- Revenue This Month -->
+    <div class="dash-kpi dash-kpi-indigo" :class="refreshing ? 'dash-kpi-loading' : ''">
+      <div class="dash-kpi-row1">
+        <div class="dash-kpi-icon dash-kpi-icon-indigo">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
-        <div class="db-chart-legend">
-          <span class="db-legend-item"><span class="db-legend-dot" style="background:#6366f1"></span>Revenue</span>
-          <span class="db-legend-item"><span class="db-legend-dot" style="background:#f97316"></span>Expenses</span>
-          <span class="db-legend-item"><span class="db-legend-dot" style="background:#22c55e"></span>Net</span>
+        <span x-show="!refreshing" class="kpi-delta {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}up{% else %}down{% endif %}{% endif %}">
+          {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.revenue_change_pct|floatformat:1 }}%{% else %}—{% endif %}
+        </span>
+      </div>
+      <p class="dash-kpi-label">Revenue This Month</p>
+      <p class="dash-kpi-value"
+         x-text="live.revenue !== undefined ? sym + fmt(live.revenue) : '{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}'">
+        {{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}
+      </p>
+      <div class="dash-kpi-footer">
+        <p class="dash-kpi-sub">vs {{ workspace.currency_symbol }}{{ last_month_revenue|default:"0.00"|floatformat:2 }} last month</p>
+      </div>
+    </div>
+
+    <!-- Outstanding -->
+    <div class="dash-kpi dash-kpi-amber" :class="refreshing ? 'dash-kpi-loading' : ''">
+      <div class="dash-kpi-row1">
+        <div class="dash-kpi-icon dash-kpi-icon-amber">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </div>
+        {% if kpis.draft_count > 0 %}
+        <span class="dash-kpi-badge">{{ kpis.draft_count }} draft{% if kpis.draft_count != 1 %}s{% endif %}</span>
+        {% endif %}
+      </div>
+      <p class="dash-kpi-label">Outstanding</p>
+      <p class="dash-kpi-value"
+         x-text="live.outstanding !== undefined ? sym + fmt(live.outstanding) : '{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}'">
+        {{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}
+      </p>
+      <div class="dash-kpi-footer">
+        <p class="dash-kpi-sub">Awaiting payment</p>
+        <a href="{% url 'invoices:invoice_list' %}" class="dash-kpi-link">View →</a>
+      </div>
+    </div>
+
+    <!-- Net Profit -->
+    <div class="dash-kpi dash-kpi-green" :class="refreshing ? 'dash-kpi-loading' : ''">
+      <div class="dash-kpi-row1">
+        <div class="dash-kpi-icon dash-kpi-icon-green">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </div>
+        {% if kpis.collection_rate is not None %}
+        <span class="kpi-delta {% if kpis.collection_rate >= 75 %}up{% else %}down{% endif %}">{{ kpis.collection_rate }}% collected</span>
+        {% endif %}
+      </div>
+      <p class="dash-kpi-label">Net Profit MTD</p>
+      <p class="dash-kpi-value"
+         :class="(live.net_profit ?? {{ kpis.net_profit }}) >= 0 ? 'dash-kpi-value-success' : 'dash-kpi-value-danger'"
+         :style="''"
+         x-text="live.net_profit !== undefined ? (live.net_profit < 0 ? '–' : '') + sym + fmt(Math.abs(live.net_profit)) : '{% if kpis.net_profit < 0 %}–{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}'">
+        {% if kpis.net_profit < 0 %}–{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}
+      </p>
+      <div class="dash-kpi-footer">
+        <p class="dash-kpi-sub">Revenue minus expenses</p>
+      </div>
+      {% if kpis.collection_rate is not None %}
+      <div class="dash-kpi-progress">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span class="dash-kpi-progress-label">Collection rate</span>
+          <span class="dash-kpi-progress-label" style="font-weight:700;color:var(--text-primary)">{{ kpis.collection_rate }}%</span>
+        </div>
+        <div class="dash-kpi-progress-bar">
+          <div class="dash-kpi-progress-fill" style="width:{{ kpis.collection_rate }}%;background:{% if kpis.collection_rate >= 75 %}#22c55e{% elif kpis.collection_rate < 50 %}#ef4444{% else %}#f59e0b{% endif %}"></div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Overdue -->
+    <div class="dash-kpi dash-kpi-red {% if kpis.overdue_count > 0 %}dash-kpi-danger{% endif %}" :class="refreshing ? 'dash-kpi-loading' : ''">
+      <div class="dash-kpi-row1">
+        <div class="dash-kpi-icon dash-kpi-icon-red">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        </div>
+        <span x-show="!refreshing" class="kpi-delta down"
+              x-text="(live.overdue_count ?? {{ kpis.overdue_count }}) + ' invoice' + ((live.overdue_count ?? {{ kpis.overdue_count }}) !== 1 ? 's' : '')">
+          {{ kpis.overdue_count }} invoice{{ kpis.overdue_count|pluralize }}
+        </span>
+      </div>
+      <p class="dash-kpi-label">Overdue</p>
+      <p class="dash-kpi-value {% if kpis.total_overdue > 0 %}dash-kpi-value-danger{% endif %}"
+         x-text="live.overdue !== undefined ? sym + fmt(live.overdue) : '{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}'">
+        {{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}
+      </p>
+      <div class="dash-kpi-footer">
+        {% if kpis.overdue_count > 0 %}
+        <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="dash-kpi-link" style="color:#dc2626">
+          Send reminders →
+        </a>
+        {% else %}
+        <p class="dash-kpi-sub">No overdue invoices</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Expenses -->
+    <div class="dash-kpi dash-kpi-violet" :class="refreshing ? 'dash-kpi-loading' : ''">
+      <div class="dash-kpi-row1">
+        <div class="dash-kpi-icon dash-kpi-icon-violet">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+        </div>
+        {% if kpis.expenses_change_pct is not None %}
+        <span class="kpi-delta {% if kpis.expenses_change_pct <= 0 %}up{% else %}down{% endif %}">
+          {% if kpis.expenses_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.expenses_change_pct|floatformat:1 }}%
+        </span>
+        {% endif %}
+      </div>
+      <p class="dash-kpi-label">Expenses MTD</p>
+      <p class="dash-kpi-value"
+         x-text="live.expenses !== undefined ? sym + fmt(live.expenses) : '{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}'">
+        {{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}
+      </p>
+      <div class="dash-kpi-footer">
+        <p class="dash-kpi-sub">Month to date</p>
+        <a href="{% url 'invoices:expense_list' %}" class="dash-kpi-link">View →</a>
+      </div>
+    </div>
+
+    <!-- Clients -->
+    <div class="dash-kpi dash-kpi-teal" :class="refreshing ? 'dash-kpi-loading' : ''">
+      <div class="dash-kpi-row1">
+        <div class="dash-kpi-icon dash-kpi-icon-teal">
+          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        {% if kpis.new_clients_this_month > 0 %}
+        <span class="dash-kpi-badge dash-kpi-badge-green">+{{ kpis.new_clients_this_month }} new</span>
+        {% endif %}
+      </div>
+      <p class="dash-kpi-label">Total Clients</p>
+      <p class="dash-kpi-value"
+         x-text="live.total_clients !== undefined ? live.total_clients : '{{ kpis.total_clients }}'">
+        {{ kpis.total_clients }}
+      </p>
+      <div class="dash-kpi-footer">
+        <p class="dash-kpi-sub">Active relationships</p>
+        <a href="{% url 'invoices:client_list' %}" class="dash-kpi-link">View →</a>
+      </div>
+    </div>
+
+  </div><!-- /dash-kpi-grid -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       5. CHARTS
+  ══════════════════════════════════════════════════════════ -->
+  <div class="dash-charts">
+
+    <!-- Revenue & Expenses Trend -->
+    <div class="card dash-chart-card">
+      <div class="dash-chart-hdr">
+        <div class="dash-chart-hdr-left">
+          <h3>Revenue & Expenses</h3>
+          <p>Monthly trend with net profit</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div class="dash-chart-legend">
+            <span class="dash-legend-item"><span class="dash-legend-dot" style="background:#6366f1"></span>Revenue</span>
+            <span class="dash-legend-item"><span class="dash-legend-dot" style="background:#f97316"></span>Expenses</span>
+            <span class="dash-legend-item"><span class="dash-legend-dot" style="background:#22c55e;border-radius:50%"></span>Net</span>
+          </div>
+          <div class="dash-periods">
+            <button class="dash-period" :class="chartPeriod===3 ? 'active' : ''" @click="changeChartPeriod(3)">3M</button>
+            <button class="dash-period" :class="chartPeriod===6 ? 'active' : ''" @click="changeChartPeriod(6)">6M</button>
+            <button class="dash-period" :class="chartPeriod===12 ? 'active' : ''" @click="changeChartPeriod(12)">1Y</button>
+          </div>
         </div>
       </div>
       {% if chart_has_data %}
-      <div x-show="!chartsReady" class="db-chart-skel"></div>
-      <div x-show="chartsReady" x-cloak class="db-chart-canvas-wrap"><canvas id="revExpChart"></canvas></div>
+      <div x-show="chartLoading" class="dash-chart-skel"></div>
+      <div x-show="!chartLoading" x-cloak class="dash-chart-canvas">
+        <canvas id="revExpChart"></canvas>
+      </div>
       {% else %}
-      <div class="db-chart-empty">
-        <svg width="44" height="44" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-        <p class="db-chart-empty-title">No revenue data yet</p>
-        <p class="db-chart-empty-sub">Create invoices and record payments to see your trend</p>
+      <div class="dash-chart-empty">
+        <div class="dash-chart-empty-icon">
+          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <p class="dash-chart-empty-title">No revenue data yet</p>
+        <p class="dash-chart-empty-sub">Create invoices and record payments to see your financial trend.</p>
         <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:14px">Create First Invoice</a>
       </div>
       {% endif %}
     </div>
 
     <!-- Invoice Status Donut -->
-    <div class="card db-chart-side">
-      <div class="db-chart-header" style="border-bottom:0;padding-bottom:8px">
-        <div>
-          <h3 class="db-chart-title">Invoice Status</h3>
-          <p class="db-chart-sub">All-time breakdown</p>
+    <div class="card dash-chart-card">
+      <div class="dash-chart-hdr" style="border-bottom:none;padding-bottom:0;margin-bottom:12px">
+        <div class="dash-chart-hdr-left">
+          <h3>Invoice Status</h3>
+          <p>All-time breakdown</p>
         </div>
       </div>
       {% if kpis.total_invoice_count > 0 %}
-      <div class="db-donut-wrap">
+      <div class="dash-donut-wrap">
         <canvas id="statusDonut"></canvas>
-        <div class="db-donut-center">
-          <p class="db-donut-count">{{ kpis.total_invoice_count }}</p>
-          <p class="db-donut-label">Total</p>
+        <div class="dash-donut-center">
+          <p class="dash-donut-count">{{ kpis.total_invoice_count }}</p>
+          <p class="dash-donut-lbl">Total</p>
         </div>
       </div>
-      <div class="db-status-list">
+      <div class="dash-status-list">
         {% for key, label, color in invoice_status_items %}
         {% with count=invoice_status_counts|dict_get:key %}
         {% if count > 0 %}
-        <div class="db-status-row">
-          <span class="db-status-dot" style="background:{{ color }}"></span>
-          <span class="db-status-name">{{ label }}</span>
-          <span class="db-status-bar-wrap"><span class="db-status-bar" style="background:{{ color }};width:{% widthratio count kpis.total_invoice_count 100 %}%"></span></span>
-          <span class="db-status-count">{{ count }}</span>
+        <div class="dash-status-row">
+          <span class="dash-status-dot" style="background:{{ color }}"></span>
+          <span class="dash-status-name">{{ label }}</span>
+          <span class="dash-status-bar-wrap">
+            <span class="dash-status-bar" style="background:{{ color }};width:{% widthratio count kpis.total_invoice_count 100 %}%"></span>
+          </span>
+          <span class="dash-status-cnt">{{ count }}</span>
         </div>
         {% endif %}
         {% endwith %}
         {% endfor %}
       </div>
       {% else %}
-      <div class="db-chart-empty" style="padding:24px 20px">
-        <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
-        <p class="db-chart-empty-title">No invoices yet</p>
+      <div class="dash-chart-empty" style="padding:36px 20px">
+        <div class="dash-chart-empty-icon">
+          <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+        </div>
+        <p class="dash-chart-empty-title">No invoices yet</p>
         <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:10px">Create Invoice</a>
       </div>
       {% endif %}
     </div>
 
-  </div>
+  </div><!-- /dash-charts -->
 
-  <!-- ════════════════════════════════════════════════════════════
-       MAIN GRID: TABLES + SIDEBAR
-  ═══════════════════════════════════════════════════════════════ -->
-  <div class="db-main-grid">
+  <!-- ═══════════════════════════════════════════════════════
+       6. MAIN GRID: TABLES + SIDEBAR
+  ══════════════════════════════════════════════════════════ -->
+  <div class="dash-main">
 
-    <!-- LEFT: Tabbed Data Tables -->
-    <div class="db-table-col">
+    <!-- ── LEFT: Tabbed Data Tables ── -->
+    <div class="dash-left">
       <div class="card" x-data="{tab:'invoices'}">
 
-        <!-- Tabs -->
-        <div class="db-tab-row">
-          <button @click="tab='invoices'" :class="tab==='invoices' ? 'db-tab-active' : ''" class="db-tab">
+        <!-- Tab Nav -->
+        <div class="dash-tabs">
+          <button @click="tab='invoices'" :class="tab==='invoices' ? 'active' : ''" class="dash-tab">
             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
             Recent Invoices
-            {% if recent_invoices %}<span class="db-tab-count" :class="tab==='invoices' ? 'db-tab-count-active' : ''">{{ recent_invoices|length }}</span>{% endif %}
+            {% if recent_invoices %}<span class="dash-tab-cnt" :class="tab==='invoices' ? 'active' : ''">{{ recent_invoices|length }}</span>{% endif %}
           </button>
-          <button @click="tab='payments'" :class="tab==='payments' ? 'db-tab-active' : ''" class="db-tab">
+          <button @click="tab='payments'" :class="tab==='payments' ? 'active' : ''" class="dash-tab">
             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
             Recent Payments
-            {% if recent_payments %}<span class="db-tab-count" :class="tab==='payments' ? 'db-tab-count-active' : ''">{{ recent_payments|length }}</span>{% endif %}
+            {% if recent_payments %}<span class="dash-tab-cnt" :class="tab==='payments' ? 'active' : ''">{{ recent_payments|length }}</span>{% endif %}
           </button>
           {% if overdue_invoices %}
-          <button @click="tab='overdue'" :class="tab==='overdue' ? 'db-tab-active db-tab-overdue-active' : 'db-tab-overdue'" class="db-tab">
+          <button @click="tab='overdue'" :class="tab==='overdue' ? 'active' : ''" class="dash-tab dash-tab-danger">
             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
             Overdue
-            <span class="db-tab-count db-tab-count-danger">{{ kpis.overdue_count }}</span>
+            <span class="dash-tab-cnt dash-tab-cnt-danger">{{ kpis.overdue_count }}</span>
           </button>
           {% endif %}
-          <div class="db-tab-spacer"></div>
-          <a x-show="tab==='invoices'" href="{% url 'invoices:invoice_list' %}" class="db-tab-viewall">View all →</a>
-          <a x-show="tab==='payments'" x-cloak href="{% url 'invoices:payment_overview' %}" class="db-tab-viewall">View all →</a>
-          {% if overdue_invoices %}<a x-show="tab==='overdue'" x-cloak href="{% url 'invoices:invoice_list' %}?status=overdue" class="db-tab-viewall">View all →</a>{% endif %}
+          <div class="dash-tab-spacer"></div>
+          <a x-show="tab==='invoices'" href="{% url 'invoices:invoice_list' %}" class="dash-tab-viewall">View all →</a>
+          <a x-show="tab==='payments'" x-cloak href="{% url 'invoices:payment_overview' %}" class="dash-tab-viewall">View all →</a>
+          {% if overdue_invoices %}<a x-show="tab==='overdue'" x-cloak href="{% url 'invoices:invoice_list' %}?status=overdue" class="dash-tab-viewall">View all →</a>{% endif %}
         </div>
 
-        <!-- Recent Invoices Tab -->
+        <!-- Recent Invoices -->
         <div x-show="tab==='invoices'">
           {% if recent_invoices %}
           <div style="overflow-x:auto">
             <table class="tbl">
-              <thead>
-                <tr>
-                  <th>Invoice #</th>
-                  <th>Client</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Due Date</th>
-                  <th></th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>Invoice #</th><th>Client</th><th>Amount</th><th>Status</th><th>Due</th><th></th>
+              </tr></thead>
               <tbody>
                 {% for inv in recent_invoices %}
-                <tr class="db-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'">
-                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="db-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
+                <tr class="dash-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'">
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="dash-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
                   <td>
-                    <div class="db-tbl-client">
-                      <div class="db-tbl-avatar">{{ inv.client.name|slice:":1"|upper }}</div>
-                      <span class="db-tbl-client-name">{{ inv.client.name }}</span>
+                    <div class="dash-tbl-client">
+                      <div class="dash-tbl-avatar">{{ inv.client.name|slice:":1"|upper }}</div>
+                      <span class="dash-tbl-name">{{ inv.client.name }}</span>
                     </div>
                   </td>
-                  <td class="db-tbl-amount">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
+                  <td class="dash-tbl-amount">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
                   <td><span class="badge b-{{ inv.status }}"><span class="badge-dot"></span>{{ inv.get_status_display }}</span></td>
-                  <td class="{% if inv.status == 'overdue' %}db-tbl-overdue{% else %}db-tbl-date{% endif %}">{{ inv.due_date|date:"d M Y"|default:"—" }}</td>
-                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()">↗</a></td>
+                  <td class="{% if inv.status == 'overdue' %}dash-tbl-late{% else %}dash-tbl-date{% endif %}">{{ inv.due_date|date:"d M Y"|default:"—" }}</td>
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()" title="Open">↗</a></td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
           </div>
           {% else %}
-          <div class="db-tbl-empty">
-            <div class="stat-icon si-indigo" style="margin:0 auto 14px;width:44px;height:44px">
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
-            </div>
-            <p class="db-tbl-empty-title">No invoices yet</p>
-            <p class="db-tbl-empty-sub">Create your first invoice to start tracking revenue.</p>
-            <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:16px">Create Invoice</a>
+          <div class="dash-empty">
+            <div class="dash-empty-icon si-indigo"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg></div>
+            <p class="dash-empty-title">No invoices yet</p>
+            <p class="dash-empty-sub">Create your first invoice to start tracking revenue.</p>
+            <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:12px">Create Invoice</a>
           </div>
           {% endif %}
         </div>
 
-        <!-- Recent Payments Tab -->
+        <!-- Recent Payments -->
         <div x-show="tab==='payments'" x-cloak>
           {% if recent_payments %}
           <div style="overflow-x:auto">
             <table class="tbl">
-              <thead>
-                <tr>
-                  <th>Client</th>
-                  <th>Invoice</th>
-                  <th>Amount</th>
-                  <th>Date</th>
-                  <th></th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>Client</th><th>Invoice</th><th>Amount</th><th>Date</th><th></th>
+              </tr></thead>
               <tbody>
                 {% for pmt in recent_payments %}
-                <tr class="db-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' pmt.invoice.id %}'">
+                <tr class="dash-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' pmt.invoice.id %}'">
                   <td>
-                    <div class="db-tbl-client">
-                      <div class="db-tbl-avatar db-tbl-avatar-green">{{ pmt.invoice.client.name|slice:":1"|upper }}</div>
-                      <span class="db-tbl-client-name">{{ pmt.invoice.client.name }}</span>
+                    <div class="dash-tbl-client">
+                      <div class="dash-tbl-avatar dash-tbl-avatar-green">{{ pmt.invoice.client.name|slice:":1"|upper }}</div>
+                      <span class="dash-tbl-name">{{ pmt.invoice.client.name }}</span>
                     </div>
                   </td>
-                  <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="db-tbl-link" onclick="event.stopPropagation()">{{ pmt.invoice.invoice_number }}</a></td>
-                  <td class="db-tbl-amount db-tbl-amount-green">+{{ pmt.invoice.currency_symbol }}{{ pmt.amount|floatformat:2 }}</td>
-                  <td class="db-tbl-date">{{ pmt.payment_date|date:"d M Y" }}</td>
+                  <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="dash-tbl-link" onclick="event.stopPropagation()">{{ pmt.invoice.invoice_number }}</a></td>
+                  <td class="dash-tbl-amount dash-tbl-amount-green">+{{ pmt.invoice.currency_symbol }}{{ pmt.amount|floatformat:2 }}</td>
+                  <td class="dash-tbl-date">{{ pmt.payment_date|date:"d M Y" }}</td>
                   <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()">↗</a></td>
                 </tr>
                 {% endfor %}
@@ -396,46 +475,44 @@
             </table>
           </div>
           {% else %}
-          <div class="db-tbl-empty">
-            <div class="stat-icon si-green" style="margin:0 auto 14px;width:44px;height:44px">
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-            </div>
-            <p class="db-tbl-empty-title">No payments recorded</p>
-            <p class="db-tbl-empty-sub">Record a payment against any invoice to track cash flow.</p>
-            <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm" style="margin-top:16px">Select Invoice</a>
+          <div class="dash-empty">
+            <div class="dash-empty-icon si-green"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
+            <p class="dash-empty-title">No payments recorded</p>
+            <p class="dash-empty-sub">Record payments against invoices to track cash flow.</p>
+            <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm" style="margin-top:12px">Select Invoice</a>
           </div>
           {% endif %}
         </div>
 
-        <!-- Overdue Tab -->
+        <!-- Overdue -->
         {% if overdue_invoices %}
         <div x-show="tab==='overdue'" x-cloak>
           <div style="overflow-x:auto">
             <table class="tbl">
-              <thead>
-                <tr>
-                  <th>Invoice #</th>
-                  <th>Client</th>
-                  <th>Amount Due</th>
-                  <th>Days Overdue</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+              <thead><tr>
+                <th>Invoice #</th><th>Client</th><th>Amount Due</th><th>Days Overdue</th><th>Actions</th>
+              </tr></thead>
               <tbody>
                 {% for inv in overdue_invoices %}
-                <tr class="db-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'">
-                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="db-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
+                <tr class="dash-tbl-row" onclick="window.location='{% url 'invoices:invoice_detail' inv.id %}'">
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="dash-tbl-link" onclick="event.stopPropagation()">{{ inv.invoice_number }}</a></td>
                   <td>
-                    <div class="db-tbl-client">
-                      <div class="db-tbl-avatar db-tbl-avatar-red">{{ inv.client.name|slice:":1"|upper }}</div>
-                      <span class="db-tbl-client-name">{{ inv.client.name }}</span>
+                    <div class="dash-tbl-client">
+                      <div class="dash-tbl-avatar dash-tbl-avatar-red">{{ inv.client.name|slice:":1"|upper }}</div>
+                      <span class="dash-tbl-name">{{ inv.client.name }}</span>
                     </div>
                   </td>
-                  <td class="db-tbl-amount db-tbl-amount-red">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</td>
-                  <td>{% if inv.days_overdue > 0 %}<span class="badge b-overdue"><span class="badge-dot"></span>{{ inv.days_overdue }}d</span>{% else %}<span class="badge b-overdue"><span class="badge-dot"></span>Today</span>{% endif %}</td>
+                  <td class="dash-tbl-amount dash-tbl-amount-red">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</td>
                   <td>
-                    <div style="display:flex;gap:6px" onclick="event.stopPropagation()">
-                      <button onclick="sendReminder({{ inv.id }}, this)" class="btn btn-xs" style="background:#fee2e2;color:#dc2626">Remind</button>
+                    {% if inv.days_overdue > 0 %}
+                    <span class="badge b-overdue"><span class="badge-dot"></span>{{ inv.days_overdue }}d late</span>
+                    {% else %}
+                    <span class="badge b-overdue"><span class="badge-dot"></span>Today</span>
+                    {% endif %}
+                  </td>
+                  <td onclick="event.stopPropagation()">
+                    <div style="display:flex;gap:6px">
+                      <button onclick="sendReminder({{ inv.id }}, this)" class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none">Remind</button>
                       <a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">View →</a>
                     </div>
                   </td>
@@ -447,162 +524,294 @@
         </div>
         {% endif %}
 
-      </div>
+      </div><!-- /card -->
 
-      <!-- Due Soon card (if any) -->
+      <!-- Due Soon -->
       {% if invoices_due_soon %}
-      <div class="card db-due-soon-card">
-        <div class="card-hdr">
+      <div class="card">
+        <div class="dash-card-hdr">
           <div>
-            <p class="card-hdr-title">Due in Next 7 Days</p>
-            <p class="card-hdr-sub">{{ invoices_due_soon|length }} invoice{{ invoices_due_soon|length|pluralize }} requiring attention</p>
+            <p class="dash-card-title">Due in the Next 7 Days</p>
+            <p class="dash-card-sub">{{ invoices_due_soon|length }} invoice{{ invoices_due_soon|length|pluralize }} requiring attention</p>
           </div>
           <span class="badge b-pending">{{ invoices_due_soon|length }}</span>
         </div>
         {% for inv in invoices_due_soon %}
-        <a href="{% url 'invoices:invoice_detail' inv.id %}" class="db-due-row {% if forloop.last %}db-due-row-last{% endif %}">
-          <div class="db-due-number">{{ inv.invoice_number }}</div>
-          <div class="db-due-client">{{ inv.client.name }}</div>
-          <div class="db-due-right">
-            <p class="db-due-amount">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</p>
-            <p class="db-due-date">Due {{ inv.due_date|date:"d M" }}</p>
+        <a href="{% url 'invoices:invoice_detail' inv.id %}" class="dash-due-row">
+          <div class="dash-due-num">{{ inv.invoice_number }}</div>
+          <div class="dash-due-client">{{ inv.client.name }}</div>
+          <div class="dash-due-right">
+            <p class="dash-due-amt">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</p>
+            <p class="dash-due-date">Due {{ inv.due_date|date:"d M" }}</p>
           </div>
         </a>
         {% endfor %}
       </div>
       {% endif %}
 
-    </div>
+    </div><!-- /dash-left -->
 
-    <!-- RIGHT: Sidebar -->
-    <div class="db-sidebar-col">
-
-      <!-- Business Stats -->
-      <div class="card db-stats-card">
-        <div class="card-hdr">
-          <p class="card-hdr-title">Business Overview</p>
-        </div>
-        <div class="db-stats-list">
-          <div class="db-stat-row">
-            <span class="db-stat-label">All-time revenue</span>
-            <span class="db-stat-value">{{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }}</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-label">Active recurring</span>
-            <span class="db-stat-value">{{ kpis.active_schedules }}</span>
-          </div>
-          <div class="db-stat-row">
-            <span class="db-stat-label">Estimate conversion</span>
-            <span class="db-stat-value {% if kpis.estimate_conversion >= 60 %}db-stat-green{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
-          </div>
-          {% if kpis.collection_rate is not None %}
-          <div class="db-stat-row">
-            <span class="db-stat-label">Collection rate</span>
-            <span class="db-stat-value {% if kpis.collection_rate >= 75 %}db-stat-green{% elif kpis.collection_rate < 50 %}db-stat-red{% else %}db-stat-amber{% endif %}">{{ kpis.collection_rate }}%</span>
-          </div>
-          {% endif %}
-          <div class="db-stat-row">
-            <span class="db-stat-label">Total invoices</span>
-            <span class="db-stat-value">{{ kpis.total_invoice_count }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Top Clients -->
-      {% if top_clients %}
-      <div class="card">
-        <div class="card-hdr">
-          <p class="card-hdr-title">Top Clients</p>
-          <a href="{% url 'invoices:client_list' %}" class="db-card-viewall">View all →</a>
-        </div>
-        <div>
-          {% for cl in top_clients %}
-          <a href="{% url 'invoices:client_detail' cl.id %}" class="db-client-row {% if forloop.last %}db-client-row-last{% endif %}">
-            <div class="db-client-avatar">{{ cl.name|slice:":1"|upper }}</div>
-            <div class="db-client-info">
-              <p class="db-client-name">{{ cl.name }}</p>
-              <p class="db-client-meta">{{ cl.invoice_count }} invoice{{ cl.invoice_count|pluralize }}</p>
-            </div>
-            <span class="db-client-amount">{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}</span>
-          </a>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %}
+    <!-- ── RIGHT: Sidebar ── -->
+    <div class="dash-right">
 
       <!-- Activity Feed -->
-      <div class="card">
-        <div class="card-hdr">
-          <p class="card-hdr-title">Activity</p>
-          <span class="db-activity-live"><span class="db-activity-dot"></span>Live</span>
+      <div class="card" style="overflow:hidden">
+        <div class="dash-card-hdr">
+          <div>
+            <p class="dash-card-title">Activity</p>
+          </div>
+          <span class="dash-live-chip">
+            <span class="dash-live-dot"></span>
+            Live
+          </span>
         </div>
         {% if recent_activity %}
-        <div class="db-activity-feed">
+        <div class="dash-feed">
           {% for act in recent_activity %}
-          <div class="db-activity-item {% if forloop.last %}db-activity-item-last{% endif %}">
-            <div class="db-activity-line"></div>
-            <div class="db-activity-avatar">{% if act.user %}{{ act.user.get_full_name|default:act.user.username|slice:":1"|upper }}{% else %}?{% endif %}</div>
-            <div class="db-activity-body">
-              <p class="db-activity-action">{{ act.action }}</p>
-              <p class="db-activity-time">
-                {% if act.user %}<span>{{ act.user.get_full_name|default:act.user.username }}</span> · {% endif %}{{ act.timestamp|timesince }} ago
+          <div class="dash-feed-item">
+            <div class="dash-feed-avatar">{% if act.user %}{{ act.user.get_full_name|default:act.user.username|slice:":1"|upper }}{% else %}?{% endif %}</div>
+            <div class="dash-feed-body">
+              <p class="dash-feed-action">{{ act.action }}</p>
+              <p class="dash-feed-time">
+                {% if act.user %}<span class="dash-feed-user">{{ act.user.get_full_name|default:act.user.username }}</span> · {% endif %}
+                {{ act.timestamp|timesince }} ago
               </p>
             </div>
             {% if act.resource_type and act.resource_id %}
-            <a href="/{{ act.resource_type }}s/{{ act.resource_id }}/" class="db-activity-link" title="View">↗</a>
+            <a href="/{{ act.resource_type }}s/{{ act.resource_id }}/" class="dash-feed-link" title="View">↗</a>
             {% endif %}
           </div>
           {% endfor %}
         </div>
         {% else %}
-        <div class="db-tbl-empty" style="padding:28px 20px">
-          <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity:.25;margin:0 auto 10px;color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <p class="db-tbl-empty-title">No activity yet</p>
-          <p class="db-tbl-empty-sub">Actions like creating invoices and recording payments will appear here.</p>
+        <div class="dash-empty" style="padding:36px 20px">
+          <div class="dash-empty-icon si-indigo">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <p class="dash-empty-title">No activity yet</p>
+          <p class="dash-empty-sub">Actions like creating invoices will appear here.</p>
         </div>
         {% endif %}
       </div>
 
+      <!-- Business Overview -->
+      <div class="card">
+        <div class="dash-card-hdr">
+          <p class="dash-card-title">Business Overview</p>
+        </div>
+        <div class="dash-stat-list">
+          <div class="dash-stat-row">
+            <span class="dash-stat-label">All-time revenue</span>
+            <span class="dash-stat-value">{{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }}</span>
+          </div>
+          <div class="dash-stat-row">
+            <span class="dash-stat-label">Total invoices</span>
+            <span class="dash-stat-value">{{ kpis.total_invoice_count }}</span>
+          </div>
+          <div class="dash-stat-row">
+            <span class="dash-stat-label">Active recurring</span>
+            <span class="dash-stat-value">{{ kpis.active_schedules }}</span>
+          </div>
+          <div class="dash-stat-row">
+            <span class="dash-stat-label">Estimate conversion</span>
+            <span class="dash-stat-value {% if kpis.estimate_conversion >= 60 %}dash-stat-green{% endif %}">
+              {{ kpis.estimate_conversion|floatformat:1 }}%
+            </span>
+          </div>
+          {% if kpis.collection_rate is not None %}
+          <div class="dash-stat-row">
+            <span class="dash-stat-label">Collection rate</span>
+            <span class="dash-stat-value {% if kpis.collection_rate >= 75 %}dash-stat-green{% elif kpis.collection_rate < 50 %}dash-stat-red{% else %}dash-stat-amber{% endif %}">
+              {{ kpis.collection_rate }}%
+            </span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div><!-- /dash-right -->
+
+  </div><!-- /dash-main -->
+
+  <!-- ═══════════════════════════════════════════════════════
+       7. BOTTOM: TOP CLIENTS + AGING
+  ══════════════════════════════════════════════════════════ -->
+  <div class="dash-bottom">
+
+    <!-- Top Clients -->
+    <div class="card" style="overflow:hidden">
+      <div class="dash-card-hdr">
+        <div>
+          <p class="dash-card-title">Top Clients</p>
+          <p class="dash-card-sub">By revenue generated</p>
+        </div>
+        <a href="{% url 'invoices:client_list' %}" class="dash-card-link">View all →</a>
+      </div>
+      {% if top_clients %}
+      {% for cl in top_clients %}
+      <a href="{% url 'invoices:client_detail' cl.id %}" class="dash-client-row">
+        <div class="dash-client-avatar">{{ cl.name|slice:":1"|upper }}</div>
+        <div class="dash-client-info">
+          <p class="dash-client-name">{{ cl.name }}</p>
+          <p class="dash-client-meta">{{ cl.invoice_count }} invoice{{ cl.invoice_count|pluralize }}</p>
+        </div>
+        <span class="dash-client-amt">{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}</span>
+      </a>
+      {% endfor %}
+      {% else %}
+      <div class="dash-empty" style="padding:32px 20px">
+        <div class="dash-empty-icon si-teal">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </div>
+        <p class="dash-empty-title">No paid clients yet</p>
+        <p class="dash-empty-sub">Top clients will appear once payments are recorded.</p>
+      </div>
+      {% endif %}
     </div>
-  </div>
 
-</div><!-- /x-data dashController -->
+    <!-- Overdue Aging -->
+    <div class="card" style="overflow:hidden">
+      <div class="dash-card-hdr">
+        <div>
+          <p class="dash-card-title">Overdue Aging</p>
+          <p class="dash-card-sub">Overdue invoice breakdown</p>
+        </div>
+        {% if kpis.overdue_count > 0 %}
+        <span class="badge b-overdue">{{ kpis.overdue_count }} overdue</span>
+        {% endif %}
+      </div>
+      {% if kpis.overdue_count > 0 %}
+      {% with total_aging=aging.0_30|add:aging.31_60|add:aging.61_90|add:aging.90_plus %}
+      <div class="dash-aging-list">
+        {% if aging.0_30 %}
+        <div class="dash-aging-row">
+          <div class="dash-aging-meta">
+            <span class="dash-aging-label">0 – 30 days</span>
+            <span class="dash-aging-val">{{ workspace.currency_symbol }}{{ aging.0_30|floatformat:0 }}</span>
+          </div>
+          <div class="dash-aging-bar">
+            <div class="dash-aging-fill" style="background:#fbbf24;width:{% if aging.0_30 and kpis.total_overdue %}{% widthratio aging.0_30 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% if aging.31_60 %}
+        <div class="dash-aging-row">
+          <div class="dash-aging-meta">
+            <span class="dash-aging-label">31 – 60 days</span>
+            <span class="dash-aging-val">{{ workspace.currency_symbol }}{{ aging.31_60|floatformat:0 }}</span>
+          </div>
+          <div class="dash-aging-bar">
+            <div class="dash-aging-fill" style="background:#f97316;width:{% if aging.31_60 and kpis.total_overdue %}{% widthratio aging.31_60 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% if aging.61_90 %}
+        <div class="dash-aging-row">
+          <div class="dash-aging-meta">
+            <span class="dash-aging-label">61 – 90 days</span>
+            <span class="dash-aging-val">{{ workspace.currency_symbol }}{{ aging.61_90|floatformat:0 }}</span>
+          </div>
+          <div class="dash-aging-bar">
+            <div class="dash-aging-fill" style="background:#ef4444;width:{% if aging.61_90 and kpis.total_overdue %}{% widthratio aging.61_90 kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% if aging.90_plus %}
+        <div class="dash-aging-row">
+          <div class="dash-aging-meta">
+            <span class="dash-aging-label">90+ days</span>
+            <span class="dash-aging-val" style="color:#dc2626">{{ workspace.currency_symbol }}{{ aging.90_plus|floatformat:0 }}</span>
+          </div>
+          <div class="dash-aging-bar">
+            <div class="dash-aging-fill" style="background:#dc2626;width:{% if aging.90_plus and kpis.total_overdue %}{% widthratio aging.90_plus kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endwith %}
+      {% else %}
+      <div class="dash-empty" style="padding:32px 20px">
+        <div class="dash-empty-icon si-green">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <p class="dash-empty-title">All clear!</p>
+        <p class="dash-empty-sub">You have no overdue invoices right now.</p>
+      </div>
+      {% endif %}
+    </div>
 
+    <!-- Recurring + Quick Stats -->
+    <div class="card" style="overflow:hidden">
+      <div class="dash-card-hdr">
+        <div>
+          <p class="dash-card-title">Quick Stats</p>
+          <p class="dash-card-sub">At a glance</p>
+        </div>
+      </div>
+      <div class="dash-stat-list">
+        <div class="dash-stat-row">
+          <span class="dash-stat-label">Active recurring</span>
+          <span class="dash-stat-value">{{ kpis.active_schedules }}</span>
+        </div>
+        <div class="dash-stat-row">
+          <span class="dash-stat-label">Draft invoices</span>
+          <span class="dash-stat-value {% if kpis.draft_count > 0 %}dash-stat-amber{% endif %}">{{ kpis.draft_count }}</span>
+        </div>
+        <div class="dash-stat-row">
+          <span class="dash-stat-label">Total clients</span>
+          <span class="dash-stat-value">{{ kpis.total_clients }}</span>
+        </div>
+        <div class="dash-stat-row">
+          <span class="dash-stat-label">New this month</span>
+          <span class="dash-stat-value {% if kpis.new_clients_this_month > 0 %}dash-stat-green{% endif %}">+{{ kpis.new_clients_this_month }}</span>
+        </div>
+        <div class="dash-stat-row">
+          <span class="dash-stat-label">Estimate conversion</span>
+          <span class="dash-stat-value {% if kpis.estimate_conversion >= 60 %}dash-stat-green{% elif kpis.estimate_conversion < 40 %}dash-stat-amber{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
+        </div>
+      </div>
+      <div style="padding:14px 18px;border-top:1px solid var(--border)">
+        <a href="{% url 'invoices:recurring_list' %}" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center">
+          Manage Recurring Invoices
+        </a>
+      </div>
+    </div>
+
+  </div><!-- /dash-bottom -->
+
+</div><!-- /x-data dashCtrl -->
+{% endblock %}
+
+{% block scripts %}
 <script>
-/* ══════════════════════════════════════════════════════════════
-   Dashboard Controller (Alpine.js)
-═══════════════════════════════════════════════════════════════ */
-function dashController() {
+/* ════════════════════════════════════════════════════════════
+   Dashboard Controller — InvoiceFlow v3
+════════════════════════════════════════════════════════════ */
+function dashCtrl() {
   return {
-    chartsReady: false,
-    refreshing:  false,
-    fetchError:  false,
-    lastUpdated: '',
-    live: {},
-    sym: '{{ workspace.currency_symbol|escapejs }}',
+    period:       'morning',
+    refreshing:   false,
+    fetchError:   false,
+    lastUpdated:  '',
+    chartLoading: false,
+    chartPeriod:  6,
+    live:         {},
+    sym:          '{{ workspace.currency_symbol|escapejs }}',
+    _revExpChart: null,
 
     init() {
-      // Set greeting
       const h = new Date().getHours();
-      const el = document.getElementById('greetingPart');
-      if (el) el.textContent = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
-
+      this.period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
       this.$nextTick(() => {
-        this.chartsReady = true;
-        initDashCharts();
-        initScrollReveal();
+        this.initCharts();
+        setInterval(() => this.silentRefresh(), 5 * 60 * 1000);
       });
-      // Silent auto-refresh every 5 min
-      setInterval(() => this.silentRefresh(), 5 * 60 * 1000);
     },
 
     fmt(n) {
-      const num = parseFloat(n) || 0;
-      return num.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    },
-
-    setTime() {
-      this.lastUpdated = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return Number(parseFloat(n) || 0).toLocaleString(undefined, {
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      });
     },
 
     async silentRefresh() {
@@ -625,155 +834,157 @@ function dashController() {
           net_profit:    d.net_profit,
           total_clients: d.total_clients,
         };
-        this.setTime();
-      } catch(e) {
+        this.lastUpdated = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      } catch (e) {
         this.fetchError = true;
       } finally {
         this.refreshing = false;
       }
-    }
+    },
+
+    async changeChartPeriod(months) {
+      if (this.chartPeriod === months && this._revExpChart) return;
+      this.chartPeriod  = months;
+      this.chartLoading = true;
+      try {
+        const res = await fetch(`/api/analytics/revenue-expenses?months=${months}`, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!res.ok) throw new Error();
+        const d = await res.json();
+        if (this._revExpChart) {
+          this._revExpChart.data.labels       = d.labels;
+          this._revExpChart.data.datasets[0].data = d.revenue;
+          this._revExpChart.data.datasets[1].data = d.expenses;
+          this._revExpChart.data.datasets[2].data = d.net_profit;
+          this._revExpChart.update('active');
+        }
+      } catch(e) {
+        /* silent — keep old chart */
+      } finally {
+        this.chartLoading = false;
+      }
+    },
+
+    initCharts() {
+      const dark    = document.body.classList.contains('dark');
+      const gc      = dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)';
+      const tc      = dark ? 'rgba(255,255,255,.4)'  : 'rgba(0,0,0,.38)';
+      const sym     = this.sym;
+      const tooltip = {
+        backgroundColor: dark ? '#0c1220' : '#fff',
+        titleColor:      dark ? '#e2e8f0' : '#1e293b',
+        bodyColor:       dark ? '#94a3b8' : '#64748b',
+        borderColor:     dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)',
+        borderWidth: 1, padding: 12, cornerRadius: 10,
+        displayColors: true, boxPadding: 5,
+      };
+
+      /* Revenue vs Expenses */
+      const rc = document.getElementById('revExpChart');
+      if (rc) {
+        const chartRev = {{ chart_revenue|safe }};
+        const chartExp = {{ chart_expenses|safe }};
+        const chartNet = {{ chart_net|safe }};
+        if (chartRev.some(v => v > 0) || chartExp.some(v => v > 0)) {
+          this._revExpChart = new Chart(rc, {
+            data: {
+              labels: {{ chart_labels|safe }},
+              datasets: [
+                {
+                  type: 'bar', label: 'Revenue', data: chartRev,
+                  backgroundColor: 'rgba(99,102,241,.75)', hoverBackgroundColor: '#6366f1',
+                  borderRadius: 5, borderSkipped: false, yAxisID: 'y',
+                },
+                {
+                  type: 'bar', label: 'Expenses', data: chartExp,
+                  backgroundColor: 'rgba(249,115,22,.6)', hoverBackgroundColor: '#f97316',
+                  borderRadius: 5, borderSkipped: false, yAxisID: 'y',
+                },
+                {
+                  type: 'line', label: 'Net Profit', data: chartNet,
+                  borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.06)',
+                  borderWidth: 2.5, pointBackgroundColor: '#22c55e',
+                  pointRadius: 4, pointHoverRadius: 6,
+                  tension: 0.4, fill: true, yAxisID: 'y',
+                }
+              ]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: {
+                legend: { display: false },
+                tooltip: { ...tooltip, callbacks: {
+                  label: c => ` ${c.dataset.label}: ${sym}${Number(c.parsed.y).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
+                }}
+              },
+              scales: {
+                x: { grid:{display:false}, ticks:{font:{size:11},color:tc}, border:{display:false} },
+                y: {
+                  grid:{color:gc}, border:{display:false},
+                  ticks:{font:{size:11},color:tc, callback: v => sym + Number(v).toLocaleString()}
+                }
+              }
+            }
+          });
+          this.chartLoading = false;
+        }
+      }
+
+      /* Invoice Status Donut */
+      const dc = document.getElementById('statusDonut');
+      if (dc) {
+        const d      = {{ invoice_status_counts_json|safe }};
+        const keys   = ['draft','sent','viewed','part_paid','paid','overdue'];
+        const colors = { draft:'#94a3b8', sent:'#a78bfa', viewed:'#60a5fa', part_paid:'#2dd4bf', paid:'#4ade80', overdue:'#f87171' };
+        const lbls   = { draft:'Draft', sent:'Sent', viewed:'Viewed', part_paid:'Part Paid', paid:'Paid', overdue:'Overdue' };
+        const vals   = keys.map(k => d[k] || 0);
+        if (vals.some(v => v > 0)) {
+          new Chart(dc, {
+            type: 'doughnut',
+            data: {
+              labels: keys.map(k => lbls[k]),
+              datasets: [{
+                data: vals, backgroundColor: keys.map(k => colors[k]),
+                borderWidth: 2, borderColor: dark ? '#0c1220' : '#fff',
+                hoverOffset: 6, borderRadius: 3,
+              }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false, cutout: '72%',
+              plugins: {
+                legend: { display: false },
+                tooltip: { ...tooltip, callbacks: {
+                  label: c => ` ${c.label}: ${c.parsed} invoice${c.parsed !== 1 ? 's' : ''}`
+                }}
+              }
+            }
+          });
+        }
+      }
+    },
   };
 }
 
-/* ── Send Reminder ────────────────────────────────────────── */
-function sendReminder(invoiceId, btn) {
+/* ── Reminder helper ────────────────────────────────────── */
+function sendReminder(invId, btn) {
   const orig = btn.textContent;
-  btn.textContent = '…';
   btn.disabled = true;
-  fetch(`/invoices/${invoiceId}/reminders/send/`, {
+  btn.textContent = 'Sending…';
+  fetch(`/invoices/${invId}/send-reminder/`, {
     method: 'POST',
-    headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' }
-  }).then(r => r.json()).then(data => {
-    if (data.status === 'ok') {
-      btn.textContent = 'Sent ✓';
-      btn.style.cssText = 'background:#dcfce7;color:#16a34a';
-      if (window.showToast) showToast('Reminder sent successfully.', 'success');
-    } else {
-      btn.textContent = orig; btn.disabled = false;
-      if (window.showToast) showToast(data.message || 'Failed to send.', 'error');
-    }
+    headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' }
+  }).then(r => {
+    btn.textContent = r.ok ? 'Sent ✓' : 'Failed';
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
   }).catch(() => {
-    btn.textContent = orig; btn.disabled = false;
-    if (window.showToast) showToast('Network error. Try again.', 'error');
+    btn.textContent = 'Error';
+    setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
   });
 }
-
-/* ── Charts ───────────────────────────────────────────────── */
-function initDashCharts() {
-  const dark = document.body.classList.contains('dark');
-  const gc  = dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
-  const tc  = dark ? 'rgba(255,255,255,.4)'  : 'rgba(0,0,0,.4)';
-  const sym = '{{ workspace.currency_symbol|escapejs }}';
-  const tooltip = {
-    backgroundColor: dark ? '#0c1220' : '#fff',
-    titleColor:      dark ? '#e2e8f0' : '#1e293b',
-    bodyColor:       dark ? '#94a3b8' : '#64748b',
-    borderColor:     dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)',
-    borderWidth: 1, padding: 12, cornerRadius: 10,
-    displayColors: true, boxPadding: 4,
-  };
-
-  /* Revenue vs Expenses + Net Profit */
-  const rc = document.getElementById('revExpChart');
-  if (rc) {
-    const chartRev = {{ chart_revenue|safe }};
-    const chartExp = {{ chart_expenses|safe }};
-    const chartNet = {{ chart_net|safe }};
-    if (chartRev.some(v => v > 0) || chartExp.some(v => v > 0)) {
-      new Chart(rc, {
-        data: {
-          labels: {{ chart_labels|safe }},
-          datasets: [
-            {
-              type: 'bar',
-              label: 'Revenue',
-              data: chartRev,
-              backgroundColor: 'rgba(99,102,241,.8)',
-              hoverBackgroundColor: '#6366f1',
-              borderRadius: 6, borderSkipped: false,
-              yAxisID: 'y',
-            },
-            {
-              type: 'bar',
-              label: 'Expenses',
-              data: chartExp,
-              backgroundColor: 'rgba(249,115,22,.65)',
-              hoverBackgroundColor: '#f97316',
-              borderRadius: 6, borderSkipped: false,
-              yAxisID: 'y',
-            },
-            {
-              type: 'line',
-              label: 'Net Profit',
-              data: chartNet,
-              borderColor: '#22c55e',
-              backgroundColor: 'rgba(34,197,94,.08)',
-              borderWidth: 2.5,
-              pointBackgroundColor: '#22c55e',
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              tension: 0.4,
-              fill: true,
-              yAxisID: 'y',
-            }
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: false },
-            tooltip: { ...tooltip, callbacks: {
-              label: c => ` ${c.dataset.label}: ${sym}${Number(c.parsed.y).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`
-            }}
-          },
-          scales: {
-            x: { grid:{display:false}, ticks:{font:{size:11},color:tc}, border:{display:false} },
-            y: { grid:{color:gc}, ticks:{font:{size:11},color:tc,callback:v=>sym+Number(v).toLocaleString()}, border:{display:false} }
-          }
-        }
-      });
-    }
-  }
-
-  /* Invoice Status Donut */
-  const dc = document.getElementById('statusDonut');
-  if (dc) {
-    const d = {{ invoice_status_counts_json|safe }};
-    const keys   = ['draft','sent','viewed','part_paid','paid','overdue'];
-    const colors = { draft:'#94a3b8', sent:'#a78bfa', viewed:'#60a5fa', part_paid:'#2dd4bf', paid:'#4ade80', overdue:'#f87171' };
-    const lbls   = { draft:'Draft', sent:'Sent', viewed:'Viewed', part_paid:'Part Paid', paid:'Paid', overdue:'Overdue' };
-    const vals = keys.map(k => d[k] || 0);
-    if (vals.some(v => v > 0)) {
-      new Chart(dc, {
-        type: 'doughnut',
-        data: {
-          labels: keys.map(k => lbls[k]),
-          datasets: [{ data: vals, backgroundColor: keys.map(k => colors[k]), borderWidth: 2, borderColor: dark ? '#0c1220' : '#fff', hoverOffset: 5, borderRadius: 4 }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, cutout: '74%',
-          plugins: {
-            legend: { display: false },
-            tooltip: { ...tooltip, callbacks: {
-              label: c => ` ${c.label}: ${c.parsed} invoice${c.parsed !== 1 ? 's' : ''}`
-            }}
-          }
-        }
-      });
-    }
-  }
-}
-
-/* ── Scroll Reveal ────────────────────────────────────────── */
-function initScrollReveal() {
-  const els = document.querySelectorAll('.reveal');
-  if (!els.length) return;
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
-  }, { threshold: 0.12 });
-  els.forEach(el => io.observe(el));
+function getCsrfToken() {
+  return document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
 }
 </script>
-
 {% endblock %}
