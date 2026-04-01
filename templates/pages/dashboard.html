@@ -1109,7 +1109,7 @@ function sendReminder(invId, btn) {
   const orig = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Sending…';
-  fetch(`/invoices/${invId}/send-reminder/`, {
+  fetch(`/invoices/${invId}/reminders/send/`, {
     method: 'POST',
     headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' }
   }).then(r => {
@@ -1119,12 +1119,6 @@ function sendReminder(invId, btn) {
     btn.textContent = 'Error';
     setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
   });
-}
-
-function getCsrfToken() {
-  const m = document.querySelector('meta[name="csrf-token"]');
-  if (m) return m.content;
-  return document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
 }
 </script>
 {% endblock %}
