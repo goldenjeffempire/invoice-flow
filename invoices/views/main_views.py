@@ -396,20 +396,7 @@ def mfa_disable(request):
 
 @login_required
 def security_settings(request):
-    sessions = SessionService.get_user_sessions(request.user)
-    mfa_enabled = MFAService.is_mfa_enabled(request.user)
-    remaining_codes = MFAService.get_remaining_codes(request.user) if mfa_enabled else 0
-
-    # Mark current session
-    current_key = request.session.session_key
-    for s in sessions:
-        s.is_current = s.session_key == current_key
-
-    return render(request, "pages/auth/security_settings.html", {
-        "sessions": sessions,
-        "mfa_enabled": mfa_enabled,
-        "remaining_codes": remaining_codes,
-    })
+    return redirect("/settings/#security")
 
 
 @login_required
@@ -862,9 +849,33 @@ def reminder_dashboard(request):
             workspace = request.user.profile.current_workspace
         except Exception:
             pass
-    context = {}
+
+    from ..models import Invoice, ReminderRule
+
+    context = {'rules': ReminderRule.objects.filter(user=request.user)}
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'create':
+            days = request.POST.get('days_delta', '').strip()
+            trigger = request.POST.get('trigger_type', '').strip()
+            if days.lstrip('-').isdigit() and trigger:
+                ReminderRule.objects.create(
+                    user=request.user,
+                    days_delta=int(days),
+                    trigger_type=trigger,
+                )
+                messages.success(request, 'Reminder rule created.')
+            else:
+                messages.error(request, 'Please fill in all required fields.')
+            return redirect('invoices:reminder_dashboard')
+        elif action == 'delete':
+            rule_id = request.POST.get('rule_id')
+            ReminderRule.objects.filter(id=rule_id, user=request.user).delete()
+            messages.success(request, 'Rule deleted.')
+            return redirect('invoices:reminder_dashboard')
+
     if workspace:
-        from ..models import Invoice
         context['overdue_count'] = Invoice.objects.filter(
             workspace=workspace, status='overdue'
         ).count()

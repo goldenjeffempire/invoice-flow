@@ -1,15 +1,40 @@
 {% extends "base/layout_app.html" %}
+{% load static %}
 {% block title %}Workspace Settings — InvoiceFlow{% endblock %}
-{% block page_title %}Workspace Settings{% endblock %}
+{% block page_title %}Workspace{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/settings.css' %}">
+{% endblock %}
 
 {% block content %}
-<div x-data="{ tab: 'general' }">
+<div x-data="workspaceSettings()" x-init="init()" @keydown.escape.window="showInviteModal = false">
+
+  <!-- Toast notifications -->
+  <div style="position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none">
+    <template x-for="toast in toasts" :key="toast.id">
+      <div :class="'card toast-notify toast-' + toast.type"
+        style="display:flex;align-items:center;gap:10px;padding:12px 16px;min-width:280px;max-width:380px;pointer-events:all;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.15)"
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 translate-x-full"
+        x-transition:enter-end="opacity-100 translate-x-0"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0 translate-x-full">
+        <span x-text="toast.icon" style="font-size:16px"></span>
+        <span x-text="toast.message" style="font-size:13px;font-weight:500;flex:1;color:var(--text-primary)"></span>
+        <button @click="removeToast(toast.id)" style="background:transparent;border:none;cursor:pointer;color:var(--text-muted);padding:0;line-height:1">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </template>
+  </div>
 
   <!-- Page Header -->
-  <div class="page-hdr" style="margin-bottom:28px">
+  <div class="page-hdr" style="margin-bottom:24px">
     <div>
       <h1 class="page-title">Workspace Settings</h1>
-      <p class="page-sub">Configure workspace-wide settings, manage team members, and payment methods.</p>
+      <p class="page-sub">Configure workspace settings, manage your team, and set up payment integrations.</p>
     </div>
     <div class="page-hdr-actions">
       <a href="{% url 'invoices:settings' %}" class="btn btn-secondary btn-sm">
@@ -19,338 +44,556 @@
     </div>
   </div>
 
-  <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+  <div class="st-layout">
 
-    <!-- ── Sidebar Nav ─────────────────────────────────────── -->
-    <aside style="width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:2px">
-      <button @click="tab='general'"
-        :class="tab==='general' ? 'nav-item active' : 'nav-item'"
-        style="width:100%;text-align:left;font-family:inherit;border:none;cursor:pointer">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
-        General
-      </button>
-      <button @click="tab='team'"
-        :class="tab==='team' ? 'nav-item active' : 'nav-item'"
-        style="width:100%;text-align:left;font-family:inherit;border:none;cursor:pointer">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-        Team Members
-        <span class="tab-count" style="margin-left:auto">{{ members|length }}</span>
-      </button>
-      <button @click="tab='payments'"
-        :class="tab==='payments' ? 'nav-item active' : 'nav-item'"
-        style="width:100%;text-align:left;font-family:inherit;border:none;cursor:pointer">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-        Payment Methods
-      </button>
+    <!-- ── Sidebar ─────────────────────────────────────────── -->
+    <aside class="st-sidebar">
+      <div class="st-sidebar-profile">
+        <div class="st-sidebar-avatar" style="border-radius:10px;width:38px;height:38px;background:linear-gradient(135deg,#6366f1,#8b5cf6)">
+          {{ workspace.name|slice:":1"|upper }}
+        </div>
+        <div style="overflow:hidden">
+          <p class="st-sidebar-name">{{ workspace.name }}</p>
+          <p class="st-sidebar-email">{{ workspace.currency }} Workspace</p>
+        </div>
+      </div>
 
-      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+      <nav class="st-nav">
+        <span class="st-nav-group">Workspace</span>
+        <button class="st-nav-item" :class="tab==='general' && 'active'" @click="setTab('general')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+          General
+        </button>
+        <button class="st-nav-item" :class="tab==='team' && 'active'" @click="setTab('team')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          Team Members
+          {% if members|length > 0 or invitations|length > 0 %}
+            <span class="st-nav-badge" style="background:rgba(99,102,241,.1);color:#6366f1">{{ members|length }}</span>
+          {% endif %}
+        </button>
+        <button class="st-nav-item" :class="tab==='integrations' && 'active'" @click="setTab('integrations')">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+          Integrations
+        </button>
 
-      <a href="{% url 'invoices:settings' %}" class="nav-item">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-        Profile
-      </a>
-      <a href="{% url 'invoices:security_settings' %}" class="nav-item">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-        Security
-      </a>
+        <div class="st-nav-divider"></div>
+        <span class="st-nav-group">Navigate</span>
+        <a href="{% url 'invoices:settings' %}" class="st-nav-item">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          Profile Settings
+          <svg class="st-nav-ext" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+        <a href="{% url 'invoices:settings' %}#security" class="st-nav-item">
+          <svg class="st-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          Security
+          <svg class="st-nav-ext" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+      </nav>
     </aside>
 
-    <!-- ── Main Panel ──────────────────────────────────────── -->
-    <div style="flex:1;min-width:0">
+    <!-- ── Content Panel ──────────────────────────────────── -->
+    <div class="st-panel">
 
-      <!-- ─ GENERAL TAB ─ -->
+      <!-- ══ TAB: GENERAL ══════════════════════════════════ -->
       <div x-show="tab==='general'" x-cloak>
-        <!-- Workspace Overview -->
-        <div class="card" style="overflow:hidden;margin-bottom:20px">
-          <div style="padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;background:linear-gradient(to right,var(--bg-subtle),var(--bg-card))">
-            <div style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:800;flex-shrink:0">
+
+        <!-- Workspace Overview Banner -->
+        <div class="st-section" style="margin-bottom:0">
+          <div class="st-profile-banner">
+            <div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:800;flex-shrink:0;box-shadow:0 4px 16px rgba(99,102,241,.3)">
               {{ workspace.name|slice:":1"|upper }}
             </div>
-            <div>
-              <h2 style="font-size:17px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">{{ workspace.name }}</h2>
-              <p style="font-size:12.5px;color:var(--text-muted);margin:0">{{ workspace.currency }} · <span style="text-transform:lowercase">Workspace</span></p>
+            <div class="st-profile-info">
+              <h2 class="st-profile-name">{{ workspace.name }}</h2>
+              <p class="st-profile-email">ID: {{ workspace.id }} · Created {{ workspace.created_at|date:"M Y" }}</p>
+              <div class="st-badge-row">
+                <span class="badge b-paid" style="font-size:10.5px">{{ workspace.currency }}</span>
+                <span class="badge b-approved" style="font-size:10.5px">{{ members|length }} Member{{ members|length|pluralize }}</span>
+                {% if workspace.owner == request.user %}
+                  <span class="badge b-sent" style="font-size:10.5px">Owner</span>
+                {% endif %}
+              </div>
             </div>
           </div>
-          <form method="POST" style="padding:24px 28px">
+
+          <!-- General Config Form -->
+          <form @submit.prevent="saveGeneral($event)">
             {% csrf_token %}
-            <input type="hidden" name="action" value="update_general">
-            <div class="form-row cols-2">
-              <div class="form-group">
-                <label class="form-label">Workspace Name</label>
-                <input type="text" name="name" value="{{ workspace.name }}" class="form-input" placeholder="My Business">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Default Currency</label>
-                <select name="currency" class="form-select">
-                  <option value="NGN" {% if workspace.currency == 'NGN' %}selected{% endif %}>NGN (₦) — Nigerian Naira</option>
-                  <option value="USD" {% if workspace.currency == 'USD' %}selected{% endif %}>USD ($) — US Dollar</option>
-                  <option value="GBP" {% if workspace.currency == 'GBP' %}selected{% endif %}>GBP (£) — British Pound</option>
-                  <option value="EUR" {% if workspace.currency == 'EUR' %}selected{% endif %}>EUR (€) — Euro</option>
-                  <option value="GHS" {% if workspace.currency == 'GHS' %}selected{% endif %}>GHS (₵) — Ghanaian Cedi</option>
-                  <option value="KES" {% if workspace.currency == 'KES' %}selected{% endif %}>KES (KSh) — Kenyan Shilling</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Invoice Prefix</label>
-                <input type="text" name="invoice_prefix" value="{{ user.profile.invoice_prefix|default:'INV' }}" class="form-input" placeholder="INV">
-                <p class="form-hint">Appears before the invoice number.</p>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Next Invoice Number</label>
-                <input type="number" name="invoice_start_number" value="{{ user.profile.invoice_start_number|default:'1' }}" class="form-input" min="1">
+            <div class="st-section-body">
+              <div class="st-form-grid st-form-cols-2">
+                <div class="st-form-group">
+                  <label class="st-label" for="ws-name">Workspace Name</label>
+                  <input class="form-input" type="text" id="ws-name" name="name"
+                    value="{{ workspace.name }}" placeholder="My Business" maxlength="100" required
+                    @input="dirty.general = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="ws-currency">Default Currency</label>
+                  <select class="form-input" id="ws-currency" name="currency" @change="dirty.general = true">
+                    <option value="NGN" {% if workspace.currency == 'NGN' %}selected{% endif %}>₦ — Nigerian Naira (NGN)</option>
+                    <option value="USD" {% if workspace.currency == 'USD' %}selected{% endif %}>$ — US Dollar (USD)</option>
+                    <option value="GBP" {% if workspace.currency == 'GBP' %}selected{% endif %}>£ — British Pound (GBP)</option>
+                    <option value="EUR" {% if workspace.currency == 'EUR' %}selected{% endif %}>€ — Euro (EUR)</option>
+                    <option value="GHS" {% if workspace.currency == 'GHS' %}selected{% endif %}>₵ — Ghanaian Cedi (GHS)</option>
+                    <option value="KES" {% if workspace.currency == 'KES' %}selected{% endif %}>KSh — Kenyan Shilling (KES)</option>
+                    <option value="ZAR" {% if workspace.currency == 'ZAR' %}selected{% endif %}>R — South African Rand (ZAR)</option>
+                  </select>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="ws-prefix">Invoice Prefix</label>
+                  <input class="form-input" type="text" id="ws-prefix" name="invoice_prefix"
+                    value="{{ profile.invoice_prefix }}" placeholder="INV" maxlength="10"
+                    style="font-family:var(--font-mono);letter-spacing:.05em"
+                    @input="dirty.general = true">
+                  <span class="st-hint">Prefix for all invoice numbers in this workspace.</span>
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="ws-start-num">Starting Invoice Number</label>
+                  <input class="form-input" type="number" id="ws-start-num" name="invoice_start_number"
+                    value="{{ profile.invoice_start_number }}" min="1" max="999999"
+                    @input="dirty.general = true">
+                </div>
+                <div class="st-form-group" style="grid-column:1/-1">
+                  <label class="st-label" for="ws-terms">Default Payment Terms</label>
+                  <textarea class="form-input" id="ws-terms" name="default_terms" rows="3"
+                    placeholder="Payment is due within 30 days of invoice date…" maxlength="2000"
+                    @input="dirty.general = true">{{ profile.payment_instructions }}</textarea>
+                  <span class="st-hint">Applied to all new invoices as default terms. Overridable per invoice.</span>
+                </div>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Default Payment Terms</label>
-              <textarea name="default_terms" class="form-textarea" rows="3" placeholder="Payment is due within 30 days...">{{ user.profile.payment_instructions|default:'' }}</textarea>
-              <p class="form-hint">This text appears on all new invoices. You can override it per invoice.</p>
-            </div>
-            <div style="display:flex;justify-content:flex-end">
-              <button type="submit" class="btn btn-primary">Save Configuration</button>
+            <div class="st-section-footer">
+              <span x-show="dirty.general" class="st-saving-dot"></span>
+              <span x-show="dirty.general" style="font-size:12px;color:var(--text-muted)">Unsaved changes</span>
+              <input type="hidden" name="action" value="update_general">
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.general">
+                <span x-show="loading.general" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.general ? 'Saving…' : 'Save Configuration'"></span>
+              </button>
             </div>
           </form>
         </div>
 
         <!-- Danger Zone -->
-        <div class="card" style="overflow:hidden;border-color:#fecaca">
-          <div style="padding:18px 28px;border-bottom:1px solid #fecaca;background:#fff5f5">
-            <h3 style="font-size:14px;font-weight:800;color:#dc2626;margin:0 0 3px">Danger Zone</h3>
-            <p style="font-size:12.5px;color:#ef4444;margin:0">These actions are permanent and cannot be undone.</p>
-          </div>
-          <div style="padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div class="st-section st-danger-section">
+          <div class="st-section-hdr">
             <div>
-              <p style="font-size:13.5px;font-weight:700;margin:0 0 2px;color:var(--text-primary)">Delete This Workspace</p>
-              <p style="font-size:12.5px;color:var(--text-muted);margin:0">Permanently delete all data associated with this workspace.</p>
+              <p class="st-section-title">Danger Zone</p>
+              <p class="st-section-sub">These actions are permanent and cannot be undone.</p>
             </div>
-            <button type="button" class="btn btn-danger btn-sm" onclick="return confirm('Are you absolutely sure? This will delete ALL data in this workspace.')">Delete Workspace</button>
+          </div>
+          <div class="st-section-body">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+              <div>
+                <p style="font-size:13.5px;font-weight:700;color:var(--text-primary);margin:0 0 3px">Delete This Workspace</p>
+                <p style="font-size:12.5px;color:var(--text-muted);margin:0">Permanently deletes all invoices, clients, and data in this workspace.</p>
+              </div>
+              <button type="button" class="btn btn-sm"
+                style="background:rgba(220,38,38,.08);color:#dc2626;border:1px solid rgba(220,38,38,.2);white-space:nowrap;flex-shrink:0"
+                onclick="if(confirm('Are you absolutely sure? This will permanently delete ALL data in this workspace and cannot be undone.')) alert('Workspace deletion is not yet enabled in this environment.')">
+                Delete Workspace
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- ─ TEAM TAB ─ -->
-      <div x-show="tab==='team'" x-cloak class="card" style="overflow:hidden">
-        <div style="padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-          <div>
-            <h3 style="font-size:16px;font-weight:800;margin:0 0 3px;color:var(--text-primary)">Team Members</h3>
-            <p style="font-size:13px;color:var(--text-muted);margin:0">Manage who has access to this workspace.</p>
+      </div><!-- /general tab -->
+
+
+      <!-- ══ TAB: TEAM ════════════════════════════════════ -->
+      <div x-show="tab==='team'" x-cloak>
+
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div>
+              <p class="st-section-title">Team Members</p>
+              <p class="st-section-sub">{{ members|length }} active member{{ members|length|pluralize }}{% if invitations %} · {{ invitations|length }} pending invitation{{ invitations|length|pluralize }}{% endif %}</p>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" @click="showInviteModal = true">
+              <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+              Invite Member
+            </button>
           </div>
-          <button onclick="document.getElementById('inviteModal').style.display='flex'" class="btn btn-primary btn-sm">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-            Invite Member
-          </button>
-        </div>
 
-        <div style="overflow-x:auto">
-          <table class="tbl">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th style="text-align:right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for member in members %}
-              <tr>
-                <td>
-                  <div style="display:flex;align-items:center;gap:12px">
-                    <div style="width:36px;height:36px;border-radius:10px;background:var(--brand-50);color:var(--brand-600);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">
-                      {{ member.user.username|slice:":1"|upper }}
+          <div style="overflow-x:auto">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th style="text-align:right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for member in members %}
+                <tr x-show="!removedMembers.includes({{ member.id }})">
+                  <td>
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">
+                        {{ member.user.username|slice:":1"|upper }}
+                      </div>
+                      <div>
+                        <p style="font-weight:700;font-size:13.5px;margin:0;color:var(--text-primary)">{{ member.user.get_full_name|default:member.user.username }}</p>
+                        <p style="font-size:12px;color:var(--text-muted);margin:0">{{ member.user.email }}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p style="font-weight:700;font-size:13.5px;margin:0;color:var(--text-primary)">{{ member.user.get_full_name|default:member.user.username }}</p>
-                      <p style="font-size:12px;color:var(--text-muted);margin:0">{{ member.user.email }}</p>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge {% if member.role == 'owner' %}b-sent{% elif member.role == 'admin' %}b-viewed{% else %}b-draft{% endif %}">
-                    <span class="badge-dot"></span>{{ member.get_role_display }}
-                  </span>
-                </td>
-                <td>
-                  <span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#16a34a">
-                    <span style="width:6px;height:6px;border-radius:50%;background:#10b981;flex-shrink:0"></span>
-                    Active
-                  </span>
-                </td>
-                <td style="text-align:right">
-                  {% if member.user != request.user %}
-                  <form method="POST" action="{% url 'invoices:remove_member' member.id %}" onsubmit="return confirm('Remove {{ member.user.username }} from this workspace?')" style="display:inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-ghost btn-icon btn-sm" title="Remove member" style="color:#ef4444">
-                      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"/></svg>
+                  </td>
+                  <td>
+                    <span class="badge {% if member.role == 'owner' %}b-sent{% elif member.role == 'admin' %}b-viewed{% else %}b-draft{% endif %}">
+                      <span class="badge-dot"></span>{{ member.get_role_display }}
+                    </span>
+                  </td>
+                  <td>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#16a34a">
+                      <span style="width:6px;height:6px;border-radius:50%;background:#10b981;flex-shrink:0"></span>
+                      Active
+                    </span>
+                  </td>
+                  <td style="text-align:right">
+                    {% if member.user != request.user %}
+                    <button class="btn btn-ghost btn-sm" style="color:#ef4444;font-size:12px"
+                      @click="removeMember({{ member.id }}, '{{ member.user.username|escapejs }}')">
+                      Remove
                     </button>
-                  </form>
-                  {% else %}
-                  <span style="font-size:11.5px;color:var(--text-muted);font-weight:600">(You)</span>
-                  {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
+                    {% else %}
+                    <span style="font-size:11.5px;color:var(--text-muted);font-weight:600">(You)</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
 
-              {% for invite in invitations %}
-              <tr style="background:var(--bg-subtle)">
-                <td>
-                  <div style="display:flex;align-items:center;gap:12px">
-                    <div style="width:36px;height:36px;border-radius:10px;background:var(--bg-hover);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-muted);flex-shrink:0">?</div>
-                    <div>
-                      <p style="font-weight:600;font-size:13.5px;margin:0;color:var(--text-secondary)">{{ invite.email }}</p>
-                      <p style="font-size:11.5px;color:var(--text-muted);margin:0;font-style:italic">Invited by {{ invite.inviter.username }}</p>
+                {% for invite in invitations %}
+                <tr x-show="!revokedInvites.includes({{ invite.id }})" style="background:var(--bg-subtle)">
+                  <td>
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <div style="width:36px;height:36px;border-radius:10px;background:var(--bg-hover);border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--text-muted);flex-shrink:0">?</div>
+                      <div>
+                        <p style="font-weight:600;font-size:13.5px;margin:0;color:var(--text-secondary)">{{ invite.email }}</p>
+                        <p style="font-size:11.5px;color:var(--text-muted);margin:0">Invited {{ invite.created_at|timesince }} ago</p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge b-draft">{{ invite.role|title }}</span>
-                </td>
-                <td>
-                  <span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#d97706">
-                    <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>
-                    Pending
-                  </span>
-                </td>
-                <td style="text-align:right">
-                  <form method="POST" action="{% url 'invoices:revoke_invitation' invite.id %}" style="display:inline">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-ghost btn-sm" style="color:#ef4444;font-size:12px">Revoke</button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
+                  </td>
+                  <td>
+                    <span class="badge b-outline">{{ invite.role|title }}</span>
+                  </td>
+                  <td>
+                    <span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#d97706">
+                      <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>
+                      Pending
+                    </span>
+                  </td>
+                  <td style="text-align:right">
+                    <button class="btn btn-ghost btn-sm" style="color:#ef4444;font-size:12px"
+                      @click="revokeInvite({{ invite.id }}, '{{ invite.email|escapejs }}')">
+                      Revoke
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
 
-              {% if not members and not invitations %}
-              <tr><td colspan="4">
-                <div class="empty-state" style="padding:40px 20px">
-                  <div class="empty-icon"><svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-                  <p class="empty-title">No team members yet</p>
-                  <p class="empty-desc">Invite collaborators to help manage invoices and clients.</p>
-                </div>
-              </td></tr>
-              {% endif %}
-            </tbody>
-          </table>
+                {% if not members and not invitations %}
+                <tr>
+                  <td colspan="4">
+                    <div style="text-align:center;padding:36px 20px;color:var(--text-muted)">
+                      <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 12px;opacity:.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                      <p style="font-size:13px;margin:0 0 10px">No team members yet</p>
+                      <button class="btn btn-primary btn-sm" @click="showInviteModal = true">Invite your first teammate</button>
+                    </div>
+                  </td>
+                </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      <!-- ─ PAYMENTS TAB ─ -->
-      <div x-show="tab==='payments'" x-cloak style="display:flex;flex-direction:column;gap:20px">
+      </div><!-- /team tab -->
 
-        <!-- Paystack -->
-        <div class="card" style="overflow:hidden">
-          <div style="padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+
+      <!-- ══ TAB: INTEGRATIONS ════════════════════════════ -->
+      <div x-show="tab==='integrations'" x-cloak>
+
+        <!-- Paystack Integration -->
+        <div class="st-section">
+          <div class="st-section-hdr">
             <div style="display:flex;align-items:center;gap:14px">
-              <div style="width:48px;height:48px;border-radius:12px;background:#011b33;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <span style="font-size:11px;font-weight:900;color:#00c3f7;letter-spacing:-.3px">PAY</span>
+              <div style="width:44px;height:44px;border-radius:12px;background:#011b33;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <span style="font-size:10.5px;font-weight:900;color:#00c3f7;letter-spacing:-.3px">PAY</span>
               </div>
               <div>
-                <h4 style="font-size:14.5px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Paystack Integration</h4>
-                <p style="font-size:12.5px;color:var(--text-muted);margin:0">Accept card, bank transfer, and mobile money payments.</p>
+                <p class="st-section-title">Paystack</p>
+                <p class="st-section-sub">Accept card, bank transfer & mobile money on your invoices.</p>
               </div>
             </div>
-            {% if user.profile.paystack_enabled %}
-            <span class="badge b-paid"><span class="badge-dot"></span>Connected</span>
+            {% if profile.paystack_enabled %}
+              <span class="badge b-paid"><span class="badge-dot"></span>Connected</span>
             {% else %}
-            <span class="badge b-draft"><span class="badge-dot"></span>Not Connected</span>
+              <span class="badge b-draft"><span class="badge-dot"></span>Not Connected</span>
             {% endif %}
           </div>
-          <form action="{% url 'invoices:onboarding_payments' %}" method="POST" style="padding:24px 28px">
-            {% csrf_token %}
-            <div class="form-row cols-2">
-              <div class="form-group" style="margin-bottom:0">
-                <label class="form-label">Paystack Secret Key</label>
-                <input type="password" name="paystack_secret_key" placeholder="sk_live_…" class="form-input" style="font-family:monospace">
-                <p class="form-hint">Your live secret key from the Paystack dashboard.</p>
+          <div class="st-section-body">
+            {% if profile.paystack_enabled %}
+              <div style="padding:14px 16px;border-radius:10px;background:rgba(22,163,74,.06);border:1px solid rgba(22,163,74,.15);display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                <svg width="18" height="18" fill="none" stroke="#16a34a" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span style="font-size:13px;font-weight:600;color:#16a34a">Paystack is connected and active on your invoices.</span>
               </div>
-              <div class="form-group" style="margin-bottom:0">
-                <label class="form-label">Public Key</label>
-                <input type="text" name="paystack_public_key" placeholder="pk_live_…" class="form-input" style="font-family:monospace">
-              </div>
+            {% endif %}
+            <div style="padding:14px 16px;border-radius:10px;background:rgba(79,70,229,.05);border:1px solid rgba(79,70,229,.12);margin-bottom:4px">
+              <p style="font-size:12.5px;color:var(--text-secondary);margin:0;line-height:1.6">
+                To connect Paystack, add your API keys in your account settings. Your secret key is never exposed to clients —
+                only used server-side to process payments. Get your keys from the
+                <a href="https://dashboard.paystack.com" target="_blank" rel="noopener" style="color:#6366f1;font-weight:600">Paystack dashboard →</a>
+              </p>
             </div>
-            <div style="margin-top:20px;display:flex;justify-content:flex-end">
-              <button type="submit" class="btn btn-primary btn-sm">Connect Paystack</button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Bank Transfer -->
-        <div class="card" style="overflow:hidden">
-          <div style="padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px">
-            <div style="width:48px;height:48px;border-radius:12px;background:var(--brand-50);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <svg width="22" height="22" fill="none" stroke="var(--brand-600)" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-            </div>
-            <div>
-              <h4 style="font-size:14.5px;font-weight:800;margin:0 0 2px;color:var(--text-primary)">Bank Transfer Details</h4>
-              <p style="font-size:12.5px;color:var(--text-muted);margin:0">Display bank account details on invoices for offline payments.</p>
-            </div>
+            <p style="font-size:11.5px;color:var(--text-muted);margin:8px 0 0">Paystack API key setup is managed through secure environment configuration. Contact your admin to update API keys.</p>
           </div>
-          <form action="{% url 'invoices:onboarding_payments' %}" method="POST" style="padding:24px 28px">
-            {% csrf_token %}
-            <div class="form-row cols-2">
-              <div class="form-group">
-                <label class="form-label">Bank Name</label>
-                <input type="text" name="bank_name" value="{{ user.profile.bank_name|default:'' }}" class="form-input" placeholder="First Bank">
+        </div>
+
+        <!-- Bank Account Details -->
+        <div class="st-section">
+          <div class="st-section-hdr">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="width:44px;height:44px;border-radius:12px;background:rgba(14,165,233,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#0ea5e9">
+                <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
               </div>
-              <div class="form-group">
-                <label class="form-label">Account Number</label>
-                <input type="text" name="bank_account_number" value="{{ user.profile.bank_account_number|default:'' }}" class="form-input" placeholder="0123456789" style="font-family:monospace">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Account Name</label>
-                <input type="text" name="bank_account_name" value="{{ user.profile.bank_account_name|default:'' }}" class="form-input" placeholder="John Doe Limited">
-              </div>
-              <div class="form-group">
-                <label class="form-label">SWIFT / Sort Code</label>
-                <input type="text" name="bank_swift_code" value="{{ user.profile.bank_swift_code|default:'' }}" class="form-input" placeholder="XXXXXXXX" style="font-family:monospace">
+              <div>
+                <p class="st-section-title">Bank Transfer Details</p>
+                <p class="st-section-sub">These details display on invoices when bank transfer is enabled.</p>
               </div>
             </div>
-            <div style="display:flex;justify-content:flex-end">
-              <button type="submit" class="btn btn-primary btn-sm">Save Bank Details</button>
+            {% if profile.bank_account_number %}
+              <span class="badge b-approved"><span class="badge-dot"></span>Configured</span>
+            {% else %}
+              <span class="badge b-outline">Not Set</span>
+            {% endif %}
+          </div>
+          <form @submit.prevent="saveBankDetails($event)">
+            {% csrf_token %}
+            <div class="st-section-body">
+              <div class="st-form-grid st-form-cols-2">
+                <div class="st-form-group">
+                  <label class="st-label" for="bank_name">Bank Name</label>
+                  <input class="form-input" type="text" id="bank_name" name="bank_name"
+                    value="{{ profile.bank_name }}" placeholder="First Bank Nigeria" maxlength="100"
+                    @input="dirty.bank = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="bank_account_name">Account Name</label>
+                  <input class="form-input" type="text" id="bank_account_name" name="bank_account_name"
+                    value="{{ profile.bank_account_name }}" placeholder="Acme Limited" maxlength="255"
+                    @input="dirty.bank = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="bank_account_number">Account Number</label>
+                  <input class="form-input" type="text" id="bank_account_number" name="bank_account_number"
+                    value="{{ profile.bank_account_number }}" placeholder="0123456789" maxlength="50"
+                    style="font-family:var(--font-mono);letter-spacing:.05em"
+                    @input="dirty.bank = true">
+                </div>
+                <div class="st-form-group">
+                  <label class="st-label" for="bank_swift_code">SWIFT / Sort Code</label>
+                  <input class="form-input" type="text" id="bank_swift_code" name="bank_swift_code"
+                    value="{{ profile.bank_swift_code }}" placeholder="FIRSTNILA or 40-47-84" maxlength="20"
+                    style="font-family:var(--font-mono);letter-spacing:.05em"
+                    @input="dirty.bank = true">
+                </div>
+              </div>
+            </div>
+            <div class="st-section-footer">
+              <span x-show="dirty.bank" class="st-saving-dot"></span>
+              <span x-show="dirty.bank" style="font-size:12px;color:var(--text-muted)">Unsaved changes</span>
+              <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.bank">
+                <span x-show="loading.bank" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+                <span x-text="loading.bank ? 'Saving…' : 'Save Bank Details'"></span>
+              </button>
             </div>
           </form>
         </div>
-      </div>
 
-    </div><!-- /main panel -->
-  </div><!-- /flex -->
-</div>
+      </div><!-- /integrations tab -->
 
-<!-- ── Invite Modal ──────────────────────────────────────────── -->
-<div id="inviteModal" style="display:none;position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.4);align-items:center;justify-content:center;padding:16px"
-  onclick="if(event.target===this)this.style.display='none'">
-  <div class="modal-box" style="max-width:440px">
-    <div class="modal-hdr">
-      <span class="modal-title">Invite Team Member</span>
-      <button onclick="document.getElementById('inviteModal').style.display='none'" class="btn btn-ghost btn-icon btn-sm">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </div><!-- /panel -->
+  </div><!-- /layout -->
+
+
+  <!-- ── Invite Modal ─────────────────────────────────────── -->
+  <div class="st-modal-backdrop" x-show="showInviteModal" x-cloak @click.self="showInviteModal = false">
+    <div class="st-modal" @click.stop>
+      <button class="st-modal-close" @click="showInviteModal = false">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
+      <h3 class="st-modal-title">Invite Team Member</h3>
+      <p class="st-modal-sub">Send an invitation link to a colleague to join this workspace. They'll need to create an account if they don't have one.</p>
+      <form @submit.prevent="sendInvite($event)">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="invite">
+        <div class="st-form-grid" style="gap:14px">
+          <div class="st-form-group">
+            <label class="st-label" for="invite-email">Email Address</label>
+            <input class="form-input" type="email" id="invite-email" name="email"
+              placeholder="colleague@company.com" required autocomplete="email">
+          </div>
+          <div class="st-form-group">
+            <label class="st-label" for="invite-role">Role</label>
+            <select class="form-input" id="invite-role" name="role">
+              <option value="member">Member — Create & manage invoices</option>
+              <option value="admin">Admin — Full workspace access</option>
+            </select>
+            <span class="st-hint">Admins can change workspace settings and manage team members.</span>
+          </div>
+        </div>
+        <div class="st-modal-actions">
+          <button type="button" class="btn btn-ghost btn-sm" @click="showInviteModal = false">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" :disabled="loading.invite">
+            <span x-show="loading.invite" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:5px"></span>
+            <span x-text="loading.invite ? 'Sending…' : 'Send Invitation'"></span>
+          </button>
+        </div>
+      </form>
     </div>
-    <form method="POST" class="modal-body" style="display:flex;flex-direction:column;gap:16px">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="invite">
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Email Address</label>
-        <input type="email" name="email" required placeholder="colleague@company.com" class="form-input">
-      </div>
-      <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Role</label>
-        <select name="role" class="form-select">
-          <option value="member">Member — Can create & manage invoices</option>
-          <option value="admin">Admin — Can manage workspace settings</option>
-        </select>
-      </div>
-      <div class="modal-footer" style="padding:0;border-top:none;margin-top:8px">
-        <button type="button" onclick="document.getElementById('inviteModal').style.display='none'" class="btn btn-secondary btn-sm">Cancel</button>
-        <button type="submit" class="btn btn-primary btn-sm">Send Invitation</button>
-      </div>
-    </form>
   </div>
-</div>
+
+</div><!-- /x-data -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+function workspaceSettings() {
+  return {
+    tab: '{{ active_tab|escapejs }}',
+    showInviteModal: false,
+    loading: { general: false, bank: false, invite: false },
+    dirty:   { general: false, bank: false },
+    toasts: [],
+    _toastId: 0,
+    removedMembers: [],
+    revokedInvites: [],
+
+    init() {
+      const hash = window.location.hash.replace('#', '');
+      if (['general','team','integrations'].includes(hash)) this.tab = hash;
+    },
+
+    setTab(name) {
+      this.tab = name;
+      history.replaceState(null, '', '#' + name);
+    },
+
+    toast(message, type = 'success') {
+      const id = ++this._toastId;
+      const icons = { success: '✓', error: '✕', warning: '⚠' };
+      this.toasts.push({ id, message, type, icon: icons[type] || '•' });
+      setTimeout(() => this.removeToast(id), 4500);
+    },
+    removeToast(id) { this.toasts = this.toasts.filter(t => t.id !== id) },
+
+    async saveGeneral(event) {
+      this.loading.general = true;
+      try {
+        const data = new FormData(event.target);
+        const resp = await fetch('{% url "invoices:workspace_settings" %}', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: data,
+        });
+        const json = await resp.json();
+        if (json.success) {
+          this.toast(json.message || 'Workspace configuration saved.', 'success');
+          this.dirty.general = false;
+        } else {
+          this.toast(json.message || 'Failed to save configuration.', 'error');
+        }
+      } catch { this.toast('Network error. Please try again.', 'error') }
+      finally { this.loading.general = false }
+    },
+
+    async saveBankDetails(event) {
+      this.loading.bank = true;
+      try {
+        const data = new FormData(event.target);
+        const resp = await fetch('{% url "invoices:workspace_bank_details" %}', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: data,
+        });
+        const json = await resp.json();
+        if (json.success) {
+          this.toast(json.message || 'Bank details saved.', 'success');
+          this.dirty.bank = false;
+        } else {
+          this.toast(json.message || 'Failed to save bank details.', 'error');
+        }
+      } catch { this.toast('Network error. Please try again.', 'error') }
+      finally { this.loading.bank = false }
+    },
+
+    async sendInvite(event) {
+      this.loading.invite = true;
+      try {
+        const data = new FormData(event.target);
+        const resp = await fetch('{% url "invoices:workspace_settings" %}', {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: data,
+        });
+        const json = await resp.json();
+        if (json.success) {
+          this.toast(json.message || 'Invitation sent.', 'success');
+          this.showInviteModal = false;
+          event.target.reset();
+          setTimeout(() => window.location.reload(), 1500);
+        } else {
+          this.toast(json.message || 'Failed to send invitation.', 'error');
+        }
+      } catch { this.toast('Network error. Please try again.', 'error') }
+      finally { this.loading.invite = false }
+    },
+
+    async removeMember(memberId, username) {
+      if (!confirm(`Remove ${username} from this workspace?`)) return;
+      try {
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const resp = await fetch(`/settings/workspace/members/${memberId}/remove/`, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+        });
+        const json = await resp.json();
+        if (json.success) {
+          this.removedMembers.push(memberId);
+          this.toast(json.message || 'Member removed.', 'success');
+        } else {
+          this.toast(json.message || 'Failed to remove member.', 'error');
+        }
+      } catch { this.toast('Network error. Please try again.', 'error') }
+    },
+
+    async revokeInvite(inviteId, email) {
+      if (!confirm(`Revoke invitation for ${email}?`)) return;
+      try {
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const resp = await fetch(`/settings/workspace/invitations/${inviteId}/revoke/`, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+        });
+        const json = await resp.json();
+        if (json.success) {
+          this.revokedInvites.push(inviteId);
+          this.toast(json.message || 'Invitation revoked.', 'success');
+        } else {
+          this.toast(json.message || 'Failed to revoke invitation.', 'error');
+        }
+      } catch { this.toast('Network error. Please try again.', 'error') }
+    },
+  };
+}
+</script>
 
 <style>
-  @media (max-width: 768px) {
-    aside { width: 100% !important; flex-direction: row !important; flex-wrap: wrap !important; overflow-x: auto; }
-    aside .nav-item { white-space: nowrap; }
-  }
+[x-cloak] { display: none !important }
+.toast-notify { border: 1px solid var(--border) }
+.toast-success { border-left: 3px solid #22c55e }
+.toast-error   { border-left: 3px solid #ef4444 }
+.toast-warning { border-left: 3px solid #f59e0b }
 </style>
 {% endblock %}

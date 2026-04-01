@@ -194,6 +194,7 @@ urlpatterns = [
     path("settings/workspace/switch/<str:workspace_identifier>/", workspace_views.switch_workspace, name="switch_workspace"),
     path("settings/workspace/invitations/<int:invite_id>/revoke/", workspace_views.revoke_invitation, name="revoke_invitation"),
     path("settings/workspace/members/<int:member_id>/remove/", workspace_views.remove_member, name="remove_member"),
+    path("settings/workspace/bank-details/", workspace_views.workspace_bank_details_update, name="workspace_bank_details"),
 
     # ── Exports ───────────────────────────────────────────────────────────────
     path("export/clients/csv/", export_views.export_clients_csv, name="export_clients_csv"),
