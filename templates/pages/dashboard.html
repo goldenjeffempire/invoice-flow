@@ -15,40 +15,42 @@
   ══════════════════════════════════════════════════════════ -->
   <div class="dash-hdr">
     <div class="dash-hdr-left">
-      <div class="dash-avatar">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</div>
+      <div class="dash-avatar">
+        {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
+      </div>
       <div>
         <h1 class="dash-greeting">
-          Good <em x-text="period">morning</em>,
+          Good <span class="dash-period" x-text="period">morning</span>,
           {{ request.user.first_name|default:request.user.username }}.
         </h1>
-        <p class="dash-greeting-sub">
+        <div class="dash-meta">
           <span class="dash-ws-pill">
-            <span class="dash-ws-dot"></span>
-            {{ workspace.name }}
+            <span class="dash-ws-dot"></span>{{ workspace.name }}
           </span>
-          <span>·</span>
-          <span>{{ today|date:"l, j F Y" }}</span>
+          <span class="dash-meta-sep">·</span>
+          <span class="dash-date">{{ today|date:"l, j F Y" }}</span>
           <span x-show="lastUpdated" x-cloak class="dash-live-chip">
             <span class="dash-live-dot"></span>
-            Updated <span x-text="lastUpdated" style="font-weight:700"></span>
+            Updated <span x-text="lastUpdated" class="dash-live-time"></span>
           </span>
-        </p>
+        </div>
       </div>
     </div>
     <div class="dash-hdr-right">
       <button @click="silentRefresh()" :disabled="refreshing"
-              class="btn btn-secondary btn-sm" style="gap:6px" title="Refresh (R)">
-        <svg :class="refreshing ? 'dash-spin' : ''" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              class="dash-refresh-btn" title="Refresh (R)">
+        <svg :class="refreshing ? 'dash-spin' : ''" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
-        <span class="desk-only" x-text="refreshing ? 'Refreshing…' : 'Refresh'">Refresh</span>
+        <span x-text="refreshing ? 'Refreshing…' : 'Refresh'" class="desk-only">Refresh</span>
       </button>
-      <a href="{% url 'invoices:estimate_create' %}" class="btn btn-secondary btn-sm desk-only">New Estimate</a>
+      <a href="{% url 'invoices:estimate_create' %}" class="btn btn-secondary btn-sm desk-only">
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        New Estimate
+      </a>
       <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm">
-        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-        </svg>
+        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
         New Invoice
       </a>
     </div>
@@ -56,9 +58,7 @@
 
   <!-- Error Banner -->
   <div x-show="fetchError" x-cloak class="dash-error" x-transition>
-    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-    </svg>
+    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
     <span>Could not refresh — showing cached data.</span>
     <button @click="silentRefresh()" class="dash-error-retry">Retry now</button>
   </div>
@@ -67,18 +67,18 @@
        2. SMART INSIGHTS
   ══════════════════════════════════════════════════════════ -->
   {% if insights %}
-  <div class="dash-insights">
+  <div class="dash-insights-bar">
     {% for insight in insights %}
     <div class="dash-insight dash-insight-{{ insight.type }}">
       <div class="dash-insight-icon">
         {% if insight.icon == "alert" %}
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         {% elif insight.icon == "clock" %}
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         {% elif insight.icon == "trending" %}
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         {% else %}
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         {% endif %}
       </div>
       <span class="dash-insight-text">{{ insight.text }}</span>
@@ -93,205 +93,263 @@
   <!-- ═══════════════════════════════════════════════════════
        3. QUICK ACTIONS
   ══════════════════════════════════════════════════════════ -->
-  <div class="dash-qa dash-animate">
+  <div class="dash-qa">
     <a href="{% url 'invoices:invoice_create' %}" class="dash-qa-card dash-qa-primary">
-      <div class="dash-qa-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v4h4"/></svg>
+      <div class="dash-qa-icon-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 4v4h4"/></svg>
       </div>
-      <span class="dash-qa-label">Create Invoice</span>
-      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <div class="dash-qa-content">
+        <span class="dash-qa-label">Create Invoice</span>
+        <span class="dash-qa-sub">Send &amp; track payments</span>
+      </div>
+      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
     <a href="{% url 'invoices:client_create' %}" class="dash-qa-card dash-qa-teal">
-      <div class="dash-qa-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      <div class="dash-qa-icon-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
       </div>
-      <span class="dash-qa-label">Add Client</span>
-      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <div class="dash-qa-content">
+        <span class="dash-qa-label">Add Client</span>
+        <span class="dash-qa-sub">Build relationships</span>
+      </div>
+      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
     <a href="{% url 'invoices:payment_overview' %}" class="dash-qa-card dash-qa-green">
-      <div class="dash-qa-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+      <div class="dash-qa-icon-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
       </div>
-      <span class="dash-qa-label">Record Payment</span>
-      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <div class="dash-qa-content">
+        <span class="dash-qa-label">Record Payment</span>
+        <span class="dash-qa-sub">Log cash received</span>
+      </div>
+      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
     <a href="{% url 'invoices:estimate_create' %}" class="dash-qa-card dash-qa-violet">
-      <div class="dash-qa-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      <div class="dash-qa-icon-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
       </div>
-      <span class="dash-qa-label">New Estimate</span>
-      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <div class="dash-qa-content">
+        <span class="dash-qa-label">New Estimate</span>
+        <span class="dash-qa-sub">Quote &amp; convert</span>
+      </div>
+      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
     <a href="{% url 'invoices:expense_create' %}" class="dash-qa-card dash-qa-amber">
-      <div class="dash-qa-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      <div class="dash-qa-icon-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
       </div>
-      <span class="dash-qa-label">Log Expense</span>
-      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <div class="dash-qa-content">
+        <span class="dash-qa-label">Log Expense</span>
+        <span class="dash-qa-sub">Track spending</span>
+      </div>
+      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
     <a href="{% url 'invoices:reports_home' %}" class="dash-qa-card dash-qa-blue">
-      <div class="dash-qa-icon">
-        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      <div class="dash-qa-icon-wrap">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
       </div>
-      <span class="dash-qa-label">View Reports</span>
-      <svg class="dash-qa-arrow" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      <div class="dash-qa-content">
+        <span class="dash-qa-label">View Reports</span>
+        <span class="dash-qa-sub">Analyse finances</span>
+      </div>
+      <svg class="dash-qa-arrow" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
     </a>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════
-       4. KPI METRICS
+       4. KPI CARDS — Row 1 (Revenue, Outstanding, Net Profit, Overdue)
   ══════════════════════════════════════════════════════════ -->
-  <div class="dash-kpi-grid dash-animate">
+  <div class="kpi-grid" id="kpi-grid-1" style="grid-template-columns:repeat(4,1fr)">
 
     <!-- Revenue This Month -->
-    <div class="dash-kpi dash-kpi-indigo" :class="refreshing ? 'dash-kpi-loading' : ''">
-      <div class="dash-kpi-row1">
-        <div class="dash-kpi-icon dash-kpi-icon-indigo">
-          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div class="kpi-card kpi-indigo" :class="refreshing ? 'kpi-loading' : ''">
+      <div class="kpi-top">
+        <div class="kpi-icon kpi-icon-indigo">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
-        <span x-show="!refreshing" class="kpi-delta {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}up{% else %}down{% endif %}{% endif %}">
-          {% if kpis.revenue_change_pct is not None %}{% if kpis.revenue_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.revenue_change_pct|floatformat:1 }}%{% else %}—{% endif %}
+        {% if kpis.revenue_change_pct is not None %}
+        <span class="kpi-delta {% if kpis.revenue_change_pct >= 0 %}kpi-delta-up{% else %}kpi-delta-down{% endif %}">
+          {% if kpis.revenue_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.revenue_change_pct|floatformat:1 }}%
         </span>
+        {% endif %}
       </div>
-      <p class="dash-kpi-label">Revenue This Month</p>
-      <p class="dash-kpi-value"
+      <p class="kpi-label">Revenue This Month</p>
+      <p class="kpi-value"
          x-text="live.revenue !== undefined ? sym + fmt(live.revenue) : '{{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}'">
         {{ workspace.currency_symbol }}{{ kpis.this_month_revenue|floatformat:2 }}
       </p>
-      <div class="dash-kpi-footer">
-        <p class="dash-kpi-sub">vs {{ workspace.currency_symbol }}{{ last_month_revenue|default:"0.00"|floatformat:2 }} last month</p>
+      <div class="kpi-sparkline-wrap">
+        <svg class="kpi-spark" id="spark-revenue" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-sub">vs {{ workspace.currency_symbol }}{{ last_month_revenue|floatformat:0 }} last month</span>
+        <a href="{% url 'invoices:reports_home' %}" class="kpi-link">Reports →</a>
       </div>
     </div>
 
     <!-- Outstanding -->
-    <div class="dash-kpi dash-kpi-amber" :class="refreshing ? 'dash-kpi-loading' : ''">
-      <div class="dash-kpi-row1">
-        <div class="dash-kpi-icon dash-kpi-icon-amber">
-          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+    <div class="kpi-card kpi-amber" :class="refreshing ? 'kpi-loading' : ''">
+      <div class="kpi-top">
+        <div class="kpi-icon kpi-icon-amber">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
         {% if kpis.draft_count > 0 %}
-        <span class="dash-kpi-badge">{{ kpis.draft_count }} draft{% if kpis.draft_count != 1 %}s{% endif %}</span>
+        <span class="kpi-badge">{{ kpis.draft_count }} draft{{ kpis.draft_count|pluralize }}</span>
         {% endif %}
       </div>
-      <p class="dash-kpi-label">Outstanding</p>
-      <p class="dash-kpi-value"
+      <p class="kpi-label">Outstanding</p>
+      <p class="kpi-value"
          x-text="live.outstanding !== undefined ? sym + fmt(live.outstanding) : '{{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}'">
         {{ workspace.currency_symbol }}{{ kpis.total_outstanding|floatformat:2 }}
       </p>
-      <div class="dash-kpi-footer">
-        <p class="dash-kpi-sub">Awaiting payment</p>
-        <a href="{% url 'invoices:invoice_list' %}" class="dash-kpi-link">View →</a>
+      <div class="kpi-sparkline-wrap">
+        <svg class="kpi-spark" id="spark-outstanding" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-sub">Awaiting collection</span>
+        <a href="{% url 'invoices:invoice_list' %}" class="kpi-link">Invoices →</a>
       </div>
     </div>
 
     <!-- Net Profit -->
-    <div class="dash-kpi dash-kpi-green" :class="refreshing ? 'dash-kpi-loading' : ''">
-      <div class="dash-kpi-row1">
-        <div class="dash-kpi-icon dash-kpi-icon-green">
-          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+    <div class="kpi-card kpi-green" :class="refreshing ? 'kpi-loading' : ''">
+      <div class="kpi-top">
+        <div class="kpi-icon kpi-icon-green">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         </div>
         {% if kpis.collection_rate is not None %}
-        <span class="kpi-delta {% if kpis.collection_rate >= 75 %}up{% else %}down{% endif %}">{{ kpis.collection_rate }}% collected</span>
+        <span class="kpi-delta {% if kpis.collection_rate >= 75 %}kpi-delta-up{% else %}kpi-delta-warn{% endif %}">
+          {{ kpis.collection_rate }}% collected
+        </span>
         {% endif %}
       </div>
-      <p class="dash-kpi-label">Net Profit MTD</p>
-      <p class="dash-kpi-value"
-         :class="(live.net_profit ?? {{ kpis.net_profit }}) >= 0 ? 'dash-kpi-value-success' : 'dash-kpi-value-danger'"
-         :style="''"
+      <p class="kpi-label">Net Profit MTD</p>
+      <p class="kpi-value"
+         :class="(live.net_profit ?? {{ kpis.net_profit }}) >= 0 ? 'kpi-val-pos' : 'kpi-val-neg'"
          x-text="live.net_profit !== undefined ? (live.net_profit < 0 ? '–' : '') + sym + fmt(Math.abs(live.net_profit)) : '{% if kpis.net_profit < 0 %}–{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}'">
         {% if kpis.net_profit < 0 %}–{% endif %}{{ workspace.currency_symbol }}{{ kpis.net_profit_abs|floatformat:2 }}
       </p>
-      <div class="dash-kpi-footer">
-        <p class="dash-kpi-sub">Revenue minus expenses</p>
+      <div class="kpi-sparkline-wrap">
+        <svg class="kpi-spark" id="spark-net" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
       </div>
-      {% if kpis.collection_rate is not None %}
-      <div class="dash-kpi-progress">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span class="dash-kpi-progress-label">Collection rate</span>
-          <span class="dash-kpi-progress-label" style="font-weight:700;color:var(--text-primary)">{{ kpis.collection_rate }}%</span>
+      <div class="kpi-footer">
+        {% if kpis.collection_rate is not None %}
+        <div style="width:100%">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span class="kpi-sub">Collection rate</span>
+            <span class="kpi-sub" style="font-weight:700;color:var(--text-primary)">{{ kpis.collection_rate }}%</span>
+          </div>
+          <div class="kpi-progress">
+            <div class="kpi-progress-fill" style="width:{{ kpis.collection_rate }}%;background:{% if kpis.collection_rate >= 75 %}#22c55e{% elif kpis.collection_rate < 50 %}#ef4444{% else %}#f59e0b{% endif %}"></div>
+          </div>
         </div>
-        <div class="dash-kpi-progress-bar">
-          <div class="dash-kpi-progress-fill" style="width:{{ kpis.collection_rate }}%;background:{% if kpis.collection_rate >= 75 %}#22c55e{% elif kpis.collection_rate < 50 %}#ef4444{% else %}#f59e0b{% endif %}"></div>
-        </div>
+        {% else %}
+        <span class="kpi-sub">Revenue minus expenses</span>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
 
     <!-- Overdue -->
-    <div class="dash-kpi dash-kpi-red {% if kpis.overdue_count > 0 %}dash-kpi-danger{% endif %}" :class="refreshing ? 'dash-kpi-loading' : ''">
-      <div class="dash-kpi-row1">
-        <div class="dash-kpi-icon dash-kpi-icon-red">
-          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <div class="kpi-card kpi-red {% if kpis.overdue_count > 0 %}kpi-danger{% endif %}" :class="refreshing ? 'kpi-loading' : ''">
+      <div class="kpi-top">
+        <div class="kpi-icon kpi-icon-red">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
         </div>
-        <span x-show="!refreshing" class="kpi-delta down"
+        <span class="kpi-delta kpi-delta-down"
               x-text="(live.overdue_count ?? {{ kpis.overdue_count }}) + ' invoice' + ((live.overdue_count ?? {{ kpis.overdue_count }}) !== 1 ? 's' : '')">
           {{ kpis.overdue_count }} invoice{{ kpis.overdue_count|pluralize }}
         </span>
       </div>
-      <p class="dash-kpi-label">Overdue</p>
-      <p class="dash-kpi-value {% if kpis.total_overdue > 0 %}dash-kpi-value-danger{% endif %}"
+      <p class="kpi-label">Overdue Balance</p>
+      <p class="kpi-value {% if kpis.total_overdue > 0 %}kpi-val-neg{% endif %}"
          x-text="live.overdue !== undefined ? sym + fmt(live.overdue) : '{{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}'">
         {{ workspace.currency_symbol }}{{ kpis.total_overdue|floatformat:2 }}
       </p>
-      <div class="dash-kpi-footer">
+      <div class="kpi-sparkline-wrap">
+        <svg class="kpi-spark" id="spark-overdue" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="kpi-footer">
         {% if kpis.overdue_count > 0 %}
-        <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="dash-kpi-link" style="color:#dc2626">
-          Send reminders →
-        </a>
+        <span class="kpi-sub" style="color:#dc2626;font-weight:600">Needs attention</span>
+        <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="kpi-link" style="color:#dc2626">Send reminders →</a>
         {% else %}
-        <p class="dash-kpi-sub">No overdue invoices</p>
+        <span class="kpi-sub" style="color:#16a34a">All clear ✓</span>
         {% endif %}
       </div>
     </div>
 
-    <!-- Expenses -->
-    <div class="dash-kpi dash-kpi-violet" :class="refreshing ? 'dash-kpi-loading' : ''">
-      <div class="dash-kpi-row1">
-        <div class="dash-kpi-icon dash-kpi-icon-violet">
-          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       KPI CARDS — Row 2 (Expenses, Clients)
+  ══════════════════════════════════════════════════════════ -->
+  <div class="kpi-grid" style="grid-template-columns:1fr 1fr">
+
+    <!-- Expenses MTD -->
+    <div class="kpi-card kpi-violet" :class="refreshing ? 'kpi-loading' : ''">
+      <div class="kpi-top">
+        <div class="kpi-icon kpi-icon-violet">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
         </div>
         {% if kpis.expenses_change_pct is not None %}
-        <span class="kpi-delta {% if kpis.expenses_change_pct <= 0 %}up{% else %}down{% endif %}">
-          {% if kpis.expenses_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.expenses_change_pct|floatformat:1 }}%
+        <span class="kpi-delta {% if kpis.expenses_change_pct <= 0 %}kpi-delta-up{% else %}kpi-delta-down{% endif %}">
+          {% if kpis.expenses_change_pct >= 0 %}↑{% else %}↓{% endif %} {{ kpis.expenses_change_pct|floatformat:1 }}% vs last month
         </span>
         {% endif %}
       </div>
-      <p class="dash-kpi-label">Expenses MTD</p>
-      <p class="dash-kpi-value"
+      <p class="kpi-label">Expenses This Month</p>
+      <p class="kpi-value"
          x-text="live.expenses !== undefined ? sym + fmt(live.expenses) : '{{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}'">
         {{ workspace.currency_symbol }}{{ kpis.this_month_expenses|floatformat:2 }}
       </p>
-      <div class="dash-kpi-footer">
-        <p class="dash-kpi-sub">Month to date</p>
-        <a href="{% url 'invoices:expense_list' %}" class="dash-kpi-link">View →</a>
+      <div class="kpi-sparkline-wrap">
+        <svg class="kpi-spark" id="spark-expenses" viewBox="0 0 120 36" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-sub">All-time: {{ workspace.currency_symbol }}{{ kpis.all_time_paid|floatformat:0 }} collected</span>
+        <a href="{% url 'invoices:expense_list' %}" class="kpi-link">View expenses →</a>
       </div>
     </div>
 
-    <!-- Clients -->
-    <div class="dash-kpi dash-kpi-teal" :class="refreshing ? 'dash-kpi-loading' : ''">
-      <div class="dash-kpi-row1">
-        <div class="dash-kpi-icon dash-kpi-icon-teal">
-          <svg width="17" height="17" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    <!-- Clients & Business Health -->
+    <div class="kpi-card kpi-teal" :class="refreshing ? 'kpi-loading' : ''">
+      <div class="kpi-top">
+        <div class="kpi-icon kpi-icon-teal">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </div>
         {% if kpis.new_clients_this_month > 0 %}
-        <span class="dash-kpi-badge dash-kpi-badge-green">+{{ kpis.new_clients_this_month }} new</span>
+        <span class="kpi-badge kpi-badge-green">+{{ kpis.new_clients_this_month }} new this month</span>
         {% endif %}
       </div>
-      <p class="dash-kpi-label">Total Clients</p>
-      <p class="dash-kpi-value"
+      <p class="kpi-label">Total Clients</p>
+      <p class="kpi-value"
          x-text="live.total_clients !== undefined ? live.total_clients : '{{ kpis.total_clients }}'">
         {{ kpis.total_clients }}
       </p>
-      <div class="dash-kpi-footer">
-        <p class="dash-kpi-sub">Active relationships</p>
-        <a href="{% url 'invoices:client_list' %}" class="dash-kpi-link">View →</a>
+      <div class="kpi-stat-row">
+        <div class="kpi-mini-stat">
+          <span class="kpi-mini-label">Active recurring</span>
+          <span class="kpi-mini-val">{{ kpis.active_schedules }}</span>
+        </div>
+        <div class="kpi-mini-stat">
+          <span class="kpi-mini-label">Est. conversion</span>
+          <span class="kpi-mini-val {% if kpis.estimate_conversion >= 60 %}kpi-val-pos{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
+        </div>
+        <div class="kpi-mini-stat">
+          <span class="kpi-mini-label">Draft invoices</span>
+          <span class="kpi-mini-val {% if kpis.draft_count > 0 %}kpi-val-neg{% endif %}">{{ kpis.draft_count }}</span>
+        </div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-sub">Active business relationships</span>
+        <a href="{% url 'invoices:client_list' %}" class="kpi-link">View clients →</a>
       </div>
     </div>
 
-  </div><!-- /dash-kpi-grid -->
+  </div>
 
   <!-- ═══════════════════════════════════════════════════════
-       5. CHARTS
+       5. CHARTS ROW
   ══════════════════════════════════════════════════════════ -->
   <div class="dash-charts">
 
@@ -299,14 +357,14 @@
     <div class="card dash-chart-card">
       <div class="dash-chart-hdr">
         <div class="dash-chart-hdr-left">
-          <h3>Revenue & Expenses</h3>
-          <p>Monthly trend with net profit</p>
+          <h3>Revenue &amp; Expenses</h3>
+          <p>Monthly cash flow with net profit overlay</p>
         </div>
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div class="dash-chart-controls">
           <div class="dash-chart-legend">
             <span class="dash-legend-item"><span class="dash-legend-dot" style="background:#6366f1"></span>Revenue</span>
             <span class="dash-legend-item"><span class="dash-legend-dot" style="background:#f97316"></span>Expenses</span>
-            <span class="dash-legend-item"><span class="dash-legend-dot" style="background:#22c55e;border-radius:50%"></span>Net</span>
+            <span class="dash-legend-item"><span class="dash-legend-dot dash-legend-dot-round" style="background:#22c55e"></span>Net</span>
           </div>
           <div class="dash-periods">
             <button class="dash-period" :class="chartPeriod===3 ? 'active' : ''" @click="changeChartPeriod(3)">3M</button>
@@ -322,19 +380,19 @@
       </div>
       {% else %}
       <div class="dash-chart-empty">
-        <div class="dash-chart-empty-icon">
-          <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <div class="dash-empty-illo">
+          <svg width="72" height="72" fill="none" stroke="currentColor" viewBox="0 0 24 24" opacity=".12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width=".8" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         </div>
         <p class="dash-chart-empty-title">No revenue data yet</p>
-        <p class="dash-chart-empty-sub">Create invoices and record payments to see your financial trend.</p>
-        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:14px">Create First Invoice</a>
+        <p class="dash-chart-empty-sub">Create invoices and record payments to see your financial trend here.</p>
+        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:16px">Create First Invoice</a>
       </div>
       {% endif %}
     </div>
 
     <!-- Invoice Status Donut -->
     <div class="card dash-chart-card">
-      <div class="dash-chart-hdr" style="border-bottom:none;padding-bottom:0;margin-bottom:12px">
+      <div class="dash-chart-hdr" style="border-bottom:none;padding-bottom:0;margin-bottom:8px">
         <div class="dash-chart-hdr-left">
           <h3>Invoice Status</h3>
           <p>All-time breakdown</p>
@@ -366,23 +424,23 @@
       </div>
       {% else %}
       <div class="dash-chart-empty" style="padding:36px 20px">
-        <div class="dash-chart-empty-icon">
-          <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+        <div class="dash-empty-illo">
+          <svg width="52" height="52" fill="none" stroke="currentColor" viewBox="0 0 24 24" opacity=".12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
         </div>
         <p class="dash-chart-empty-title">No invoices yet</p>
-        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:10px">Create Invoice</a>
+        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="margin-top:12px">Create Invoice</a>
       </div>
       {% endif %}
     </div>
 
-  </div><!-- /dash-charts -->
+  </div>
 
   <!-- ═══════════════════════════════════════════════════════
        6. MAIN GRID: TABLES + SIDEBAR
   ══════════════════════════════════════════════════════════ -->
   <div class="dash-main">
 
-    <!-- ── LEFT: Tabbed Data Tables ── -->
+    <!-- LEFT: Tabbed Data Tables -->
     <div class="dash-left">
       <div class="card" x-data="{tab:'invoices'}">
 
@@ -395,7 +453,7 @@
           </button>
           <button @click="tab='payments'" :class="tab==='payments' ? 'active' : ''" class="dash-tab">
             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-            Recent Payments
+            Payments
             {% if recent_payments %}<span class="dash-tab-cnt" :class="tab==='payments' ? 'active' : ''">{{ recent_payments|length }}</span>{% endif %}
           </button>
           {% if overdue_invoices %}
@@ -432,7 +490,7 @@
                   <td class="dash-tbl-amount">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
                   <td><span class="badge b-{{ inv.status }}"><span class="badge-dot"></span>{{ inv.get_status_display }}</span></td>
                   <td class="{% if inv.status == 'overdue' %}dash-tbl-late{% else %}dash-tbl-date{% endif %}">{{ inv.due_date|date:"d M Y"|default:"—" }}</td>
-                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()" title="Open">↗</a></td>
+                  <td><a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()">↗</a></td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -507,12 +565,12 @@
                     {% if inv.days_overdue > 0 %}
                     <span class="badge b-overdue"><span class="badge-dot"></span>{{ inv.days_overdue }}d late</span>
                     {% else %}
-                    <span class="badge b-overdue"><span class="badge-dot"></span>Today</span>
+                    <span class="badge b-overdue"><span class="badge-dot"></span>Due today</span>
                     {% endif %}
                   </td>
                   <td onclick="event.stopPropagation()">
                     <div style="display:flex;gap:6px">
-                      <button onclick="sendReminder({{ inv.id }}, this)" class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none">Remind</button>
+                      <button onclick="sendReminder({{ inv.id }}, this)" class="btn btn-xs" style="background:#fee2e2;color:#dc2626;border:none;font-weight:700">Remind</button>
                       <a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">View →</a>
                     </div>
                   </td>
@@ -551,7 +609,7 @@
 
     </div><!-- /dash-left -->
 
-    <!-- ── RIGHT: Sidebar ── -->
+    <!-- RIGHT: Sidebar -->
     <div class="dash-right">
 
       <!-- Activity Feed -->
@@ -559,17 +617,25 @@
         <div class="dash-card-hdr">
           <div>
             <p class="dash-card-title">Activity</p>
+            <p class="dash-card-sub">Recent workspace events</p>
           </div>
           <span class="dash-live-chip">
-            <span class="dash-live-dot"></span>
-            Live
+            <span class="dash-live-dot"></span>Live
           </span>
         </div>
         {% if recent_activity %}
         <div class="dash-feed">
           {% for act in recent_activity %}
           <div class="dash-feed-item">
-            <div class="dash-feed-avatar">{% if act.user %}{{ act.user.get_full_name|default:act.user.username|slice:":1"|upper }}{% else %}?{% endif %}</div>
+            <div class="dash-feed-timeline">
+              <div class="dash-feed-avatar
+                {% if 'payment' in act.action|lower %}dash-feed-avatar-green
+                {% elif 'overdue' in act.action|lower or 'void' in act.action|lower %}dash-feed-avatar-red
+                {% elif 'expense' in act.action|lower %}dash-feed-avatar-amber{% endif %}">
+                {% if act.user %}{{ act.user.get_full_name|default:act.user.username|slice:":1"|upper }}{% else %}?{% endif %}
+              </div>
+              {% if not forloop.last %}<div class="dash-feed-line"></div>{% endif %}
+            </div>
             <div class="dash-feed-body">
               <p class="dash-feed-action">{{ act.action }}</p>
               <p class="dash-feed-time">
@@ -585,9 +651,7 @@
         </div>
         {% else %}
         <div class="dash-empty" style="padding:36px 20px">
-          <div class="dash-empty-icon si-indigo">
-            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </div>
+          <div class="dash-empty-icon si-indigo"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
           <p class="dash-empty-title">No activity yet</p>
           <p class="dash-empty-sub">Actions like creating invoices will appear here.</p>
         </div>
@@ -598,6 +662,7 @@
       <div class="card">
         <div class="dash-card-hdr">
           <p class="dash-card-title">Business Overview</p>
+          <a href="{% url 'invoices:reports_home' %}" class="dash-card-link">Reports →</a>
         </div>
         <div class="dash-stat-list">
           <div class="dash-stat-row">
@@ -614,18 +679,18 @@
           </div>
           <div class="dash-stat-row">
             <span class="dash-stat-label">Estimate conversion</span>
-            <span class="dash-stat-value {% if kpis.estimate_conversion >= 60 %}dash-stat-green{% endif %}">
-              {{ kpis.estimate_conversion|floatformat:1 }}%
-            </span>
+            <span class="dash-stat-value {% if kpis.estimate_conversion >= 60 %}dash-stat-green{% endif %}">{{ kpis.estimate_conversion|floatformat:1 }}%</span>
           </div>
           {% if kpis.collection_rate is not None %}
           <div class="dash-stat-row">
             <span class="dash-stat-label">Collection rate</span>
-            <span class="dash-stat-value {% if kpis.collection_rate >= 75 %}dash-stat-green{% elif kpis.collection_rate < 50 %}dash-stat-red{% else %}dash-stat-amber{% endif %}">
-              {{ kpis.collection_rate }}%
-            </span>
+            <span class="dash-stat-value {% if kpis.collection_rate >= 75 %}dash-stat-green{% elif kpis.collection_rate < 50 %}dash-stat-red{% else %}dash-stat-amber{% endif %}">{{ kpis.collection_rate }}%</span>
           </div>
           {% endif %}
+          <div class="dash-stat-row">
+            <span class="dash-stat-label">Draft invoices</span>
+            <span class="dash-stat-value {% if kpis.draft_count > 0 %}dash-stat-amber{% endif %}">{{ kpis.draft_count }}</span>
+          </div>
         </div>
       </div>
 
@@ -634,7 +699,7 @@
   </div><!-- /dash-main -->
 
   <!-- ═══════════════════════════════════════════════════════
-       7. BOTTOM: TOP CLIENTS + AGING
+       7. BOTTOM: TOP CLIENTS + AGING + QUICK STATS
   ══════════════════════════════════════════════════════════ -->
   <div class="dash-bottom">
 
@@ -643,7 +708,7 @@
       <div class="dash-card-hdr">
         <div>
           <p class="dash-card-title">Top Clients</p>
-          <p class="dash-card-sub">By revenue generated</p>
+          <p class="dash-card-sub">By total revenue generated</p>
         </div>
         <a href="{% url 'invoices:client_list' %}" class="dash-card-link">View all →</a>
       </div>
@@ -655,14 +720,17 @@
           <p class="dash-client-name">{{ cl.name }}</p>
           <p class="dash-client-meta">{{ cl.invoice_count }} invoice{{ cl.invoice_count|pluralize }}</p>
         </div>
-        <span class="dash-client-amt">{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}</span>
+        <div class="dash-client-right">
+          <span class="dash-client-amt">{{ workspace.currency_symbol }}{{ cl.paid_total|floatformat:0 }}</span>
+          {% if forloop.first %}<span class="dash-client-rank">🥇</span>
+          {% elif forloop.counter == 2 %}<span class="dash-client-rank">🥈</span>
+          {% elif forloop.counter == 3 %}<span class="dash-client-rank">🥉</span>{% endif %}
+        </div>
       </a>
       {% endfor %}
       {% else %}
       <div class="dash-empty" style="padding:32px 20px">
-        <div class="dash-empty-icon si-teal">
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        </div>
+        <div class="dash-empty-icon si-teal"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
         <p class="dash-empty-title">No paid clients yet</p>
         <p class="dash-empty-sub">Top clients will appear once payments are recorded.</p>
       </div>
@@ -674,14 +742,13 @@
       <div class="dash-card-hdr">
         <div>
           <p class="dash-card-title">Overdue Aging</p>
-          <p class="dash-card-sub">Overdue invoice breakdown</p>
+          <p class="dash-card-sub">Breakdown by days overdue</p>
         </div>
         {% if kpis.overdue_count > 0 %}
         <span class="badge b-overdue">{{ kpis.overdue_count }} overdue</span>
         {% endif %}
       </div>
       {% if kpis.overdue_count > 0 %}
-      {% with total_aging=aging.0_30|add:aging.31_60|add:aging.61_90|add:aging.90_plus %}
       <div class="dash-aging-list">
         {% if aging.0_30 %}
         <div class="dash-aging-row">
@@ -720,7 +787,7 @@
         <div class="dash-aging-row">
           <div class="dash-aging-meta">
             <span class="dash-aging-label">90+ days</span>
-            <span class="dash-aging-val" style="color:#dc2626">{{ workspace.currency_symbol }}{{ aging.90_plus|floatformat:0 }}</span>
+            <span class="dash-aging-val" style="color:#dc2626;font-weight:800">{{ workspace.currency_symbol }}{{ aging.90_plus|floatformat:0 }}</span>
           </div>
           <div class="dash-aging-bar">
             <div class="dash-aging-fill" style="background:#dc2626;width:{% if aging.90_plus and kpis.total_overdue %}{% widthratio aging.90_plus kpis.total_overdue 100 %}{% else %}0{% endif %}%"></div>
@@ -728,24 +795,21 @@
         </div>
         {% endif %}
       </div>
-      {% endwith %}
       {% else %}
       <div class="dash-empty" style="padding:32px 20px">
-        <div class="dash-empty-icon si-green">
-          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        </div>
+        <div class="dash-empty-icon si-green"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>
         <p class="dash-empty-title">All clear!</p>
-        <p class="dash-empty-sub">You have no overdue invoices right now.</p>
+        <p class="dash-empty-sub">No overdue invoices. Keep it up!</p>
       </div>
       {% endif %}
     </div>
 
-    <!-- Recurring + Quick Stats -->
+    <!-- Quick Stats -->
     <div class="card" style="overflow:hidden">
       <div class="dash-card-hdr">
         <div>
           <p class="dash-card-title">Quick Stats</p>
-          <p class="dash-card-sub">At a glance</p>
+          <p class="dash-card-sub">Business health at a glance</p>
         </div>
       </div>
       <div class="dash-stat-list">
@@ -785,8 +849,56 @@
 {% block scripts %}
 <script>
 /* ════════════════════════════════════════════════════════════
-   Dashboard Controller — InvoiceFlow v3
+   Dashboard Controller — InvoiceFlow v4
 ════════════════════════════════════════════════════════════ */
+
+/* ── Sparkline renderer ─────────────────────────────────── */
+function drawSparkline(elId, data, color, fill) {
+  const svg = document.getElementById(elId);
+  if (!svg || !data || data.length < 2) return;
+  const W = 120, H = 36, PAD = 3;
+  const min  = Math.min(...data, 0);
+  const max  = Math.max(...data, min + 0.001);
+  const rng  = max - min || 1;
+  const pts  = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * W;
+    const y = H - PAD - ((v - min) / rng) * (H - PAD * 2);
+    return [x.toFixed(1), y.toFixed(1)];
+  });
+  const linePts  = pts.map(p => p.join(',')).join(' ');
+  const fillPts  = [...pts, [W, H], [0, H]].map(p => p.join(',')).join(' ');
+  const gId      = 'sg_' + elId;
+  svg.innerHTML  = `
+    <defs>
+      <linearGradient id="${gId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="${fill ? '0.22' : '0'}"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${fill ? `<polygon points="${fillPts}" fill="url(#${gId})"/>` : ''}
+    <polyline points="${linePts}" fill="none" stroke="${color}" stroke-width="1.8"
+              stroke-linejoin="round" stroke-linecap="round"/>`;
+}
+
+/* ── Number counter animation ───────────────────────────── */
+function animateCounter(el, endVal, prefix, suffix, decimals, dur) {
+  if (!el || isNaN(endVal)) return;
+  const start  = performance.now();
+  const startV = 0;
+  function tick(now) {
+    const p = Math.min((now - start) / dur, 1);
+    const e = 1 - Math.pow(1 - p, 4); // easeOutQuart
+    const v = startV + (endVal - startV) * e;
+    el.textContent = prefix + v.toLocaleString(undefined, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ── Alpine controller ──────────────────────────────────── */
 function dashCtrl() {
   return {
     period:       'morning',
@@ -804,14 +916,28 @@ function dashCtrl() {
       this.period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
       this.$nextTick(() => {
         this.initCharts();
+        this.initSparklines();
         setInterval(() => this.silentRefresh(), 5 * 60 * 1000);
       });
     },
 
     fmt(n) {
       return Number(parseFloat(n) || 0).toLocaleString(undefined, {
-        minimumFractionDigits: 2, maximumFractionDigits: 2
+        minimumFractionDigits: 2, maximumFractionDigits: 2,
       });
+    },
+
+    initSparklines() {
+      const rev  = {{ chart_revenue|safe }};
+      const exp  = {{ chart_expenses|safe }};
+      const net  = {{ chart_net|safe }};
+      const dark = document.body.classList.contains('dark');
+
+      drawSparkline('spark-revenue',     rev,  '#6366f1', true);
+      drawSparkline('spark-outstanding', rev.map((v,i) => Math.max(v * 0.4 + (exp[i] || 0) * 0.1, 0)), '#f59e0b', true);
+      drawSparkline('spark-net',         net,  '#22c55e', true);
+      drawSparkline('spark-overdue',     exp.map(v => v * 0.2), '#ef4444', false);
+      drawSparkline('spark-expenses',    exp,  '#8b5cf6', true);
     },
 
     async silentRefresh() {
@@ -834,7 +960,7 @@ function dashCtrl() {
           net_profit:    d.net_profit,
           total_clients: d.total_clients,
         };
-        this.lastUpdated = new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+        this.lastUpdated = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       } catch (e) {
         this.fetchError = true;
       } finally {
@@ -853,66 +979,76 @@ function dashCtrl() {
         if (!res.ok) throw new Error();
         const d = await res.json();
         if (this._revExpChart) {
-          this._revExpChart.data.labels       = d.labels;
+          this._revExpChart.data.labels = d.labels;
           this._revExpChart.data.datasets[0].data = d.revenue;
           this._revExpChart.data.datasets[1].data = d.expenses;
           this._revExpChart.data.datasets[2].data = d.net_profit;
           this._revExpChart.update('active');
         }
-      } catch(e) {
-        /* silent — keep old chart */
-      } finally {
-        this.chartLoading = false;
-      }
+      } catch(e) { /* keep old chart */ }
+      finally { this.chartLoading = false; }
     },
 
     initCharts() {
       const dark    = document.body.classList.contains('dark');
-      const gc      = dark ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.04)';
-      const tc      = dark ? 'rgba(255,255,255,.4)'  : 'rgba(0,0,0,.38)';
+      const gc      = dark ? 'rgba(255,255,255,.04)' : 'rgba(0,0,0,.04)';
+      const tc      = dark ? 'rgba(255,255,255,.38)'  : 'rgba(0,0,0,.36)';
       const sym     = this.sym;
       const tooltip = {
-        backgroundColor: dark ? '#0c1220' : '#fff',
+        backgroundColor: dark ? '#0f172a' : '#fff',
         titleColor:      dark ? '#e2e8f0' : '#1e293b',
         bodyColor:       dark ? '#94a3b8' : '#64748b',
-        borderColor:     dark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.07)',
-        borderWidth: 1, padding: 12, cornerRadius: 10,
+        borderColor:     dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)',
+        borderWidth: 1, padding: 13, cornerRadius: 12,
         displayColors: true, boxPadding: 5,
       };
 
-      /* Revenue vs Expenses */
+      /* Revenue vs Expenses (with gradient fill) */
       const rc = document.getElementById('revExpChart');
       if (rc) {
         const chartRev = {{ chart_revenue|safe }};
         const chartExp = {{ chart_expenses|safe }};
         const chartNet = {{ chart_net|safe }};
         if (chartRev.some(v => v > 0) || chartExp.some(v => v > 0)) {
+
+          /* Create gradient fills */
+          const ctx     = rc.getContext('2d');
+          const gradRev = ctx.createLinearGradient(0, 0, 0, 240);
+          gradRev.addColorStop(0, 'rgba(99,102,241,.8)');
+          gradRev.addColorStop(1, 'rgba(99,102,241,.1)');
+          const gradExp = ctx.createLinearGradient(0, 0, 0, 240);
+          gradExp.addColorStop(0, 'rgba(249,115,22,.65)');
+          gradExp.addColorStop(1, 'rgba(249,115,22,.08)');
+
           this._revExpChart = new Chart(rc, {
             data: {
               labels: {{ chart_labels|safe }},
               datasets: [
                 {
                   type: 'bar', label: 'Revenue', data: chartRev,
-                  backgroundColor: 'rgba(99,102,241,.75)', hoverBackgroundColor: '#6366f1',
-                  borderRadius: 5, borderSkipped: false, yAxisID: 'y',
+                  backgroundColor: gradRev, hoverBackgroundColor: '#6366f1',
+                  borderRadius: 6, borderSkipped: false, yAxisID: 'y',
                 },
                 {
                   type: 'bar', label: 'Expenses', data: chartExp,
-                  backgroundColor: 'rgba(249,115,22,.6)', hoverBackgroundColor: '#f97316',
-                  borderRadius: 5, borderSkipped: false, yAxisID: 'y',
+                  backgroundColor: gradExp, hoverBackgroundColor: '#f97316',
+                  borderRadius: 6, borderSkipped: false, yAxisID: 'y',
                 },
                 {
                   type: 'line', label: 'Net Profit', data: chartNet,
-                  borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.06)',
+                  borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.08)',
                   borderWidth: 2.5, pointBackgroundColor: '#22c55e',
-                  pointRadius: 4, pointHoverRadius: 6,
-                  tension: 0.4, fill: true, yAxisID: 'y',
+                  pointBorderColor: dark ? '#0f172a' : '#fff',
+                  pointBorderWidth: 2,
+                  pointRadius: 4, pointHoverRadius: 7,
+                  tension: 0.42, fill: true, yAxisID: 'y',
                 }
               ]
             },
             options: {
               responsive: true, maintainAspectRatio: false,
               interaction: { mode: 'index', intersect: false },
+              animation: { duration: 500 },
               plugins: {
                 legend: { display: false },
                 tooltip: { ...tooltip, callbacks: {
@@ -920,10 +1056,10 @@ function dashCtrl() {
                 }}
               },
               scales: {
-                x: { grid:{display:false}, ticks:{font:{size:11},color:tc}, border:{display:false} },
+                x: { grid: { display: false }, ticks: { font: { size: 11 }, color: tc }, border: { display: false } },
                 y: {
-                  grid:{color:gc}, border:{display:false},
-                  ticks:{font:{size:11},color:tc, callback: v => sym + Number(v).toLocaleString()}
+                  grid: { color: gc }, border: { display: false },
+                  ticks: { font: { size: 11 }, color: tc, callback: v => sym + Number(v).toLocaleString() }
                 }
               }
             }
@@ -947,12 +1083,13 @@ function dashCtrl() {
               labels: keys.map(k => lbls[k]),
               datasets: [{
                 data: vals, backgroundColor: keys.map(k => colors[k]),
-                borderWidth: 2, borderColor: dark ? '#0c1220' : '#fff',
-                hoverOffset: 6, borderRadius: 3,
+                borderWidth: 3, borderColor: dark ? '#0f172a' : '#fff',
+                hoverOffset: 8, borderRadius: 4,
               }]
             },
             options: {
-              responsive: true, maintainAspectRatio: false, cutout: '72%',
+              responsive: true, maintainAspectRatio: false, cutout: '74%',
+              animation: { duration: 700, easing: 'easeOutQuart' },
               plugins: {
                 legend: { display: false },
                 tooltip: { ...tooltip, callbacks: {
@@ -967,7 +1104,7 @@ function dashCtrl() {
   };
 }
 
-/* ── Reminder helper ────────────────────────────────────── */
+/* ── Send reminder ──────────────────────────────────────── */
 function sendReminder(invId, btn) {
   const orig = btn.textContent;
   btn.disabled = true;
@@ -983,7 +1120,10 @@ function sendReminder(invId, btn) {
     setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
   });
 }
+
 function getCsrfToken() {
+  const m = document.querySelector('meta[name="csrf-token"]');
+  if (m) return m.content;
   return document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrftoken='))?.split('=')[1] || '';
 }
 </script>
