@@ -111,7 +111,7 @@ def client_create(request):
                 billing_state=request.POST.get("billing_state", ""),
                 billing_country=request.POST.get("billing_country", ""),
                 billing_zip=request.POST.get("billing_zip", ""),
-                currency=request.POST.get("currency", "USD"),
+                currency=request.POST.get("currency", workspace.currency or "NGN"),
                 tax_id=request.POST.get("tax_id", ""),
                 discount_rate=request.POST.get("discount_rate") or 0,
                 notes=request.POST.get("notes", ""),
@@ -128,6 +128,7 @@ def client_create(request):
     return render(request, "pages/clients/form.html", {
         "client": None,
         "currencies": Invoice.CURRENCY_CHOICES,
+        "default_currency": workspace.currency,
         "page_title": "New Client",
         "is_create": True,
     })
@@ -160,7 +161,7 @@ def client_edit(request, client_id):
             client.billing_state = request.POST.get("billing_state", "")
             client.billing_country = request.POST.get("billing_country", "")
             client.billing_zip = request.POST.get("billing_zip", "")
-            client.currency = request.POST.get("currency", "USD")
+            client.currency = request.POST.get("currency", workspace.currency or "NGN")
             client.tax_id = request.POST.get("tax_id", "")
             client.discount_rate = request.POST.get("discount_rate") or 0
             client.notes = request.POST.get("notes", "")

@@ -672,7 +672,7 @@ class Payment(models.Model):
     workspace = models.ForeignKey('Workspace', on_delete=models.CASCADE, related_name="payments", null=True, blank=True, db_index=True)
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="payments", db_index=True)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
-    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="USD")
+    currency = models.CharField(max_length=3, choices=Invoice.CURRENCY_CHOICES, default="NGN")
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
     payment_method = models.CharField(max_length=20, choices=Method.choices, default="other")
 
@@ -991,7 +991,7 @@ class Client(models.Model):
     shipping_zip = models.CharField(max_length=20, blank=True)
 
     # Settings
-    currency = models.CharField(max_length=3, default="USD")
+    currency = models.CharField(max_length=3, default="NGN")
     discount_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     notes = models.TextField(blank=True)
     tags = models.CharField(max_length=255, blank=True) # comma separated
@@ -1190,7 +1190,7 @@ class RecurringSchedule(models.Model):
     proration_enabled = models.BooleanField(default=False, help_text="Prorate partial periods")
     anchor_day = models.PositiveSmallIntegerField(null=True, blank=True, help_text="Day of month to anchor billing (1-31)")
 
-    currency = models.CharField(max_length=3, default="USD")
+    currency = models.CharField(max_length=3, default="NGN")
     base_amount = models.DecimalField(max_digits=15, decimal_places=2, help_text="Base invoice amount before tax")
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
 
@@ -1495,7 +1495,7 @@ class Expense(models.Model):
     tax_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     total_amount = models.DecimalField(max_digits=15, decimal_places=2, help_text='Amount including tax')
-    currency = models.CharField(max_length=3, default='USD', choices=Invoice.CURRENCY_CHOICES)
+    currency = models.CharField(max_length=3, default='NGN', choices=Invoice.CURRENCY_CHOICES)
     exchange_rate = models.DecimalField(max_digits=12, decimal_places=6, default=Decimal('1.000000'), help_text='Exchange rate to base currency')
     base_currency_amount = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'), help_text='Amount in workspace base currency')
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.OTHER)

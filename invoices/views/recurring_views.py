@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from invoices.models import Client, RecurringSchedule, Workspace
+from invoices.models import Client, Invoice, RecurringSchedule, Workspace
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ def schedule_create(request):
                 messages.error(request, "Invalid amount.")
                 return redirect('invoices:recurring_create')
 
-            currency = request.POST.get('currency', 'USD')
+            currency = request.POST.get('currency', workspace.currency or 'NGN')
 
             try:
                 tax_rate = Decimal(request.POST.get('tax_rate', '0'))
@@ -227,12 +227,8 @@ def schedule_create(request):
     context = {
         'clients': clients,
         'interval_choices': RecurringSchedule.IntervalType.choices,
-        'currency_choices': [
-            ('USD', '$ - US Dollar'),
-            ('EUR', '€ - Euro'),
-            ('GBP', '£ - British Pound'),
-            ('NGN', '₦ - Nigerian Naira'),
-        ],
+        'currency_choices': Invoice.CURRENCY_CHOICES,
+        'default_currency': workspace.currency or 'NGN',
         'today': timezone.now().date().isoformat(),
     }
     return render(request, 'pages/recurring/schedule_create.html', context)
@@ -382,12 +378,8 @@ def schedule_edit(request, schedule_id):
         'schedule': schedule,
         'clients': clients,
         'interval_choices': RecurringSchedule.IntervalType.choices,
-        'currency_choices': [
-            ('USD', '$ - US Dollar'),
-            ('EUR', '€ - Euro'),
-            ('GBP', '£ - British Pound'),
-            ('NGN', '₦ - Nigerian Naira'),
-        ],
+        'currency_choices': Invoice.CURRENCY_CHOICES,
+        'default_currency': workspace.currency or 'NGN',
     }
     return render(request, 'pages/recurring/schedule_edit.html', context)
 

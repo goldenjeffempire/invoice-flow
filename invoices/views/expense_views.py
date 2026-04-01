@@ -136,7 +136,7 @@ def expense_create(request):
                 'expense_date': date.fromisoformat(request.POST.get('expense_date')),
                 'amount': request.POST.get('amount'),
                 'tax_rate': request.POST.get('tax_rate', 0),
-                'currency': request.POST.get('currency', 'USD'),
+                'currency': request.POST.get('currency', workspace.currency or 'NGN'),
                 'payment_method': request.POST.get('payment_method', 'other'),
                 'reference_number': request.POST.get('reference_number', '').strip(),
                 'is_billable': request.POST.get('is_billable') == 'on',
@@ -193,6 +193,7 @@ def expense_create(request):
         'clients': clients,
         'payment_methods': Expense.PaymentMethod.choices,
         'currencies': Invoice.CURRENCY_CHOICES,
+        'default_currency': workspace.currency or 'NGN',
         'today': date.today().isoformat(),
     }
     return render(request, 'pages/expenses/expense_form.html', context)
@@ -266,7 +267,7 @@ def expense_edit(request, expense_id):
                 'expense_date': date.fromisoformat(request.POST.get('expense_date')),
                 'amount': request.POST.get('amount'),
                 'tax_rate': request.POST.get('tax_rate', 0),
-                'currency': request.POST.get('currency', 'USD'),
+                'currency': request.POST.get('currency', expense.currency or workspace.currency or 'NGN'),
                 'payment_method': request.POST.get('payment_method', 'other'),
                 'reference_number': request.POST.get('reference_number', '').strip(),
                 'is_billable': request.POST.get('is_billable') == 'on',

@@ -125,7 +125,7 @@ class ExpenseService:
             expense_date=data['expense_date'],
             amount=Decimal(str(data['amount'])),
             tax_rate=Decimal(str(data.get('tax_rate', 0))),
-            currency=data.get('currency', 'USD'),
+            currency=data.get('currency', workspace.currency or 'NGN'),
             exchange_rate=Decimal(str(data.get('exchange_rate', 1))),
             payment_method=data.get('payment_method', 'other'),
             reference_number=data.get('reference_number', ''),
