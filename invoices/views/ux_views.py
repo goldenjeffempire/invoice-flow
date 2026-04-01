@@ -1,14 +1,13 @@
 import logging
 import time
-from decimal import Decimal
 
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.db.models import Q, Sum, Count
+from django.db.models import Q
 from django.utils import timezone
 
-from ..models import Invoice, Notification, Payment, Payout
+from ..models import Invoice, Notification
 
 logger = logging.getLogger(__name__)
 
@@ -136,84 +135,7 @@ def set_appearance_preference(request):
 
 @login_required
 def wallet_view(request):
-    workspace = getattr(request, 'workspace', None)
-    if not workspace and hasattr(request.user, 'profile'):
-        try:
-            workspace = request.user.profile.current_workspace
-        except Exception:
-            pass
-
-    total_received = Decimal('0.00')
-    total_payouts = Decimal('0.00')
-    payment_count = 0
-    payout_count = 0
-    recent_payments = []
-    recent_payouts = []
-    monthly_inflow = []
-
-    if workspace:
-        agg = Payment.objects.filter(
-            workspace=workspace,
-            status='completed'
-        ).aggregate(total=Sum('amount'), count=Count('id'))
-        total_received = agg['total'] or Decimal('0.00')
-        payment_count = agg['count'] or 0
-
-        pagg = Payout.objects.filter(
-            workspace=workspace,
-            status='success'
-        ).aggregate(total=Sum('amount'), count=Count('id'))
-        total_payouts = pagg['total'] or Decimal('0.00')
-        payout_count = pagg['count'] or 0
-
-        recent_payments = Payment.objects.filter(
-            workspace=workspace,
-            status='completed'
-        ).select_related('invoice', 'invoice__client').order_by('-payment_date')[:10]
-
-        recent_payouts = Payout.objects.filter(
-            workspace=workspace
-        ).order_by('-created_at')[:10]
-
-        from django.db.models.functions import TruncMonth
-        from datetime import timedelta
-        six_months_ago = timezone.now().date() - timedelta(days=180)
-        monthly_inflow = (
-            Payment.objects.filter(
-                workspace=workspace,
-                status='completed',
-                payment_date__date__gte=six_months_ago
-            )
-            .annotate(month=TruncMonth('payment_date'))
-            .values('month')
-            .annotate(total=Sum('amount'))
-            .order_by('month')
-        )
-
-    balance = total_received - total_payouts
-    currency_symbol = workspace.currency_symbol if workspace else '₦'
-
-    import json
-    monthly_inflow_json = json.dumps([
-        {'month': r['month'].strftime('%Y-%m-%d') if r.get('month') else '', 'total': float(r['total'] or 0)}
-        for r in monthly_inflow
-    ])
-
-    context = {
-        'page_title': 'Wallet',
-        'total_received': total_received,
-        'total_payouts': total_payouts,
-        'balance': balance,
-        'payment_count': payment_count,
-        'payout_count': payout_count,
-        'recent_payments': recent_payments,
-        'recent_payouts': recent_payouts,
-        'monthly_inflow': monthly_inflow,
-        'monthly_inflow_json': monthly_inflow_json,
-        'currency_symbol': currency_symbol,
-        'workspace': workspace,
-    }
-    return render(request, 'pages/wallet.html', context)
+    return render(request, 'pages/wallet.html', {'page_title': 'Wallet'})
 
 
 @login_required
