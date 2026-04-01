@@ -5,142 +5,190 @@
 {% block content %}
 <div class="page-in">
 
+<!-- Page header -->
 <div class="page-hdr" style="margin-bottom:24px">
   <div>
-    <h1 class="page-title">Payments</h1>
-    <p class="page-sub">Track all incoming payments and transactions.</p>
+    <p class="page-eyebrow">Finance</p>
+    <h1 class="page-title-lg">Payments</h1>
+    <p class="page-sub-premium">Track incoming payments, transactions, and collection performance.</p>
   </div>
   <div class="page-hdr-actions">
-    <a href="{% url 'invoices:transaction_list' %}" class="btn btn-secondary btn-sm">All Transactions</a>
-    <a href="{% url 'invoices:invoice_list' %}" class="btn btn-primary btn-sm">View Invoices</a>
+    <a href="{% url 'invoices:transaction_list' %}" class="btn btn-secondary btn-sm">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Transaction History
+    </a>
+    <a href="{% url 'invoices:invoice_list' %}" class="btn btn-primary btn-sm">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+      View Invoices
+    </a>
   </div>
 </div>
 
 <!-- KPI Cards -->
 <div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px">
-  <div class="kpi-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div class="stat-icon si-green"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>
+  <div class="kpi-card kpi-card-profit" style="padding:20px 22px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+      <div class="stat-icon si-green" style="width:38px;height:38px;border-radius:10px">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+      </div>
       {% if stats.mom_change is not None %}
-      <span class="badge {% if stats.mom_change >= 0 %}b-success{% else %}b-danger{% endif %}" style="font-size:11px">
+      <span class="kpi-delta {% if stats.mom_change >= 0 %}up{% else %}down{% endif %}">
         {% if stats.mom_change >= 0 %}▲{% else %}▼{% endif %} {{ stats.mom_change|floatformat:1 }}%
       </span>
       {% endif %}
     </div>
     <p class="kpi-label">Total Collected</p>
-    <p class="kpi-value">{{ workspace.currency_symbol }}{{ stats.total_collected|floatformat:2 }}</p>
-    <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0">All time</p>
+    <p class="kpi-value">{{ workspace.currency_symbol }}{{ stats.total_collected|floatformat:0 }}</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">All time</p>
   </div>
-  <div class="kpi-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div class="stat-icon si-brand"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
+  <div class="kpi-card kpi-card-revenue" style="padding:20px 22px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+      <div class="stat-icon si-indigo" style="width:38px;height:38px;border-radius:10px">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
     </div>
     <p class="kpi-label">This Month</p>
-    <p class="kpi-value">{{ workspace.currency_symbol }}{{ stats.this_month|floatformat:2 }}</p>
-    <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0">vs {{ workspace.currency_symbol }}{{ stats.last_month|floatformat:2 }} last month</p>
+    <p class="kpi-value">{{ workspace.currency_symbol }}{{ stats.this_month|floatformat:0 }}</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">vs {{ workspace.currency_symbol }}{{ stats.last_month|floatformat:0 }} last month</p>
   </div>
-  <div class="kpi-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div class="stat-icon si-amber"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+  <div class="kpi-card kpi-card-outstanding" style="padding:20px 22px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+      <div class="stat-icon si-amber" style="width:38px;height:38px;border-radius:10px">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
     </div>
     <p class="kpi-label">Pending</p>
-    <p class="kpi-value">{{ workspace.currency_symbol }}{{ stats.pending_amount|floatformat:2 }}</p>
-    <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0">{{ stats.pending_count }} payment{{ stats.pending_count|pluralize }}</p>
+    <p class="kpi-value" style="color:#d97706">{{ workspace.currency_symbol }}{{ stats.pending_amount|floatformat:0 }}</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">{{ stats.pending_count }} payment{{ stats.pending_count|pluralize }}</p>
   </div>
-  <div class="kpi-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div class="stat-icon si-red"><svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div>
+  <div class="kpi-card" style="padding:20px 22px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px">
+      <div class="stat-icon si-red" style="width:38px;height:38px;border-radius:10px">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
     </div>
     <p class="kpi-label">Active Disputes</p>
-    <p class="kpi-value">{{ stats.active_disputes }}</p>
-    <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0">Requires attention</p>
+    <p class="kpi-value" style="{% if stats.active_disputes %}color:#dc2626{% endif %}">{{ stats.active_disputes }}</p>
+    <p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0">{% if stats.active_disputes %}Requires attention{% else %}All clear{% endif %}</p>
   </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 320px;gap:20px">
+<!-- Main 2-col layout -->
+<div class="payment-grid">
 
-<!-- Recent Payments -->
-<div class="card">
-  <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-    <h3 style="font-size:14px;font-weight:700;margin:0">Recent Payments</h3>
-    <a href="{% url 'invoices:transaction_list' %}" style="font-size:12.5px;font-weight:600;color:var(--brand-600)">View all →</a>
+  <!-- Recent Payments table -->
+  <div class="card">
+    <div class="card-hdr">
+      <h3 class="card-hdr-title">Recent Payments</h3>
+      <a href="{% url 'invoices:transaction_list' %}" class="section-link">View all →</a>
+    </div>
+    {% if payments %}
+    <div style="overflow-x:auto">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Client</th>
+            <th class="desk-only">Date</th>
+            <th class="desk-only">Method</th>
+            <th style="text-align:right">Amount</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pmt in payments %}
+          <tr style="cursor:pointer" onclick="window.location='{% url 'invoices:payment_detail' pmt.id %}'">
+            <td>
+              <a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" style="font-weight:700;color:var(--brand-600);font-size:13px;text-decoration:none" onclick="event.stopPropagation()">{{ pmt.invoice.invoice_number }}</a>
+            </td>
+            <td style="font-size:13px;font-weight:500;color:var(--text-primary)">{{ pmt.invoice.client.name|truncatechars:20 }}</td>
+            <td class="desk-only" style="color:var(--text-muted);font-size:13px;white-space:nowrap">{{ pmt.payment_date|date:"d M Y" }}</td>
+            <td class="desk-only">
+              <span class="badge b-info" style="font-size:10.5px">{{ pmt.get_payment_method_display }}</span>
+            </td>
+            <td style="text-align:right;font-weight:700;color:#16a34a;font-variant-numeric:tabular-nums;font-size:13.5px">+{{ pmt.currency }}{{ pmt.amount|floatformat:2 }}</td>
+            <td>
+              <span class="badge b-{{ pmt.status }}"><span class="badge-dot"></span>{{ pmt.get_status_display }}</span>
+            </td>
+            <td onclick="event.stopPropagation()">
+              <a href="{% url 'invoices:payment_detail' pmt.id %}" class="btn btn-xs btn-ghost">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding:48px 24px">
+      <div class="empty-icon si-green" style="border-radius:14px">
+        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg>
+      </div>
+      <p class="empty-title">No payments yet</p>
+      <p class="empty-desc">Payments will appear here when invoices are paid.</p>
+      <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm">View Invoices</a>
+    </div>
+    {% endif %}
   </div>
-  {% if payments %}
-  <div style="overflow-x:auto">
-    <table class="tbl">
-      <thead><tr><th>Invoice</th><th>Client</th><th>Date</th><th>Method</th><th>Amount</th><th>Status</th><th></th></tr></thead>
-      <tbody>
-        {% for pmt in payments %}
-        <tr>
-          <td><a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" style="font-weight:600;color:var(--brand-600)">{{ pmt.invoice.invoice_number }}</a></td>
-          <td style="color:var(--text-primary)">{{ pmt.invoice.client.name }}</td>
-          <td style="color:var(--text-secondary)">{{ pmt.payment_date|date:"d M Y" }}</td>
-          <td><span class="badge b-info">{{ pmt.get_payment_method_display }}</span></td>
-          <td style="font-weight:700;color:#16a34a;font-variant-numeric:tabular-nums">{{ pmt.currency }}{{ pmt.amount|floatformat:2 }}</td>
-          <td>
-            <span class="badge {% if pmt.status == 'completed' %}b-success{% elif pmt.status == 'pending' %}b-warning{% elif pmt.status == 'failed' %}b-danger{% else %}b-info{% endif %}">
-              {{ pmt.get_status_display }}
-            </span>
-          </td>
-          <td><a href="{% url 'invoices:payment_detail' pmt.id %}" class="btn btn-xs btn-ghost">View →</a></td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% else %}
-  <div style="padding:64px 24px;text-align:center">
-    <div class="stat-icon si-green" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg></div>
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No payments yet</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Payments will appear here when invoices are paid.</p>
-    <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm">View Invoices</a>
-  </div>
-  {% endif %}
-</div>
 
-<!-- Sidebar: Payment Methods & Disputes -->
-<div style="display:flex;flex-direction:column;gap:16px">
+  <!-- Sidebar -->
+  <div style="display:flex;flex-direction:column;gap:16px">
 
-  {% if method_breakdown %}
-  <div class="card" style="padding:20px">
-    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Payment Methods</p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      {% for m in method_breakdown %}
-      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
-        <span style="color:var(--text-secondary)">{{ m.payment_method|default:"Other"|title }}</span>
-        <div style="text-align:right">
-          <span style="font-weight:700;font-variant-numeric:tabular-nums">{{ workspace.currency_symbol }}{{ m.total|floatformat:2 }}</span>
-          <span style="font-size:11px;color:var(--text-muted);margin-left:6px">{{ m.count }}×</span>
+    {% if method_breakdown %}
+    <div class="card" style="padding:20px">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 16px">Payment Methods</p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        {% for m in method_breakdown %}
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+            <span style="font-size:12.5px;font-weight:600;color:var(--text-secondary)">{{ m.payment_method|default:"Other"|title }}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11px;color:var(--text-muted)">{{ m.count }}×</span>
+              <span style="font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;color:var(--text-primary)">{{ workspace.currency_symbol }}{{ m.total|floatformat:0 }}</span>
+            </div>
+          </div>
+          {% if stats.total_collected %}
+          <div class="collection-bar">
+            <div class="collection-fill" style="width:{% widthratio m.total stats.total_collected 100 %}%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"></div>
+          </div>
+          {% endif %}
         </div>
+        {% endfor %}
       </div>
-      {% endfor %}
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  {% if disputes %}
-  <div class="card" style="padding:20px">
-    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Active Disputes</p>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      {% for d in disputes %}
-      <div style="font-size:13px;padding:10px 12px;background:var(--bg-subtle);border-radius:8px">
-        <p style="font-weight:600;margin:0 0 2px">{{ d.dispute_id|default:d.id }}</p>
-        <p style="font-size:11.5px;color:var(--text-muted);margin:0">{{ d.created_at|date:"d M Y" }}</p>
+    {% if disputes %}
+    <div class="card" style="padding:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0">Active Disputes</p>
+        <span style="background:#fee2e2;color:#dc2626;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px">{{ disputes|length }}</span>
       </div>
-      {% endfor %}
+      <div style="display:flex;flex-direction:column;gap:8px">
+        {% for d in disputes %}
+        <div style="font-size:13px;padding:10px 12px;background:var(--bg-subtle);border-radius:9px;border:1px solid var(--border)">
+          <p style="font-weight:700;margin:0 0 2px;color:var(--text-primary)">{{ d.dispute_id|default:d.id }}</p>
+          <p style="font-size:11px;color:var(--text-muted);margin:0">{{ d.created_at|date:"d M Y" }}</p>
+        </div>
+        {% endfor %}
+      </div>
     </div>
-  </div>
-  {% endif %}
+    {% endif %}
 
-  <div class="card" style="padding:20px">
-    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Quick Actions</p>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm" style="justify-content:center">Create Invoice</a>
-      <a href="{% url 'invoices:transaction_list' %}" class="btn btn-ghost btn-sm" style="justify-content:center">Transaction History</a>
+    <!-- Quick Actions -->
+    <div class="card" style="padding:20px">
+      <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Quick Actions</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm" style="justify-content:center">
+          <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+          Create Invoice
+        </a>
+        <a href="{% url 'invoices:transaction_list' %}" class="btn btn-secondary btn-sm" style="justify-content:center">Transaction History</a>
+        <a href="{% url 'invoices:cashflow_report' %}" class="btn btn-ghost btn-sm" style="justify-content:center">Cash Flow Report</a>
+      </div>
     </div>
-  </div>
 
-</div>
+  </div>
 </div>
 
 </div>

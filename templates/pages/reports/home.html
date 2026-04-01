@@ -5,131 +5,245 @@
 {% block content %}
 <div class="page-in">
 
+<!-- Page header -->
 <div class="page-hdr" style="margin-bottom:28px">
   <div>
-    <h1 class="page-title">Reports</h1>
-    <p class="page-sub">Gain insights into your business performance.</p>
+    <p class="page-eyebrow">Analytics</p>
+    <h1 class="page-title-lg">Reports</h1>
+    <p class="page-sub-premium">Business intelligence, financial analytics, and exportable insights.</p>
+  </div>
+  <div class="page-hdr-actions">
+    <a href="{% url 'invoices:exports_hub' %}" class="btn btn-secondary btn-sm">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      Export Hub
+    </a>
   </div>
 </div>
 
-<!-- Date Range Picker -->
-<div class="card" style="padding:18px 20px;margin-bottom:24px">
-  <form method="get" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <p style="font-size:13px;font-weight:600;margin:0;color:var(--text-secondary);flex-shrink:0">Filter period:</p>
-    <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-input" style="width:160px">
-    <span style="color:var(--text-muted);font-size:13px">to</span>
-    <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-input" style="width:160px">
-    <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
-    <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">
-      <a href="?period=this_month" class="btn btn-ghost btn-sm {% if period == 'this_month' %}active{% endif %}">This Month</a>
-      <a href="?period=last_month" class="btn btn-ghost btn-sm {% if period == 'last_month' %}active{% endif %}">Last Month</a>
-      <a href="?period=this_year" class="btn btn-ghost btn-sm {% if period == 'this_year' %}active{% endif %}">This Year</a>
-      <a href="?period=last_year" class="btn btn-ghost btn-sm {% if period == 'last_year' %}active{% endif %}">Last Year</a>
+<!-- Period Selector Card -->
+<div class="card" style="padding:16px 20px;margin-bottom:24px">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted);flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <p style="font-size:13px;font-weight:600;margin:0;color:var(--text-secondary);flex-shrink:0">Period:</p>
+    <form method="get" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1">
+      <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="form-input" style="width:150px;font-size:13px">
+      <span style="color:var(--text-muted);font-size:13px;flex-shrink:0">to</span>
+      <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="form-input" style="width:150px;font-size:13px">
+      <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+    </form>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <a href="?period=this_month" class="filter-chip {% if period == 'this_month' %}active{% endif %}">This Month</a>
+      <a href="?period=last_month" class="filter-chip {% if period == 'last_month' %}active{% endif %}">Last Month</a>
+      <a href="?period=this_year" class="filter-chip {% if period == 'this_year' %}active{% endif %}">This Year</a>
+      <a href="?period=last_year" class="filter-chip {% if period == 'last_year' %}active{% endif %}">Last Year</a>
     </div>
-  </form>
+  </div>
 </div>
 
 <!-- Summary KPIs -->
-<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Revenue</p>
-    <p class="kpi-value" style="font-size:20px">{{ workspace.currency_symbol }}{{ summary.revenue|floatformat:2 }}</p>
+<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px">
+  <div class="kpi-card kpi-card-revenue" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Revenue</p>
+      <div class="stat-icon si-indigo" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px">{{ workspace.currency_symbol }}{{ summary.revenue|floatformat:0 }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Total collected</p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Expenses</p>
-    <p class="kpi-value" style="font-size:20px;color:#dc2626">{{ workspace.currency_symbol }}{{ summary.expenses|floatformat:2 }}</p>
+  <div class="kpi-card kpi-card-overdue" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Expenses</p>
+      <div class="stat-icon si-red" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px;color:#dc2626">{{ workspace.currency_symbol }}{{ summary.expenses|floatformat:0 }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Total spending</p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Net Profit</p>
-    <p class="kpi-value" style="font-size:20px;color:{% if summary.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}">{{ workspace.currency_symbol }}{{ summary.net_profit|floatformat:2 }}</p>
+  <div class="kpi-card kpi-card-profit" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Net Profit</p>
+      <div class="stat-icon {% if summary.net_profit >= 0 %}si-green{% else %}si-red{% endif %}" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px;color:{% if summary.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}">{{ workspace.currency_symbol }}{{ summary.net_profit|floatformat:0 }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Revenue minus expenses</p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Invoices Paid</p>
-    <p class="kpi-value" style="font-size:20px">{{ summary.paid_count }}</p>
+  <div class="kpi-card kpi-card-clients" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Invoices Paid</p>
+      <div class="stat-icon si-teal" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:28px">{{ summary.paid_count }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">In this period</p>
   </div>
 </div>
 
-<!-- Report Cards -->
-<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+<!-- Report Cards Grid -->
+<div style="margin-bottom:8px">
+  <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 14px">Available Reports</p>
+</div>
+<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px">
 
-  <a href="{% url 'invoices:revenue_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card card-hover" style="padding:24px;text-decoration:none;display:flex;flex-direction:column">
+  <!-- Revenue Report -->
+  <a href="{% url 'invoices:revenue_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}"
+     class="report-card" style="--report-bg:rgba(79,70,229,.03);--report-border:#c7d2fe">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div class="stat-icon si-indigo"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg></div>
-      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <div class="stat-icon si-indigo" style="width:42px;height:42px;border-radius:12px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted)">View</span>
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </div>
     </div>
-    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Revenue Report</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1">Breakdown of revenue by client, period, and invoice.</p>
-    <p style="font-size:12px;font-weight:700;color:var(--brand-600);margin:0">{{ workspace.currency_symbol }}{{ summary.revenue|floatformat:0 }} this period</p>
+    <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text-primary);letter-spacing:-.2px">Revenue Report</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1;line-height:1.6">Breakdown of revenue by client, period, and invoice with trend analysis.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:#4f46e5">{{ workspace.currency_symbol }}{{ summary.revenue|floatformat:0 }} this period</span>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#eef2ff;color:#4f46e5">Income</span>
+    </div>
   </a>
 
-  <a href="{% url 'invoices:cashflow_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card card-hover" style="padding:24px;text-decoration:none;display:flex;flex-direction:column">
+  <!-- Cash Flow -->
+  <a href="{% url 'invoices:cashflow_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}"
+     class="report-card" style="--report-bg:rgba(22,163,74,.03);--report-border:#86efac">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div class="stat-icon si-green"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg></div>
-      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <div class="stat-icon si-green" style="width:42px;height:42px;border-radius:12px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted)">View</span>
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </div>
     </div>
-    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Cash Flow</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1">Income vs expenses over time, net cash position.</p>
-    <p style="font-size:12px;font-weight:700;color:{% if summary.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %};margin:0">Net: {{ workspace.currency_symbol }}{{ summary.net_profit|floatformat:0 }}</p>
+    <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text-primary);letter-spacing:-.2px">Cash Flow</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1;line-height:1.6">Income vs expenses over time, monthly net cash position visualized.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:{% if summary.net_profit >= 0 %}#16a34a{% else %}#dc2626{% endif %}">Net: {{ workspace.currency_symbol }}{{ summary.net_profit|floatformat:0 }}</span>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#dcfce7;color:#16a34a">Cash</span>
+    </div>
   </a>
 
-  <a href="{% url 'invoices:aging_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card card-hover" style="padding:24px;text-decoration:none;display:flex;flex-direction:column">
+  <!-- Aging Report -->
+  <a href="{% url 'invoices:aging_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}"
+     class="report-card" style="--report-bg:rgba(217,119,6,.03);--report-border:#fcd34d">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div class="stat-icon si-amber"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <div class="stat-icon si-amber" style="width:42px;height:42px;border-radius:12px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted)">View</span>
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </div>
     </div>
-    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Accounts Receivable Aging</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1">Outstanding invoices grouped by how long they've been unpaid.</p>
-    <p style="font-size:12px;font-weight:700;color:#d97706;margin:0">Track overdue balances</p>
+    <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text-primary);letter-spacing:-.2px">A/R Aging</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1;line-height:1.6">Outstanding invoices grouped by how long they've been unpaid — from current to 90+ days.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:#d97706">Track overdue balances</span>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#fef3c7;color:#d97706">Aging</span>
+    </div>
   </a>
 
-  <a href="{% url 'invoices:expense_analysis' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card card-hover" style="padding:24px;text-decoration:none;display:flex;flex-direction:column">
+  <!-- Expense Report -->
+  <a href="{% url 'invoices:expense_analysis' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}"
+     class="report-card" style="--report-bg:rgba(220,38,38,.03);--report-border:#fca5a5">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div class="stat-icon si-red"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg></div>
-      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <div class="stat-icon si-red" style="width:42px;height:42px;border-radius:12px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted)">View</span>
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </div>
     </div>
-    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Expense Report</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1">Expenses by category, vendor, and time period.</p>
-    <p style="font-size:12px;font-weight:700;color:#dc2626;margin:0">{{ workspace.currency_symbol }}{{ summary.expenses|floatformat:0 }} this period</p>
+    <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text-primary);letter-spacing:-.2px">Expense Report</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1;line-height:1.6">Detailed expenses by category, vendor, and time period with donut chart breakdown.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:#dc2626">{{ workspace.currency_symbol }}{{ summary.expenses|floatformat:0 }} this period</span>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#fee2e2;color:#dc2626">Expenses</span>
+    </div>
   </a>
 
-  <a href="{% url 'invoices:profitability_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card card-hover" style="padding:24px;text-decoration:none;display:flex;flex-direction:column">
+  <!-- Profitability -->
+  <a href="{% url 'invoices:profitability_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}"
+     class="report-card" style="--report-bg:rgba(124,58,237,.03);--report-border:#c4b5fd">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div class="stat-icon si-violet"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
-      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <div class="stat-icon si-violet" style="width:42px;height:42px;border-radius:12px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted)">View</span>
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </div>
     </div>
-    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Profitability</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1">Profit and loss by client and project.</p>
-    <p style="font-size:12px;font-weight:700;color:#7c3aed;margin:0">P&amp;L analysis by client</p>
+    <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text-primary);letter-spacing:-.2px">Profitability</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1;line-height:1.6">Profit and loss by client and project — identify your most valuable relationships.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:#7c3aed">P&amp;L analysis by client</span>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#f5f3ff;color:#7c3aed">P&amp;L</span>
+    </div>
   </a>
 
-  <a href="{% url 'invoices:tax_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card card-hover" style="padding:24px;text-decoration:none;display:flex;flex-direction:column">
+  <!-- Tax Report -->
+  <a href="{% url 'invoices:tax_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}"
+     class="report-card" style="--report-bg:rgba(13,148,136,.03);--report-border:#5eead4">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div class="stat-icon si-teal"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg></div>
-      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <div class="stat-icon si-teal" style="width:42px;height:42px;border-radius:12px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted)">View</span>
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </div>
     </div>
-    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Tax Report</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1">Tax collected, owed, and breakdown by tax rate.</p>
-    <p style="font-size:12px;font-weight:700;color:#0d9488;margin:0">VAT/GST summary</p>
+    <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text-primary);letter-spacing:-.2px">Tax Report</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1;line-height:1.6">Tax collected, owed, and breakdown by rate — VAT/GST summary ready for filing.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:#0d9488">VAT/GST summary</span>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#ccfbf1;color:#0d9488">Tax</span>
+    </div>
   </a>
 
-  <a href="{% url 'invoices:forecast_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}" class="card card-hover" style="padding:24px;text-decoration:none;display:flex;flex-direction:column">
+  <!-- Revenue Forecast -->
+  <a href="{% url 'invoices:forecast_report' %}{% if date_from %}?date_from={{ date_from|date:'Y-m-d' }}&date_to={{ date_to|date:'Y-m-d' }}{% endif %}"
+     class="report-card" style="position:relative;--report-bg:rgba(79,70,229,.04);--report-border:#a5b4fc">
+    <div style="position:absolute;top:14px;right:14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:99px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff">AI-Powered</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div class="stat-icon si-indigo"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
-      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <div class="stat-icon si-indigo" style="width:42px;height:42px;border-radius:12px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
     </div>
-    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Revenue Forecast</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1">Projected revenue based on recurring and outstanding invoices.</p>
-    <p style="font-size:12px;font-weight:700;color:var(--brand-600);margin:0">AI-powered projection</p>
+    <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text-primary);letter-spacing:-.2px">Revenue Forecast</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1;line-height:1.6">AI-powered projection based on recurring invoices, outstanding, and historical patterns.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:var(--brand-600)">Predictive analytics</span>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#eef2ff;color:#4f46e5">Forecast</span>
+    </div>
   </a>
 
-  <a href="{% url 'invoices:exports_hub' %}" class="card card-hover" style="padding:24px;text-decoration:none;display:flex;flex-direction:column">
+  <!-- Export Hub -->
+  <a href="{% url 'invoices:exports_hub' %}" class="report-card" style="--report-bg:rgba(22,163,74,.03);--report-border:#86efac">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div class="stat-icon si-green"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg></div>
-      <svg width="14" height="14" fill="none" stroke="var(--text-muted)" viewBox="0 0 24 24" style="opacity:.5"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <div class="stat-icon si-green" style="width:42px;height:42px;border-radius:12px">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:6px;padding:3px 8px">
+        <span style="font-size:11px;font-weight:600;color:var(--text-muted)">Open</span>
+        <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </div>
     </div>
-    <h3 style="font-size:15px;font-weight:700;margin:0 0 6px;color:var(--text-primary)">Export Data</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1">Export invoices, payments, and expenses as CSV or PDF.</p>
-    <p style="font-size:12px;font-weight:700;color:#16a34a;margin:0">CSV &amp; PDF export</p>
+    <h3 style="font-size:15px;font-weight:800;margin:0 0 6px;color:var(--text-primary);letter-spacing:-.2px">Export Hub</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin:0 0 16px;flex:1;line-height:1.6">Export invoices, payments, clients, and expenses as CSV or downloadable PDF.</p>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:13px;font-weight:700;color:#16a34a">CSV &amp; PDF export</span>
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:#dcfce7;color:#16a34a">Export</span>
+    </div>
   </a>
 
 </div>

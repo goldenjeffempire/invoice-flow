@@ -42,6 +42,25 @@ function appShell() {
       localStorage.setItem('sb_col', this.col ? '1' : '0');
     },
 
+    openSearch() {
+      // Forward to the globalSearch component's open state
+      const searchEl = document.querySelector('[x-data*="globalSearch"]');
+      if (searchEl && searchEl._x_dataStack) {
+        const gs = searchEl._x_dataStack[0];
+        if (gs) {
+          gs.open = true;
+          setTimeout(() => {
+            const inp = searchEl.querySelector('input[type="search"], input[type="text"]');
+            if (inp) inp.focus();
+          }, 50);
+        }
+      } else {
+        // Fallback: click the trigger button
+        const btn = document.querySelector('.search-trigger');
+        if (btn) btn.click();
+      }
+    },
+
     get sbClass() {
       return { 'collapsed': this.col, 'open': this.mob }
     },

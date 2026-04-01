@@ -5,14 +5,16 @@
 {% block content %}
 <div class="page-in" x-data="invoiceListApp()">
 
+<!-- Page header -->
 <div class="page-hdr" style="margin-bottom:24px">
   <div>
-    <h1 class="page-title">Invoices</h1>
-    <p class="page-sub">Manage and track all your invoices.</p>
+    <p class="page-eyebrow">Billing</p>
+    <h1 class="page-title-lg">Invoices</h1>
+    <p class="page-sub-premium">Create, send and track your invoices in one place.</p>
   </div>
   <div class="page-hdr-actions">
     <div x-data="{open:false}" style="position:relative">
-      <button @click="open=!open" class="btn btn-secondary btn-sm" style="display:flex;align-items:center;gap:6px">
+      <button @click="open=!open" class="btn btn-secondary btn-sm">
         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
         Export
         <svg width="11" height="11" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
@@ -21,11 +23,11 @@
            x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0">
         <div style="padding:6px">
           <a href="{% url 'invoices:invoice_export_csv' %}?status={{ current_status }}&q={{ search_query }}" class="dd-item">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Export as CSV
           </a>
           <a href="{% url 'invoices:exports_hub' %}" class="dd-item">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             Full Export Hub
           </a>
         </div>
@@ -38,132 +40,163 @@
   </div>
 </div>
 
-<!-- KPI row -->
-<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px">
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Total Invoiced</p>
-    <p class="kpi-value" style="font-size:20px">{{ workspace.currency_symbol }}{{ stats.total_invoiced|floatformat:2 }}</p>
+<!-- Premium KPI row -->
+<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card kpi-card-revenue" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Total Invoiced</p>
+      <div class="stat-icon si-indigo" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px">{{ workspace.currency_symbol }}{{ stats.total_invoiced|floatformat:0 }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">{{ stats.total_count|default:0 }} invoice{{ stats.total_count|pluralize }}</p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Outstanding</p>
-    <p class="kpi-value" style="font-size:20px">{{ workspace.currency_symbol }}{{ stats.outstanding|floatformat:2 }}</p>
+  <div class="kpi-card kpi-card-outstanding" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Outstanding</p>
+      <div class="stat-icon si-amber" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px;color:#d97706">{{ workspace.currency_symbol }}{{ stats.outstanding|floatformat:0 }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Awaiting payment</p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Collected</p>
-    <p class="kpi-value" style="font-size:20px;color:#16a34a">{{ workspace.currency_symbol }}{{ stats.collected|floatformat:2 }}</p>
+  <div class="kpi-card kpi-card-profit" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Collected</p>
+      <div class="stat-icon si-green" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px;color:#16a34a">{{ workspace.currency_symbol }}{{ stats.collected|floatformat:0 }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">
+      {% if stats.total_invoiced %}{{ stats.collected|default:0|floatformat:0|divisibleby:stats.total_invoiced }}{% endif %}Paid invoices
+    </p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Overdue</p>
-    <p class="kpi-value" style="font-size:20px;color:{% if stats.overdue_amount > 0 %}#dc2626{% else %}var(--text-primary){% endif %}">{{ workspace.currency_symbol }}{{ stats.overdue_amount|floatformat:2 }}</p>
+  <div class="kpi-card kpi-card-overdue" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Overdue</p>
+      <div class="stat-icon si-red" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px;color:{% if stats.overdue_amount > 0 %}#dc2626{% else %}var(--text-primary){% endif %}">{{ workspace.currency_symbol }}{{ stats.overdue_amount|floatformat:0 }}</p>
+    {% if overdue_count %}<p style="font-size:11px;color:#dc2626;margin-top:4px;font-weight:600">{{ overdue_count }} invoice{{ overdue_count|pluralize }} overdue</p>
+    {% else %}<p style="font-size:11px;color:var(--text-muted);margin-top:4px">None overdue</p>{% endif %}
   </div>
 </div>
 
-<!-- Filters + Tabs -->
-<div class="card" style="margin-bottom:20px">
+<!-- Card: Filters + Table -->
+<div class="card">
+  <!-- Status Tabs -->
   <div style="padding:0 20px">
     <div class="tab-nav">
       {% for tab in status_tabs %}
       <a href="?status={{ tab.key }}&q={{ search_query }}" class="tab-item {% if current_status == tab.key %}active{% endif %}">
-        {{ tab.label }} <span class="tab-count">{{ tab.count }}</span>
+        {{ tab.label }}
+        <span class="tab-count">{{ tab.count }}</span>
       </a>
       {% endfor %}
     </div>
   </div>
 
-  <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <form method="get" style="flex:1;min-width:200px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <!-- Filter bar -->
+  <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--bg-subtle)">
+    <form method="get" style="flex:1;min-width:220px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <input type="hidden" name="status" value="{{ current_status }}">
-      <div style="position:relative;flex:1;min-width:160px">
+      <div style="position:relative;flex:1;min-width:180px">
         <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" name="q" value="{{ search_query }}" placeholder="Search invoices, clients…" class="form-input" style="padding-left:34px">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search invoices, clients…" class="form-input" style="padding-left:34px;font-size:13px">
       </div>
-      <input type="date" name="date_from" value="{{ date_from }}" class="form-input" style="width:auto;min-width:130px" title="From date">
-      <input type="date" name="date_to" value="{{ date_to }}" class="form-input" style="width:auto;min-width:130px" title="To date">
+      <input type="date" name="date_from" value="{{ date_from }}" class="form-input" style="width:auto;min-width:130px;font-size:13px" title="From date">
+      <input type="date" name="date_to" value="{{ date_to }}" class="form-input" style="width:auto;min-width:130px;font-size:13px" title="To date">
       <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
-      {% if search_query or current_status or date_from or date_to %}<a href="{% url 'invoices:invoice_list' %}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+      {% if search_query or current_status or date_from or date_to %}<a href="{% url 'invoices:invoice_list' %}" class="btn btn-ghost btn-sm" style="color:var(--text-muted)">✕ Clear</a>{% endif %}
     </form>
-    <div style="display:flex;gap:6px;flex-shrink:0">
-      <select onchange="window.location='?status={{ current_status }}&q={{ search_query }}&ordering='+this.value" class="form-select" style="width:auto;padding:8px 28px 8px 10px;font-size:12.5px">
-        <option value="-created_at" {% if ordering == '-created_at' %}selected{% endif %}>Newest First</option>
-        <option value="created_at" {% if ordering == 'created_at' %}selected{% endif %}>Oldest First</option>
-        <option value="due_date" {% if ordering == 'due_date' %}selected{% endif %}>Due Soon</option>
-        <option value="-total_amount" {% if ordering == '-total_amount' %}selected{% endif %}>Highest Amount</option>
-        <option value="total_amount" {% if ordering == 'total_amount' %}selected{% endif %}>Lowest Amount</option>
-      </select>
-    </div>
+    <select onchange="window.location='?status={{ current_status }}&q={{ search_query }}&ordering='+this.value" class="form-select" style="width:auto;padding:8px 28px 8px 10px;font-size:12.5px;flex-shrink:0">
+      <option value="-created_at" {% if ordering == '-created_at' %}selected{% endif %}>Newest First</option>
+      <option value="created_at" {% if ordering == 'created_at' %}selected{% endif %}>Oldest First</option>
+      <option value="due_date" {% if ordering == 'due_date' %}selected{% endif %}>Due Soon</option>
+      <option value="-total_amount" {% if ordering == '-total_amount' %}selected{% endif %}>Highest Amount</option>
+      <option value="total_amount" {% if ordering == 'total_amount' %}selected{% endif %}>Lowest Amount</option>
+    </select>
   </div>
 
-  <!-- Bulk Action Bar (shows when rows are selected) -->
+  <!-- Bulk Action Bar -->
   <div x-show="selectedIds.length > 0" x-cloak
-       style="padding:10px 20px;background:rgba(99,102,241,.06);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+       style="padding:10px 20px;background:linear-gradient(90deg,rgba(99,102,241,.08),rgba(139,92,246,.04));border-bottom:1px solid rgba(99,102,241,.15);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <span style="font-size:12.5px;font-weight:700;color:var(--brand-600)" x-text="selectedIds.length + ' invoice' + (selectedIds.length > 1 ? 's' : '') + ' selected'"></span>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <a :href="'{% url 'invoices:invoice_export_csv' %}?ids=' + selectedIds.join(',')" class="btn btn-xs btn-secondary">
-        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-        Export CSV
-      </a>
-      <button @click="bulkAction('send_reminders')" class="btn btn-xs btn-secondary" :disabled="bulkLoading">
-        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-        Send Reminders
-      </button>
-      <button @click="bulkAction('mark_sent')" class="btn btn-xs btn-secondary" :disabled="bulkLoading">
-        Mark Sent
-      </button>
-      <button @click="bulkAction('delete_drafts')" class="btn btn-xs btn-danger-outline" :disabled="bulkLoading"
-              onclick="return confirm('Delete all selected draft invoices? This cannot be undone.')">
-        Delete Drafts
-      </button>
-      <button @click="selectedIds=[]" class="btn btn-xs btn-ghost">Clear</button>
+      <a :href="'{% url 'invoices:invoice_export_csv' %}?ids=' + selectedIds.join(',')" class="btn btn-xs btn-secondary">Export CSV</a>
+      <button @click="bulkAction('send_reminders')" class="btn btn-xs btn-secondary" :disabled="bulkLoading">Send Reminders</button>
+      <button @click="bulkAction('mark_sent')" class="btn btn-xs btn-secondary" :disabled="bulkLoading">Mark Sent</button>
+      <button @click="bulkAction('delete_drafts')" class="btn btn-xs btn-danger" :disabled="bulkLoading"
+              onclick="return confirm('Delete all selected draft invoices? This cannot be undone.')">Delete Drafts</button>
+      <button @click="selectedIds=[]" class="btn btn-xs btn-ghost">✕ Clear</button>
     </div>
     <span x-show="bulkMsg" x-text="bulkMsg" style="font-size:12px;color:var(--text-secondary);font-style:italic"></span>
   </div>
 
-  <!-- Table -->
   {% if invoices %}
   <div style="overflow-x:auto">
     <table class="tbl">
-      <thead><tr>
-        <th style="width:32px;padding:10px 8px 10px 16px">
-          <input type="checkbox" @change="toggleAll($event)" :checked="allSelected" style="cursor:pointer;width:14px;height:14px;border-radius:3px">
-        </th>
-        <th>Invoice #</th>
-        <th>Client</th>
-        <th>Issue Date</th>
-        <th>Due Date</th>
-        <th>Amount</th>
-        <th>Balance Due</th>
-        <th>Status</th>
-        <th style="text-align:right">Actions</th>
-      </tr></thead>
+      <thead>
+        <tr>
+          <th style="width:32px;padding:10px 8px 10px 16px">
+            <input type="checkbox" @change="toggleAll($event)" :checked="allSelected" style="cursor:pointer;width:14px;height:14px;border-radius:3px;accent-color:var(--brand-600)">
+          </th>
+          <th>Invoice #</th>
+          <th>Client</th>
+          <th class="desk-only">Issue Date</th>
+          <th>Due Date</th>
+          <th style="text-align:right">Amount</th>
+          <th style="text-align:right" class="desk-only">Balance Due</th>
+          <th>Status</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for inv in invoices %}
-        <tr data-href="{% url 'invoices:invoice_detail' inv.id %}" :class="{'selected-row': selectedIds.includes('{{ inv.id }}')}" @click.stop>
+        <tr :class="{'selected-row': selectedIds.includes('{{ inv.id }}')}">
           <td style="padding:13px 8px 13px 16px" @click.stop>
-            <input type="checkbox" :value="'{{ inv.id }}'" x-model="selectedIds" style="cursor:pointer;width:14px;height:14px;border-radius:3px" @click.stop>
+            <input type="checkbox" :value="'{{ inv.id }}'" x-model="selectedIds" style="cursor:pointer;width:14px;height:14px;border-radius:3px;accent-color:var(--brand-600)" @click.stop>
           </td>
           <td>
-            <a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:700;color:var(--brand-600);font-size:13px">{{ inv.invoice_number }}</a>
+            <a href="{% url 'invoices:invoice_detail' inv.id %}" style="font-weight:700;color:var(--brand-600);font-size:13px;text-decoration:none">{{ inv.invoice_number }}</a>
           </td>
           <td>
-            <a href="{% url 'invoices:client_detail' inv.client.id %}" style="font-weight:500;color:var(--text-primary)">{{ inv.client.name }}</a>
-            {% if inv.client.email %}<p style="font-size:11px;color:var(--text-muted);margin:1px 0 0">{{ inv.client.email }}</p>{% endif %}
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ inv.client.name|slice:":1"|upper }}</div>
+              <div>
+                <a href="{% url 'invoices:client_detail' inv.client.id %}" style="font-weight:600;color:var(--text-primary);text-decoration:none;font-size:13px">{{ inv.client.name }}</a>
+                {% if inv.client.email %}<p style="font-size:10.5px;color:var(--text-muted);margin:0">{{ inv.client.email }}</p>{% endif %}
+              </div>
+            </div>
           </td>
-          <td style="color:var(--text-secondary)">{{ inv.issue_date|date:"d M Y" }}</td>
-          <td style="color:{% if inv.status == 'overdue' %}#dc2626;font-weight:600{% else %}var(--text-secondary){% endif %}">
-            {{ inv.due_date|date:"d M Y" }}
-            {% if inv.status == 'overdue' %}<p style="font-size:10.5px;color:#ef4444;margin:1px 0 0">{% if inv.days_overdue %}{{ inv.days_overdue }}d overdue{% endif %}</p>{% endif %}
+          <td class="desk-only" style="color:var(--text-muted);font-size:13px">{{ inv.issue_date|date:"d M Y" }}</td>
+          <td style="font-size:13px">
+            {% if inv.status == 'overdue' %}
+            <span style="color:#dc2626;font-weight:600">{{ inv.due_date|date:"d M Y" }}</span>
+            {% if inv.days_overdue %}<p style="font-size:10px;color:#ef4444;margin:2px 0 0;font-weight:600">{{ inv.days_overdue }}d overdue</p>{% endif %}
+            {% else %}
+            <span style="color:var(--text-secondary)">{{ inv.due_date|date:"d M Y" }}</span>
+            {% endif %}
           </td>
-          <td style="font-variant-numeric:tabular-nums;font-weight:600">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
-          <td style="font-variant-numeric:tabular-nums;font-weight:600;color:{% if inv.amount_due > 0 %}#d97706{% else %}var(--text-muted){% endif %}">
-            {% if inv.amount_due > 0 %}{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}{% else %}—{% endif %}
+          <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13.5px;color:var(--text-primary)">{{ inv.currency_symbol }}{{ inv.total_amount|floatformat:2 }}</td>
+          <td class="desk-only" style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:13px">
+            {% if inv.amount_due > 0 %}<span style="color:#d97706">{{ inv.currency_symbol }}{{ inv.amount_due|floatformat:2 }}</span>
+            {% else %}<span style="color:var(--text-muted)">—</span>{% endif %}
           </td>
-          <td><span class="badge b-{{ inv.status }}"><span class="badge-dot"></span>{{ inv.get_status_display }}</span></td>
           <td>
-            <div style="display:flex;gap:4px;justify-content:flex-end">
+            <span class="badge b-{{ inv.status }}">
+              <span class="badge-dot"></span>{{ inv.get_status_display }}
+            </span>
+          </td>
+          <td>
+            <div class="action-row">
               <a href="{% url 'invoices:invoice_detail' inv.id %}" class="btn btn-xs btn-ghost">View</a>
-              {% if inv.status == 'draft' %}
-              <a href="{% url 'invoices:invoice_edit' inv.id %}" class="btn btn-xs btn-ghost">Edit</a>
-              {% endif %}
+              {% if inv.status == 'draft' %}<a href="{% url 'invoices:invoice_edit' inv.id %}" class="btn btn-xs btn-ghost">Edit</a>{% endif %}
             </div>
           </td>
         </tr>
@@ -172,44 +205,43 @@
     </table>
   </div>
 
-  <!-- Pagination -->
   {% if invoices.has_other_pages %}
-  <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+  <div class="pagination">
     <p style="font-size:12.5px;color:var(--text-muted);margin:0">
-      Page {{ invoices.number }} of {{ invoices.paginator.num_pages }} — {{ invoices.paginator.count }} invoice{% if invoices.paginator.count != 1 %}s{% endif %}
+      Page {{ invoices.number }} of {{ invoices.paginator.num_pages }} &mdash; {{ invoices.paginator.count }} invoice{% if invoices.paginator.count != 1 %}s{% endif %}
     </p>
-    <div style="display:flex;gap:4px">
+    <div class="page-links">
       {% if invoices.has_previous %}
-      <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ invoices.previous_page_number }}" class="btn btn-xs btn-secondary">← Previous</a>
+      <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ invoices.previous_page_number }}" class="pg-btn">&#8592;</a>
       {% endif %}
       {% for num in invoices.paginator.page_range %}
         {% if invoices.number == num %}
-        <span class="btn btn-xs btn-primary" style="pointer-events:none">{{ num }}</span>
+        <span class="pg-btn current">{{ num }}</span>
         {% elif num == 1 or num == invoices.paginator.num_pages or num >= invoices.number|add:"-2" and num <= invoices.number|add:"2" %}
-        <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ num }}" class="btn btn-xs btn-secondary">{{ num }}</a>
+        <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ num }}" class="pg-btn">{{ num }}</a>
         {% elif num == invoices.number|add:"-3" or num == invoices.number|add:"3" %}
         <span style="padding:4px 2px;font-size:12px;color:var(--text-muted)">…</span>
         {% endif %}
       {% endfor %}
       {% if invoices.has_next %}
-      <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ invoices.next_page_number }}" class="btn btn-xs btn-secondary">Next →</a>
+      <a href="?status={{ current_status }}&q={{ search_query }}&ordering={{ ordering }}&page={{ invoices.next_page_number }}" class="pg-btn">&#8594;</a>
       {% endif %}
     </div>
   </div>
   {% endif %}
 
   {% else %}
-  <div style="padding:64px 24px;text-align:center">
-    <div class="stat-icon si-indigo" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px">
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+  <div class="empty-state">
+    <div class="empty-icon si-indigo" style="border-radius:16px">
+      <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
     </div>
     {% if search_query or current_status %}
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No invoices found</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Try adjusting your search or filter.</p>
+    <p class="empty-title">No invoices found</p>
+    <p class="empty-desc">No invoices match your current filters. Try adjusting or clearing them.</p>
     <a href="{% url 'invoices:invoice_list' %}" class="btn btn-secondary btn-sm">Clear Filters</a>
     {% else %}
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No invoices yet</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Create your first invoice to start getting paid.</p>
+    <p class="empty-title">No invoices yet</p>
+    <p class="empty-desc">Create your first invoice and start getting paid faster.</p>
     <a href="{% url 'invoices:invoice_create' %}" class="btn btn-primary btn-sm">
       <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
       Create Invoice
@@ -247,14 +279,14 @@ function invoiceListApp() {
       try {
         const form = new FormData();
         form.append('action', action);
-        form.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]')?.value || document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '');
         this.selectedIds.forEach(id => form.append('ids', id));
-        const resp = await fetch('{% url "invoices:invoice_bulk_action" %}', {method:'POST', body:form, headers:{'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''}});
+        const resp = await fetch('{% url "invoices:invoice_bulk_action" %}', {
+          method:'POST', body:form,
+          headers:{'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.content || ''}
+        });
         const data = await resp.json();
         this.bulkMsg = data.message || data.error || '';
-        if (data.success && action === 'delete_drafts') {
-          setTimeout(() => window.location.reload(), 800);
-        }
+        if (data.success && action === 'delete_drafts') setTimeout(() => window.location.reload(), 800);
       } catch(e) {
         this.bulkMsg = 'Error performing bulk action.';
       } finally {

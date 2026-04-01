@@ -1,43 +1,33 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}InvoiceFlow{% endblock %}</title>
 
-  <!-- SEO & Description -->
   <meta name="description" content="{% block meta_description %}InvoiceFlow — Professional invoicing, payments, and business finance for freelancers and small businesses.{% endblock %}">
   <meta name="application-name" content="InvoiceFlow">
-  <meta name="author" content="InvoiceFlow">
-
-  <!-- PWA / Mobile -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="InvoiceFlow">
   <meta name="theme-color" content="#6366f1" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: dark)">
-  <meta name="msapplication-TileColor" content="#6366f1">
-  <meta name="msapplication-navbutton-color" content="#6366f1">
 
-  <!-- Icons -->
   <link rel="icon" href="{% url 'favicon' %}">
   <link rel="apple-touch-icon" href="{% static 'images/icon-192.svg' %}">
   <link rel="manifest" href="{% static 'manifest.json' %}">
 
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet">
 
-  <!-- Styles -->
   <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <link rel="stylesheet" href="{% static 'css/app-enhanced.css' %}">
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -45,63 +35,65 @@
 </head>
 
 <body x-data="appShell()" x-init="boot()" :class="dark ? 'dark' : ''">
+<a class="skip-link" href="#main-content">Skip to main content</a>
 
-<!-- Hidden Django messages for Toast -->
 {% for message in messages %}
 <span data-msg="{{ message.tags }}" style="display:none">{{ message }}</span>
 {% endfor %}
 
 <!-- ════════ SIDEBAR ════════ -->
-<aside class="sidebar" :class="sbClass">
+<aside class="sidebar" :class="sbClass" role="navigation" aria-label="Main navigation">
 
-  <!-- Logo header -->
+  <!-- Logo / Brand -->
   <div class="sb-header">
-    <a href="{% url 'invoices:dashboard' %}" class="sb-logo">
+    <a href="{% url 'invoices:dashboard' %}" class="sb-logo" aria-label="InvoiceFlow Dashboard">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
         <path d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M15 4v4h4" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </a>
     <span class="sb-brand">InvoiceFlow</span>
-    <button class="sb-toggle" @click="toggleCol()" :title="col ? 'Expand sidebar' : 'Collapse sidebar'">
+    <button class="sb-toggle" @click="toggleCol()" :aria-label="col ? 'Expand sidebar' : 'Collapse sidebar'" :title="col ? 'Expand sidebar' : 'Collapse sidebar'">
       <svg x-show="!col" width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
       <svg x-show="col" x-cloak width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
     </button>
   </div>
 
-  <!-- Workspace switcher -->
+  <!-- Workspace Switcher -->
   {% if workspace %}
   <div class="ws-area">
     <div x-data="{open:false}" class="relative">
-      <button @click="open=!open" class="ws-pill" :title="col ? '{{ workspace.name|escapejs }}' : ''">
+      <button @click="open=!open" class="ws-pill" :title="col ? '{{ workspace.name|escapejs }}' : ''" :aria-expanded="open">
         <div class="ws-avatar">{{ workspace.name|slice:":2"|upper }}</div>
         <div class="ws-info">
-          <p style="font-size:12.5px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">{{ workspace.name }}</p>
-          <p style="font-size:10px;color:var(--text-muted);line-height:1.3">{% if workspace.owner == request.user %}Owner{% else %}Member{% endif %}</p>
+          <p class="ws-name">{{ workspace.name }}</p>
+          <p class="ws-role">{% if workspace.owner == request.user %}Owner{% else %}Member{% endif %}</p>
         </div>
-        <svg x-show="!col" x-cloak width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+        <svg x-show="!col" x-cloak width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" class="ws-chevron"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
       </button>
       <div x-show="open" x-cloak @click.outside="open=false"
            x-transition:enter="transition ease-out duration-150"
-           x-transition:enter-start="opacity-0 translate-y-1"
-           x-transition:enter-end="opacity-100 translate-y-0"
+           x-transition:enter-start="opacity-0 translate-y-1 scale-98"
+           x-transition:enter-end="opacity-100 translate-y-0 scale-100"
            x-transition:leave="transition duration-100"
            x-transition:leave-start="opacity-100"
            x-transition:leave-end="opacity-0 translate-y-1"
            class="dropdown" style="left:4px;right:4px;top:calc(100% + 4px);min-width:0">
         <div style="padding:8px">
-          <p style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);padding:4px 8px 8px">Switch Workspace</p>
+          <p class="dd-group-label">Switch Workspace</p>
           {% for ws in user_workspaces %}
           <a href="{% url 'invoices:switch_workspace' ws.id %}" class="dd-item" style="border-radius:8px{% if ws == workspace %};background:var(--sb-item-active-bg);color:var(--sb-item-active){% endif %}">
-            <div style="width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ ws.name|slice:":1"|upper }}</div>
-            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px">{{ ws.name }}</span>
+            <div class="ws-mini-avatar">{{ ws.name|slice:":1"|upper }}</div>
+            <span class="truncate" style="flex:1;font-size:12.5px">{{ ws.name }}</span>
             {% if ws == workspace %}<svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>{% endif %}
           </a>
           {% endfor %}
           <div class="dd-sep"></div>
           <a href="{% url 'invoices:workspace_create' %}" class="dd-item" style="border-radius:8px">
-            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            New Workspace
+            <div style="width:22px;height:22px;border-radius:6px;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-muted)">
+              <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            </div>
+            <span style="font-size:12.5px">New Workspace</span>
           </a>
         </div>
       </div>
@@ -109,21 +101,38 @@
   </div>
   {% endif %}
 
+  <!-- Sidebar Search (collapsed = icon only) -->
+  <div class="sb-search-area" x-show="!col" x-cloak>
+    <button @click="openSearch()" class="sb-search-btn" title="Search (⌘K)" aria-label="Open search">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <span>Search anything…</span>
+      <kbd>⌘K</kbd>
+    </button>
+  </div>
+  <div class="sb-search-area" x-show="col">
+    <button @click="openSearch()" class="sb-search-icon-btn" title="Search (⌘K)" aria-label="Open search">
+      <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    </button>
+  </div>
+
   <!-- Navigation -->
-  <nav class="sb-nav">
+  <nav class="sb-nav" aria-label="App navigation">
+
     <p class="nav-group">Main</p>
 
     <a href="{% url 'invoices:dashboard' %}" data-tip="Dashboard"
-       class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+       class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+       aria-current="{% if request.resolver_match.url_name == 'dashboard' %}page{% endif %}">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zm0 8a1 1 0 011-1h4a1 1 0 011 1v6a1 1 0 01-1 1h-4a1 1 0 01-1-1v-6zM4 14a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1v-5z"/></svg>
       <span class="nav-label">Dashboard</span>
     </a>
 
     <a href="{% url 'invoices:invoice_list' %}" data-tip="Invoices"
-       class="nav-item {% if 'invoice' in request.resolver_match.url_name|default:'' and 'estimate' not in request.resolver_match.url_name|default:'' and request.resolver_match.url_name != 'dashboard' %}active{% endif %}">
+       class="nav-item {% if 'invoice' in request.resolver_match.url_name|default:'' and 'estimate' not in request.resolver_match.url_name|default:'' and request.resolver_match.url_name != 'dashboard' %}active{% endif %}"
+       aria-current="{% if 'invoice' in request.resolver_match.url_name|default:'' and 'estimate' not in request.resolver_match.url_name|default:'' and request.resolver_match.url_name != 'dashboard' %}page{% endif %}">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 4v4h4"/></svg>
       <span class="nav-label">Invoices</span>
-      {% if overdue_count %}<span class="nav-badge red">{{ overdue_count }}</span>{% endif %}
+      {% if overdue_count %}<span class="nav-badge red" aria-label="{{ overdue_count }} overdue">{{ overdue_count }}</span>{% endif %}
     </a>
 
     <a href="{% url 'invoices:estimate_list' %}" data-tip="Estimates"
@@ -201,17 +210,26 @@
     </a>
   </nav>
 
-  <!-- User footer -->
+  <!-- User Footer -->
   <div class="sb-footer">
+    <!-- Shortcuts hint -->
+    <div x-show="!col" x-cloak class="sb-shortcuts-hint">
+      <button onclick="document.getElementById('shortcuts-panel').style.display='flex'" class="sb-shortcuts-btn">
+        <span>Keyboard Shortcuts</span>
+        <kbd>?</kbd>
+      </button>
+    </div>
+
     <div x-data="{open:false}" class="relative">
-      <button @click="open=!open" class="user-pill" :title="col ? '{{ request.user.get_full_name|default:request.user.username|escapejs }}' : ''">
-        <div class="user-avatar">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</div>
+      <button @click="open=!open" class="user-pill" :title="col ? '{{ request.user.get_full_name|default:request.user.username|escapejs }}' : ''" :aria-expanded="open">
+        <div class="user-avatar" aria-hidden="true">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</div>
         <div class="user-info">
-          <p style="font-size:12.5px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">{{ request.user.get_full_name|default:request.user.username }}</p>
-          <p style="font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3">{{ request.user.email }}</p>
+          <p class="user-name">{{ request.user.get_full_name|default:request.user.username }}</p>
+          <p class="user-email">{{ request.user.email }}</p>
         </div>
         <svg x-show="!col" x-cloak width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
       </button>
+
       <div x-show="open" x-cloak @click.outside="open=false"
            x-transition:enter="transition ease-out duration-150"
            x-transition:enter-start="opacity-0 translate-y-1"
@@ -221,14 +239,18 @@
            x-transition:leave-end="opacity-0"
            class="dropdown" style="bottom:calc(100% + 8px);top:auto;left:4px;right:4px;min-width:0">
         <div style="padding:8px">
-          <div style="padding:8px 10px 10px">
-            <p style="font-size:13px;font-weight:600;color:var(--text-primary)">{{ request.user.get_full_name|default:request.user.username }}</p>
-            <p style="font-size:11px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ request.user.email }}</p>
+          <!-- User info header -->
+          <div class="dd-user-header">
+            <div class="dd-user-avatar">{{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}</div>
+            <div style="min-width:0">
+              <p class="dd-user-name">{{ request.user.get_full_name|default:request.user.username }}</p>
+              <p class="dd-user-email">{{ request.user.email }}</p>
+            </div>
           </div>
           <div class="dd-sep"></div>
           <a href="{% url 'invoices:settings' %}" class="dd-item">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-            Profile & Settings
+            Profile &amp; Settings
           </a>
           <a href="{% url 'invoices:workspace_settings' %}" class="dd-item">
             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
@@ -250,96 +272,54 @@
     </div>
   </div>
 
-  <!-- Keyboard shortcuts hint -->
-  <div x-show="!col" x-cloak style="padding:8px 12px;border-top:1px solid var(--border)">
-    <button onclick="document.getElementById('shortcuts-panel').style.display='flex'" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:transparent;border:none;cursor:pointer;padding:6px 8px;border-radius:6px;color:var(--text-muted);font-size:11px;font-weight:500;transition:background 150ms" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
-      <span>Keyboard Shortcuts</span>
-      <kbd style="font-size:10px;font-weight:700;padding:1px 5px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">?</kbd>
-    </button>
-  </div>
-
 </aside>
 
+<!-- Mobile sidebar overlay -->
+<div class="mob-overlay" x-show="mob" x-cloak @click="mob=false"
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     aria-hidden="true"></div>
+
 <!-- ════════ KEYBOARD SHORTCUTS PANEL ════════ -->
-<div id="shortcuts-panel" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(0,0,0,.5)" onclick="if(event.target===this)this.style.display='none'">
-  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-xl);width:100%;max-width:520px;margin:16px;overflow:hidden">
+<div id="shortcuts-panel" role="dialog" aria-modal="true" aria-label="Keyboard Shortcuts" style="display:none;position:fixed;inset:0;z-index:300;align-items:center;justify-content:center;background:rgba(0,0,0,.5);backdrop-filter:blur(4px)" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-xl);width:100%;max-width:540px;margin:16px;overflow:hidden;animation:scaleIn .2s ease both">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
       <div>
         <h3 style="font-size:15px;font-weight:800;margin:0;letter-spacing:-.3px">Keyboard Shortcuts</h3>
         <p style="font-size:12px;color:var(--text-muted);margin:2px 0 0">Navigate faster with these shortcuts</p>
       </div>
-      <button onclick="document.getElementById('shortcuts-panel').style.display='none'" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)">
+      <button onclick="document.getElementById('shortcuts-panel').style.display='none'" style="width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-muted)" aria-label="Close">
         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
       </button>
     </div>
     <div style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:0">
       <div>
         <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 10px">Navigation (g + key)</p>
-        {% for item in shortcuts_nav %}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">{{ item.label }}</span>
-          <div style="display:flex;gap:3px">
-            <kbd style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle);color:var(--text-primary)">g</kbd>
-            <kbd style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle);color:var(--text-primary)">{{ item.key }}</kbd>
-          </div>
-        </div>
+        {% for label,key in shortcuts_nav_list|default:"" %}
+        <div class="shortcut-row"><span>{{ label }}</span><div class="shortcut-keys"><kbd>g</kbd><kbd>{{ key }}</kbd></div></div>
         {% empty %}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Dashboard</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">d</kbd></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Invoices</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">i</kbd></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Clients</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">c</kbd></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Expenses</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">e</kbd></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Estimates</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">x</kbd></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Payments</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">p</kbd></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Reports</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">r</kbd></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Wallet</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">w</kbd></div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Settings</span>
-          <div style="display:flex;gap:3px"><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">g</kbd><kbd style="font-size:10px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle)">s</kbd></div>
-        </div>
+        <div class="shortcut-row"><span>Dashboard</span><div class="shortcut-keys"><kbd>g</kbd><kbd>d</kbd></div></div>
+        <div class="shortcut-row"><span>Invoices</span><div class="shortcut-keys"><kbd>g</kbd><kbd>i</kbd></div></div>
+        <div class="shortcut-row"><span>Clients</span><div class="shortcut-keys"><kbd>g</kbd><kbd>c</kbd></div></div>
+        <div class="shortcut-row"><span>Expenses</span><div class="shortcut-keys"><kbd>g</kbd><kbd>e</kbd></div></div>
+        <div class="shortcut-row"><span>Estimates</span><div class="shortcut-keys"><kbd>g</kbd><kbd>x</kbd></div></div>
+        <div class="shortcut-row"><span>Payments</span><div class="shortcut-keys"><kbd>g</kbd><kbd>p</kbd></div></div>
+        <div class="shortcut-row"><span>Reports</span><div class="shortcut-keys"><kbd>g</kbd><kbd>r</kbd></div></div>
+        <div class="shortcut-row"><span>Wallet</span><div class="shortcut-keys"><kbd>g</kbd><kbd>w</kbd></div></div>
+        <div class="shortcut-row"><span>Settings</span><div class="shortcut-keys"><kbd>g</kbd><kbd>s</kbd></div></div>
         {% endfor %}
       </div>
       <div style="padding-left:24px;border-left:1px solid var(--border)">
         <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 0 10px">Global Actions</p>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Search</span>
-          <kbd style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle);color:var(--text-primary)">⌘K</kbd>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Show shortcuts</span>
-          <kbd style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle);color:var(--text-primary)">?</kbd>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:12.5px;color:var(--text-secondary)">Close dialog</span>
-          <kbd style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle);color:var(--text-primary)">Esc</kbd>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0">
-          <span style="font-size:12.5px;color:var(--text-secondary)">New Invoice (on list)</span>
-          <kbd style="font-size:10px;font-weight:700;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg-subtle);color:var(--text-primary)">n</kbd>
-        </div>
+        <div class="shortcut-row"><span>Search</span><kbd>⌘K</kbd></div>
+        <div class="shortcut-row"><span>Show shortcuts</span><kbd>?</kbd></div>
+        <div class="shortcut-row"><span>Close dialog</span><kbd>Esc</kbd></div>
+        <div class="shortcut-row"><span>New Invoice</span><kbd>n</kbd></div>
+        <div class="shortcut-row"><span>Toggle theme</span><kbd>t</kbd></div>
       </div>
     </div>
   </div>
@@ -349,87 +329,100 @@
 <div class="main" :class="mainClass">
 
   <!-- Topbar -->
-  <header class="topbar">
+  <header class="topbar" role="banner">
     <!-- Mobile menu toggle -->
-    <button class="tb-btn mob-only" @click="mob=!mob" aria-label="Menu">
-      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <button class="tb-btn mob-only" @click="mob=!mob" aria-label="Toggle navigation menu" aria-expanded="mob">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path x-show="!mob" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        <path x-show="mob" x-cloak stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
     </button>
 
-    <!-- Breadcrumb -->
-    <div style="flex:1;display:flex;align-items:center;gap:6px;overflow:hidden">
-      <span style="font-size:13px;color:var(--text-muted);font-weight:500;white-space:nowrap">InvoiceFlow</span>
+    <!-- Breadcrumb / Page title -->
+    <div class="topbar-breadcrumb">
+      <a href="{% url 'invoices:dashboard' %}" style="font-size:13px;color:var(--text-muted);font-weight:500;white-space:nowrap;text-decoration:none;transition:color 150ms" onmouseover="this.style.color='var(--text-primary)'" onmouseout="this.style.color='var(--text-muted)'">InvoiceFlow</a>
       {% block breadcrumb %}
-      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted);flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-      <span style="font-size:14px;font-weight:700;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{% block page_title %}Page{% endblock %}</span>
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted);flex-shrink:0" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      <span class="topbar-page-title">{% block page_title %}Page{% endblock %}</span>
       {% endblock %}
     </div>
 
     <!-- Global Search -->
-    <div x-data="globalSearch()" class="relative" style="flex:1;max-width:340px">
-      <button @click="open=true;$nextTick(()=>$refs.searchInput.focus())" class="search-trigger" style="display:flex;align-items:center;gap:8px;width:100%;padding:7px 12px;border:1.5px solid var(--border);border-radius:9px;background:var(--bg-subtle);color:var(--text-muted);font-size:13px;cursor:pointer;transition:border-color 200ms,box-shadow 200ms" onmouseover="this.style.borderColor='var(--border-focus)'" onmouseout="this.style.borderColor='var(--border)'">
-        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <span class="desk-only" style="flex:1;text-align:left">Search anything…</span>
-        <kbd class="desk-only" style="font-size:10px">⌘K</kbd>
+    <div x-data="globalSearch()" class="relative topbar-search">
+      <button @click="open=true;$nextTick(()=>$refs.searchInput.focus())" class="search-trigger" aria-label="Search (Cmd+K)" aria-haspopup="dialog">
+        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <span class="desk-only search-placeholder">Search anything…</span>
+        <kbd class="desk-only">⌘K</kbd>
       </button>
 
-      <!-- Search overlay -->
-      <div x-show="open" x-cloak @keydown.escape.window="open=false"
-           style="position:fixed;inset:0;z-index:200;display:flex;align-items:flex-start;justify-content:center;padding-top:80px;background:rgba(0,0,0,.45)"
+      <div x-show="open" x-cloak @keydown.escape.window="open=false" role="dialog" aria-modal="true" aria-label="Search"
+           style="position:fixed;inset:0;z-index:200;display:flex;align-items:flex-start;justify-content:center;padding-top:80px;background:rgba(0,0,0,.5);backdrop-filter:blur(4px)"
            @click.self="open=false">
-        <div style="width:100%;max-width:600px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);overflow:hidden;margin:0 16px"
+        <div style="width:100%;max-width:620px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-xl);box-shadow:var(--shadow-xl);overflow:hidden;margin:0 16px"
              x-transition:enter="transition ease-out duration-150"
              x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
-          <!-- Input -->
           <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)">
-            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input x-ref="searchInput" type="text" x-model="query" @input.debounce.300ms="doSearch()" @keydown="handleKey($event)" placeholder="Search invoices, clients, expenses…"
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--text-muted)" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input x-ref="searchInput" type="search" x-model="query" @input.debounce.300ms="doSearch()" @keydown="handleKey($event)"
+                   placeholder="Search invoices, clients, expenses…" aria-label="Search"
                    style="flex:1;border:none;outline:none;font-size:14.5px;font-weight:500;background:transparent;color:var(--text-primary);font-family:inherit">
-            <div x-show="loading" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--brand-500);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0"></div>
-            <button @click="open=false" style="flex-shrink:0;padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;cursor:pointer">Esc</button>
+            <div x-show="loading" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--brand-500);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0" aria-live="polite" aria-label="Searching…"></div>
+            <button @click="open=false" style="flex-shrink:0;padding:3px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;font-weight:600;color:var(--text-muted);background:transparent;cursor:pointer" aria-label="Close search">Esc</button>
           </div>
-          <!-- Results -->
-          <div style="max-height:400px;overflow-y:auto">
+          <div style="max-height:420px;overflow-y:auto" role="listbox">
             <template x-if="results.length">
               <div style="padding:8px">
+                <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:4px 12px 8px;margin:0" x-text="`${results.length} result${results.length===1?'':'s'}`"></p>
                 <template x-for="(r, idx) in results" :key="r.url">
-                  <a :href="r.url" @click="open=false" :data-idx="idx" :style="`display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;transition:background 150ms;cursor:pointer;background:${selectedIndex===idx?'var(--bg-hover)':'transparent'}`" @mouseover="selectedIndex=idx" @mouseout="selectedIndex=-1">
-                    <div :class="iconClass(r.type)" style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                  <a :href="r.url" @click="open=false" role="option" :aria-selected="selectedIndex===idx"
+                     :style="`display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;text-decoration:none;transition:background 150ms;cursor:pointer;background:${selectedIndex===idx?'var(--bg-hover)':'transparent'}`"
+                     @mouseover="selectedIndex=idx">
+                    <div :class="iconClass(r.type)" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0" aria-hidden="true">
                       <svg x-show="r.type==='invoice'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
                       <svg x-show="r.type==='client'" x-cloak width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                       <svg x-show="r.type==='expense'" x-cloak width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
                       <svg x-show="!['invoice','client','expense'].includes(r.type)" x-cloak width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </div>
                     <div style="min-width:0;flex:1">
-                      <p x-text="r.title" style="font-size:13.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></p>
+                      <p x-text="r.title" style="font-size:13.5px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0"></p>
                       <p x-text="r.meta" style="font-size:11.5px;color:var(--text-muted);margin-top:2px"></p>
                     </div>
-                    <span x-text="r.type" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:2px 7px;border-radius:99px;background:var(--bg-subtle);color:var(--text-muted);flex-shrink:0"></span>
+                    <span x-text="r.type" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:2px 8px;border-radius:99px;background:var(--bg-subtle);color:var(--text-muted);flex-shrink:0"></span>
                   </a>
                 </template>
               </div>
             </template>
             <template x-if="!results.length && query.length >= 2 && !loading">
-              <div style="padding:40px 20px;text-align:center;color:var(--text-muted)">
-                <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 12px;opacity:.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <p style="font-size:13px;font-weight:500">No results for "<span x-text="query"></span>"</p>
+              <div style="padding:48px 20px;text-align:center">
+                <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 14px;color:var(--text-muted);opacity:.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <p style="font-size:14px;font-weight:600;color:var(--text-primary);margin:0 0 4px">No results for "<span x-text="query"></span>"</p>
+                <p style="font-size:12.5px;color:var(--text-muted);margin:0">Try different keywords or check the spelling</p>
               </div>
             </template>
             <template x-if="!query.length">
-              <div style="padding:20px;border-top:1px solid var(--border)">
-                <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:10px">Quick links</p>
+              <div style="padding:14px">
+                <p style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:0 2px 8px">Quick Actions</p>
                 <div style="display:flex;flex-direction:column;gap:2px">
-                  <a href="/invoices/create/" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-size:13px;font-weight:500;color:var(--text-secondary);text-decoration:none" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    New Invoice
+                  <a href="{% url 'invoices:invoice_create' %}" class="search-quick-link">
+                    <div style="width:30px;height:30px;border-radius:8px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg></div>
+                    <span>New Invoice</span>
+                    <span class="search-quick-meta">Create &amp; send</span>
                   </a>
-                  <a href="/clients/" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-size:13px;font-weight:500;color:var(--text-secondary);text-decoration:none" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    All Clients
+                  <a href="{% url 'invoices:client_create' %}" class="search-quick-link">
+                    <div style="width:30px;height:30px;border-radius:8px;background:#f0fdf4;color:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg></div>
+                    <span>New Client</span>
+                    <span class="search-quick-meta">Add contact</span>
                   </a>
-                  <a href="/reports/" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-size:13px;font-weight:500;color:var(--text-secondary);text-decoration:none" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    Reports
+                  <a href="{% url 'invoices:expense_create' %}" class="search-quick-link">
+                    <div style="width:30px;height:30px;border-radius:8px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg></div>
+                    <span>Record Expense</span>
+                    <span class="search-quick-meta">Log spending</span>
+                  </a>
+                  <a href="{% url 'invoices:reports_home' %}" class="search-quick-link">
+                    <div style="width:30px;height:30px;border-radius:8px;background:#f5f3ff;color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg></div>
+                    <span>Reports</span>
+                    <span class="search-quick-meta">Analytics &amp; insights</span>
                   </a>
                 </div>
               </div>
@@ -440,96 +433,87 @@
     </div>
 
     <!-- Theme toggle -->
-    <button class="tb-btn" @click="toggleTheme()" :title="dark ? 'Switch to light mode' : 'Switch to dark mode'">
-      <svg x-show="!dark" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-      <svg x-show="dark" x-cloak width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    <button class="tb-btn" @click="toggleTheme()" :title="dark ? 'Switch to light mode' : 'Switch to dark mode'" :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'">
+      <svg x-show="!dark" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      <svg x-show="dark" x-cloak width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
     </button>
 
     <!-- Notifications -->
     <div x-data="{open:false}" class="relative">
-      <button class="tb-btn" data-bell @click="open=!open" title="Notifications" style="position:relative">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-        {% if unread_notifications_count or overdue_count %}<span class="n-dot overdue-glow"></span>{% endif %}
+      <button class="tb-btn" @click="open=!open" aria-label="Notifications{% if unread_notifications_count %} ({{ unread_notifications_count }} unread){% endif %}" :aria-expanded="open" style="position:relative">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        {% if unread_notifications_count or overdue_count %}<span class="n-dot overdue-glow" aria-hidden="true"></span>{% endif %}
       </button>
-      <div x-show="open" x-cloak @click.outside="open=false"
-           class="dropdown" style="right:0;min-width:320px;max-height:480px;overflow-y:auto"
+      <div x-show="open" x-cloak @click.outside="open=false" role="dialog" aria-label="Notifications"
+           class="dropdown notif-dropdown"
            x-transition:enter="transition ease-out duration-150"
            x-transition:enter-start="opacity-0 translate-y-1"
            x-transition:enter-end="opacity-100 translate-y-0"
            x-transition:leave="transition duration-100"
            x-transition:leave-start="opacity-100"
            x-transition:leave-end="opacity-0">
-        <div style="padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg-card);z-index:1">
+        <div class="notif-header">
           <div style="display:flex;align-items:center;gap:8px">
             <p style="font-size:13px;font-weight:700;color:var(--text-primary);margin:0">Notifications</p>
-            {% if unread_notifications_count %}<span data-notif-badge style="font-size:10px;font-weight:700;background:#6366f1;color:#fff;padding:1px 7px;border-radius:99px">{{ unread_notifications_count }}</span>{% endif %}
+            {% if unread_notifications_count %}<span class="notif-count-badge" data-notif-badge>{{ unread_notifications_count }}</span>{% endif %}
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            {% if unread_notifications_count %}<button data-mark-all-btn onclick="markAllNotifsRead(this)" style="font-size:11px;color:var(--brand-600);font-weight:600;background:none;border:none;cursor:pointer;padding:0">Mark all read</button>{% endif %}
+            {% if unread_notifications_count %}<button data-mark-all-btn onclick="markAllNotifsRead(this)" class="notif-mark-all">Mark all read</button>{% endif %}
             {% if notifications %}<a href="{% url 'invoices:settings' %}" style="font-size:11.5px;color:var(--text-muted);font-weight:500;text-decoration:none">Settings</a>{% endif %}
           </div>
         </div>
-        <div style="padding:6px">
-          <!-- Overdue alert (always shows if there are overdue invoices) -->
+        <div style="padding:6px" aria-live="polite">
           {% if overdue_count %}
-          <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="dd-item" style="border-radius:10px;padding:10px 12px;margin-bottom:2px">
-            <div style="width:34px;height:34px;border-radius:9px;background:#fee2e2;color:#dc2626;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <a href="{% url 'invoices:invoice_list' %}?status=overdue" class="notif-item notif-urgent">
+            <div class="notif-icon notif-icon-red">
               <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             </div>
             <div style="min-width:0;flex:1">
-              <p style="font-size:12.5px;font-weight:600;color:#dc2626;margin:0">{{ overdue_count }} overdue invoice{{ overdue_count|pluralize }}</p>
+              <p style="font-size:12.5px;font-weight:700;color:#dc2626;margin:0">{{ overdue_count }} overdue invoice{{ overdue_count|pluralize }}</p>
               <p style="font-size:11px;color:var(--text-muted);margin-top:2px">Requires immediate attention</p>
             </div>
-            <span style="font-size:9px;font-weight:700;background:#fee2e2;color:#dc2626;padding:2px 6px;border-radius:99px;flex-shrink:0">urgent</span>
+            <span class="notif-urgency-badge">urgent</span>
           </a>
           {% endif %}
-          <!-- Real notifications from DB -->
           {% for notif in notifications %}
-          <div data-notif-item class="dd-item" style="border-radius:10px;padding:10px 12px;cursor:default;{% if not notif.is_read %}background:rgba(99,102,241,.06){% endif %};margin-bottom:2px"
-               onclick="markNotifRead({{ notif.id }}, this){% if notif.link %}; window.location='{{ notif.link }}'{% endif %}">
-            <div style="width:34px;height:34px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-              {% if notif.notification_type == 'payment' %}background:#dcfce7;color:#16a34a
-              {% elif notif.notification_type == 'invoice' %}background:#ede9fe;color:#7c3aed
-              {% elif notif.notification_type == 'warning' or notif.notification_type == 'error' %}background:#fee2e2;color:#dc2626
-              {% else %}background:#dbeafe;color:#2563eb{% endif %}">
-              {% if notif.notification_type == 'payment' %}
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-              {% elif notif.notification_type == 'invoice' %}
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
-              {% elif notif.notification_type == 'team' %}
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-              {% else %}
-              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              {% endif %}
+          <div data-notif-item class="notif-item {% if not notif.is_read %}notif-unread{% endif %}"
+               onclick="markNotifRead({{ notif.id }}, this){% if notif.link %}; window.location='{{ notif.link }}'{% endif %}"
+               role="button" tabindex="0" :aria-label="'Notification: {{ notif.title|escapejs }}'">
+            <div class="notif-icon {% if notif.notification_type == 'payment' %}notif-icon-green{% elif notif.notification_type == 'invoice' %}notif-icon-violet{% elif notif.notification_type == 'warning' or notif.notification_type == 'error' %}notif-icon-red{% else %}notif-icon-blue{% endif %}">
+              {% if notif.notification_type == 'payment' %}<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+              {% elif notif.notification_type == 'invoice' %}<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
+              {% elif notif.notification_type == 'team' %}<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              {% else %}<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>{% endif %}
             </div>
             <div style="min-width:0;flex:1">
               <p style="font-size:12.5px;font-weight:{% if not notif.is_read %}700{% else %}500{% endif %};color:var(--text-primary);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ notif.title }}</p>
               <p style="font-size:11px;color:var(--text-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ notif.message|truncatechars:60 }}</p>
               <p style="font-size:10px;color:var(--text-muted);margin-top:2px">{{ notif.created_at|timesince }} ago</p>
             </div>
-            {% if not notif.is_read %}<span data-notif-dot style="width:7px;height:7px;border-radius:50%;background:#6366f1;flex-shrink:0;margin-top:4px"></span>{% endif %}
+            {% if not notif.is_read %}<span class="notif-unread-dot" data-notif-dot aria-label="Unread"></span>{% endif %}
           </div>
           {% endfor %}
-          <!-- Empty state -->
           {% if not notifications and not overdue_count %}
-          <div style="padding:28px 16px;text-align:center;color:var(--text-muted)">
-            <svg width="30" height="30" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin:0 auto 10px;opacity:.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p style="font-size:12.5px;font-weight:500;margin:0">All caught up!</p>
-            <p style="font-size:11px;margin-top:4px">No new notifications</p>
+          <div style="padding:36px 20px;text-align:center">
+            <div style="width:48px;height:48px;border-radius:14px;background:var(--bg-subtle);display:flex;align-items:center;justify-content:center;margin:0 auto 12px">
+              <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted);opacity:.6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <p style="font-size:13px;font-weight:600;margin:0 0 4px;color:var(--text-primary)">All caught up!</p>
+            <p style="font-size:12px;color:var(--text-muted);margin:0">No new notifications</p>
           </div>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Quick create -->
+    <!-- Quick Create -->
     <div x-data="{open:false}" class="relative">
-      <button class="btn btn-primary btn-sm" @click="open=!open">
-        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      <button class="btn btn-primary btn-sm" @click="open=!open" :aria-expanded="open" aria-label="Quick create menu">
+        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
         <span class="desk-only">New</span>
       </button>
-      <div x-show="open" x-cloak @click.outside="open=false"
-           class="dropdown" style="right:0;min-width:190px"
+      <div x-show="open" x-cloak @click.outside="open=false" role="menu"
+           class="dropdown" style="right:0;min-width:200px"
            x-transition:enter="transition ease-out duration-150"
            x-transition:enter-start="opacity-0 translate-y-1"
            x-transition:enter-end="opacity-100 translate-y-0"
@@ -537,22 +521,22 @@
            x-transition:leave-start="opacity-100"
            x-transition:leave-end="opacity-0">
         <div style="padding:6px">
-          <a href="{% url 'invoices:invoice_create' %}" class="dd-item" @click="open=false">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg>
-            New Invoice
+          <a href="{% url 'invoices:invoice_create' %}" class="dd-item" role="menuitem" @click="open=false">
+            <div style="width:26px;height:26px;border-radius:7px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6M7 4H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8l-5-4H7z"/></svg></div>
+            <div><p style="margin:0;font-size:12.5px;font-weight:600;color:var(--text-primary)">New Invoice</p><p style="margin:0;font-size:10.5px;color:var(--text-muted)">Create &amp; send</p></div>
           </a>
-          <a href="{% url 'invoices:estimate_create' %}" class="dd-item" @click="open=false">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-            New Estimate
+          <a href="{% url 'invoices:estimate_create' %}" class="dd-item" role="menuitem" @click="open=false">
+            <div style="width:26px;height:26px;border-radius:7px;background:#f5f3ff;color:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+            <div><p style="margin:0;font-size:12.5px;font-weight:600;color:var(--text-primary)">New Estimate</p><p style="margin:0;font-size:10.5px;color:var(--text-muted)">Quote &amp; convert</p></div>
           </a>
-          <a href="{% url 'invoices:client_create' %}" class="dd-item" @click="open=false">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
-            New Client
+          <a href="{% url 'invoices:client_create' %}" class="dd-item" role="menuitem" @click="open=false">
+            <div style="width:26px;height:26px;border-radius:7px;background:#f0fdf4;color:#16a34a;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg></div>
+            <div><p style="margin:0;font-size:12.5px;font-weight:600;color:var(--text-primary)">New Client</p><p style="margin:0;font-size:10.5px;color:var(--text-muted)">Add contact</p></div>
           </a>
           <div class="dd-sep"></div>
-          <a href="{% url 'invoices:expense_create' %}" class="dd-item" @click="open=false">
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color:var(--text-muted)"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-            Record Expense
+          <a href="{% url 'invoices:expense_create' %}" class="dd-item" role="menuitem" @click="open=false">
+            <div style="width:26px;height:26px;border-radius:7px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
+            <div><p style="margin:0;font-size:12.5px;font-weight:600;color:var(--text-primary)">Record Expense</p><p style="margin:0;font-size:10.5px;color:var(--text-muted)">Log spending</p></div>
           </a>
         </div>
       </div>
@@ -560,13 +544,13 @@
   </header>
 
   <!-- Page content -->
-  <main class="content page-in">
+  <main class="content page-in" id="main-content">
     {% block content %}{% endblock %}
   </main>
 
 </div>
 
-<div class="toast-container" id="toast-container"></div>
+<div class="toast-container" id="toast-container" aria-live="assertive" aria-atomic="true" role="status"></div>
 
 <script src="{% static 'js/app.js' %}"></script>
 <script src="{% static 'js/app-enhanced.js' %}"></script>
