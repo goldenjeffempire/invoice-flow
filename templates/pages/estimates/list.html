@@ -5,10 +5,12 @@
 {% block content %}
 <div class="page-in">
 
+<!-- Page header -->
 <div class="page-hdr" style="margin-bottom:24px">
   <div>
-    <h1 class="page-title">Estimates</h1>
-    <p class="page-sub">Create and manage proposals for your clients.</p>
+    <p class="page-eyebrow">Sales</p>
+    <h1 class="page-title-lg">Estimates</h1>
+    <p class="page-sub-premium">Create and manage proposals to win clients and close deals.</p>
   </div>
   <div class="page-hdr-actions">
     <a href="{% url 'invoices:estimate_create' %}" class="btn btn-primary btn-sm">
@@ -18,26 +20,51 @@
   </div>
 </div>
 
-<!-- KPI Row -->
-<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px">
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Total Estimates</p>
-    <p class="kpi-value" style="font-size:20px">{{ stats.total_count }}</p>
+<!-- Premium KPI row -->
+<div class="animate-children" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
+  <div class="kpi-card" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Total Estimates</p>
+      <div class="stat-icon si-violet" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:28px">{{ stats.total_count }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">All time</p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Accepted Value</p>
-    <p class="kpi-value" style="font-size:20px;color:#16a34a">{{ workspace.currency_symbol }}{{ stats.accepted_value|floatformat:2 }}</p>
+  <div class="kpi-card kpi-card-profit" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Accepted Value</p>
+      <div class="stat-icon si-green" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px;color:#16a34a">{{ workspace.currency_symbol }}{{ stats.accepted_value|floatformat:0 }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Won proposals</p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Pending Value</p>
-    <p class="kpi-value" style="font-size:20px;color:#d97706">{{ workspace.currency_symbol }}{{ stats.pending_value|floatformat:2 }}</p>
+  <div class="kpi-card kpi-card-outstanding" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Pending Value</p>
+      <div class="stat-icon si-amber" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:22px;color:#d97706">{{ workspace.currency_symbol }}{{ stats.pending_value|floatformat:0 }}</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Awaiting decision</p>
   </div>
-  <div class="kpi-card" style="padding:16px 18px">
-    <p class="kpi-label" style="margin-bottom:4px">Conversion Rate</p>
-    <p class="kpi-value" style="font-size:20px">{{ stats.conversion_rate|floatformat:1 }}%</p>
+  <div class="kpi-card kpi-card-revenue" style="padding:18px 20px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+      <p class="kpi-label">Conversion Rate</p>
+      <div class="stat-icon si-indigo" style="width:34px;height:34px;border-radius:9px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
+    </div>
+    <p class="kpi-value" style="font-size:28px">{{ stats.conversion_rate|floatformat:1 }}%</p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:4px">Accepted / total</p>
   </div>
 </div>
 
+<!-- Main card -->
 <div class="card">
   <!-- Status Tabs -->
   <div style="padding:0 20px">
@@ -50,18 +77,18 @@
     </div>
   </div>
 
-  <!-- Search -->
-  <div style="padding:14px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px">
-    <form method="get" style="flex:1;display:flex;gap:8px">
+  <!-- Search + Sort -->
+  <div style="padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--bg-subtle)">
+    <form method="get" style="flex:1;min-width:200px;display:flex;gap:8px;align-items:center">
       <input type="hidden" name="status" value="{{ current_status }}">
       <div style="position:relative;flex:1">
         <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" name="q" value="{{ search_query }}" placeholder="Search estimates…" class="form-input" style="padding-left:34px">
+        <input type="text" name="q" value="{{ search_query }}" placeholder="Search estimates, clients…" class="form-input" style="padding-left:34px;font-size:13px">
       </div>
       <button type="submit" class="btn btn-secondary btn-sm">Search</button>
-      {% if search_query %}<a href="?status={{ current_status }}" class="btn btn-ghost btn-sm">Clear</a>{% endif %}
+      {% if search_query %}<a href="?status={{ current_status }}" class="btn btn-ghost btn-sm" style="color:var(--text-muted)">✕ Clear</a>{% endif %}
     </form>
-    <select onchange="window.location='?status={{ current_status }}&q={{ search_query }}&ordering='+this.value" class="form-select" style="width:auto;padding:8px 28px 8px 10px;font-size:12.5px">
+    <select onchange="window.location='?status={{ current_status }}&q={{ search_query }}&ordering='+this.value" class="form-select" style="width:auto;padding:8px 28px 8px 10px;font-size:12.5px;flex-shrink:0">
       <option value="-created_at" {% if ordering == '-created_at' %}selected{% endif %}>Newest First</option>
       <option value="-total_amount" {% if ordering == '-total_amount' %}selected{% endif %}>Highest Value</option>
       <option value="expiry_date" {% if ordering == 'expiry_date' %}selected{% endif %}>Expiring Soon</option>
@@ -71,20 +98,39 @@
   {% if estimates %}
   <div style="overflow-x:auto">
     <table class="tbl">
-      <thead><tr><th>Estimate #</th><th>Client</th><th>Issue Date</th><th>Expires</th><th>Amount</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Estimate #</th>
+          <th>Client</th>
+          <th class="desk-only">Issue Date</th>
+          <th class="desk-only">Expires</th>
+          <th style="text-align:right">Amount</th>
+          <th>Status</th>
+          <th style="text-align:right">Actions</th>
+        </tr>
+      </thead>
       <tbody>
         {% for est in estimates %}
-        <tr data-href="{% url 'invoices:estimate_detail' est.id %}">
-          <td><a href="{% url 'invoices:estimate_detail' est.id %}" style="font-weight:700;color:var(--brand-600)">{{ est.estimate_number }}</a></td>
-          <td style="font-weight:500;color:var(--text-primary)">{{ est.client.name }}</td>
-          <td style="color:var(--text-secondary)">{{ est.issue_date|date:"d M Y" }}</td>
-          <td style="color:{% if est.status == 'expired' %}#dc2626;font-weight:600{% else %}var(--text-secondary){% endif %}">{{ est.expiry_date|date:"d M Y" }}</td>
-          <td style="font-variant-numeric:tabular-nums;font-weight:600">{{ est.currency_symbol }}{{ est.total_amount|floatformat:2 }}</td>
+        <tr style="cursor:pointer" onclick="window.location='{% url 'invoices:estimate_detail' est.id %}'">
+          <td>
+            <a href="{% url 'invoices:estimate_detail' est.id %}" style="font-weight:700;color:var(--brand-600);font-size:13px;text-decoration:none" onclick="event.stopPropagation()">{{ est.estimate_number }}</a>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ est.client.name|slice:":1"|upper }}</div>
+              <span style="font-weight:600;font-size:13px;color:var(--text-primary)">{{ est.client.name }}</span>
+            </div>
+          </td>
+          <td class="desk-only" style="color:var(--text-muted);font-size:13px">{{ est.issue_date|date:"d M Y" }}</td>
+          <td class="desk-only" style="font-size:13px;color:{% if est.status == 'expired' %}#dc2626;font-weight:600{% else %}var(--text-secondary){% endif %}">
+            {{ est.expiry_date|date:"d M Y" }}
+          </td>
+          <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:700;font-size:13.5px;color:var(--text-primary)">{{ est.currency_symbol }}{{ est.total_amount|floatformat:2 }}</td>
           <td><span class="badge b-{{ est.status }}"><span class="badge-dot"></span>{{ est.get_status_display }}</span></td>
           <td>
-            <div style="display:flex;gap:4px;justify-content:flex-end">
+            <div class="action-row" onclick="event.stopPropagation()">
               <a href="{% url 'invoices:estimate_detail' est.id %}" class="btn btn-xs btn-ghost">View</a>
-              {% if est.status in 'draft' %}
+              {% if est.status == 'draft' %}
               <a href="{% url 'invoices:estimate_edit' est.id %}" class="btn btn-xs btn-ghost">Edit</a>
               {% endif %}
               {% if est.status == 'approved' and not est.converted_invoice %}
@@ -101,18 +147,21 @@
     </table>
   </div>
   {% else %}
-  <div style="padding:64px 24px;text-align:center">
-    <div class="stat-icon si-violet" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px">
-      <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+  <div class="empty-state">
+    <div class="empty-icon si-violet" style="border-radius:16px">
+      <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
     </div>
     {% if search_query or current_status %}
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No estimates found</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Try adjusting your filters.</p>
+    <p class="empty-title">No estimates found</p>
+    <p class="empty-desc">Try adjusting your filters or search terms.</p>
     <a href="{% url 'invoices:estimate_list' %}" class="btn btn-secondary btn-sm">Clear Filters</a>
     {% else %}
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No estimates yet</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">Create your first estimate to start winning clients.</p>
-    <a href="{% url 'invoices:estimate_create' %}" class="btn btn-primary btn-sm">Create Estimate</a>
+    <p class="empty-title">No estimates yet</p>
+    <p class="empty-desc">Create your first estimate to start winning clients with professional proposals.</p>
+    <a href="{% url 'invoices:estimate_create' %}" class="btn btn-primary btn-sm">
+      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+      Create Estimate
+    </a>
     {% endif %}
   </div>
   {% endif %}

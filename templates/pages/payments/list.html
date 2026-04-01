@@ -5,38 +5,50 @@
 {% block content %}
 <div class="page-in">
 
+<!-- Page header -->
 <div class="page-hdr" style="margin-bottom:24px">
   <div>
-    <h1 class="page-title">Transactions</h1>
-    <p class="page-sub">All payment transactions in your workspace.</p>
+    <p class="page-eyebrow">Finance</p>
+    <h1 class="page-title-lg">Transactions</h1>
+    <p class="page-sub-premium">All payment transactions processed in your workspace.</p>
   </div>
   <div class="page-hdr-actions">
-    <a href="{% url 'invoices:payment_overview' %}" class="btn btn-secondary btn-sm">← Overview</a>
+    <a href="{% url 'invoices:payment_overview' %}" class="btn btn-secondary btn-sm">
+      <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+      Overview
+    </a>
   </div>
 </div>
 
 <!-- Search & Filters -->
-<form method="get" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
-  <input name="q" value="{{ search_query }}" placeholder="Search invoice, client, reference…" class="form-input" style="flex:1;min-width:200px;max-width:320px">
-  <select name="status" class="form-input" style="width:160px">
-    <option value="">All statuses</option>
-    {% for tab in status_tabs %}{% if tab.key %}<option value="{{ tab.key }}" {% if tab.key == current_status %}selected{% endif %}>{{ tab.label }} ({{ tab.count }})</option>{% endif %}{% endfor %}
-  </select>
-  <input type="date" name="date_from" value="{{ date_from }}" class="form-input" style="width:155px">
-  <input type="date" name="date_to" value="{{ date_to }}" class="form-input" style="width:155px">
-  <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-  {% if search_query or current_status or date_from or date_to %}
-  <a href="{% url 'invoices:transaction_list' %}" class="btn btn-ghost btn-sm">Clear</a>
-  {% endif %}
-</form>
+<div class="card" style="padding:16px 20px;margin-bottom:16px">
+  <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <div style="position:relative;flex:1;min-width:200px;max-width:320px">
+      <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);pointer-events:none" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input name="q" value="{{ search_query }}" placeholder="Search invoice, client, reference…" class="form-input" style="padding-left:34px;font-size:13px">
+    </div>
+    <select name="status" class="form-select" style="width:160px;font-size:13px">
+      <option value="">All statuses</option>
+      {% for tab in status_tabs %}{% if tab.key %}<option value="{{ tab.key }}" {% if tab.key == current_status %}selected{% endif %}>{{ tab.label }} ({{ tab.count }})</option>{% endif %}{% endfor %}
+    </select>
+    <input type="date" name="date_from" value="{{ date_from }}" class="form-input" style="width:155px;font-size:13px">
+    <span style="font-size:12px;color:var(--text-muted);flex-shrink:0">to</span>
+    <input type="date" name="date_to" value="{{ date_to }}" class="form-input" style="width:155px;font-size:13px">
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if search_query or current_status or date_from or date_to %}
+    <a href="{% url 'invoices:transaction_list' %}" class="btn btn-ghost btn-sm" style="color:var(--text-muted)">✕ Clear</a>
+    {% endif %}
+  </form>
+</div>
 
 <!-- Status Tabs -->
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
+<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:16px">
   {% for tab in status_tabs %}
   <a href="?status={{ tab.key }}{% if search_query %}&q={{ search_query }}{% endif %}"
-     class="badge {% if tab.key == current_status %}b-brand{% else %}b-default{% endif %}"
-     style="padding:6px 12px;cursor:pointer;text-decoration:none;font-size:12.5px">
-    {{ tab.label }} <span style="opacity:.7;margin-left:4px">{{ tab.count }}</span>
+     class="filter-chip {% if tab.key == current_status %}active{% endif %}"
+     style="text-decoration:none">
+    {{ tab.label }}
+    <span style="background:rgba(0,0,0,.06);padding:1px 6px;border-radius:9px;margin-left:3px;font-size:10.5px">{{ tab.count }}</span>
   </a>
   {% endfor %}
 </div>
@@ -48,48 +60,57 @@
       <thead>
         <tr>
           <th>
-            <a href="?ordering={% if ordering == '-payment_date' %}payment_date{% else %}-payment_date{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" style="color:inherit;text-decoration:none">
+            <a href="?ordering={% if ordering == '-payment_date' %}payment_date{% else %}-payment_date{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" style="color:inherit;text-decoration:none;font-weight:inherit">
               Date {% if ordering == '-payment_date' %}↓{% elif ordering == 'payment_date' %}↑{% endif %}
             </a>
           </th>
           <th>Invoice</th>
-          <th>Client</th>
-          <th>Method</th>
+          <th class="desk-only">Client</th>
+          <th class="desk-only">Method</th>
           <th>
-            <a href="?ordering={% if ordering == '-amount' %}amount{% else %}-amount{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" style="color:inherit;text-decoration:none">
+            <a href="?ordering={% if ordering == '-amount' %}amount{% else %}-amount{% endif %}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" style="color:inherit;text-decoration:none;font-weight:inherit">
               Amount {% if ordering == '-amount' %}↓{% elif ordering == 'amount' %}↑{% endif %}
             </a>
           </th>
           <th>Status</th>
-          <th>Reference</th>
+          <th class="desk-only">Reference</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
         {% for pmt in payments %}
-        <tr>
-          <td style="color:var(--text-secondary);white-space:nowrap">{{ pmt.payment_date|date:"d M Y H:i" }}</td>
-          <td>
+        <tr style="cursor:pointer" onclick="window.location='{% url 'invoices:payment_detail' pmt.id %}'">
+          <td style="color:var(--text-secondary);white-space:nowrap;font-size:13px">{{ pmt.payment_date|date:"d M Y" }}</td>
+          <td onclick="event.stopPropagation()">
             {% if pmt.invoice %}
-            <a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" style="font-weight:600;color:var(--brand-600)">{{ pmt.invoice.invoice_number }}</a>
-            {% else %}—{% endif %}
+            <a href="{% url 'invoices:invoice_detail' pmt.invoice.id %}" style="font-weight:700;color:var(--brand-600);font-size:13px;text-decoration:none">{{ pmt.invoice.invoice_number }}</a>
+            {% else %}<span style="color:var(--text-muted)">—</span>{% endif %}
           </td>
-          <td style="color:var(--text-primary)">
-            {% if pmt.invoice and pmt.invoice.client %}{{ pmt.invoice.client.name }}{% else %}—{% endif %}
+          <td class="desk-only" style="font-size:13px;color:var(--text-primary)">
+            {% if pmt.invoice and pmt.invoice.client %}
+            <div style="display:flex;align-items:center;gap:7px">
+              <div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ pmt.invoice.client.name|slice:":1"|upper }}</div>
+              <span style="font-weight:500">{{ pmt.invoice.client.name }}</span>
+            </div>
+            {% else %}<span style="color:var(--text-muted)">—</span>{% endif %}
           </td>
-          <td><span class="badge b-info" style="font-size:11px">{{ pmt.get_payment_method_display }}</span></td>
-          <td style="font-weight:700;font-variant-numeric:tabular-nums;color:{% if pmt.status == 'completed' %}#16a34a{% elif pmt.status == 'failed' %}#dc2626{% else %}var(--text-primary){% endif %}">
+          <td class="desk-only">
+            <span class="badge b-info" style="font-size:11px">{{ pmt.get_payment_method_display }}</span>
+          </td>
+          <td style="font-weight:700;font-variant-numeric:tabular-nums;font-size:14px;color:{% if pmt.status == 'completed' %}#16a34a{% elif pmt.status == 'failed' %}#dc2626{% else %}var(--text-primary){% endif %}">
             {{ pmt.currency_symbol }}{{ pmt.amount|floatformat:2 }}
           </td>
           <td>
-            <span class="badge {% if pmt.status == 'completed' %}b-success{% elif pmt.status == 'pending' %}b-warning{% elif pmt.status == 'failed' %}b-danger{% else %}b-info{% endif %}">
-              {{ pmt.get_status_display }}
+            <span class="badge {% if pmt.status == 'completed' %}b-paid{% elif pmt.status == 'pending' %}b-pending{% elif pmt.status == 'failed' %}b-overdue{% else %}b-info{% endif %}">
+              <span class="badge-dot"></span>{{ pmt.get_status_display }}
             </span>
           </td>
-          <td style="font-size:11.5px;color:var(--text-muted);font-family:monospace">
+          <td class="desk-only" style="font-size:11.5px;color:var(--text-muted);font-family:monospace">
             {{ pmt.transaction_id|truncatechars:20|default:"—" }}
           </td>
-          <td><a href="{% url 'invoices:payment_detail' pmt.id %}" class="btn btn-xs btn-ghost">View →</a></td>
+          <td onclick="event.stopPropagation()">
+            <a href="{% url 'invoices:payment_detail' pmt.id %}" class="btn btn-xs btn-ghost">View</a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -98,28 +119,45 @@
 
   <!-- Pagination -->
   {% if payments.has_other_pages %}
-  <div style="padding:16px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-    <p style="font-size:13px;color:var(--text-muted);margin:0">
-      Showing {{ payments.start_index }}–{{ payments.end_index }} of {{ payments.paginator.count }} payments
-      {% if total_shown %} · {{ workspace.currency_symbol }}{{ total_shown|floatformat:2 }} filtered{% endif %}
+  <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <p style="font-size:12.5px;color:var(--text-muted);margin:0">
+      Showing <strong>{{ payments.start_index }}–{{ payments.end_index }}</strong> of <strong>{{ payments.paginator.count }}</strong> transactions
+      {% if total_shown %} &middot; <span style="color:#16a34a;font-weight:600">{{ workspace.currency_symbol }}{{ total_shown|floatformat:2 }} filtered</span>{% endif %}
     </p>
-    <div style="display:flex;gap:6px">
+    <div class="pagination">
       {% if payments.has_previous %}
-      <a href="?page={{ payments.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="btn btn-sm btn-ghost">← Prev</a>
+      <a href="?page={{ payments.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="pg-btn">← Prev</a>
+      {% else %}
+      <span class="pg-btn" style="opacity:.4;pointer-events:none">← Prev</span>
       {% endif %}
       {% if payments.has_next %}
-      <a href="?page={{ payments.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="btn btn-sm btn-secondary">Next →</a>
+      <a href="?page={{ payments.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}" class="pg-btn active">Next →</a>
+      {% else %}
+      <span class="pg-btn" style="opacity:.4;pointer-events:none">Next →</span>
       {% endif %}
     </div>
+  </div>
+  {% elif payments %}
+  <div style="padding:12px 20px;border-top:1px solid var(--border)">
+    <p style="font-size:12.5px;color:var(--text-muted);margin:0">
+      {{ payments.paginator.count }} transaction{{ payments.paginator.count|pluralize }}
+      {% if total_shown %} &middot; <span style="color:#16a34a;font-weight:600">{{ workspace.currency_symbol }}{{ total_shown|floatformat:2 }} total</span>{% endif %}
+    </p>
   </div>
   {% endif %}
 
   {% else %}
-  <div style="padding:64px 24px;text-align:center">
-    <div class="stat-icon si-indigo" style="margin:0 auto 16px;width:48px;height:48px;border-radius:14px"><svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg></div>
-    <p style="font-size:15px;font-weight:700;margin:0 0 8px">No transactions found</p>
-    <p style="font-size:13px;color:var(--text-muted);margin:0 0 20px">
-      {% if search_query or current_status %}Try adjusting your filters.{% else %}Transactions will appear here once payments are processed.{% endif %}
+  <div class="empty-state">
+    <div class="empty-icon si-indigo" style="border-radius:16px">
+      <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+    </div>
+    <p class="empty-title">No transactions found</p>
+    <p class="empty-desc">
+      {% if search_query or current_status %}
+        Try adjusting your search or filters to find what you're looking for.
+      {% else %}
+        Transactions will appear here once payments are processed on your invoices.
+      {% endif %}
     </p>
     {% if search_query or current_status %}
     <a href="{% url 'invoices:transaction_list' %}" class="btn btn-secondary btn-sm">Clear Filters</a>
